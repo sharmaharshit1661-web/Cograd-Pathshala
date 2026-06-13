@@ -23,7 +23,8 @@ import {
   Video,
   CheckSquare,
   DollarSign,
-  FileText
+  FileText,
+  Users
 } from 'lucide-react';
 
 // Helper to safely resolve icons stored as string or serialized objects from localStorage
@@ -537,15 +538,13 @@ const ParentDashboard = () => {
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row relative admin-page-enter">
       
       {/* 1. LEFT SIDEBAR */}
-      <aside className={`w-full md:w-68 bg-white border-r border-slate-100 flex flex-col justify-between shrink-0 h-auto md:h-screen md:sticky md:top-0 z-20 ${mobileMenuOpen ? 'block' : 'hidden md:flex'}`}>
+      <aside className={`w-full md:w-64 bg-white border-r border-slate-100/60 flex flex-col justify-between shrink-0 h-auto md:h-screen md:sticky md:top-0 z-20 ${mobileMenuOpen ? 'block' : 'hidden md:flex'}`}>
         <div className="flex flex-col overflow-y-auto flex-grow">
           {/* Logo Header */}
-          <div className="p-6 border-b border-slate-100/50 flex items-center justify-between">
-            <div className="flex items-center space-x-2.5">
-              <div>
-                <span className="logo-shimmer font-black text-2xl leading-none tracking-tight">Cograd Pathshala</span>
-                <div className="text-[10px] text-amber-600 font-bold uppercase tracking-wider mt-1">Parent Dashboard</div>
-              </div>
+          <div className="px-5 py-5 border-b border-slate-100/60 flex items-center justify-between">
+            <div>
+              <span className="logo-shimmer font-black text-lg leading-none tracking-tight">Cograd Pathshala</span>
+              <div className="text-[10px] text-amber-600 font-bold uppercase tracking-wider mt-1">Parent Dashboard</div>
             </div>
             {/* Close button for mobile menu */}
             <button className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-700" onClick={() => setMobileMenuOpen(false)}>
@@ -554,7 +553,7 @@ const ParentDashboard = () => {
           </div>
 
           {/* Navigation Items */}
-          <nav className="p-4 space-y-1">
+          <nav className="px-3 py-4 space-y-0.5">
             {[
               { name: 'Overview', icon: LayoutDashboard },
               { name: 'Academics', icon: BookOpen },
@@ -571,18 +570,18 @@ const ParentDashboard = () => {
                     setActiveTab(tab.name);
                     setMobileMenuOpen(false);
                   }}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 active:scale-[0.99] cursor-pointer group ${
+                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-200 active:scale-[0.98] cursor-pointer group ${
                     isActive
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                      : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
                   }`}
                 >
-                  <div className={`p-1.5 rounded-xl transition-all duration-300 ${
-                    isActive ? 'bg-white/20' : 'bg-slate-100 group-hover:bg-white shadow-sm'
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 ${
+                    isActive ? 'bg-white/20' : 'bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-slate-600 group-hover:shadow-sm'
                   }`}>
                     <Icon className="w-4 h-4" />
                   </div>
-                  <span>{tab.name}</span>
+                  <span className={isActive ? 'font-bold' : ''}>{tab.name}</span>
                 </button>
               );
             })}
@@ -590,20 +589,20 @@ const ParentDashboard = () => {
         </div>
 
         {/* Profile Block */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
-          <div className="flex items-center justify-between p-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <div className="p-3 border-t border-slate-100 bg-slate-50/50">
+          <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-slate-100 shadow-sm">
             <div className="flex items-center space-x-2.5 text-left flex-grow">
-              <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 font-bold flex items-center justify-center border border-amber-200">
+              <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 font-bold flex items-center justify-center border border-amber-200 text-sm shrink-0">
                 {parentName.replace(/Mrs\.|Mr\./, '').trim().charAt(0) || 'P'}
               </div>
-              <div className="text-left">
-                <div className="text-xs font-bold text-slate-800">{parentName}</div>
+              <div className="text-left min-w-0">
+                <div className="text-xs font-bold text-slate-800 truncate">{parentName}</div>
                 <div className="text-[10px] font-semibold text-slate-400">Parent Account</div>
               </div>
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
               title="Logout"
             >
               <LogOut className="w-4 h-4" />
@@ -616,7 +615,7 @@ const ParentDashboard = () => {
       <div className="flex-1 flex flex-col min-w-0">
         
         {/* TOP NAVBAR */}
-        <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-100 z-10 px-6 py-4 flex items-center justify-between">
+        <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-100 z-10 px-6 py-0 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             {/* Hamburger button for mobile */}
             <button 
@@ -2373,8 +2372,8 @@ const ParentDashboard = () => {
 
       {/* Global Toast Alert banner */}
       {showToast && (
-        <div className="fixed bottom-6 right-6 bg-slate-900/95 text-white backdrop-blur-md px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2 border border-slate-800 z-50 animate-slide-up text-xs font-bold">
-          <Sparkles className="w-4 h-4 text-amber-400" />
+        <div className="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-2.5 border border-slate-800 z-50 animate-slide-up text-xs font-semibold">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}

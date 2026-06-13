@@ -39,6 +39,7 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   
   // Notification center
   const [showNotifications, setShowNotifications] = useState(false);
@@ -2339,83 +2340,75 @@ const AdminDashboard = () => {
         </div>
       )}
 
+      {/* Mobile Sidebar Overlay */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-30 md:hidden"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+
       {/* 1. LEFT SIDEBAR PANEL */}
-      <aside className="w-64 bg-white border-r border-slate-100 flex flex-col justify-between h-screen sticky top-0 z-30 shrink-0 shadow-sm">
+      <aside className={`fixed md:sticky top-0 h-screen w-64 bg-white border-r border-slate-100 flex flex-col z-40 transition-transform duration-300 ease-in-out shrink-0 shadow-[1px_0_0_0_#f1f5f9] ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className="flex flex-col h-full overflow-hidden">
-          
           {/* Logo Brand area */}
-          <div className="p-6 border-b border-slate-50 flex items-center shrink-0">
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center shrink-0 bg-white">
             <div>
-              <div className="text-2xl font-black tracking-tight logo-shimmer">Cograd Pathshala</div>
-              <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase mt-1">Admin Hub</div>
+              <div className="text-lg font-black tracking-tight logo-shimmer leading-none">Cograd Pathshala</div>
+              <div className="text-[10px] font-semibold tracking-widest text-slate-400 uppercase mt-0.5">Admin Hub</div>
             </div>
           </div>
 
           {/* Navigation Menu */}
-          <nav className="p-4 space-y-1 overflow-y-auto flex-grow scrollbar-thin">
+          <nav className="px-3 py-3 space-y-0.5 overflow-y-auto flex-grow scrollbar-thin">
             {[
-              { name: 'Dashboard', icon: LayoutDashboard },
-              { name: 'Students', icon: Users },
-              { name: 'Teachers', icon: GraduationCap },
-              { name: 'Batches', icon: BookOpen },
-              { name: 'Attendance', icon: UserCheck },
+              { name: 'Dashboard',       icon: LayoutDashboard },
+              { name: 'Students',        icon: Users },
+              { name: 'Teachers',        icon: GraduationCap },
+              { name: 'Batches',         icon: BookOpen },
+              { name: 'Attendance',      icon: UserCheck },
               { name: 'Tests & Results', icon: CheckSquare },
-              { name: 'Fee Management', icon: CreditCard },
+              { name: 'Fee Management',  icon: CreditCard },
               { name: 'Enquiries & CRM', icon: MessageSquare },
-              { name: 'Reports', icon: BarChart3 },
-              { name: 'Communications', icon: Mail },
-              { name: 'Settings', icon: Settings }
+              { name: 'Reports',         icon: BarChart3 },
+              { name: 'Communications',  icon: Mail },
+              { name: 'Settings',        icon: Settings },
             ].map(item => {
               const IconComp = item.icon;
               const isActive = activeTab === item.name;
               return (
                 <button
                   key={item.name}
-                  onClick={() => setActiveTab(item.name)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-2xl text-[13px] font-bold transition-all duration-300 cursor-pointer group relative active:scale-[0.98] ${
-                    isActive 
-                      ? 'bg-primary-50/70 text-primary-600 border border-primary-100/20 shadow-sm' 
-                      : 'text-slate-500 border border-transparent hover:text-slate-900 hover:bg-slate-50/80'
-                  }`}
+                  onClick={() => { setActiveTab(item.name); setMobileSidebarOpen(false); }}
+                  className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
                 >
-                  {/* Left Accent indicator line */}
-                  {isActive && (
-                    <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-primary-500 rounded-r-full animate-fade-in" />
-                  )}
-                  
-                  <div className="flex items-center space-x-3.5">
-                    {/* Glowing active pill icon container wrapper */}
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-500 shrink-0 ${
-                      isActive
-                        ? 'bg-gradient-to-br from-primary-500 to-secondary-500 text-white shadow-lg shadow-primary-500/25 scale-105'
-                        : 'bg-slate-50 text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600 group-hover:scale-105 group-hover:rotate-6'
-                    }`}>
-                      <IconComp className={`w-4 h-4 nav-icon-animate ${
-                        isActive ? 'text-white nav-icon-active' : ''
-                      }`} />
+                  <div className="flex items-center space-x-3">
+                    <div className={`sidebar-nav-icon ${isActive ? 'active' : ''}`}>
+                      <IconComp className="w-[1.05rem] h-[1.05rem]" />
                     </div>
-                    <span className="transition-colors duration-200">{item.name}</span>
+                    <span>{item.name}</span>
                   </div>
                 </button>
               );
             })}
           </nav>
 
-          {/* Fixed bottom items */}
-          <div className="p-4 border-t border-slate-50 bg-slate-50/50 shrink-0 space-y-1">
-            <button 
+          {/* Bottom items */}
+          <div className="px-3 pb-3 border-t border-slate-100 pt-3 space-y-0.5 shrink-0">
+            <button
               onClick={() => setActiveTab('Help')}
-              className="w-full flex items-center space-x-3.5 px-3 py-2.5 rounded-2xl text-[13px] font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100/50 transition-all cursor-pointer"
+              className={`sidebar-nav-item ${activeTab === 'Help' ? 'active' : ''}`}
             >
-              <HelpCircle className="w-4.5 h-4.5 text-slate-400" />
-              <span>Help Center</span>
+              <div className="flex items-center space-x-3">
+                <div className={`sidebar-nav-icon ${activeTab === 'Help' ? 'active' : ''}`}><HelpCircle className="w-[1.05rem] h-[1.05rem]" /></div>
+                <span>Help Center</span>
+              </div>
             </button>
-            <button 
-              onClick={handleLogout}
-              className="w-full flex items-center space-x-3.5 px-3 py-2.5 rounded-2xl text-[13px] font-bold text-rose-500 hover:text-rose-700 hover:bg-rose-50/50 transition-all cursor-pointer"
-            >
-              <LogOut className="w-4.5 h-4.5 text-rose-400" />
-              <span>Logout</span>
+            <button onClick={handleLogout} className="sidebar-nav-item text-rose-500 hover:!text-rose-700 hover:!bg-rose-50">
+              <div className="flex items-center space-x-3">
+                <div className="sidebar-nav-icon !bg-rose-50 !text-rose-400"><LogOut className="w-[1.05rem] h-[1.05rem]" /></div>
+                <span>Logout</span>
+              </div>
             </button>
           </div>
         </div>
@@ -2425,77 +2418,67 @@ const AdminDashboard = () => {
       <div className="flex-grow flex flex-col min-w-0 h-screen overflow-hidden">
         
         {/* TOP HEADER BAR */}
-        <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-8 z-20 shrink-0 sticky top-0 shadow-sm">
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl lg:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-1.5">
-              <span>{activeTab === 'Dashboard' ? 'Admin Dashboard' : activeTab}</span> 
-            </h1>
-            {activeTab === 'Dashboard' && <Sparkles className="w-5 h-5 text-primary-500 animate-pulse hidden sm:inline" />}
+        <header className="h-16 bg-white/95 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-4 lg:px-8 z-20 shrink-0 sticky top-0">
+          <div className="flex items-center gap-3">
+            {/* Hamburger for mobile */}
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="md:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </button>
+            <div>
+              <h1 className="text-[1.05rem] font-bold text-slate-900 tracking-tight leading-none">
+                {activeTab === 'Dashboard' ? 'Overview' : activeTab}
+              </h1>
+              <p className="text-[11px] text-slate-400 mt-0.5 font-medium hidden sm:block">
+                {activeTab === 'Dashboard' ? 'Centre performance at a glance' : `Manage ${activeTab.toLowerCase()}`}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-6">
-            {/* Search Box */}
-            <div className="relative max-w-xs hidden md:block">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="relative hidden md:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search students, batches..."
-                className="pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all w-60"
+                placeholder="Search…"
+                className="pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-52"
               />
             </div>
 
-            {/* Notification Center */}
+            {/* Notifications */}
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2.5 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-100 hover:border-slate-200 transition-all cursor-pointer group animate-bell-hover"
+                className="relative w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-center transition-all cursor-pointer"
               >
-                <Bell className="w-5 h-5 text-slate-500 group-hover:scale-105 transition-transform" />
+                <Bell className="w-4.5 h-4.5 text-slate-600" />
                 {notifications.some(n => n.isNew) && (
-                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border border-white rounded-full animate-bounce"></span>
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-[1.5px] border-white" />
                 )}
               </button>
 
-              {/* Dropdown Menu */}
               {showNotifications && (
-                <div className="absolute right-0 mt-2.5 w-80 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 p-4 space-y-3 animate-fade-in text-left">
-                  <div className="flex items-center justify-between border-b border-slate-50 pb-2.5">
-                    <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Admin Alerts</h3>
+                <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 animate-fade-in overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                    <span className="text-sm font-bold text-slate-800">Notifications</span>
                     {notifications.some(n => n.isNew) && (
-                      <button 
-                        onClick={() => {
-                          setNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
-                          triggerToast('All admin alerts marked as read');
-                        }}
-                        className="text-[10px] font-black text-primary-500 hover:text-primary-600 transition-colors cursor-pointer"
-                      >
-                        Mark all as read
+                      <button onClick={() => setNotifications(p => p.map(n => ({ ...n, isNew: false })))} className="text-xs font-semibold text-blue-600 hover:text-blue-800 cursor-pointer">
+                        Mark all read
                       </button>
                     )}
                   </div>
-
-                  <div className="divide-y divide-slate-50 max-h-60 overflow-y-auto pr-1">
-                    {notifications.map(notif => (
-                      <div 
-                        key={notif.id} 
-                        onClick={() => {
-                          setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isNew: false } : n));
-                          setShowNotifications(false);
-                          triggerToast(`Alert detail opened: "${notif.text}"`);
-                        }}
-                        className={`py-3 px-1.5 flex flex-col space-y-1 cursor-pointer transition-colors hover:bg-slate-50/80 rounded-lg text-left ${
-                          notif.isNew ? 'bg-blue-50/10' : ''
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-1.5">
-                          <span className={`text-[11px] leading-relaxed ${notif.isNew ? 'font-extrabold text-slate-800' : 'text-slate-500 font-medium'}`}>
-                            {notif.text}
-                          </span>
-                          {notif.isNew && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 mt-1 flex-shrink-0"></span>
-                          )}
+                  <div className="max-h-64 overflow-y-auto divide-y divide-slate-50">
+                    {notifications.map(n => (
+                      <div key={n.id} onClick={() => { setNotifications(p => p.map(x => x.id === n.id ? { ...x, isNew: false } : x)); setShowNotifications(false); }}
+                        className={`px-4 py-3 flex gap-3 cursor-pointer hover:bg-slate-50 transition-colors ${n.isNew ? 'bg-blue-50/40' : ''}`}>
+                        <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.isNew ? 'bg-blue-500' : 'bg-slate-300'}`} />
+                        <div>
+                          <p className={`text-xs leading-relaxed ${n.isNew ? 'font-semibold text-slate-800' : 'text-slate-500'}`}>{n.text}</p>
+                          <p className="text-[10.5px] text-slate-400 mt-0.5">{n.time}</p>
                         </div>
-                        <span className="text-[9px] font-bold text-slate-400">{notif.time}</span>
                       </div>
                     ))}
                   </div>
@@ -2503,34 +2486,19 @@ const AdminDashboard = () => {
               )}
             </div>
 
-            {/* Profile Avatar Badge & Settings gear */}
-            <div className="flex items-center space-x-3.5 border-l border-slate-100 pl-6">
-              <button 
-                onClick={() => setActiveTab('Settings')}
-                className="w-9 h-9 rounded-full overflow-hidden border border-slate-200 hover:border-primary-500 hover:ring-2 hover:ring-primary-500/20 transition-all cursor-pointer"
-                title="Go to Settings"
-              >
-                <img 
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80" 
-                  alt="Admin User" 
-                  className="w-full h-full object-cover"
-                />
-              </button>
-              <button 
-                onClick={() => setActiveTab('Settings')}
-                className="p-1 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-                title="Admin Settings"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
+            {/* Avatar */}
+            <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                A
+              </div>
+              <span className="text-sm font-semibold text-slate-700 hidden lg:block">Admin</span>
             </div>
-
           </div>
         </header>
 
         {/* ACTIVE TAB CONTENT */}
-        <main className="flex-grow p-6 lg:p-8 overflow-y-auto max-w-[1400px] w-full mx-auto space-y-8 scrollbar-thin">
-          <div key={activeTab} className="tab-content-enter h-full w-full">
+        <main className="flex-grow p-5 lg:p-7 overflow-y-auto max-w-[1400px] w-full mx-auto scrollbar-thin">
+          <div key={activeTab} className="tab-content-enter">
             {getTabContent()}
           </div>
         </main>

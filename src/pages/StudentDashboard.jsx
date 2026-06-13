@@ -49,6 +49,7 @@ const StudentDashboard = () => {
   const [selectedProgressSubject, setSelectedProgressSubject] = useState('All');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   
   // Notification states
   const [unreadNotifications, setUnreadNotifications] = useState([
@@ -843,9 +844,11 @@ const StudentDashboard = () => {
   ];
 
   const handleLogout = () => {
-    localStorage.clear();
-    alert('Logged out successfully!');
-    navigate('/login');
+    localStorage.removeItem('cograd_logged_in');
+    localStorage.removeItem('cograd_role');
+    localStorage.removeItem('cograd_student_name');
+    triggerToast('Logged out successfully. Redirecting...');
+    setTimeout(() => navigate('/login'), 900);
   };
 
   const handleSaveProfile = (e) => {
@@ -861,23 +864,29 @@ const StudentDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row relative admin-page-enter">
+    <div className="min-h-screen bg-slate-50 flex relative admin-page-enter">
       
+      {/* Mobile sidebar overlay */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-30 md:hidden"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+
       {/* 1. LEFT SIDEBAR */}
-      <aside className="w-full md:w-68 bg-white border-r border-slate-100 flex flex-col justify-between shrink-0 h-auto md:h-screen md:sticky md:top-0 z-20">
+      <aside className={`fixed md:sticky top-0 h-screen w-64 bg-white border-r border-slate-100/60 flex flex-col z-40 transition-transform duration-300 ease-in-out shrink-0 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className="flex flex-col overflow-y-auto flex-grow">
           {/* Logo Header */}
-          <div className="p-6 border-b border-slate-100/50 flex items-center justify-between">
-            <div className="flex items-center space-x-2.5">
-              <div>
-                <span className="logo-shimmer font-black text-2xl leading-none tracking-tight">Cograd Pathshala</span>
-                <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-1">Student Hub</div>
-              </div>
+          <div className="px-5 py-5 border-b border-slate-100/60 flex items-center justify-between">
+            <div>
+              <span className="logo-shimmer font-black text-lg leading-none tracking-tight">Cograd Pathshala</span>
+              <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-1">Student Hub</div>
             </div>
           </div>
 
           {/* Navigation Items */}
-          <nav className="p-4 space-y-1">
+          <nav className="px-3 py-4 space-y-0.5">
             {[
               { name: 'Home', icon: LayoutDashboard },
               { name: 'My Classes', icon: BookOpen },
@@ -893,19 +902,19 @@ const StudentDashboard = () => {
               return (
                 <button
                   key={tab.name}
-                  onClick={() => setActiveTab(tab.name)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 active:scale-[0.99] cursor-pointer group ${
+                  onClick={() => { setActiveTab(tab.name); setMobileSidebarOpen(false); }}
+                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-200 cursor-pointer group active:scale-[0.98] ${
                     isActive
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                      : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
                   }`}
                 >
-                  <div className={`p-1.5 rounded-xl transition-all duration-300 ${
-                    isActive ? 'bg-white/20' : 'bg-slate-100 group-hover:bg-white shadow-sm'
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 ${
+                    isActive ? 'bg-white/20' : 'bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-slate-600 group-hover:shadow-sm'
                   }`}>
                     <Icon className="w-4 h-4" />
                   </div>
-                  <span>{tab.label || tab.name}</span>
+                  <span className={isActive ? 'font-bold' : ''}>{tab.label || tab.name}</span>
                 </button>
               );
             })}
@@ -913,8 +922,8 @@ const StudentDashboard = () => {
         </div>
 
         {/* Profile Block */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
-          <div className="flex items-center justify-between p-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <div className="p-3 border-t border-slate-100 bg-slate-50/50">
+          <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-slate-100 shadow-sm">
             <button
               onClick={() => setActiveTab('My Profile')}
               className="flex items-center space-x-2.5 text-left flex-grow cursor-pointer hover:opacity-85 transition-opacity"
@@ -922,7 +931,7 @@ const StudentDashboard = () => {
               <img
                 src={profileData.avatar}
                 alt={profileData.name}
-                className="w-10 h-10 rounded-full object-cover border-2 border-blue-500/20"
+                className="w-9 h-9 rounded-full object-cover border-2 border-blue-200"
               />
               <div className="text-left">
                 <div className="text-xs font-bold text-slate-800">{profileData.name}</div>
@@ -931,7 +940,7 @@ const StudentDashboard = () => {
             </button>
             <button
               onClick={handleLogout}
-              className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer shrink-0"
+              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
               title="Logout"
             >
               <LogOut className="w-4 h-4" />
@@ -944,9 +953,16 @@ const StudentDashboard = () => {
       <main className="flex-grow flex flex-col min-w-0">
         
         {/* Top Header Section */}
-        <header className="h-20 bg-white border-b border-slate-100 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-10">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
+        <header className="h-16 bg-white/95 backdrop-blur border-b border-slate-100 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-10">
+          <div className="flex items-center space-x-3">
+            {/* Hamburger */}
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="md:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </button>
+            <h1 className="text-lg font-bold text-slate-800 tracking-tight">
               {activeTab === 'Home' ? 'Student Workspace' : activeTab}
             </h1>
           </div>
@@ -1867,23 +1883,23 @@ const StudentDashboard = () => {
                           {/* Flipping Card body */}
                           <div
                             onClick={handleFlipCard}
-                            className={`h-48 rounded-2xl border-2 border-dashed cursor-pointer flex flex-col items-center justify-center p-6 text-center transition-all duration-300 relative overflow-hidden select-none hover:shadow-md ${
+                            className={`h-52 rounded-2xl cursor-pointer flex flex-col items-center justify-center p-6 text-center transition-all duration-500 relative overflow-hidden select-none hover:shadow-lg border ${
                               isCardFlipped
-                                ? 'bg-blue-50 border-blue-300 text-blue-905 ring-4 ring-blue-500/5'
-                                : 'bg-slate-50/50 border-slate-200 text-slate-800'
+                                ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-blue-500 text-white shadow-lg shadow-blue-500/20'
+                                : 'bg-white border-slate-200 text-slate-800 shadow-sm hover:border-blue-200'
                             }`}
                           >
                             {isCardFlipped ? (
-                              <div className="space-y-2 animate-fade-in">
-                                <span className="text-[9px] bg-blue-100 text-blue-800 font-black px-2 py-0.5 rounded-md uppercase tracking-wider">Solution</span>
-                                <p className="text-xs font-bold leading-relaxed">{currentCard?.back}</p>
-                                <span className="text-[8px] text-blue-400 block pt-1">(Click to view formula question)</span>
+                              <div className="space-y-2.5 animate-fade-in">
+                                <span className="text-[9px] bg-white/20 text-white font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Answer</span>
+                                <p className="text-sm font-semibold leading-relaxed text-white">{currentCard?.back}</p>
+                                <span className="text-[9px] text-blue-200 block pt-1">Tap to flip back</span>
                               </div>
                             ) : (
-                              <div className="space-y-2">
-                                <span className="text-[9px] bg-slate-200 text-slate-600 font-black px-2 py-0.5 rounded-md uppercase tracking-wider">{activeDeck?.subject}</span>
-                                <p className="text-xs font-black leading-snug">{currentCard?.front}</p>
-                                <span className="text-[8px] text-slate-400 block pt-1">(Click card to reveal solution)</span>
+                              <div className="space-y-2.5">
+                                <span className="text-[9px] bg-blue-50 text-blue-700 font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border border-blue-100">{activeDeck?.subject}</span>
+                                <p className="text-sm font-bold leading-snug text-slate-800">{currentCard?.front}</p>
+                                <span className="text-[9px] text-slate-400 block pt-1">Tap to reveal answer</span>
                               </div>
                             )}
                           </div>
@@ -4041,8 +4057,8 @@ const StudentDashboard = () => {
 
       {/* 5. GLOBAL FLOATING toast notifications */}
       {showToast && (
-        <div className="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl z-50 text-xs font-bold flex items-center space-x-2 animate-slide-up border border-white/5">
-          <CheckCircle2 className="w-4.5 h-4.5 text-blue-400 shrink-0" />
+        <div className="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl z-50 text-xs font-semibold flex items-center space-x-2.5 animate-slide-up border border-slate-800">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}

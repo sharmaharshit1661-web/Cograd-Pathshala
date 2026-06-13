@@ -1,447 +1,474 @@
+import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  BookOpen, 
-  CheckCircle, 
-  MapPin, 
-  Users, 
-  GraduationCap, 
-  Award, 
-  TrendingUp, 
-  Clock, 
-  DollarSign, 
-  ShieldCheck, 
-  Sparkles,
-  Star
+import {
+  BookOpen, CheckCircle, MapPin, Users, GraduationCap, Award,
+  TrendingUp, Clock, ShieldCheck, Star, ArrowRight, Zap,
+  Play, ChevronRight, Heart, Sparkles,
 } from 'lucide-react';
 
+const STATS = [
+  { icon: MapPin,        value: '8',    label: 'Rural Schools',     color: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-100' },
+  { icon: Users,         value: '125+', label: 'Students Impacted', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+  { icon: GraduationCap, value: '25',   label: 'Expert Teachers',   color: 'text-violet-600',  bg: 'bg-violet-50',  border: 'border-violet-100' },
+  { icon: Award,         value: '95%',  label: 'Parent Satisfaction',color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-100' },
+];
+
+const FEATURES = [
+  { icon: ShieldCheck, title: 'Fully Vetted Teachers',  desc: 'Every teacher undergoes 3-step background verification and subject testing before joining.' },
+  { icon: TrendingUp,  title: 'Measurable Progress',    desc: 'Weekly assessments, progress reports, and direct parent feedback loops built in.' },
+  { icon: Heart,       title: 'Personalised Learning',  desc: 'Custom study plans aligned to each student\'s pace, curriculum, and learning style.' },
+  { icon: MapPin,      title: 'Home Visits Included',   desc: 'Teachers travel to your home — no commute, no disruption to your child\'s routine.' },
+];
+
+const TESTIMONIALS = [
+  { name: 'Anjali Sharma', role: 'Parent, Meerut', rating: 5, text: 'My son\'s grades improved dramatically within just 2 months. The teacher was incredibly patient and dedicated.' },
+  { name: 'Rajesh Kumar', role: 'Parent, Allahabad', rating: 5, text: 'Finally found a trustworthy tutoring service that actually comes to our village. Outstanding quality!' },
+  { name: 'Priya Singh', role: 'Parent, Meerut', rating: 5, text: 'The weekly progress reports keep me informed. I always know exactly how my daughter is doing.' },
+];
+
+/* ── Intersection-Observer scroll reveal ── */
+function useReveal() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const targets = el.querySelectorAll('.reveal-on-scroll');
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add('is-visible'); }),
+      { threshold: 0.12 },
+    );
+    targets.forEach((t) => io.observe(t));
+    return () => io.disconnect();
+  }, []);
+  return ref;
+}
+
 const Home = () => {
+  const pageRef = useReveal();
+
   return (
-    <div className="pt-16 bg-gradient-to-br from-blue-50 via-white to-purple-50 min-h-screen relative overflow-hidden bg-grid-subtle">
-      
-      {/* Decorative Floating Circles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-100 rounded-full opacity-50 animate-float"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-secondary-100 rounded-full opacity-50 animate-float" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-accent-100 rounded-full opacity-30 animate-float" style={{ animationDelay: '2s' }}></div>
-      </div>
+    <div ref={pageRef} className="min-h-screen bg-neutral-50">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
-        
-        {/* Main Hero Side-by-Side Cards Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 max-w-6xl mx-auto pt-10 items-stretch">
-          
-          {/* Card 1: Find Your Perfect Home Teacher */}
-          <div className="animate-slide-in-left flex flex-col">
-            <div className="card card-float p-8 bg-white border border-blue-100/60 rounded-3xl flex-1 flex flex-col items-center relative pt-14 shadow-lg hover:shadow-[0_20px_50px_rgba(37,99,235,0.12)] transition-shadow duration-300">
-              
-              {/* Badge/Icon top center offset */}
-              <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 w-14 h-14 bg-primary-500 rounded-full flex items-center justify-center text-white shadow-lg z-20">
-                <BookOpen className="w-6 h-6" />
+      {/* ─── HERO ─── */}
+      <section className="relative pt-32 pb-24 overflow-hidden bg-white">
+        {/* Backgrounds */}
+        <div className="absolute inset-0 bg-grid-subtle pointer-events-none" />
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-primary-50 rounded-full blur-[120px] opacity-50 pointer-events-none" />
+        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-secondary-50 rounded-full blur-[120px] opacity-40 pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-primary-50/30 to-transparent rounded-full blur-[80px] pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {/* Left Side Tree Photo Frame */}
+          <div className="absolute left-4 xl:left-8 top-1/2 -translate-y-1/2 hidden xl:flex flex-col items-center gap-8 z-20 pointer-events-none select-none">
+            {/* The decorative vine/branch stem */}
+            <div className="absolute top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-neutral-200/80 to-transparent" />
+            
+            {/* Image 1 */}
+            <div className="relative group transition-all duration-500 hover:scale-110 hover:-rotate-1 pointer-events-auto -translate-x-4 -rotate-6">
+              <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
+                <img 
+                  src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=240&h=320&q=80" 
+                  className="w-24 h-32 rounded-lg object-cover" 
+                  alt="Student" 
+                />
               </div>
+              {/* Hanging pin */}
+              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
+            </div>
 
-              {/* Title & Subtitle */}
-              <div className="text-center mb-6">
-                <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">
-                  Find Your Perfect <span className="color-blend-blue">Home Teacher</span>
-                </h2>
-                <p className="text-sm text-gray-600">
-                  Connect with verified, experienced teachers at your doorstep
-                </p>
+            {/* Image 2 */}
+            <div className="relative group transition-all duration-500 hover:scale-110 hover:rotate-1 pointer-events-auto translate-x-4 rotate-6">
+              <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
+                <img 
+                  src="https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=240&h=320&q=80" 
+                  className="w-24 h-32 rounded-lg object-cover" 
+                  alt="Books" 
+                />
               </div>
+              {/* Hanging pin */}
+              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
+            </div>
 
-              {/* List items - Left aligned but centered container */}
-              <div className="w-full max-w-xs space-y-4 mb-8 flex-1">
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-[#059669] rounded-full flex items-center justify-center shadow">
-                    <CheckCircle className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <span className="text-sm text-gray-700 font-medium">Vetted & Qualified Teachers</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-[#059669] rounded-full flex items-center justify-center shadow">
-                    <GraduationCap className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <span className="text-sm text-gray-700 font-medium">Home Tuition Convenience</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-[#059669] rounded-full flex items-center justify-center shadow">
-                    <TrendingUp className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <span className="text-sm text-gray-700 font-medium">Weekly Progress Reports</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-[#059669] rounded-full flex items-center justify-center shadow">
-                    <Clock className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <span className="text-sm text-gray-700 font-medium">Flexible Home Scheduling</span>
-                </div>
+            {/* Image 3 */}
+            <div className="relative group transition-all duration-500 hover:scale-110 hover:-rotate-1 pointer-events-auto -translate-x-2 -rotate-3">
+              <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
+                <img 
+                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=240&h=320&q=80" 
+                  className="w-24 h-32 rounded-lg object-cover" 
+                  alt="Group Study" 
+                />
               </div>
-
-              {/* Buttons and Stats at bottom */}
-              <div className="w-full mt-auto">
-                <div className="flex gap-4 mb-6">
-                  <Link to="/student" className="flex-1 btn-primary py-3 btn-shimmer">
-                    Find Tutors
-                  </Link>
-                  <Link to="/demo-booking" className="flex-1 btn-outline-primary py-3 btn-shimmer">
-                    Book Free Demo
-                  </Link>
-                </div>
-
-                {/* Stats */}
-                <div className="flex items-center justify-center space-x-3 text-xs text-gray-500 border-t border-gray-100 pt-4">
-                  <div className="flex items-center space-x-1">
-                    <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                    <span className="font-semibold text-gray-700">4.9/5 Rating</span>
-                  </div>
-                  <span>•</span>
-                  <span>10,000+ Students</span>
-                  <span>•</span>
-                  <span>500+ Tutors</span>
-                </div>
-              </div>
-
+              {/* Hanging pin */}
+              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
             </div>
           </div>
 
-          {/* Card 2: Join Cograd's Mission */}
-          <div className="animate-slide-in-right flex flex-col">
-            <div className="card card-float-delayed-1 p-8 bg-white border border-purple-100/60 rounded-3xl flex-1 flex flex-col items-center relative pt-14 shadow-lg hover:shadow-[0_20px_50px_rgba(124,58,237,0.12)] transition-shadow duration-300">
-              
-              {/* Badge/Icon top center offset */}
-              <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 w-14 h-14 bg-secondary-500 rounded-full flex items-center justify-center text-white shadow-lg z-20">
-                <GraduationCap className="w-6 h-6" />
+          {/* Right Side Tree Photo Frame */}
+          <div className="absolute right-4 xl:right-8 top-1/2 -translate-y-1/2 hidden xl:flex flex-col items-center gap-8 z-20 pointer-events-none select-none">
+            {/* The decorative vine/branch stem */}
+            <div className="absolute top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-neutral-200/80 to-transparent" />
+            
+            {/* Image 1 */}
+            <div className="relative group transition-all duration-500 hover:scale-110 hover:rotate-1 pointer-events-auto translate-x-4 rotate-6">
+              <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
+                <img 
+                  src="https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=240&h=320&q=80" 
+                  className="w-24 h-32 rounded-lg object-cover" 
+                  alt="Classroom" 
+                />
               </div>
+              {/* Hanging pin */}
+              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
+            </div>
 
-              {/* Title & Subtitle */}
-              <div className="text-center mb-6">
-                <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">
-                  Join <span className="color-blend-purple">Cograd's Mission</span>
-                </h2>
-                <p className="text-sm text-gray-600">
-                  Help bridge the educational gap in rural areas
-                </p>
+            {/* Image 2 */}
+            <div className="relative group transition-all duration-500 hover:scale-110 hover:-rotate-1 pointer-events-auto -translate-x-4 -rotate-6">
+              <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
+                <img 
+                  src="https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=240&h=320&q=80" 
+                  className="w-24 h-32 rounded-lg object-cover" 
+                  alt="Teacher" 
+                />
               </div>
+              {/* Hanging pin */}
+              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
+            </div>
 
-              {/* List items - Left aligned but centered container */}
-              <div className="w-full max-w-xs space-y-4 mb-8 flex-1">
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-[#059669] rounded-full flex items-center justify-center shadow">
-                    <DollarSign className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <span className="text-sm text-gray-700 font-medium">20-30% Higher Pay</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-[#059669] rounded-full flex items-center justify-center shadow">
-                    <Clock className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <span className="text-sm text-gray-700 font-medium">Flexible Home Schedule</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-[#059669] rounded-full flex items-center justify-center shadow">
-                    <TrendingUp className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <span className="text-sm text-gray-700 font-medium">Cograd Brand Value</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-[#059669] rounded-full flex items-center justify-center shadow">
-                    <ShieldCheck className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <span className="text-sm text-gray-700 font-medium">Experience Letters</span>
-                </div>
+            {/* Image 3 */}
+            <div className="relative group transition-all duration-500 hover:scale-110 hover:rotate-1 pointer-events-auto translate-x-2 rotate-3">
+              <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
+                <img 
+                  src="https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&w=240&h=320&q=80" 
+                  className="w-24 h-32 rounded-lg object-cover" 
+                  alt="Study" 
+                />
               </div>
-
-              {/* Buttons and Stats at bottom */}
-              <div className="w-full mt-auto">
-                <div className="flex gap-4 mb-6">
-                  <Link to="/teacher" className="flex-1 btn-secondary py-3 btn-shimmer">
-                    Join as Teacher
-                  </Link>
-                  <Link to="/register/teacher" className="flex-1 btn-outline-secondary py-3 btn-shimmer">
-                    Apply Now
-                  </Link>
-                </div>
-
-                {/* Stats */}
-                <div className="flex items-center justify-center space-x-3 text-xs text-gray-500 border-t border-gray-100 pt-4">
-                  <div className="flex items-center space-x-1">
-                    <div className="w-4 h-4 bg-emerald-100 rounded-full flex items-center justify-center">
-                      <DollarSign className="w-2.5 h-2.5 text-emerald-600" />
-                    </div>
-                    <span className="font-semibold text-gray-700">Avg $40/hr</span>
-                  </div>
-                  <span>•</span>
-                  <span>Weekly Payments</span>
-                  <span>•</span>
-                  <span>24/7 Support</span>
-                </div>
-              </div>
-
+              {/* Hanging pin */}
+              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
             </div>
           </div>
 
-        </div>
+          <div className="max-w-4xl mx-auto text-center">
 
-        {/* Dynamic Ready Banner */}
-        <div className="text-center mt-12 bg-white/70 backdrop-blur-md border border-gray-100 rounded-2xl p-8 shadow-lg max-w-4xl mx-auto animate-fade-in">
-          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">Ready to Bridge the Rural Education Gap?</h2>
-          <p className="text-gray-600 mb-6 max-w-2xl mx-auto">Join <strong className="font-extrabold text-gray-900">Cograd's</strong> mission to bring quality education to Tier 3 districts and rural areas.</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-            <Link to="/student" className="btn-primary btn-shimmer">I'm a Student</Link>
-            <Link to="/teacher" className="btn-secondary btn-shimmer">I'm a Teacher</Link>
-            <Link to="/demo-booking" className="btn-outline-accent btn-shimmer">Book Free Demo</Link>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Target Districts & Impact Statistics */}
-      <section className="py-20 bg-gradient-to-br from-blue-50/50 to-purple-50/50 border-t border-gray-100/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="text-center mb-16 animate-fade-in">
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-5 py-2 rounded-full mb-6 shadow-md">
-              <Sparkles className="w-5 h-5 text-yellow-300 animate-pulse" />
-              <span className="text-sm font-semibold">Shark Tank Featured Company</span>
+            {/* Badge */}
+            <div className="inline-flex items-center px-5 py-2.5 bg-white border rounded-full text-xs sm:text-sm font-semibold mb-8 animate-fade-in animate-badge-glow badge-shimmer-sweep shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 mr-2 text-amber-500" />
+              <span className="text-gradient-shark">Shark Tank India Featured EdTech</span>
             </div>
-            <h2 className="text-4xl lg:text-5xl font-extrabold text-gray-900 mb-6 tracking-tight">
-              <span className="font-black color-blend-text">Cograd's</span> Mission: <span className="text-primary-500">Bridging Rural Education</span>
-            </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              We're bringing quality home education to the doorsteps of students in Tier 3 districts and rural areas. Our experienced, vetted teachers provide personalized learning with regular progress tracking and skill assessments.
+
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-neutral-900 mb-6 tracking-tight animate-slide-up leading-[1.08]">
+              Quality Education<br />
+              at Your{' '}
+              <span className="color-blend-text">Doorstep</span>
+            </h1>
+
+            <p className="text-lg sm:text-xl text-neutral-500 max-w-2xl mx-auto leading-relaxed mb-10 animate-slide-up" style={{ animationDelay: '120ms' }}>
+              Cograd Pathshala connects rural students with verified, experienced home teachers — making premium tuition accessible in Tier 3 districts.
             </p>
-          </div>
 
-          {/* Grid Indicators */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <div className="reveal-on-scroll flex flex-col" style={{ transitionDelay: '0ms' }}>
-              <div className="card-float text-center bg-white rounded-2xl p-6 shadow-md border border-gray-100 flex-1 flex flex-col justify-center">
-                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <MapPin className="w-7 h-7 text-blue-600" />
-                </div>
-                <div className="text-3xl font-extrabold text-blue-600 mb-1">8</div>
-                <div className="text-gray-600 text-sm font-semibold">Rural Schools Opened</div>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center animate-slide-up" style={{ animationDelay: '220ms' }}>
+              <Link to="/student" className="btn-primary text-base px-8 py-4 flex items-center gap-2 shadow-lg shadow-primary-500/25">
+                Find a Teacher <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link to="/demo-booking" className="btn-outline-primary text-base px-8 py-4 flex items-center gap-2">
+                <Play className="w-4 h-4" />
+                Book Free Demo
+              </Link>
             </div>
 
-            <div className="reveal-on-scroll flex flex-col" style={{ transitionDelay: '100ms' }}>
-              <div className="card-float-delayed-1 text-center bg-white rounded-2xl p-6 shadow-md border border-gray-100 flex-1 flex flex-col justify-center">
-                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-7 h-7 text-green-600" />
-                </div>
-                <div className="text-3xl font-extrabold text-green-600 mb-1">125</div>
-                <div className="text-gray-600 text-sm font-semibold">Students Impacted</div>
-              </div>
-            </div>
-
-            <div className="reveal-on-scroll flex flex-col" style={{ transitionDelay: '200ms' }}>
-              <div className="card-float-delayed-2 text-center bg-white rounded-2xl p-6 shadow-md border border-gray-100 flex-1 flex flex-col justify-center">
-                <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <GraduationCap className="w-7 h-7 text-purple-600" />
-                </div>
-                <div className="text-3xl font-extrabold text-purple-600 mb-1">25</div>
-                <div className="text-gray-600 text-sm font-semibold">Qualified Teachers</div>
-              </div>
-            </div>
-
-            <div className="reveal-on-scroll flex flex-col" style={{ transitionDelay: '300ms' }}>
-              <div className="card-float-delayed-3 text-center bg-white rounded-2xl p-6 shadow-md border border-gray-100 flex-1 flex flex-col justify-center">
-                <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Award className="w-7 h-7 text-yellow-600" />
-                </div>
-                <div className="text-3xl font-extrabold text-yellow-600 mb-1">95%</div>
-                <div className="text-gray-600 text-sm font-semibold">Parent Satisfaction</div>
-              </div>
+            {/* Social proof row */}
+            <div className="flex flex-wrap items-center justify-center gap-6 mt-12 text-sm text-neutral-500 animate-fade-in" style={{ animationDelay: '350ms' }}>
+              <span className="flex items-center gap-2">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 text-amber-400 fill-amber-400" />
+                ))}
+                <span className="ml-1 font-semibold text-neutral-700">4.9 / 5</span>
+              </span>
+              <span className="w-px h-4 bg-neutral-200" />
+              <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-primary-400" /> 125+ students enrolled</span>
+              <span className="w-px h-4 bg-neutral-200" />
+              <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-500" /> 25+ vetted tutors</span>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Target Districts Comparison */}
-          <div className="mb-16">
-            <h3 className="text-3xl font-bold text-gray-900 text-center mb-8">Our Target Districts</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              
-              <div className="reveal-on-scroll slide-left flex flex-col">
-                <div className="card-float-delayed-1 bg-white rounded-2xl p-6 shadow-lg border-l-4 border-primary-500 hover:shadow-xl transition-all duration-300 flex-1">
-                  <div className="flex items-center justify-between mb-6">
-                    <h4 className="text-2xl font-bold text-gray-900">Meerut</h4>
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 uppercase tracking-wider">Active</span>
+      {/* ─── STATS STRIP ─── */}
+      <section className="py-14 border-y border-neutral-100 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {STATS.map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <div
+                  key={i}
+                  className={`reveal-on-scroll text-center flex flex-col items-center gap-3 p-5 rounded-2xl border ${s.border} bg-white hover:shadow-md transition-all duration-300`}
+                  style={{ transitionDelay: `${i * 80}ms` }}
+                >
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${s.bg}`}>
+                    <Icon className={`w-5.5 h-5.5 ${s.color}`} />
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-center">
-                    <div className="p-3 bg-gray-50 rounded-xl">
-                      <div className="text-2xl font-extrabold text-primary-500">30,000+</div>
-                      <div className="text-xs text-gray-500 font-bold uppercase mt-1">Students</div>
-                    </div>
-                    <div className="p-3 bg-gray-50 rounded-xl">
-                      <div className="text-2xl font-extrabold text-secondary-500">50+</div>
-                      <div className="text-xs text-gray-500 font-bold uppercase mt-1">Teachers</div>
-                    </div>
+                  <div>
+                    <div className={`text-3xl font-extrabold ${s.color}`}>{s.value}</div>
+                    <div className="text-[12.5px] text-neutral-500 mt-0.5 font-medium">{s.label}</div>
                   </div>
                 </div>
-              </div>
-
-              <div className="reveal-on-scroll slide-right flex flex-col">
-                <div className="card-float-delayed-2 bg-white rounded-2xl p-6 shadow-lg border-l-4 border-secondary-500 hover:shadow-xl transition-all duration-300 flex-1">
-                  <div className="flex items-center justify-between mb-6">
-                    <h4 className="text-2xl font-bold text-gray-900">Allahabad</h4>
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800 uppercase tracking-wider">Launching Soon</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-center">
-                    <div className="p-3 bg-gray-50 rounded-xl">
-                      <div className="text-2xl font-extrabold text-primary-500">25,000+</div>
-                      <div className="text-xs text-gray-500 font-bold uppercase mt-1">Students</div>
-                    </div>
-                    <div className="p-3 bg-gray-50 rounded-xl">
-                      <div className="text-2xl font-extrabold text-secondary-500">40+</div>
-                      <div className="text-xs text-gray-500 font-bold uppercase mt-1">Teachers</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
+              );
+            })}
           </div>
+        </div>
+      </section>
 
-          {/* Progress & Impact Interactive Panel */}
-          <div className="reveal-on-scroll bg-white rounded-3xl p-8 shadow-xl max-w-4xl mx-auto border border-gray-100/50">
-            <h3 className="text-3xl font-bold text-gray-900 text-center mb-8">Progress & Impact</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-              
-              <div className="text-center flex flex-col justify-between items-center h-full p-4 hover:bg-slate-50 rounded-2xl transition-colors duration-200">
-                <div className="w-44 h-44 bg-gradient-to-br from-blue-50 to-blue-100 rounded-full flex items-center justify-center mb-6 shadow-inner relative group cursor-pointer">
-                  <BookOpen className="w-16 h-16 text-primary-500 group-hover:scale-110 transition-transform duration-300" />
-                  <span className="absolute -bottom-2 bg-primary-500 text-white px-3 py-1 rounded-full text-xs font-bold">Assessments</span>
+      {/* ─── TWO CARDS ─── */}
+      <section className="py-20 bg-neutral-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-2">Choose Your Path</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900">How Can We Help You?</h2>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {/* For Students */}
+            <div className="reveal-on-scroll slide-left bg-white rounded-3xl p-9 border border-neutral-100 shadow-sm hover:shadow-xl hover:border-primary-100 transition-all duration-400 flex flex-col group">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/30 group-hover:scale-110 transition-transform duration-300">
+                  <BookOpen className="w-7 h-7" />
                 </div>
                 <div>
-                  <h4 className="text-xl font-bold text-gray-900 mb-2">Student Progress Distribution</h4>
-                  <p className="text-gray-600 text-sm max-w-xs leading-relaxed">
-                    Weekly skill assessments and monthly progress reports allow parents and teachers to track development closely.
-                  </p>
+                  <h2 className="text-2xl font-bold text-neutral-900">Find Your Home Teacher</h2>
+                  <p className="text-sm text-neutral-400 mt-0.5">For students & parents</p>
                 </div>
               </div>
 
-              <div className="text-center flex flex-col justify-between items-center h-full p-4 hover:bg-slate-50 rounded-2xl transition-colors duration-200">
-                <div className="w-44 h-44 bg-gradient-to-br from-green-50 to-green-100 rounded-full flex items-center justify-center mb-6 shadow-inner relative group cursor-pointer">
-                  <TrendingUp className="w-16 h-16 text-accent-500 group-hover:scale-110 transition-transform duration-300" />
-                  <span className="absolute -bottom-2 bg-accent-500 text-white px-3 py-1 rounded-full text-xs font-bold">Performance</span>
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-gray-900 mb-2">Teacher Performance Metrics</h4>
-                  <p className="text-gray-600 text-sm max-w-xs leading-relaxed">
-                    Regular reviews, feedback from parents, and curriculum adherence logs ensure highest educational standards.
-                  </p>
-                </div>
-              </div>
+              <ul className="space-y-3.5 mb-8 flex-grow">
+                {[
+                  'Vetted & background-checked teachers',
+                  'Personalised 1-on-1 learning sessions',
+                  'Weekly progress reports & assessments',
+                  'Flexible scheduling around your routine',
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-sm text-neutral-600">
+                    <CheckCircle className="w-4.5 h-4.5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
 
-            </div>
-          </div>
-
-          {/* Bottom Mission Section */}
-          <div className="reveal-on-scroll mt-16 bg-gradient-to-r from-primary-600 to-secondary-600 rounded-3xl p-8 lg:p-12 text-white shadow-2xl relative overflow-hidden text-center max-w-4xl mx-auto">
-            <div className="absolute inset-0 bg-white/5 opacity-10 pointer-events-none"></div>
-            <div className="relative z-10">
-              <h3 className="text-3xl lg:text-4xl font-extrabold mb-4">Join Our Mission Today</h3>
-              <p className="text-lg lg:text-xl opacity-90 mb-8 max-w-2xl mx-auto leading-relaxed">
-                Help us bring quality education to rural areas. Whether you're a teacher looking to make an impact or a parent seeking quality home tuition, we're here to connect you.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-                <Link to="/student" className="btn-slide-white px-8 py-3 btn-shimmer">
-                  Find Home Teacher
+              <div className="flex gap-3">
+                <Link to="/student" className="btn-primary flex-1 py-3.5 gap-2">
+                  Find Tutors <ChevronRight className="w-4 h-4" />
                 </Link>
-                <Link to="/teacher" className="btn-outline-white px-8 py-3 btn-shimmer">
+                <Link to="/demo-booking" className="btn-outline-primary flex-1 py-3.5">Free Demo</Link>
+              </div>
+            </div>
+
+            {/* For Teachers */}
+            <div className="reveal-on-scroll slide-right bg-white rounded-3xl p-9 border border-neutral-100 shadow-sm hover:shadow-xl hover:border-secondary-200 transition-all duration-400 flex flex-col group">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-gradient-to-br from-secondary-500 to-secondary-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-secondary-500/30 group-hover:scale-110 transition-transform duration-300">
+                  <GraduationCap className="w-7 h-7" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-neutral-900">Join Cograd's Mission</h2>
+                  <p className="text-sm text-neutral-400 mt-0.5">For experienced educators</p>
+                </div>
+              </div>
+
+              <ul className="space-y-3.5 mb-8 flex-grow">
+                {[
+                  '20–30% higher pay than market rates',
+                  'Flexible home-visit scheduling',
+                  'Cograd brand credibility & experience letters',
+                  'Dedicated teacher portal & analytics',
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-sm text-neutral-600">
+                    <CheckCircle className="w-4.5 h-4.5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="flex gap-3">
+                <Link to="/teacher" className="btn-secondary flex-1 py-3.5 gap-2">
+                  Learn More <ChevronRight className="w-4 h-4" />
+                </Link>
+                <Link to="/register/teacher" className="btn-outline-secondary flex-1 py-3.5">Apply Now</Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── WHY COGRAD ─── */}
+      <section className="py-20 bg-white border-t border-neutral-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14">
+            <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-2">Our Difference</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900">Why Families Choose Us</h2>
+            <p className="text-neutral-500 mt-3 max-w-xl mx-auto">Built from the ground up for Tier 3 India — every feature reflects the needs of rural students and families.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {FEATURES.map((f, i) => {
+              const Icon = f.icon;
+              return (
+                <div
+                  key={i}
+                  className="reveal-on-scroll bg-neutral-50 rounded-2xl p-6 border border-neutral-100 hover:bg-white hover:shadow-md hover:border-neutral-200 transition-all duration-300 text-center group"
+                  style={{ transitionDelay: `${i * 90}ms` }}
+                >
+                  <div className="w-12 h-12 bg-white border border-neutral-200 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:border-primary-200 group-hover:bg-primary-50 transition-all duration-300 shadow-sm">
+                    <Icon className="w-5.5 h-5.5 text-primary-600" />
+                  </div>
+                  <h3 className="font-semibold text-neutral-900 mb-2">{f.title}</h3>
+                  <p className="text-sm text-neutral-500 leading-relaxed">{f.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── HOW IT WORKS ─── */}
+      <section className="py-20 bg-neutral-50 border-t border-neutral-100">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14">
+            <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-2">Process</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900">Get Started in 3 Steps</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+            {/* Connector line on desktop */}
+            <div className="hidden md:block absolute top-10 left-1/4 right-1/4 h-px bg-gradient-to-r from-blue-200 via-violet-200 to-emerald-200" />
+
+            {[
+              { step: '01', title: 'Book a Free Demo', desc: 'Fill out our simple booking form. We match you with the right verified teacher within 24 hours.', icon: Clock, color: 'bg-blue-600', ring: 'ring-blue-100' },
+              { step: '02', title: 'Meet Your Teacher', desc: 'Your assigned tutor visits your home at your preferred time for a complimentary demo session.', icon: Users, color: 'bg-violet-600', ring: 'ring-violet-100' },
+              { step: '03', title: 'Start Learning',   desc: 'Enjoy personalised, structured lessons with regular progress reports shared with parents.', icon: TrendingUp, color: 'bg-emerald-600', ring: 'ring-emerald-100' },
+            ].map((item, i) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={i}
+                  className="reveal-on-scroll bg-white rounded-2xl p-7 border border-neutral-100 shadow-sm hover:shadow-md transition-all text-center relative"
+                  style={{ transitionDelay: `${i * 110}ms` }}
+                >
+                  <div className={`w-14 h-14 ${item.color} text-white rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg ring-4 ${item.ring}`}>
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <div className="text-xs font-black text-neutral-300 mb-2 tracking-widest">STEP {item.step}</div>
+                  <h3 className="text-base font-semibold text-neutral-800 mb-2">{item.title}</h3>
+                  <p className="text-sm text-neutral-500 leading-relaxed">{item.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── DISTRICTS ─── */}
+      <section className="py-20 bg-white border-t border-neutral-100">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-2">Coverage</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900">Where We Operate</h2>
+            <p className="text-neutral-500 mt-3">Currently serving Meerut — expanding across Uttar Pradesh.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[
+              { city: 'Meerut', status: 'Active', statusColor: 'text-emerald-600 bg-emerald-50 border-emerald-100', students: '30,000+', teachers: '50+', accentColor: 'border-l-primary-500', desc: 'Our flagship district — fully operational with growing teacher network.' },
+              { city: 'Allahabad', status: 'Launching Soon', statusColor: 'text-amber-600 bg-amber-50 border-amber-100', students: '25,000+', teachers: '40+', accentColor: 'border-l-secondary-500', desc: 'Coming soon — registrations open for early access and priority matching.' },
+            ].map((d, i) => (
+              <div
+                key={i}
+                className={`reveal-on-scroll bg-white rounded-2xl p-7 border border-neutral-100 border-l-4 ${d.accentColor} shadow-sm hover:shadow-md transition-all`}
+                style={{ transitionDelay: `${i * 100}ms` }}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-2xl font-bold text-neutral-900">{d.city}</h3>
+                    <p className="text-sm text-neutral-400 mt-1">{d.desc}</p>
+                  </div>
+                  <span className={`text-xs font-semibold px-3 py-1 rounded-full border flex-shrink-0 ml-4 ${d.statusColor}`}>
+                    {d.status}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-neutral-50 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-extrabold text-primary-600">{d.students}</div>
+                    <div className="text-xs text-neutral-500 mt-1 font-medium">Target Students</div>
+                  </div>
+                  <div className="bg-neutral-50 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-extrabold text-secondary-500">{d.teachers}</div>
+                    <div className="text-xs text-neutral-500 mt-1 font-medium">Deployed Teachers</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── TESTIMONIALS ─── */}
+      <section className="py-20 bg-neutral-50 border-t border-neutral-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-2">Testimonials</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900">Loved by Families</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {TESTIMONIALS.map((t, i) => (
+              <div
+                key={i}
+                className="reveal-on-scroll bg-white rounded-2xl p-6 border border-neutral-100 shadow-sm hover:shadow-md transition-all duration-300"
+                style={{ transitionDelay: `${i * 100}ms` }}
+              >
+                <div className="flex gap-0.5 mb-4">
+                  {[...Array(t.rating)].map((_, j) => (
+                    <Star key={j} className="w-4 h-4 text-amber-400 fill-amber-400" />
+                  ))}
+                </div>
+                <p className="text-sm text-neutral-600 leading-relaxed mb-5 italic">"{t.text}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-gradient-to-br from-primary-400 to-secondary-400 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    {t.name[0]}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-neutral-800">{t.name}</p>
+                    <p className="text-xs text-neutral-400">{t.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── CTA BANNER ─── */}
+      <section className="py-20 bg-white border-t border-neutral-100">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center reveal-on-scroll">
+          <div className="bg-gradient-to-br from-primary-600 via-primary-700 to-secondary-700 rounded-3xl p-12 text-white shadow-2xl relative overflow-hidden">
+            <div className="absolute -top-20 -right-20 w-56 h-56 bg-white/10 rounded-full blur-3xl" />
+            <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+            <div className="absolute inset-0 bg-grid-subtle opacity-10" />
+            <div className="relative z-10">
+              <div className="w-14 h-14 bg-white/15 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-5 border border-white/20">
+                <Zap className="w-7 h-7 text-amber-300" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to Start Learning?</h2>
+              <p className="text-white/80 mb-8 max-w-md mx-auto text-lg">
+                Join students across Meerut getting quality education right at home.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link to="/student" className="btn-slide-white px-8 py-4 text-base gap-2">
+                  Find a Teacher <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link to="/teacher" className="btn-outline-white px-8 py-4 text-base">
                   Join as Teacher
                 </Link>
               </div>
             </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* Quick About Overview */}
-      <section className="py-24 bg-gradient-to-b from-white to-slate-50 border-t border-gray-100 relative overflow-hidden bg-dot-subtle">
-        
-        {/* Decorative blur blobs */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 -right-20 w-72 h-72 bg-blue-100/30 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-1/4 -left-20 w-72 h-72 bg-purple-100/30 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-4xl mx-auto mb-16">
-            
-            <div className="reveal-on-scroll inline-flex items-center space-x-2 bg-slate-100 text-slate-800 px-4 py-1.5 rounded-full mb-6 border border-slate-200/50 shadow-sm">
-              <span className="text-xs font-bold uppercase tracking-wider">About Our Platform</span>
-            </div>
-
-            <h2 className="reveal-on-scroll text-4xl lg:text-5xl font-extrabold text-gray-900 mb-6 tracking-tight">
-              About <span className="font-black pb-0.5 color-blend-text">Cograd Pathshala</span>
-            </h2>
-
-            <p className="reveal-on-scroll text-base sm:text-lg text-gray-600 leading-relaxed font-medium" style={{ transitionDelay: '100ms' }}>
-              <strong className="font-extrabold text-gray-900"><span className="pb-0.5 color-blend-text">Cograd Pathshala</span></strong> is a strategic initiative by <strong className="font-extrabold text-gray-900">Cograd</strong>, an EdTech company focused on providing quality education in rural and Tier 3 districts. We're bridging the educational gap by connecting qualified, vetted teachers with students in select districts (starting with Meerut and Allahabad) for both home tuitions and school placements.
-            </p>
-          </div>
-
-          {/* Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            
-            {/* Card 1: For Teachers */}
-            <div className="reveal-on-scroll slide-left flex flex-col" style={{ transitionDelay: '200ms' }}>
-              <div className="card text-center p-8 bg-white border border-gray-100 hover:border-primary-200 rounded-3xl shadow-md hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex-1 flex flex-col items-center">
-                <div className="w-14 h-14 bg-blue-50 text-primary-500 rounded-2xl flex items-center justify-center mb-6 border border-blue-100/40">
-                  <Users className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">For Teachers</h3>
-                <p className="text-sm text-gray-600 leading-relaxed flex-1">
-                  Higher remuneration, <strong className="font-bold text-gray-800">Cograd</strong> brand credibility, formal experience letters, and professional growth opportunities.
-                </p>
-                <div className="w-full border-t border-slate-100 pt-4 mt-6">
-                  <Link to="/teacher" className="text-xs font-bold text-primary-500 hover:text-primary-600 inline-flex items-center space-x-1 cursor-pointer">
-                    <span>Explore opportunities</span>
-                    <span>→</span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* Card 2: For Students */}
-            <div className="reveal-on-scroll flex flex-col" style={{ transitionDelay: '300ms' }}>
-              <div className="card text-center p-8 bg-white border border-gray-100 hover:border-secondary-200 rounded-3xl shadow-md hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex-1 flex flex-col items-center">
-                <div className="w-14 h-14 bg-purple-50 text-secondary-500 rounded-2xl flex items-center justify-center mb-6 border border-purple-100/40">
-                  <GraduationCap className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">For Students & Parents</h3>
-                <p className="text-sm text-gray-600 leading-relaxed flex-1">
-                  High-quality education through experienced teachers, home tuition convenience, and regular progress tracking.
-                </p>
-                <div className="w-full border-t border-slate-100 pt-4 mt-6">
-                  <Link to="/student" className="text-xs font-bold text-secondary-500 hover:text-secondary-600 inline-flex items-center space-x-1 cursor-pointer">
-                    <span>Find home tutor</span>
-                    <span>→</span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* Card 3: For Cograd */}
-            <div className="reveal-on-scroll slide-right flex flex-col" style={{ transitionDelay: '400ms' }}>
-              <div className="card text-center p-8 bg-white border border-gray-100 hover:border-accent-200 rounded-3xl shadow-md hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex-1 flex flex-col items-center">
-                <div className="w-14 h-14 bg-green-50 text-accent-500 rounded-2xl flex items-center justify-center mb-6 border border-green-100/40">
-                  <Award className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">For Cograd</h3>
-                <p className="text-sm text-gray-600 leading-relaxed flex-1">
-                  Building a sustainable model for localized, high-quality educational services where they're needed most.
-                </p>
-                <div className="w-full border-t border-slate-100 pt-4 mt-6">
-                  <Link to="/demo-booking" className="text-xs font-bold text-accent-500 hover:text-accent-600 inline-flex items-center space-x-1 cursor-pointer">
-                    <span>Book free demo</span>
-                    <span>→</span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
       </section>

@@ -1,242 +1,111 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  CheckCircle,
-  ArrowLeft,
-  X
-} from 'lucide-react';
+import { User, Mail, Phone, Lock, Eye, EyeOff, CheckCircle, ArrowLeft, X } from 'lucide-react';
 
 const RegisterStudent = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: ''
-  });
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
+  const [showPw, setShowPw] = useState(false);
+  const [showCPw, setShowCPw] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-
   const navigate = useNavigate();
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
-  const handleRegisterSubmit = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match.');
-      return;
-    }
+    if (form.password !== form.confirmPassword) { alert('Passwords do not match.'); return; }
     setShowSuccess(true);
   };
 
-  const handleSuccessClose = () => {
-    setShowSuccess(false);
-    navigate('/login');
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      
-      {/* Decorative shapes */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-10 right-10 w-44 h-44 bg-primary-100 rounded-full opacity-40 animate-float"></div>
-        <div className="absolute bottom-10 left-10 w-40 h-40 bg-secondary-100 rounded-full opacity-40 animate-float" style={{ animationDelay: '1s' }}></div>
-      </div>
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-16 px-4 sm:px-6">
 
-      <div className="max-w-2xl w-full relative z-10">
-        
-        {/* Title */}
-        <div className="text-center mb-8">
-          <h2 className="text-4xl font-extrabold mb-2 tracking-tight color-blend-text">Join as a Student</h2>
-          <p className="text-gray-600 font-medium">Begin your learning adventure with expert doorstep tutors</p>
+      <div className="w-full max-w-lg">
+
+        {/* Back */}
+        <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-800 mb-6 transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+          Back to Home
+        </Link>
+
+        <div className="text-center mb-7">
+          <h1 className="text-3xl font-bold text-neutral-900 mb-1.5">Join as a Student</h1>
+          <p className="text-neutral-500 text-sm">Begin your learning journey with expert doorstep tutors</p>
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-3xl shadow-xl p-8 lg:p-10 border border-gray-100">
-          <form onSubmit={handleRegisterSubmit} className="space-y-6">
-            
-            <h3 className="text-xl font-bold text-gray-900 border-b border-gray-100 pb-2 mb-4">Basic Information</h3>
-            
-            {/* Name */}
+        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
+
             <div>
-              <label className="form-label">
-                <User className="w-4 h-4 text-primary-500 mr-2" />
-                Full Name
-              </label>
-              <input
-                type="text"
-                name="name"
-                required
-                value={formData.name}
-                onChange={handleInputChange}
-                className="form-input text-sm py-2.5"
-                placeholder="Enter your full name"
-              />
+              <label className="form-label"><User className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Full Name</label>
+              <input type="text" name="name" required value={form.name} onChange={handleChange} className="form-input" placeholder="Your full name" />
             </div>
 
-            {/* Email */}
             <div>
-              <label className="form-label">
-                <Mail className="w-4 h-4 text-primary-500 mr-2" />
-                Email Address
-              </label>
-              <input
-                type="email"
-                name="email"
-                required
-                value={formData.email}
-                onChange={handleInputChange}
-                className="form-input text-sm py-2.5"
-                placeholder="Enter your email address"
-              />
+              <label className="form-label"><Mail className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Email Address</label>
+              <input type="email" name="email" required value={form.email} onChange={handleChange} className="form-input" placeholder="your@email.com" />
             </div>
 
-            {/* Phone */}
             <div>
-              <label className="form-label">
-                <Phone className="w-4 h-4 text-primary-500 mr-2" />
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                required
-                value={formData.phone}
-                onChange={handleInputChange}
-                className="form-input text-sm py-2.5"
-                placeholder="Enter your phone number"
-              />
+              <label className="form-label"><Phone className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Phone Number</label>
+              <input type="tel" name="phone" required value={form.phone} onChange={handleChange} className="form-input" placeholder="10-digit mobile number" />
             </div>
 
-            {/* Passwords */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className="form-label">
-                  <Lock className="w-4 h-4 text-primary-500 mr-2" />
-                  Password
-                </label>
+                <label className="form-label"><Lock className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Password</label>
                 <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="form-input text-sm py-2.5 pr-10"
-                    placeholder="Create a password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  <input type={showPw ? 'text' : 'password'} name="password" required value={form.password} onChange={handleChange} className="form-input pr-10" placeholder="Create a password" />
+                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 cursor-pointer">
+                    {showPw ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
                   </button>
                 </div>
               </div>
-
               <div>
-                <label className="form-label">
-                  <Lock className="w-4 h-4 text-primary-500 mr-2" />
-                  Confirm Password
-                </label>
+                <label className="form-label"><Lock className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Confirm Password</label>
                 <div className="relative">
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    name="confirmPassword"
-                    required
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    className="form-input text-sm py-2.5 pr-10"
-                    placeholder="Confirm your password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  <input type={showCPw ? 'text' : 'password'} name="confirmPassword" required value={form.confirmPassword} onChange={handleChange} className="form-input pr-10" placeholder="Confirm your password" />
+                  <button type="button" onClick={() => setShowCPw(!showCPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 cursor-pointer">
+                    {showCPw ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Submit */}
-            <div className="pt-4">
-              <button
-                type="submit"
-                className="w-full btn-primary py-3.5 font-bold"
-              >
-                Register as Student
-              </button>
-            </div>
-
+            <button type="submit" className="w-full btn-primary py-3.5 text-base mt-2">
+              Register as Student
+            </button>
           </form>
 
-          {/* Existing account redirect */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+          <div className="mt-5 pt-5 border-t border-neutral-100 text-center">
+            <p className="text-sm text-neutral-500">
               Already have an account?{' '}
-              <Link to="/login" className="text-primary-500 hover:underline font-semibold">
-                Sign in here
-              </Link>
+              <Link to="/login" className="text-primary-600 font-medium hover:text-primary-800">Sign in here</Link>
             </p>
           </div>
-
-          {/* Back Home link */}
-          <div className="mt-6 text-center">
-            <Link to="/" className="inline-flex items-center text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              <span>Back to Home</span>
-            </Link>
-          </div>
-
         </div>
-
       </div>
 
       {/* Success Modal */}
       {showSuccess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl overflow-hidden shadow-2xl max-w-md w-full border border-gray-100 p-8 text-center relative">
-            <button
-              onClick={handleSuccessClose}
-              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
-            >
-              <X className="w-6 h-6" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center border border-neutral-100 animate-slide-up relative">
+            <button onClick={() => { setShowSuccess(false); navigate('/login'); }} className="absolute top-4 right-4 p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg cursor-pointer">
+              <X className="w-4.5 h-4.5" />
             </button>
-            
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-green-200">
-              <CheckCircle className="w-12 h-12 text-green-600" />
+            <div className="w-14 h-14 bg-emerald-50 border border-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5">
+              <CheckCircle className="w-8 h-8 text-emerald-600" />
             </div>
-
-            <h3 className="text-3xl font-extrabold text-gray-900 mb-3">Registration Successful!</h3>
-            <p className="text-sm text-gray-600 leading-relaxed mb-6">
-              Welcome, <strong>{formData.name}</strong>! Your student account has been registered successfully. You can now log in to find verified home tutors and book demo classes.
+            <h3 className="text-2xl font-bold text-neutral-900 mb-2">Registration Successful!</h3>
+            <p className="text-sm text-neutral-500 leading-relaxed mb-6">
+              Welcome, <strong className="text-neutral-700">{form.name}</strong>! Your account is ready. You can now find verified home tutors.
             </p>
-
-            <button
-              onClick={handleSuccessClose}
-              className="w-full btn-primary py-3 font-bold"
-            >
+            <button onClick={() => { setShowSuccess(false); navigate('/login'); }} className="w-full btn-primary py-3">
               Go to Login
             </button>
           </div>
         </div>
       )}
-
     </div>
   );
 };
