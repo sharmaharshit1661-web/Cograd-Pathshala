@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  BookOpen, CheckCircle, MapPin, Users, GraduationCap, Award,
+  MapPin, Users, GraduationCap, Award,
   TrendingUp, Clock, ShieldCheck, Star, ArrowRight, Zap,
-  Play, ChevronRight, Heart, Sparkles,
+  Play, Heart, Sparkles,
 } from 'lucide-react';
+
 
 const STATS = [
   { icon: MapPin,        value: '8',    label: 'Rural Schools',     color: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-100' },
@@ -26,6 +27,35 @@ const TESTIMONIALS = [
   { name: 'Priya Singh', role: 'Parent, Meerut', rating: 5, text: 'The weekly progress reports keep me informed. I always know exactly how my daughter is doing.' },
 ];
 
+const DISTRICTS = [
+  {
+    city: 'Meerut',
+    status: 'Active',
+    statusColor: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+    students: '30,000+',
+    teachers: '50+',
+    accentColor: 'border-l-primary-500',
+    desc: 'Our flagship district — fully operational with a rapidly growing teacher network.',
+    statsLabel1: 'Target Students',
+    statsLabel2: 'Deployed Tutors',
+    actionText: 'Book Free Demo in Meerut',
+    link: '/demo-booking'
+  },
+  {
+    city: 'Allahabad',
+    status: 'Launching Soon',
+    statusColor: 'text-amber-600 bg-amber-50 border-amber-100',
+    students: '25,000+',
+    teachers: '40+',
+    accentColor: 'border-l-secondary-500',
+    desc: 'Coming soon — pre-registration is open for early access and priority teacher matching.',
+    statsLabel1: 'Pre-registered Students',
+    statsLabel2: 'Interested Tutors',
+    actionText: 'Pre-Register in Allahabad',
+    link: '/demo-booking'
+  }
+];
+
 /* ── Intersection-Observer scroll reveal ── */
 function useReveal() {
   const ref = useRef(null);
@@ -45,6 +75,7 @@ function useReveal() {
 
 const Home = () => {
   const pageRef = useReveal();
+  const [selectedDistrict, setSelectedDistrict] = useState(0);
 
   return (
     <div ref={pageRef} className="min-h-screen bg-neutral-50">
@@ -220,84 +251,80 @@ const Home = () => {
       </section>
 
       {/* ─── TWO CARDS ─── */}
-      <section className="py-20 bg-neutral-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative py-16 bg-slate-50/60 overflow-hidden border-y border-neutral-100">
+        {/* Decorative background grid and blurs */}
+        <div className="absolute inset-0 bg-grid-subtle pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-to-r from-primary-500/5 to-secondary-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-12">
-            <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-2">Choose Your Path</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900">How Can We Help You?</h2>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary-50 border border-primary-100 text-xs font-semibold text-primary-700 rounded-full mb-3 uppercase tracking-wider">
+              Choose Your Path
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-neutral-900 tracking-tight animate-slide-up">
+              How Can We Help You?
+            </h2>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-            {/* For Students */}
-            <div className="reveal-on-scroll slide-left bg-white rounded-3xl p-9 border border-neutral-100 shadow-sm hover:shadow-xl hover:border-primary-100 transition-all duration-400 flex flex-col group">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/30 group-hover:scale-110 transition-transform duration-300">
-                  <BookOpen className="w-7 h-7" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-neutral-900">Find Your Home Teacher</h2>
-                  <p className="text-sm text-neutral-400 mt-0.5">For students & parents</p>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+
+            {/* For Students / Parents */}
+            <div className="reveal-on-scroll slide-left bg-white rounded-2xl border border-neutral-200/60 border-l-4 border-l-primary-500 p-6 sm:p-8 shadow-sm hover:shadow-xl hover:border-r-neutral-300 hover:border-t-neutral-300 hover:border-b-neutral-300 transition-all duration-300 flex flex-col sm:flex-row gap-6 items-start group">
+              <div className="w-20 h-20 bg-primary-50/50 border border-primary-100/50 rounded-2xl flex items-center justify-center p-2 flex-shrink-0 group-hover:scale-105 transition-all duration-300">
+                <img src="/learning_3d_icon.png" alt="Student Learning" className="w-16 h-16 object-contain group-hover:rotate-3 transition-transform duration-300" />
               </div>
-
-              <ul className="space-y-3.5 mb-8 flex-grow">
-                {[
-                  'Vetted & background-checked teachers',
-                  'Personalised 1-on-1 learning sessions',
-                  'Weekly progress reports & assessments',
-                  'Flexible scheduling around your routine',
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3 text-sm text-neutral-600">
-                    <CheckCircle className="w-4.5 h-4.5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="flex gap-3">
-                <Link to="/student" className="btn-primary flex-1 py-3.5 gap-2">
-                  Find Tutors <ChevronRight className="w-4 h-4" />
-                </Link>
-                <Link to="/demo-booking" className="btn-outline-primary flex-1 py-3.5">Free Demo</Link>
+              <div className="flex-grow flex flex-col h-full">
+                <div className="mb-2">
+                  <span className="inline-block text-[10px] font-bold text-primary-600 uppercase tracking-wider bg-primary-50 px-2.5 py-0.5 rounded border border-primary-100/50">
+                    Parents & Students
+                  </span>
+                  <h3 className="text-xl font-bold text-neutral-900 mt-1">Find Your Home Teacher</h3>
+                </div>
+                <p className="text-neutral-500 text-sm leading-relaxed mb-4">
+                  Connect with verified home tutors for personalized 1-on-1 tuition at your doorstep.
+                </p>
+                <div className="flex flex-wrap gap-2.5 mt-auto pt-4 border-t border-neutral-100">
+                  <Link to="/student" className="btn-primary py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 px-5 shadow-sm">
+                    Find Tutors <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Link>
+                  <Link to="/demo-booking" className="btn-outline-primary py-2.5 text-xs font-bold px-5">
+                    Free Demo
+                  </Link>
+                </div>
               </div>
             </div>
 
             {/* For Teachers */}
-            <div className="reveal-on-scroll slide-right bg-white rounded-3xl p-9 border border-neutral-100 shadow-sm hover:shadow-xl hover:border-secondary-200 transition-all duration-400 flex flex-col group">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 bg-gradient-to-br from-secondary-500 to-secondary-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-secondary-500/30 group-hover:scale-110 transition-transform duration-300">
-                  <GraduationCap className="w-7 h-7" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-neutral-900">Join Cograd's Mission</h2>
-                  <p className="text-sm text-neutral-400 mt-0.5">For experienced educators</p>
-                </div>
+            <div className="reveal-on-scroll slide-right bg-white rounded-2xl border border-neutral-200/60 border-l-4 border-l-secondary-500 p-6 sm:p-8 shadow-sm hover:shadow-xl hover:border-r-neutral-300 hover:border-t-neutral-300 hover:border-b-neutral-300 transition-all duration-300 flex flex-col sm:flex-row gap-6 items-start group">
+              <div className="w-20 h-20 bg-secondary-50/50 border border-secondary-100/50 rounded-2xl flex items-center justify-center p-2 flex-shrink-0 group-hover:scale-105 transition-all duration-300">
+                <img src="/teaching_3d_icon.png" alt="Tutor Mission" className="w-16 h-16 object-contain group-hover:-rotate-3 transition-transform duration-300" />
               </div>
-
-              <ul className="space-y-3.5 mb-8 flex-grow">
-                {[
-                  '20–30% higher pay than market rates',
-                  'Flexible home-visit scheduling',
-                  'Cograd brand credibility & experience letters',
-                  'Dedicated teacher portal & analytics',
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3 text-sm text-neutral-600">
-                    <CheckCircle className="w-4.5 h-4.5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="flex gap-3">
-                <Link to="/teacher" className="btn-secondary flex-1 py-3.5 gap-2">
-                  Learn More <ChevronRight className="w-4 h-4" />
-                </Link>
-                <Link to="/register/teacher" className="btn-outline-secondary flex-1 py-3.5">Apply Now</Link>
+              <div className="flex-grow flex flex-col h-full">
+                <div className="mb-2">
+                  <span className="inline-block text-[10px] font-bold text-secondary-600 uppercase tracking-wider bg-secondary-50 px-2.5 py-0.5 rounded border border-secondary-100/50">
+                    Tutors & Educators
+                  </span>
+                  <h3 className="text-xl font-bold text-neutral-900 mt-1">Join Cograd's Mission</h3>
+                </div>
+                <p className="text-neutral-500 text-sm leading-relaxed mb-4">
+                  Grow your tutoring career with flexible scheduling and premium compensation rates.
+                </p>
+                <div className="flex flex-wrap gap-2.5 mt-auto pt-4 border-t border-neutral-100">
+                  <Link to="/teacher" className="btn-secondary py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 px-5 shadow-sm">
+                    Learn More <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Link>
+                  <Link to="/register/teacher" className="btn-outline-secondary py-2.5 text-xs font-bold px-5">
+                    Apply Now
+                  </Link>
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       </section>
+
+
 
       {/* ─── WHY COGRAD ─── */}
       <section className="py-20 bg-white border-t border-neutral-100">
@@ -367,45 +394,234 @@ const Home = () => {
       </section>
 
       {/* ─── DISTRICTS ─── */}
-      <section className="py-20 bg-white border-t border-neutral-100">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-2">Coverage</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900">Where We Operate</h2>
-            <p className="text-neutral-500 mt-3">Currently serving Meerut — expanding across Uttar Pradesh.</p>
+      <section className="relative py-20 bg-white border-t border-neutral-100 overflow-hidden">
+        {/* Subtle grid backdrop */}
+        <div className="absolute inset-0 bg-grid-subtle opacity-50 pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          
+          {/* Centered Section Title */}
+          <div className="text-center mb-12 reveal-on-scroll">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary-50 border border-primary-100 text-xs font-bold text-primary-700 rounded-full mb-3 uppercase tracking-widest animate-pulse">
+              Coverage Areas
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-neutral-900 tracking-wide leading-tight">
+              Where We Operate
+            </h2>
+            <p className="text-neutral-500 mt-4 max-w-xl mx-auto text-sm sm:text-base leading-relaxed tracking-wide">
+              Currently serving Meerut and Allahabad — expanding rapidly across Uttar Pradesh.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              { city: 'Meerut', status: 'Active', statusColor: 'text-emerald-600 bg-emerald-50 border-emerald-100', students: '30,000+', teachers: '50+', accentColor: 'border-l-primary-500', desc: 'Our flagship district — fully operational with growing teacher network.' },
-              { city: 'Allahabad', status: 'Launching Soon', statusColor: 'text-amber-600 bg-amber-50 border-amber-100', students: '25,000+', teachers: '40+', accentColor: 'border-l-secondary-500', desc: 'Coming soon — registrations open for early access and priority matching.' },
-            ].map((d, i) => (
-              <div
-                key={i}
-                className={`reveal-on-scroll bg-white rounded-2xl p-7 border border-neutral-100 border-l-4 ${d.accentColor} shadow-sm hover:shadow-md transition-all`}
-                style={{ transitionDelay: `${i * 100}ms` }}
-              >
-                <div className="flex items-start justify-between mb-4">
+          {/* Unified Dashboard Widget */}
+          <div className="max-w-4xl mx-auto reveal-on-scroll bg-white border border-neutral-200/60 rounded-3xl p-6 sm:p-8 shadow-md hover:shadow-xl transition-all duration-300 grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+            
+            {/* Left Side: Interactive SVG Map Panel */}
+            <div className="w-full lg:col-span-5 flex flex-col justify-center items-center bg-slate-50/50 border border-slate-100/80 rounded-2xl p-4 relative overflow-hidden min-h-[300px]">
+              <svg viewBox="0 0 450 300" className="w-full h-full text-neutral-300">
+                <defs>
+                  <linearGradient id="mapGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#f8fafc" />
+                    <stop offset="100%" stopColor="#eff6ff" />
+                  </linearGradient>
+                  <linearGradient id="mapBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.4" />
+                  </linearGradient>
+                  <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#8b5cf6" />
+                  </linearGradient>
+                  <pattern id="dotGrid" width="12" height="12" patternUnits="userSpaceOnUse">
+                    <circle cx="2" cy="2" r="1" fill="#cbd5e1" opacity="0.6" />
+                  </pattern>
+                </defs>
+                <style>{`
+                  @keyframes dash {
+                    to {
+                      stroke-dashoffset: -20;
+                    }
+                  }
+                  .animate-dash-flow {
+                    stroke-dasharray: 6, 4;
+                    animation: dash 3s linear infinite;
+                  }
+                `}</style>
+
+                {/* Styled Background State Shape (Uttar Pradesh approximation) */}
+                <path
+                  d="M 30 110 C 50 60, 100 40, 150 70 C 200 90, 250 80, 300 110 C 350 130, 420 140, 440 180 C 460 210, 420 250, 390 260 C 350 270, 310 240, 280 250 C 230 260, 180 270, 150 220 C 120 180, 70 200, 40 170 C 20 150, 20 130, 30 110 Z"
+                  fill="url(#mapGrad)"
+                  stroke="url(#mapBorder)"
+                  strokeWidth="2.5"
+                />
+                <path
+                  d="M 30 110 C 50 60, 100 40, 150 70 C 200 90, 250 80, 300 110 C 350 130, 420 140, 440 180 C 460 210, 420 250, 390 260 C 350 270, 310 240, 280 250 C 230 260, 180 270, 150 220 C 120 180, 70 200, 40 170 C 20 150, 20 130, 30 110 Z"
+                  fill="url(#dotGrid)"
+                  pointerEvents="none"
+                />
+
+                {/* Connection paths */}
+                <g fill="none" strokeWidth="1.5">
+                  <path d="M 60 110 L 85 80" stroke="#94a3b8" strokeDasharray="3, 3" className="opacity-50" />
+                  <path d="M 85 80 Q 150 120, 220 150" stroke="url(#lineGrad)" className="animate-dash-flow" />
+                  <path d="M 220 150 Q 270 190, 320 220" stroke="url(#lineGrad)" className="animate-dash-flow" />
+                  <path d="M 220 150 L 380 215" stroke="#cbd5e1" strokeDasharray="4, 4" className="opacity-40" />
+                  <path d="M 320 220 L 380 215" stroke="#cbd5e1" strokeDasharray="4, 4" className="opacity-40" />
+                </g>
+
+                {/* City Nodes */}
+                {[
+                  { name: 'Noida', x: 60, y: 110, status: 'Soon', color: '#94a3b8' },
+                  { name: 'Meerut', x: 85, y: 80, status: 'Active', color: '#10b981', index: 0 },
+                  { name: 'Lucknow', x: 220, y: 150, status: 'Soon', color: '#94a3b8' },
+                  { name: 'Allahabad', x: 320, y: 220, status: 'Launching', color: '#f59e0b', index: 1 },
+                  { name: 'Varanasi', x: 380, y: 215, status: 'Soon', color: '#94a3b8' },
+                ].map((c) => {
+                  const isInteractive = c.index !== undefined;
+                  const isActive = isInteractive && selectedDistrict === c.index;
+                  const nodeColor = isActive 
+                    ? (c.index === 0 ? '#3b82f6' : '#8b5cf6')
+                    : c.color;
+
+                  return (
+                    <g 
+                      key={c.name} 
+                      className={isInteractive ? 'cursor-pointer group/node' : 'opacity-70'}
+                      onClick={() => isInteractive && setSelectedDistrict(c.index)}
+                    >
+                      {/* Concentric pulsing circles for active node */}
+                      {isActive && (
+                        <>
+                          <circle cx={c.x} cy={c.y} r="6" fill={nodeColor} opacity="0.4">
+                            <animate attributeName="r" values="6;22" dur="2.5s" begin="0s" repeatCount="indefinite" />
+                            <animate attributeName="opacity" values="0.8;0" dur="2.5s" begin="0s" repeatCount="indefinite" />
+                          </circle>
+                          <circle cx={c.x} cy={c.y} r="6" fill={nodeColor} opacity="0.4">
+                            <animate attributeName="r" values="6;22" dur="2.5s" begin="1.25s" repeatCount="indefinite" />
+                            <animate attributeName="opacity" values="0.8;0" dur="2.5s" begin="1.25s" repeatCount="indefinite" />
+                          </circle>
+                        </>
+                      )}
+
+                      {/* Main Node Point */}
+                      <circle 
+                        cx={c.x} 
+                        cy={c.y} 
+                        r={isActive ? "6" : "4.5"} 
+                        fill={nodeColor} 
+                        className="transition-all duration-300 stroke-white stroke-2 group-hover/node:scale-125"
+                        style={{ transformOrigin: `${c.x}px ${c.y}px` }}
+                      />
+
+                      {/* Node label */}
+                      <text 
+                        x={c.x} 
+                        y={c.y - 12} 
+                        textAnchor="middle" 
+                        className={`text-[10px] select-none transition-all duration-300 ${
+                          isActive 
+                            ? 'font-bold fill-neutral-900 drop-shadow-sm' 
+                            : 'font-semibold fill-neutral-400 group-hover/node:fill-neutral-700'
+                        }`}
+                        style={{ transformOrigin: `${c.x}px ${c.y - 12}px` }}
+                      >
+                        {c.name}
+                      </text>
+
+                      {/* Mini status indicator */}
+                      {!isInteractive && (
+                        <text 
+                          x={c.x} 
+                          y={c.y + 13} 
+                          textAnchor="middle" 
+                          className="text-[6.5px] font-medium fill-neutral-400 tracking-wide select-none"
+                        >
+                          {c.status}
+                        </text>
+                      )}
+                    </g>
+                  );
+                })}
+              </svg>
+
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-white border border-neutral-200/80 shadow-sm rounded-full text-[9px] font-bold text-neutral-600 tracking-wider uppercase z-20 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
+                Interactive Coverage Map
+              </div>
+            </div>
+
+            {/* Right Side: Interactive Details Panel */}
+            <div className="lg:col-span-7 flex flex-col justify-between gap-6">
+              {/* Tab Selector */}
+              <div className="flex bg-slate-100/85 p-1.5 rounded-xl border border-slate-200/50">
+                {DISTRICTS.map((d, index) => (
+                  <button
+                    key={d.city}
+                    onClick={() => setSelectedDistrict(index)}
+                    className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 cursor-pointer ${
+                      selectedDistrict === index
+                        ? 'bg-white text-neutral-900 shadow-sm border border-neutral-200/40'
+                        : 'text-neutral-500 hover:text-neutral-800'
+                    }`}
+                  >
+                    {d.city}
+                    {d.status === 'Active' ? (
+                      <span className="ml-1.5 w-1.5 h-1.5 inline-block bg-emerald-500 rounded-full animate-pulse" />
+                    ) : (
+                      <span className="ml-1.5 w-1.5 h-1.5 inline-block bg-amber-500 rounded-full" />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* District Detail Content */}
+              <div className="flex-grow flex flex-col justify-center">
+                <div className="flex items-start justify-between gap-4 mb-4">
                   <div>
-                    <h3 className="text-2xl font-bold text-neutral-900">{d.city}</h3>
-                    <p className="text-sm text-neutral-400 mt-1">{d.desc}</p>
+                    <h3 className="text-2xl font-bold text-neutral-900">{DISTRICTS[selectedDistrict].city}</h3>
+                    <p className="text-sm text-neutral-500 mt-1 leading-relaxed">
+                      {DISTRICTS[selectedDistrict].desc}
+                    </p>
                   </div>
-                  <span className={`text-xs font-semibold px-3 py-1 rounded-full border flex-shrink-0 ml-4 ${d.statusColor}`}>
-                    {d.status}
+                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border flex-shrink-0 ${DISTRICTS[selectedDistrict].statusColor}`}>
+                    {DISTRICTS[selectedDistrict].status}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-neutral-50 rounded-xl p-4 text-center">
-                    <div className="text-2xl font-extrabold text-primary-600">{d.students}</div>
-                    <div className="text-xs text-neutral-500 mt-1 font-medium">Target Students</div>
+
+                <div className="grid grid-cols-2 gap-4 my-2">
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 text-center hover:bg-slate-50 transition-colors duration-300">
+                    <div className={`text-3xl font-extrabold ${selectedDistrict === 0 ? 'text-primary-600' : 'text-secondary-600'}`}>
+                      {DISTRICTS[selectedDistrict].students}
+                    </div>
+                    <div className="text-[11px] text-neutral-400 mt-1.5 font-semibold tracking-wide uppercase">
+                      {DISTRICTS[selectedDistrict].statsLabel1}
+                    </div>
                   </div>
-                  <div className="bg-neutral-50 rounded-xl p-4 text-center">
-                    <div className="text-2xl font-extrabold text-secondary-500">{d.teachers}</div>
-                    <div className="text-xs text-neutral-500 mt-1 font-medium">Deployed Teachers</div>
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 text-center hover:bg-slate-50 transition-colors duration-300">
+                    <div className={`text-3xl font-extrabold ${selectedDistrict === 0 ? 'text-primary-600' : 'text-secondary-600'}`}>
+                      {DISTRICTS[selectedDistrict].teachers}
+                    </div>
+                    <div className="text-[11px] text-neutral-400 mt-1.5 font-semibold tracking-wide uppercase">
+                      {DISTRICTS[selectedDistrict].statsLabel2}
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
+
+              {/* Call-to-Action */}
+              <Link
+                to={DISTRICTS[selectedDistrict].link}
+                className={`w-full py-3.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all duration-300 ${
+                  selectedDistrict === 0 
+                    ? 'btn-primary shadow-sm shadow-primary-500/10 hover:shadow-primary-500/25' 
+                    : 'btn-secondary shadow-sm shadow-secondary-500/10 hover:shadow-secondary-500/25'
+                }`}
+              >
+                {DISTRICTS[selectedDistrict].actionText} <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
           </div>
         </div>
       </section>
