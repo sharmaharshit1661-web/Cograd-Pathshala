@@ -1,0 +1,2544 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  Users, 
+  GraduationCap, 
+  BookOpen, 
+  UserCheck, 
+  CheckSquare, 
+  CreditCard, 
+  MessageSquare, 
+  BarChart3, 
+  Mail, 
+  Settings, 
+  HelpCircle, 
+  LogOut, 
+  Bell, 
+  Search, 
+  TrendingUp, 
+  Check, 
+  X, 
+  AlertCircle, 
+  ChevronRight, 
+  Sparkles, 
+  MoreHorizontal,
+  Sliders,
+  CheckCircle2,
+  Plus,
+  Trash2,
+  FileText,
+  Calendar,
+  Megaphone,
+  Save,
+  Download
+} from 'lucide-react';
+
+const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  
+  // Notification center
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([
+    { id: 1, text: 'Aaryan Khanna submitted a new admission enquiry', time: '5m ago', isNew: true },
+    { id: 2, text: 'Batch JEE-Advanced syllabus is 70% complete', time: '1h ago', isNew: true },
+    { id: 3, text: 'Monthly fee collection target achieved', time: '3h ago', isNew: false }
+  ]);
+
+  // Defaulters List state
+  const [defaulters, setDefaulters] = useState([
+    { id: 1, name: 'Siddharth Malhotra', amount: '₹12,500', status: 'Pending' },
+    { id: 2, name: 'Isha Ambani', amount: '₹8,000', status: 'Pending' },
+    { id: 3, name: 'Varun Dhawan', amount: '₹15,200', status: 'Pending' }
+  ]);
+
+  // At-Risk Students state
+  const [atRiskStudents, setAtRiskStudents] = useState([
+    { id: 1, name: 'Arjun Kapoor', reason: 'Low test scores (3 consecutive)', status: 'Pending' },
+    { id: 2, name: 'Sara Ali Khan', reason: 'Absent for 4 days this week', status: 'Pending' },
+    { id: 3, name: 'Ranbir Kapoor', reason: 'Declining attendance trend', status: 'Pending' }
+  ]);
+
+  // Intervention Modal
+  const [selectedRiskStudent, setSelectedRiskStudent] = useState(null);
+  const [interventionNote, setInterventionNote] = useState('');
+  
+  // Enquiries List state
+  const [enquiries, setEnquiries] = useState([
+    { id: 1, name: 'Aaryan Khanna', course: 'Class 12 JEE Preparation', type: 'New', color: 'bg-blue-100 text-blue-800', phone: '+91 91111 22222', email: 'aaryan@gmail.com' },
+    { id: 2, name: 'Priya Sharma', course: 'Class 10 CBSE Maths', type: 'Follow-up', color: 'bg-amber-100 text-amber-800', phone: '+91 93333 44444', email: 'priya.sh@gmail.com' },
+    { id: 3, name: 'Rahul Gupta', course: 'Foundation Physics', type: 'Enrolled', color: 'bg-emerald-100 text-emerald-800', phone: '+91 95555 66666', email: 'rahul.g@gmail.com' }
+  ]);
+
+  // Student roster state
+  const [students, setStudents] = useState([
+    { id: 1, name: 'Rahul Malhotra', email: 'rahul.m@gmail.com', parentName: 'Siddharth Malhotra', batch: 'JEE-Advanced A1', date: '2026-01-10', status: 'Active' },
+    { id: 2, name: 'Sanya Sen', email: 'sanya.s@yahoo.com', parentName: 'Deepak Sen', batch: 'NEET Target B2', date: '2026-02-15', status: 'Active' },
+    { id: 3, name: 'Arjun Kapoor', email: 'arjun.k@cograd.com', parentName: 'Sanjay Kapoor', batch: 'JEE-Advanced A1', date: '2026-03-01', status: 'Active' },
+    { id: 4, name: 'Isha Ambani', email: 'isha.a@reliance.com', parentName: 'Mukesh Ambani', batch: 'Foundation Math F1', date: '2026-01-20', status: 'Active' },
+    { id: 5, name: 'Varun Dhawan', email: 'varun.d@cograd.com', parentName: 'David Dhawan', batch: 'NEET Target B2', date: '2026-02-28', status: 'Active' },
+    { id: 6, name: 'Sara Ali Khan', email: 'sara.k@cograd.com', parentName: 'Saif Ali Khan', batch: 'Foundation Math F1', date: '2026-03-12', status: 'Suspended' }
+  ]);
+
+  // Teachers state
+  const [teachers, setTeachers] = useState([
+    { id: 1, name: 'Dr. Satish Sharma', subject: 'Mathematics', email: 'satish.sharma@cograd.com', rating: 4.9, rate: '₹1,500/hr', batches: ['JEE-Advanced A1', 'Foundation Math F1'], status: 'Verified' },
+    { id: 2, name: 'Prof. Amit Verma', subject: 'Physics', email: 'amit.verma@cograd.com', rating: 4.8, rate: '₹1,400/hr', batches: ['JEE-Advanced A1', 'NEET Target B2'], status: 'Verified' },
+    { id: 3, name: 'Ms. Neha Gupta', subject: 'Chemistry', email: 'neha.gupta@cograd.com', rating: 4.7, rate: '₹1,200/hr', batches: ['NEET Target B2'], status: 'Verified' },
+    { id: 4, name: 'Mr. Rohan Das', subject: 'English', email: 'rohan.das@cograd.com', rating: 4.5, rate: '₹1,000/hr', batches: ['Foundation Math F1'], status: 'Pending' },
+    { id: 5, name: 'Mrs. S. Iyer', subject: 'Computer Science', email: 's.iyer@cograd.com', rating: 4.6, rate: '₹1,300/hr', batches: ['Computer Science CS1'], status: 'Verified' }
+  ]);
+
+  // Batches state
+  const [batches, setBatches] = useState([
+    { id: 1, name: 'JEE-Advanced A1', teacher: 'Dr. Satish Sharma', subject: 'Mathematics', timing: '09:00 AM - 10:30 AM (M, W, F)', students: 18, status: 'Active' },
+    { id: 2, name: 'NEET Target B2', teacher: 'Prof. Amit Verma', subject: 'Physics', timing: '11:00 AM - 12:30 PM (T, T, S)', students: 24, status: 'Active' },
+    { id: 3, name: 'Foundation Math F1', teacher: 'Dr. Satish Sharma', subject: 'Mathematics', timing: '04:00 PM - 05:30 PM (M, W, F)', students: 15, status: 'Active' },
+    { id: 4, name: 'Computer Science CS1', teacher: 'Mrs. S. Iyer', subject: 'Computer Science', timing: '02:00 PM - 03:30 PM (Sat)', students: 12, status: 'Active' }
+  ]);
+
+  // Recent payments state
+  const [recentPayments, setRecentPayments] = useState([
+    { id: 1, name: 'Rahul Malhotra', amount: '₹12,500', date: '2026-06-10', status: 'Paid', method: 'UPI' },
+    { id: 2, name: 'Sanya Sen', amount: '₹15,000', date: '2026-06-09', status: 'Paid', method: 'Net Banking' },
+    { id: 3, name: 'Isha Ambani', amount: '₹8,000', date: '2026-06-08', status: 'Paid', method: 'Credit Card' },
+    { id: 4, name: 'Varun Dhawan', amount: '₹15,200', date: '2026-06-07', status: 'Failed', method: 'Debit Card' }
+  ]);
+
+  // Announcements state
+  const [announcements, setAnnouncements] = useState([
+    { id: 1, title: 'Summer Batch Timetable Revision', target: 'All Students & Teachers', priority: 'Medium', date: '2026-06-12', text: 'Please note the JEE Advanced class timings will shift by 30 mins starting next Monday.' },
+    { id: 2, title: 'Term 1 Exam Scheduling', target: 'All Students', priority: 'High', date: '2026-06-10', text: 'Term 1 progress assessments are scheduled to start from June 25th.' }
+  ]);
+
+  // Settings state
+  const [settings, setSettings] = useState({
+    centreName: 'Sharma Classes',
+    contactEmail: 'admin@sharmaclasses.edu.in',
+    contactPhone: '+91 98765 43210',
+    address: 'Sector 15, Dwarka, New Delhi',
+    session: '2026-2027',
+    currency: '₹ (INR)',
+    autoReminders: true,
+    emailAlerts: true,
+    whatsappSync: false,
+    aiRiskAnalysis: true
+  });
+
+  // Tests & Results state
+  const [tests, setTests] = useState([
+    { id: 1, name: 'JEE Math Mock Test 4', date: '2026-06-08', batch: 'JEE-Advanced A1', avgScore: '74%', topScore: '98%', toppers: ['Arjun Kapoor (98%)', 'Rahul Malhotra (94%)', 'Siddharth Malhotra (92%)'] },
+    { id: 2, name: 'NEET Physics Prep 3', date: '2026-06-05', batch: 'NEET Target B2', avgScore: '68%', topScore: '95%', toppers: ['Sanya Sen (95%)', 'Varun Dhawan (90%)', 'Isha Ambani (88%)'] },
+    { id: 3, name: 'Foundation algebra assessment', date: '2026-06-01', batch: 'Foundation Math F1', avgScore: '82%', topScore: '100%', toppers: ['Sara Ali Khan (100%)', 'Varun Dhawan (96%)'] }
+  ]);
+
+  // Modal open states
+  const [showAddStudent, setShowAddStudent] = useState(false);
+  const [showAddBatch, setShowAddBatch] = useState(false);
+  const [showAddEnquiry, setShowAddEnquiry] = useState(false);
+  const [showPublishTest, setShowPublishTest] = useState(false);
+  const [selectedTest, setSelectedTest] = useState(null);
+  const [selectedTeacherDocs, setSelectedTeacherDocs] = useState(null);
+
+  // Student Form Inputs
+  const [newStudent, setNewStudent] = useState({ name: '', email: '', parentName: '', batch: 'JEE-Advanced A1', status: 'Active' });
+  // Batch Form Inputs
+  const [newBatch, setNewBatch] = useState({ name: '', teacher: 'Dr. Satish Sharma', subject: 'Mathematics', timing: '', students: 0, status: 'Active' });
+  // Enquiry Form Inputs
+  const [newEnquiry, setNewEnquiry] = useState({ name: '', course: 'Class 12 JEE Preparation', phone: '', email: '' });
+  // Test Form Inputs
+  const [newTest, setNewTest] = useState({ name: '', date: '', batch: 'JEE-Advanced A1', avgScore: '', topScore: '', toppers: '' });
+
+  // Attendance Sheet Filter State
+  const [attendanceFilter, setAttendanceFilter] = useState({ batch: 'JEE-Advanced A1', date: '2026-06-13' });
+  // Attendance Students Presence State (temporary session logs)
+  const [attendanceLogs, setAttendanceLogs] = useState({
+    1: 'Present',
+    2: 'Present',
+    3: 'Present',
+    4: 'Absent',
+    5: 'Present',
+    6: 'Absent'
+  });
+
+  // Search/Filter states
+  const [crmSearch, setCrmSearch] = useState('');
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentBatchFilter, setStudentBatchFilter] = useState('All');
+  const [studentStatusFilter, setStudentStatusFilter] = useState('All');
+  const [teacherSearch, setTeacherSearch] = useState('');
+
+  // Communications Form Input
+  const [announceInput, setAnnounceInput] = useState({ title: '', target: 'All Students & Teachers', priority: 'Medium', text: '' });
+
+  // Export report states
+  const [exportingPDF, setExportingPDF] = useState(false);
+  const [exportingCSV, setExportingCSV] = useState(false);
+
+  // Help Center states
+  const [tickets, setTickets] = useState([]);
+  const [newTicket, setNewTicket] = useState({ title: '', category: 'General Support', description: '' });
+
+  const handleRaiseTicketSubmit = (e) => {
+    e.preventDefault();
+    if (!newTicket.title || !newTicket.description) {
+      triggerToast('Please fill out all ticket details!');
+      return;
+    }
+    const id = tickets.length + 1;
+    const newEntry = {
+      ...newTicket,
+      id,
+      status: 'Open',
+      date: new Date().toISOString().split('T')[0]
+    };
+    setTickets(prev => [newEntry, ...prev]);
+    setNewTicket({ title: '', category: 'General Support', description: '' });
+    triggerToast(`Support ticket #${id} submitted successfully!`);
+  };
+
+  // Toast helper
+  const triggerToast = (msg) => {
+    setToastMessage(msg);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('cograd_logged_in');
+    localStorage.removeItem('cograd_role');
+    triggerToast('Logged out successfully.');
+    setTimeout(() => navigate('/login'), 500);
+  };
+
+  const sendReminder = (id, name) => {
+    setDefaulters(prev => prev.map(d => d.id === id ? { ...d, status: 'Sent' } : d));
+    triggerToast(`Fee reminder dispatched to ${name}!`);
+  };
+
+  const startIntervention = (student) => {
+    setSelectedRiskStudent(student);
+    setInterventionNote(`Academic review flag intervention: Discussing ${student.reason.toLowerCase()}.`);
+  };
+
+  const submitIntervention = () => {
+    setAtRiskStudents(prev => prev.map(s => s.id === selectedRiskStudent.id ? { ...s, status: 'Intervened' } : s));
+    triggerToast(`Academic intervention logged for ${selectedRiskStudent.name}!`);
+    setSelectedRiskStudent(null);
+  };
+
+  // Student actions
+  const handleAddStudentSubmit = (e) => {
+    e.preventDefault();
+    if (!newStudent.name || !newStudent.email) {
+      triggerToast('Please fill out student name and email!');
+      return;
+    }
+    const id = students.length + 1;
+    const newEntry = {
+      ...newStudent,
+      id,
+      date: new Date().toISOString().split('T')[0]
+    };
+    setStudents(prev => [newEntry, ...prev]);
+    
+    // Update batch student count
+    setBatches(prev => prev.map(b => b.name === newEntry.batch ? { ...b, students: b.students + 1 } : b));
+
+    setShowAddStudent(false);
+    setNewStudent({ name: '', email: '', parentName: '', batch: 'JEE-Advanced A1', status: 'Active' });
+    triggerToast(`Student ${newEntry.name} enrolled successfully!`);
+  };
+
+  const handleDeleteStudent = (id, name) => {
+    if (window.confirm(`Are you sure you want to remove ${name}?`)) {
+      const studentObj = students.find(s => s.id === id);
+      setStudents(prev => prev.filter(s => s.id !== id));
+      if (studentObj) {
+        setBatches(prev => prev.map(b => b.name === studentObj.batch ? { ...b, students: Math.max(0, b.students - 1) } : b));
+      }
+      triggerToast(`Student ${name} removed from registry.`);
+    }
+  };
+
+  const toggleStudentStatus = (id, name) => {
+    setStudents(prev => prev.map(s => s.id === id ? { ...s, status: s.status === 'Active' ? 'Suspended' : 'Active' } : s));
+    triggerToast(`Status toggled for ${name}.`);
+  };
+
+  // Teacher actions
+  const toggleTeacherVerification = (id, name) => {
+    setTeachers(prev => prev.map(t => t.id === id ? { ...t, status: t.status === 'Verified' ? 'Pending' : 'Verified' } : t));
+    triggerToast(`Verification toggled for ${name}.`);
+  };
+
+  // Batch actions
+  const handleCreateBatchSubmit = (e) => {
+    e.preventDefault();
+    if (!newBatch.name || !newBatch.timing) {
+      triggerToast('Please fill out batch name and timing!');
+      return;
+    }
+    const id = batches.length + 1;
+    const newEntry = {
+      ...newBatch,
+      id,
+      students: 0
+    };
+    setBatches(prev => [...prev, newEntry]);
+    setShowAddBatch(false);
+    setNewBatch({ name: '', teacher: 'Dr. Satish Sharma', subject: 'Mathematics', timing: '', students: 0, status: 'Active' });
+    triggerToast(`Batch ${newEntry.name} created successfully!`);
+  };
+
+  const toggleBatchStatus = (id, name) => {
+    setBatches(prev => prev.map(b => b.id === id ? { ...b, status: b.status === 'Active' ? 'Archived' : 'Active' } : b));
+    triggerToast(`Batch ${name} status toggled.`);
+  };
+
+  // Test actions
+  const handlePublishTestSubmit = (e) => {
+    e.preventDefault();
+    if (!newTest.name || !newTest.date || !newTest.avgScore || !newTest.topScore) {
+      triggerToast('Please fill out all test fields!');
+      return;
+    }
+    const id = tests.length + 1;
+    const toppersArray = newTest.toppers ? newTest.toppers.split(',').map(s => s.trim()) : ['TBD'];
+    const newEntry = {
+      ...newTest,
+      id,
+      toppers: toppersArray
+    };
+    setTests(prev => [newEntry, ...prev]);
+    setShowPublishTest(false);
+    setNewTest({ name: '', date: '', batch: 'JEE-Advanced A1', avgScore: '', topScore: '', toppers: '' });
+    triggerToast(`Test results for ${newEntry.name} published!`);
+  };
+
+  // Fee actions
+  const handleRecordPayment = (defaulterId, name, amount) => {
+    setDefaulters(prev => prev.map(d => d.id === defaulterId ? { ...d, status: 'Paid' } : d));
+    const newTx = {
+      id: recentPayments.length + 1,
+      name,
+      amount,
+      date: new Date().toISOString().split('T')[0],
+      status: 'Paid',
+      method: 'Cash / Manual'
+    };
+    setRecentPayments(prev => [newTx, ...prev]);
+    triggerToast(`Payment of ${amount} recorded for ${name}!`);
+  };
+
+  // CRM actions
+  const handleMoveEnquiry = (id, name, currentStatus, course, email) => {
+    let nextStatus = 'Follow-up';
+    let nextColor = 'bg-amber-100 text-amber-800';
+    if (currentStatus === 'Follow-up') {
+      nextStatus = 'Enrolled';
+      nextColor = 'bg-emerald-100 text-emerald-800';
+    }
+
+    setEnquiries(prev => prev.map(e => e.id === id ? { ...e, type: nextStatus, color: nextColor } : e));
+
+    if (nextStatus === 'Enrolled') {
+      const newStudentEntry = {
+        id: students.length + 1,
+        name,
+        email: email || `${name.toLowerCase().replace(/\s+/g, '.')}@gmail.com`,
+        parentName: 'TBD',
+        batch: course.includes('JEE') ? 'JEE-Advanced A1' : course.includes('Physics') ? 'NEET Target B2' : 'Foundation Math F1',
+        date: new Date().toISOString().split('T')[0],
+        status: 'Active'
+      };
+      setStudents(prev => [newStudentEntry, ...prev]);
+      setBatches(prev => prev.map(b => b.name === newStudentEntry.batch ? { ...b, students: b.students + 1 } : b));
+      triggerToast(`Enquiry enrolled! Student ${name} added to ${newStudentEntry.batch}.`);
+    } else {
+      triggerToast(`Enquiry ${name} moved to Follow-up.`);
+    }
+  };
+
+  const handleAddEnquirySubmit = (e) => {
+    e.preventDefault();
+    if (!newEnquiry.name || !newEnquiry.phone) {
+      triggerToast('Please provide a name and contact number!');
+      return;
+    }
+    const id = enquiries.length + 1;
+    const newEntry = {
+      id,
+      name: newEnquiry.name,
+      course: newEnquiry.course,
+      type: 'New',
+      color: 'bg-blue-100 text-blue-800',
+      phone: newEnquiry.phone,
+      email: newEnquiry.email || 'N/A'
+    };
+    setEnquiries(prev => [newEntry, ...prev]);
+    setShowAddEnquiry(false);
+    setNewEnquiry({ name: '', course: 'Class 12 JEE Preparation', phone: '', email: '' });
+    triggerToast(`Enquiry for ${newEntry.name} added to pipeline.`);
+  };
+
+  // Communication Actions
+  const handlePublishAnnouncement = (e) => {
+    e.preventDefault();
+    if (!announceInput.title || !announceInput.text) {
+      triggerToast('Please enter a title and message!');
+      return;
+    }
+    const id = announcements.length + 1;
+    const newAnn = {
+      ...announceInput,
+      id,
+      date: new Date().toISOString().split('T')[0]
+    };
+    setAnnouncements(prev => [newAnn, ...prev]);
+    
+    const newAlert = {
+      id: notifications.length + 1,
+      text: `Announcement: ${newAnn.title}`,
+      time: 'Just now',
+      isNew: true
+    };
+    setNotifications(prev => [newAlert, ...prev]);
+    setAnnounceInput({ title: '', target: 'All Students & Teachers', priority: 'Medium', text: '' });
+    triggerToast('Broadcast announcement published!');
+  };
+
+  // Settings Actions
+  const handleSaveSettings = (e) => {
+    e.preventDefault();
+    triggerToast('Centre configurations saved successfully.');
+  };
+
+  // Reports Actions
+  const simulateReportDownload = (type) => {
+    if (type === 'PDF') {
+      setExportingPDF(true);
+      setTimeout(() => {
+        setExportingPDF(false);
+        triggerToast('PDF Report downloaded successfully!');
+      }, 1200);
+    } else {
+      setExportingCSV(true);
+      setTimeout(() => {
+        setExportingCSV(false);
+        triggerToast('CSV Data exported successfully!');
+      }, 1200);
+    }
+  };
+
+  // Sub-views implementations
+  const renderDashboard = () => (
+    <div className="space-y-6">
+      {/* 4 Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        
+        {/* Total Students */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group cursor-pointer">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-xl bg-blue-500 text-white flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+              <Users className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Students</p>
+              <h3 className="text-2xl font-black text-slate-800 mt-0.5">{students.length + 841}</h3>
+            </div>
+          </div>
+          <div className="flex items-center text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+            <TrendingUp className="w-3 h-3 mr-1" />
+            <span>12%</span>
+          </div>
+        </div>
+
+        {/* Active Batches */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group cursor-pointer">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-xl bg-purple-500 text-white flex items-center justify-center shadow-md shadow-purple-500/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+              <BookOpen className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Batches</p>
+              <h3 className="text-2xl font-black text-slate-800 mt-0.5">{batches.length + 30}</h3>
+            </div>
+          </div>
+          <div className="flex items-center text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+            <TrendingUp className="w-3 h-3 mr-1" />
+            <span>4%</span>
+          </div>
+        </div>
+
+        {/* Fee Collected */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group cursor-pointer">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+              <CreditCard className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fee Collected</p>
+              <h3 className="text-2xl font-black text-slate-800 mt-0.5">₹4,82,000</h3>
+            </div>
+          </div>
+          <div className="flex items-center text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+            <TrendingUp className="w-3 h-3 mr-1" />
+            <span>8%</span>
+          </div>
+        </div>
+
+        {/* Teachers Today */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group cursor-pointer">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+              <GraduationCap className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Teachers Today</p>
+              <h3 className="text-2xl font-black text-slate-800 mt-0.5">{teachers.length} <span className="text-xs font-bold text-slate-400">/ {teachers.length}</span></h3>
+            </div>
+          </div>
+          <div className="flex items-center text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+            <TrendingUp className="w-3 h-3 mr-1" />
+            <span>2%</span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Row 1 Layout: Today's Classes & Centre Health Score */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Today's Classes Card */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-black text-slate-800 tracking-tight">Today's Classes</h3>
+            <button 
+              onClick={() => setActiveTab('Batches')}
+              className="text-xs font-bold text-primary-500 hover:text-primary-600 transition-colors flex items-center cursor-pointer"
+            >
+              <span>View Schedule</span>
+              <ChevronRight className="w-4 h-4 ml-0.5" />
+            </button>
+          </div>
+
+          <div className="divide-y divide-slate-50">
+            {[
+              { time: '09:00 AM - 10:30 AM', subject: 'Advanced Mathematics', teacher: 'Dr. Satish Sharma', status: 'ONGOING', badgeColor: 'bg-emerald-50 text-emerald-600 border border-emerald-100' },
+              { time: '11:00 AM - 12:30 PM', subject: 'Applied Physics II', teacher: 'Prof. Amit Verma', status: 'UPCOMING', badgeColor: 'bg-amber-50 text-amber-600 border border-amber-100' },
+              { time: '01:30 PM - 03:00 PM', subject: 'Organic Chemistry', teacher: 'Ms. Neha Gupta', status: 'UPCOMING', badgeColor: 'bg-amber-50 text-amber-600 border border-amber-100' },
+              { time: '07:00 AM - 08:30 AM', subject: 'English Literature', teacher: 'Mr. Rohan Das', status: 'COMPLETED', badgeColor: 'bg-slate-50 text-slate-400 border border-slate-100' },
+              { time: '04:00 PM - 05:30 PM', subject: 'Computer Science', teacher: 'Mrs. S. Iyer', status: 'UPCOMING', badgeColor: 'bg-amber-50 text-amber-600 border border-amber-100' }
+            ].map((c, i) => (
+              <div key={i} className="py-3.5 flex items-center justify-between gap-4">
+                <div className="flex items-center space-x-3.5 min-w-0">
+                  <div className="w-2 h-2 rounded-full bg-slate-300 flex-shrink-0" style={{ backgroundColor: c.status === 'ONGOING' ? '#10b981' : c.status === 'UPCOMING' ? '#f59e0b' : '#94a3b8' }}></div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-extrabold text-slate-700 block sm:inline mr-2">{c.time}</span>
+                    <span className="text-xs font-black text-slate-800 truncate">{c.subject}</span>
+                    <span className="text-[10px] text-slate-400 font-bold block mt-0.5">Instructor: {c.teacher}</span>
+                  </div>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider flex-shrink-0 ${c.badgeColor}`}>
+                  {c.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Centre Health Score Radial Gauge Card */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col justify-between">
+          <h3 className="text-lg font-black text-slate-800 tracking-tight">Centre Health Score</h3>
+          
+          {/* Radial Score Gauge */}
+          <div className="flex flex-col items-center py-4 relative">
+            <svg className="w-32 h-32 transform -rotate-90">
+              <circle
+                cx="64"
+                cy="64"
+                r="52"
+                className="stroke-slate-100"
+                strokeWidth="10"
+                fill="transparent"
+              />
+              <circle
+                cx="64"
+                cy="64"
+                r="52"
+                className="stroke-primary-500 transition-all duration-1000"
+                strokeWidth="10"
+                fill="transparent"
+                strokeDasharray="326.7"
+                strokeDashoffset={326.7 * (1 - 0.88)}
+                strokeLinecap="round"
+              />
+            </svg>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center mt-1">
+              <span className="text-3xl font-black text-slate-800 block">88</span>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Very Good</span>
+            </div>
+          </div>
+
+          {/* Performance Progress Metrics */}
+          <div className="space-y-3 mt-4">
+            {[
+              { name: 'Student Attendance', val: '92%', progress: 92, color: 'bg-primary-500' },
+              { name: 'Fee Regularity', val: '78%', progress: 78, color: 'bg-amber-500' },
+              { name: 'Test Completion', val: '85%', progress: 85, color: 'bg-primary-500' },
+              { name: 'Parent Feedback', val: '42%', progress: 42, color: 'bg-rose-400' }
+            ].map((p, i) => (
+              <div key={i} className="space-y-1">
+                <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span>{p.name}</span>
+                  <span className="text-slate-700 font-extrabold">{p.val}</span>
+                </div>
+                <div className="w-full h-1 bg-slate-50 rounded-full overflow-hidden">
+                  <div className={`h-full ${p.color} rounded-full transition-all duration-500`} style={{ width: `${p.progress}%` }}></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Row 2 Layout: Recent Enquiries, Fee Defaulters & At-Risk Students */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Recent Enquiries */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-black text-slate-800 tracking-tight">Recent Enquiries</h3>
+            <button 
+              onClick={() => setActiveTab('Enquiries & CRM')}
+              className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg cursor-pointer"
+            >
+              <MoreHorizontal className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {enquiries.map((e) => (
+              <div key={e.id} className="p-3.5 bg-slate-50/50 hover:bg-slate-50 border border-slate-100/50 rounded-2xl transition-all flex flex-col space-y-1.5 relative">
+                <div className="flex items-center justify-between">
+                  <span className="font-extrabold text-xs text-slate-800">{e.name}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${e.color}`}>
+                    {e.type}
+                  </span>
+                </div>
+                <p className="text-[11px] font-medium text-slate-500 leading-relaxed">{e.course}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Fee Defaulters List */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+          <h3 className="text-lg font-black text-slate-800 tracking-tight">Fee Defaulters</h3>
+
+          <div className="divide-y divide-slate-50">
+            {defaulters.filter(d => d.status === 'Pending' || d.status === 'Sent').map(d => (
+              <div key={d.id} className="py-3 flex items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-xs font-black text-slate-800">{d.name}</h4>
+                  <p className="text-[10px] text-rose-500 font-bold mt-1.5">Overdue: {d.amount}</p>
+                </div>
+                <button
+                  onClick={() => d.status === 'Pending' && sendReminder(d.id, d.name)}
+                  className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all flex items-center space-x-1 cursor-pointer ${
+                    d.status === 'Pending'
+                      ? 'border border-slate-200 hover:border-primary-500 text-slate-600 hover:text-primary-600 bg-white hover:bg-primary-50/20'
+                      : 'bg-emerald-50 text-emerald-600 border border-emerald-100 cursor-default'
+                  }`}
+                >
+                  {d.status === 'Pending' ? (
+                    <span>Send Reminder</span>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Sent</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            ))}
+            {defaulters.filter(d => d.status === 'Pending' || d.status === 'Sent').length === 0 && (
+              <p className="text-xs text-slate-400 py-6 text-center">No outstanding fee defaulters.</p>
+            )}
+          </div>
+        </div>
+
+        {/* At-Risk Students (AI Flagged) */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+          <div className="flex items-center space-x-2">
+            <h3 className="text-lg font-black text-slate-800 tracking-tight">At-Risk Students</h3>
+            <span className="px-2 py-0.5 rounded bg-violet-100 text-violet-700 text-[8px] font-black uppercase tracking-wider">AI FLAGGED</span>
+          </div>
+
+          <div className="divide-y divide-slate-50">
+            {atRiskStudents.map(student => (
+              <div key={student.id} className="py-3 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h4 className="text-xs font-black text-slate-800 truncate">{student.name}</h4>
+                  <p className="text-[10px] text-slate-400 font-bold mt-1.5 truncate leading-relaxed">{student.reason}</p>
+                </div>
+                <button
+                  onClick={() => student.status === 'Pending' && startIntervention(student)}
+                  className={`px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex-shrink-0 cursor-pointer ${
+                    student.status === 'Pending'
+                      ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-sm shadow-violet-500/20 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95'
+                      : 'bg-emerald-50 text-emerald-600 border border-emerald-100 cursor-default'
+                  }`}
+                >
+                  {student.status === 'Pending' ? 'Intervene' : 'Intervened'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  );
+
+  const renderStudents = () => {
+    const filteredStudents = students.filter(s => {
+      const matchSearch = s.name.toLowerCase().includes(studentSearch.toLowerCase()) || 
+                          s.email.toLowerCase().includes(studentSearch.toLowerCase()) ||
+                          s.parentName.toLowerCase().includes(studentSearch.toLowerCase());
+      const matchBatch = studentBatchFilter === 'All' || s.batch === studentBatchFilter;
+      const matchStatus = studentStatusFilter === 'All' || s.status === studentStatusFilter;
+      return matchSearch && matchBatch && matchStatus;
+    });
+
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex-1 flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-grow max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search students, emails, parent..."
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
+                className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all w-full"
+              />
+            </div>
+            <select
+              value={studentBatchFilter}
+              onChange={(e) => setStudentBatchFilter(e.target.value)}
+              className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+            >
+              <option value="All">All Batches</option>
+              <option value="JEE-Advanced A1">JEE-Advanced A1</option>
+              <option value="NEET Target B2">NEET Target B2</option>
+              <option value="Foundation Math F1">Foundation Math F1</option>
+            </select>
+            <select
+              value={studentStatusFilter}
+              onChange={(e) => setStudentStatusFilter(e.target.value)}
+              className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+            >
+              <option value="All">All Status</option>
+              <option value="Active">Active</option>
+              <option value="Suspended">Suspended</option>
+            </select>
+          </div>
+          <button
+            onClick={() => setShowAddStudent(true)}
+            className="btn-primary py-2 px-4 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer shrink-0 self-start sm:self-auto"
+          >
+            <Plus className="w-4.5 h-4.5" />
+            <span>Add Student</span>
+          </button>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                  <th className="py-4 px-6">Name</th>
+                  <th className="py-4 px-6">Batch</th>
+                  <th className="py-4 px-6">Parent Name</th>
+                  <th className="py-4 px-6">Enrolment Date</th>
+                  <th className="py-4 px-6 text-center">Status</th>
+                  <th className="py-4 px-6 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50 text-xs font-semibold text-slate-700">
+                {filteredStudents.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="py-10 text-center text-slate-400 font-bold">No students found matching criteria.</td>
+                  </tr>
+                ) : (
+                  filteredStudents.map(student => (
+                    <tr key={student.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="py-4 px-6">
+                        <div>
+                          <p className="font-extrabold text-slate-800">{student.name}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">{student.email}</p>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded-lg text-[10px] font-bold">
+                          {student.batch}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-slate-500 font-bold">{student.parentName}</td>
+                      <td className="py-4 px-6 text-slate-500 font-bold">{student.date}</td>
+                      <td className="py-4 px-6 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                          student.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'
+                        }`}>
+                          {student.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-right space-x-2">
+                        <button
+                          onClick={() => toggleStudentStatus(student.id, student.name)}
+                          className="px-2 py-1 bg-slate-50 border border-slate-200 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors cursor-pointer text-[10px]"
+                        >
+                          {student.status === 'Active' ? 'Suspend' : 'Activate'}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStudent(student.id, student.name)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer inline-flex items-center"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTeachers = () => {
+    const filteredTeachers = teachers.filter(t => 
+      t.name.toLowerCase().includes(teacherSearch.toLowerCase()) ||
+      t.subject.toLowerCase().includes(teacherSearch.toLowerCase())
+    );
+
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="relative flex-grow max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search teachers, subjects..."
+              value={teacherSearch}
+              onChange={(e) => setTeacherSearch(e.target.value)}
+              className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all w-full"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredTeachers.map(teacher => (
+            <div key={teacher.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 hover:shadow-md transition-shadow text-left">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden shrink-0">
+                    <img 
+                      src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80"
+                      alt={teacher.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-slate-800 text-sm">{teacher.name}</h4>
+                    <p className="text-[10px] text-slate-400 font-bold">{teacher.subject} Specialist</p>
+                  </div>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                  teacher.status === 'Verified' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                }`}>
+                  {teacher.status}
+                </span>
+              </div>
+
+              <div className="border-t border-b border-slate-50 py-3 text-[11px] font-semibold text-slate-500 space-y-2">
+                <div className="flex justify-between">
+                  <span>Email:</span>
+                  <span className="text-slate-700 font-bold">{teacher.email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Hourly Billing:</span>
+                  <span className="text-slate-700 font-bold">{teacher.rate}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Rating:</span>
+                  <span className="text-slate-800 font-extrabold">★ {teacher.rating}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Active Batches:</span>
+                  <span className="text-slate-700 font-bold">{teacher.batches.join(', ')}</span>
+                </div>
+              </div>
+
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => toggleTeacherVerification(teacher.id, teacher.name)}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center border ${
+                    teacher.status === 'Verified'
+                      ? 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      : 'border-emerald-500 bg-emerald-50 text-emerald-600 hover:bg-emerald-100/30'
+                  }`}
+                >
+                  {teacher.status === 'Verified' ? 'Revoke Verify' : 'Verify Partner'}
+                </button>
+                <button
+                  onClick={() => setSelectedTeacherDocs(teacher)}
+                  className="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-800 font-bold rounded-xl text-xs transition-all cursor-pointer"
+                >
+                  Docs
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderBatches = () => {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h3 className="text-sm font-black text-slate-500 uppercase tracking-wider">Active Learning Programs</h3>
+          <button
+            onClick={() => setShowAddBatch(true)}
+            className="btn-primary py-2 px-4 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer"
+          >
+            <Plus className="w-4.5 h-4.5" />
+            <span>Create Batch</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+          {batches.map(batch => (
+            <div key={batch.id} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden">
+              <div className="absolute right-0 top-0 w-24 h-24 bg-primary-500/5 rounded-full -mr-8 -mt-8"></div>
+              
+              <div className="space-y-3 relative z-10">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black text-primary-600 uppercase tracking-widest bg-primary-50 px-2 py-0.5 rounded">
+                    {batch.subject}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                    batch.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-50 text-slate-400 border border-slate-100'
+                  }`}>
+                    {batch.status}
+                  </span>
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-800 tracking-tight">{batch.name}</h4>
+                  <p className="text-[10px] text-slate-400 font-bold mt-0.5">Instructor: {batch.teacher}</p>
+                </div>
+                <div className="text-[11px] font-bold text-slate-500 flex items-center space-x-1">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{batch.timing}</span>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-50 mt-4 pt-4 flex justify-between items-center relative z-10">
+                <div className="text-xs">
+                  <span className="font-extrabold text-slate-800">{batch.students}</span>
+                  <span className="text-slate-400 font-bold ml-1">enrolled students</span>
+                </div>
+                <button
+                  onClick={() => toggleBatchStatus(batch.id, batch.name)}
+                  className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-800 rounded-xl text-[10px] font-extrabold transition-all cursor-pointer"
+                >
+                  {batch.status === 'Active' ? 'Archive Batch' : 'Restore'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderAttendance = () => {
+    const activeBatchStudents = students.filter(s => s.batch === attendanceFilter.batch);
+
+    return (
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-6 text-left">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-50 pb-5 gap-4">
+          <div>
+            <h3 className="text-base font-black text-slate-800 tracking-tight">Systemic Attendance Register</h3>
+            <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Select batch and date to view logs</p>
+          </div>
+          
+          <div className="flex flex-wrap gap-3">
+            <select
+              value={attendanceFilter.batch}
+              onChange={(e) => setAttendanceFilter(prev => ({ ...prev, batch: e.target.value }))}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+            >
+              <option value="JEE-Advanced A1">JEE-Advanced A1</option>
+              <option value="NEET Target B2">NEET Target B2</option>
+              <option value="Foundation Math F1">Foundation Math F1</option>
+            </select>
+            <input
+              type="date"
+              value={attendanceFilter.date}
+              onChange={(e) => setAttendanceFilter(prev => ({ ...prev, date: e.target.value }))}
+              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-2xl">
+          <div className="text-center">
+            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Enrolled</span>
+            <span className="text-xl font-black text-slate-800 mt-1 block">{activeBatchStudents.length}</span>
+          </div>
+          <div className="text-center border-l border-slate-200/60">
+            <span className="text-[10px] text-emerald-500 font-black uppercase tracking-wider block">Present</span>
+            <span className="text-xl font-black text-emerald-600 mt-1 block">
+              {activeBatchStudents.filter(s => attendanceLogs[s.id] === 'Present').length}
+            </span>
+          </div>
+          <div className="text-center border-l border-slate-200/60">
+            <span className="text-[10px] text-rose-500 font-black uppercase tracking-wider block">Absent</span>
+            <span className="text-xl font-black text-rose-600 mt-1 block">
+              {activeBatchStudents.filter(s => attendanceLogs[s.id] === 'Absent').length}
+            </span>
+          </div>
+          <div className="text-center border-l border-slate-200/60">
+            <span className="text-[10px] text-primary-500 font-black uppercase tracking-wider block">Rate</span>
+            <span className="text-xl font-black text-primary-600 mt-1 block">
+              {activeBatchStudents.length > 0 
+                ? `${Math.round((activeBatchStudents.filter(s => attendanceLogs[s.id] === 'Present').length / activeBatchStudents.length) * 100)}%`
+                : '0%'}
+            </span>
+          </div>
+        </div>
+
+        <div className="divide-y divide-slate-100">
+          {activeBatchStudents.length === 0 ? (
+            <div className="py-10 text-center text-slate-400 font-bold text-xs">No active students registered under this batch.</div>
+          ) : (
+            activeBatchStudents.map(student => {
+              const status = attendanceLogs[student.id] || 'Present';
+              return (
+                <div key={student.id} className="py-3.5 flex items-center justify-between gap-4">
+                  <div className="flex items-center space-x-3.5">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                      status === 'Present' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                    }`}>
+                      {student.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-800">{student.name}</h4>
+                      <p className="text-[9px] text-slate-400 font-bold mt-0.5">{student.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setAttendanceLogs(prev => ({ ...prev, [student.id]: 'Present' }))}
+                      className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                        status === 'Present'
+                          ? 'bg-emerald-500 text-white shadow-sm'
+                          : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                      }`}
+                    >
+                      Present
+                    </button>
+                    <button
+                      onClick={() => setAttendanceLogs(prev => ({ ...prev, [student.id]: 'Absent' }))}
+                      className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                        status === 'Absent'
+                          ? 'bg-rose-500 text-white shadow-sm'
+                          : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                      }`}
+                    >
+                      Absent
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {activeBatchStudents.length > 0 && (
+          <div className="pt-2 text-right">
+            <button
+              onClick={() => triggerToast(`Attendance sheet saved for ${attendanceFilter.batch} on ${attendanceFilter.date}!`)}
+              className="btn-primary py-2 px-5 rounded-xl text-xs font-bold cursor-pointer"
+            >
+              Save Attendance Sheet
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderTestsAndResults = () => {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h3 className="text-sm font-black text-slate-500 uppercase tracking-wider">Academics & Tests Registry</h3>
+          <button
+            onClick={() => setShowPublishTest(true)}
+            className="btn-primary py-2 px-4 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer"
+          >
+            <Plus className="w-4.5 h-4.5" />
+            <span>Publish Test Results</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
+          {tests.map(test => (
+            <div key={test.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 hover:shadow-md transition-shadow flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-extrabold text-slate-800 text-sm">{test.name}</h4>
+                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">Batch: {test.batch} | Date: {test.date}</p>
+                  </div>
+                  <span className="text-[10px] font-black text-primary-600 bg-primary-50 px-2 py-0.5 rounded">
+                    {test.avgScore} Class Avg
+                  </span>
+                </div>
+
+                <div className="bg-slate-50 p-3.5 rounded-xl text-[11px] font-semibold text-slate-600 space-y-1.5">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Top Scorers leaderboard</div>
+                  {test.toppers.map((topper, idx) => (
+                    <div key={idx} className="flex justify-between items-center">
+                      <span className="flex items-center space-x-1.5">
+                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white ${
+                          idx === 0 ? 'bg-amber-400' : idx === 1 ? 'bg-slate-400' : 'bg-amber-600'
+                        }`}>
+                          {idx + 1}
+                        </span>
+                        <span className="text-slate-800 font-bold">{topper.split(' (')[0]}</span>
+                      </span>
+                      <span className="text-slate-500 font-black">{topper.split(' (')[1]?.replace(')', '') || ''}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="text-right pt-2 border-t border-slate-50">
+                <button
+                  onClick={() => setSelectedTest(test)}
+                  className="text-xs font-bold text-primary-500 hover:text-primary-600 transition-colors flex items-center justify-end cursor-pointer ml-auto"
+                >
+                  <span>Leaderboard details</span>
+                  <ChevronRight className="w-4 h-4 ml-0.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderFeeManagement = () => {
+    const activeDefaulters = defaulters.filter(d => d.status === 'Pending' || d.status === 'Sent');
+    const totalDefaultersAmount = activeDefaulters.reduce((acc, d) => {
+      const numeric = parseInt(d.amount.replace(/[^\d]/g, ''), 10);
+      return acc + numeric;
+    }, 0);
+
+    return (
+      <div className="space-y-6 text-left">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2">
+            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Collection target</span>
+            <h3 className="text-2xl font-black text-slate-800">₹6,00,000</h3>
+            <div className="space-y-1 mt-2">
+              <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
+                <span>Progress (80%)</span>
+                <span className="text-slate-700 font-extrabold">₹4,82,000 collected</span>
+              </div>
+              <div className="w-full h-1 bg-slate-50 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: '80%' }}></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Outstanding defaulters</span>
+            <div>
+              <h3 className="text-2xl font-black text-rose-500">₹{totalDefaultersAmount.toLocaleString('en-IN')}</h3>
+              <p className="text-[10px] text-slate-400 font-bold mt-1">{activeDefaulters.length} outstanding accounts</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Transaction Success</span>
+            <div>
+              <h3 className="text-2xl font-black text-emerald-500">97.8%</h3>
+              <p className="text-[10px] text-slate-400 font-bold mt-1">4 failures logged this cycle</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+            <h3 className="text-base font-black text-slate-800 tracking-tight">Accounts Defaulters list</h3>
+            
+            <div className="divide-y divide-slate-100">
+              {activeDefaulters.length === 0 ? (
+                <div className="py-10 text-center text-slate-400 font-bold text-xs">All center students are fully paid!</div>
+              ) : (
+                activeDefaulters.map(d => (
+                  <div key={d.id} className="py-3 flex items-center justify-between gap-4">
+                    <div>
+                      <h4 className="text-xs font-black text-slate-800">{d.name}</h4>
+                      <p className="text-[10px] text-rose-500 font-bold mt-1">Overdue balance: {d.amount}</p>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => d.status === 'Pending' && sendReminder(d.id, d.name)}
+                        className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer border ${
+                          d.status === 'Pending'
+                            ? 'border-slate-200 hover:border-primary-500 text-slate-600 hover:text-primary-600 bg-white hover:bg-primary-50/20'
+                            : 'bg-emerald-50 text-emerald-600 border-emerald-100 cursor-default'
+                        }`}
+                      >
+                        {d.status === 'Pending' ? 'Send Reminder' : 'Reminder Sent'}
+                      </button>
+                      <button
+                        onClick={() => handleRecordPayment(d.id, d.name, d.amount)}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-[10px] transition-all cursor-pointer shadow shadow-emerald-500/10 hover:shadow-md"
+                      >
+                        Record Pay
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+            <h3 className="text-base font-black text-slate-800 tracking-tight">Recent ledger transactions</h3>
+            
+            <div className="space-y-3">
+              {recentPayments.map(p => (
+                <div key={p.id} className="p-3 bg-slate-50/50 border border-slate-100/50 rounded-2xl flex justify-between items-center">
+                  <div>
+                    <h4 className="text-xs font-black text-slate-800">{p.name}</h4>
+                    <p className="text-[9px] text-slate-400 font-bold mt-1">{p.date} | via {p.method}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-black text-slate-800">{p.amount}</span>
+                    <span className={`block text-[8px] font-black uppercase tracking-wider mt-0.5 ${
+                      p.status === 'Paid' ? 'text-emerald-500' : 'text-rose-500'
+                    }`}>
+                      {p.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderEnquiriesCRM = () => {
+    const filteredCRM = enquiries.filter(e => 
+      e.name.toLowerCase().includes(crmSearch.toLowerCase()) ||
+      e.course.toLowerCase().includes(crmSearch.toLowerCase())
+    );
+
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="relative flex-grow max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search enquiries by name or course..."
+              value={crmSearch}
+              onChange={(e) => setCrmSearch(e.target.value)}
+              className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all w-full"
+            />
+          </div>
+          <button
+            onClick={() => setShowAddEnquiry(true)}
+            className="btn-primary py-2 px-4 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer shrink-0 self-start sm:self-auto"
+          >
+            <Plus className="w-4.5 h-4.5" />
+            <span>New Enquiry</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+          {['New', 'Follow-up', 'Enrolled'].map((stage) => {
+            const stageItems = filteredCRM.filter(e => e.type === stage);
+            const headerColor = stage === 'New' ? 'text-blue-500 bg-blue-50' : stage === 'Follow-up' ? 'text-amber-500 bg-amber-50' : 'text-emerald-500 bg-emerald-50';
+
+            return (
+              <div key={stage} className="bg-slate-50 p-4 rounded-3xl border border-slate-100/50 space-y-4">
+                <div className="flex justify-between items-center border-b border-slate-200/40 pb-2.5">
+                  <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">{stage} Stage</h4>
+                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${headerColor}`}>{stageItems.length}</span>
+                </div>
+
+                <div className="space-y-3 min-h-[300px] overflow-y-auto max-h-[500px]">
+                  {stageItems.length === 0 ? (
+                    <div className="text-center text-[10px] text-slate-400 py-10 font-bold">No leads in this stage.</div>
+                  ) : (
+                    stageItems.map(item => (
+                      <div key={item.id} className="bg-white p-4 rounded-2xl border border-slate-100/80 shadow-sm space-y-3 hover:shadow-md transition-shadow relative">
+                        <div>
+                          <h5 className="font-extrabold text-xs text-slate-800">{item.name}</h5>
+                          <p className="text-[10px] text-slate-400 font-bold mt-0.5">Interested: {item.course}</p>
+                        </div>
+                        <div className="text-[9px] font-bold text-slate-500 space-y-0.5 border-t border-slate-50 pt-2">
+                          <div>Tel: {item.phone}</div>
+                          <div>Email: {item.email}</div>
+                        </div>
+
+                        {stage !== 'Enrolled' && (
+                          <div className="pt-1 text-right">
+                            <button
+                              onClick={() => handleMoveEnquiry(item.id, item.name, item.type, item.course, item.email)}
+                              className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors cursor-pointer flex items-center ml-auto"
+                            >
+                              <span>{stage === 'New' ? 'Move to Follow-up' : 'Enrol Student'}</span>
+                              <ChevronRight className="w-3 h-3 ml-0.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderReports = () => {
+    return (
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-8 text-left">
+        <div>
+          <h3 className="text-base font-black text-slate-800 tracking-tight">System performance analytics</h3>
+          <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Historical parameters & reporting registries</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-b border-slate-50 pb-6">
+          <div className="space-y-4">
+            <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Key indicators overview</h4>
+            
+            {[
+              { name: 'Average Student Attendance', val: '92%', progress: 92, color: 'bg-primary-500' },
+              { name: 'Fee Collection Progress', val: '80%', progress: 80, color: 'bg-emerald-500' },
+              { name: 'Average Exam Pass Rate', val: '85%', progress: 85, color: 'bg-primary-600' },
+              { name: 'Student Retention Index', val: '96%', progress: 96, color: 'bg-indigo-500' }
+            ].map((p, i) => (
+              <div key={i} className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs font-bold text-slate-600">
+                  <span>{p.name}</span>
+                  <span className="text-slate-800 font-black">{p.val}</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-50 rounded-full overflow-hidden">
+                  <div className={`h-full ${p.color} rounded-full transition-all duration-500`} style={{ width: `${p.progress}%` }}></div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-slate-50/50 border border-slate-100 p-5 rounded-2xl flex flex-col justify-between space-y-4">
+            <div>
+              <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Simulated batch reports generation</h4>
+              <p className="text-slate-400 text-xs font-semibold mt-1">Export academic assessments, registration spreadsheets, parent feedback indicators, and collection lists locally.</p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => simulateReportDownload('PDF')}
+                disabled={exportingPDF}
+                className="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-all shadow-md flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {exportingPDF ? (
+                  <>
+                    <span className="w-4.5 h-4.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Generating PDF...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4.5 h-4.5" />
+                    <span>Download PDF Report</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => simulateReportDownload('CSV')}
+                disabled={exportingCSV}
+                className="flex-1 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {exportingCSV ? (
+                  <>
+                    <span className="w-4.5 h-4.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></span>
+                    <span>Exporting Excel...</span>
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-4.5 h-4.5" />
+                    <span>Export CSV Data</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Academic session logs</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { title: 'Best Batch Average', val: '82%', desc: 'Foundation Math F1 leads exam averages.' },
+              { title: 'AI Flagged At-Risk Students', val: '3 students', desc: 'Slight decrease from last assessment cycle.' },
+              { title: 'New Admissions', val: '+4 enrolled', desc: 'Admission conversion up by 15% this quarter.' }
+            ].map((card, i) => (
+              <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">{card.title}</span>
+                <span className="text-lg font-black text-slate-800 mt-1 block">{card.val}</span>
+                <span className="text-[10px] text-slate-500 font-medium mt-1 block leading-normal">{card.desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCommunications = () => {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-left">
+        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-5">
+          <div>
+            <h3 className="text-base font-black text-slate-800 tracking-tight">System Broadcaster Center</h3>
+            <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Publish notices & alerts to platform users</p>
+          </div>
+
+          <form onSubmit={handlePublishAnnouncement} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Notice Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="E.g. Term 1 Exam Schedule"
+                  value={announceInput.title}
+                  onChange={(e) => setAnnounceInput(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Audience Target</label>
+                <select
+                  value={announceInput.target}
+                  onChange={(e) => setAnnounceInput(prev => ({ ...prev, target: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                >
+                  <option value="All Students & Teachers">All Students & Teachers</option>
+                  <option value="All Students">All Students</option>
+                  <option value="All Teachers">All Teachers</option>
+                  <option value="All Parents">All Parents</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Notice priority</label>
+              <div className="flex space-x-3">
+                {['Low', 'Medium', 'High'].map(priority => (
+                  <label key={priority} className="flex items-center space-x-2 cursor-pointer text-xs font-bold text-slate-600">
+                    <input
+                      type="radio"
+                      name="priority"
+                      checked={announceInput.priority === priority}
+                      onChange={() => setAnnounceInput(prev => ({ ...prev, priority }))}
+                      className="rounded-full text-primary-600 focus:ring-primary-500 w-3.5 h-3.5"
+                    />
+                    <span>{priority}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Announcement Text Body</label>
+              <textarea
+                required
+                value={announceInput.text}
+                onChange={(e) => setAnnounceInput(prev => ({ ...prev, text: e.target.value }))}
+                className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 font-semibold"
+                placeholder="Broadcast important details here..."
+              />
+            </div>
+
+            <div className="text-right">
+              <button
+                type="submit"
+                className="btn-primary py-2 px-5 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer ml-auto"
+              >
+                <Megaphone className="w-4 h-4" />
+                <span>Publish Announcement</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
+          <h3 className="text-base font-black text-slate-800 tracking-tight">Announcements registry</h3>
+          
+          <div className="space-y-4 overflow-y-auto max-h-[400px]">
+            {announcements.map(ann => (
+              <div key={ann.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100/60 space-y-2 text-left relative">
+                <div className="flex justify-between items-start">
+                  <h4 className="font-extrabold text-xs text-slate-800 max-w-[70%]">{ann.title}</h4>
+                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                    ann.priority === 'High' ? 'bg-rose-100 text-rose-800' : ann.priority === 'Medium' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-800'
+                  }`}>
+                    {ann.priority}
+                  </span>
+                </div>
+                <p className="text-[11px] font-medium text-slate-500 leading-normal">{ann.text}</p>
+                <div className="flex justify-between text-[9px] text-slate-400 font-bold pt-1 border-t border-slate-200/40">
+                  <span>To: {ann.target}</span>
+                  <span>{ann.date}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSettings = () => {
+    return (
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-6 max-w-3xl mx-auto text-left">
+        <div>
+          <h3 className="text-base font-black text-slate-800 tracking-tight">System configuration settings</h3>
+          <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Configure general center profile details</p>
+        </div>
+
+        <form onSubmit={handleSaveSettings} className="space-y-5 text-left">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Centre Brand Name</label>
+              <input
+                type="text"
+                required
+                value={settings.centreName}
+                onChange={(e) => setSettings(prev => ({ ...prev, centreName: e.target.value }))}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Contact Email address</label>
+              <input
+                type="email"
+                required
+                value={settings.contactEmail}
+                onChange={(e) => setSettings(prev => ({ ...prev, contactEmail: e.target.value }))}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Contact Phone number</label>
+              <input
+                type="text"
+                required
+                value={settings.contactPhone}
+                onChange={(e) => setSettings(prev => ({ ...prev, contactPhone: e.target.value }))}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Academic Session</label>
+              <input
+                type="text"
+                required
+                value={settings.session}
+                onChange={(e) => setSettings(prev => ({ ...prev, session: e.target.value }))}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Physical address</label>
+            <input
+              type="text"
+              required
+              value={settings.address}
+              onChange={(e) => setSettings(prev => ({ ...prev, address: e.target.value }))}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+            />
+          </div>
+
+          <div className="border-t border-slate-50 pt-5 space-y-4">
+            <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Automation & parameters</h4>
+            
+            {[
+              { key: 'autoReminders', label: 'Auto-dispatch overdue fee reminders', desc: 'Sends notifications to parent handles on balance thresholds.' },
+              { key: 'emailAlerts', label: 'Email notification dispatches', desc: 'Allows the system to broadcast notices to teacher/student inbox.' },
+              { key: 'whatsappSync', label: 'WhatsApp messaging synchronization', desc: 'Syncs enquiry pipeline updates to registered numbers.' },
+              { key: 'aiRiskAnalysis', label: 'AI Risk Trend analysis active', desc: 'Triggers flagging warnings on student low marks or attendance decay.' }
+            ].map(toggle => (
+              <div key={toggle.key} className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-100/50">
+                <div className="max-w-[75%]">
+                  <h5 className="font-extrabold text-xs text-slate-800">{toggle.label}</h5>
+                  <p className="text-[10px] text-slate-400 font-medium leading-normal mt-0.5">{toggle.desc}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSettings(prev => ({ ...prev, [toggle.key]: !prev[toggle.key] }))}
+                  className="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors duration-200 cursor-pointer shrink-0 text-[10px] font-black uppercase tracking-wider"
+                >
+                  {settings[toggle.key] ? (
+                    <span className="text-emerald-600">Active</span>
+                  ) : (
+                    <span className="text-slate-500">Disabled</span>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-right pt-2">
+            <button
+              type="submit"
+              className="btn-primary py-2 px-5 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer ml-auto"
+            >
+              <Save className="w-4 h-4" />
+              <span>Save Configurations</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  };
+
+  const renderHelp = () => {
+    return (
+      <div className="space-y-6 text-left">
+        {/* Header and Search */}
+        <div className="bg-gradient-to-br from-primary-500/10 to-secondary-500/10 p-6 rounded-3xl border border-primary-500/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-base font-black text-slate-800 tracking-tight">Cograd Pathshala Help Center</h3>
+            <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Access system guides, FAQs, and submit developer tickets</p>
+          </div>
+        </div>
+
+        {/* Quick Topics Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {[
+            { title: 'Student Onboarding', desc: 'Manage profiles, change status, and update active batch counts.', icon: Users },
+            { title: 'Teacher Verification', desc: 'Vetting credential documents, approving profiles, and billing configurations.', icon: GraduationCap },
+            { title: 'Batch Scheduling', desc: 'Creating courses, scheduling class slots, and assigning verified teachers.', icon: BookOpen },
+            { title: 'Ledger & Defaulters', desc: 'Manual payment recordings, balance tracking, and auto-reminders.', icon: CreditCard }
+          ].map((topic, i) => (
+            <div key={i} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3 hover:shadow-md transition-shadow">
+              <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center">
+                <topic.icon className="w-5 h-5 text-primary-500" />
+              </div>
+              <h4 className="font-extrabold text-xs text-slate-800">{topic.title}</h4>
+              <p className="text-[10px] text-slate-400 font-medium leading-relaxed">{topic.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* FAQ and Ticket form split */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* FAQs Accordion */}
+          <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-5">
+            <h3 className="text-base font-black text-slate-800 tracking-tight">Frequently Asked Questions</h3>
+            
+            <div className="space-y-4">
+              {[
+                { q: 'How do I verify a new teacher partner?', a: 'Navigate to the Teachers tab, click on "Docs" next to the teacher\'s name to review their credentials, and then click "Verify Partner" to activate their portal access.' },
+                { q: 'What happens when I complete enrollment for a CRM enquiry lead?', a: 'The lead is marked as Enrolled. The system automatically registers a new student record in the Students portal, maps their batch, and increments the batch student count in real time.' },
+                { q: 'Can I disable automatic fee reminders?', a: 'Yes. Go to the Settings tab, scroll down to Automation & parameters, toggle off the "Auto-dispatch overdue fee reminders" option, and save configurations.' },
+                { q: 'How are AI Risk warning flags determined?', a: 'The AI analyzes student academic data and alerts the center if a student logs three consecutive low test scores or shows an abnormal decline in weekly attendance trends.' }
+              ].map((faq, idx) => (
+                <div key={idx} className="p-4 bg-slate-50/50 hover:bg-slate-50 border border-slate-100/50 rounded-2xl transition-all space-y-2">
+                  <h4 className="font-extrabold text-xs text-slate-800 flex items-start space-x-2">
+                    <span className="text-primary-500 shrink-0">Q.</span>
+                    <span>{faq.q}</span>
+                  </h4>
+                  <p className="text-[10px] text-slate-500 font-semibold leading-relaxed pl-4">
+                    {faq.a}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Raise Support Ticket Form */}
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4 flex flex-col justify-between">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-base font-black text-slate-800 tracking-tight">Submit Help Ticket</h3>
+                <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Get developer assistance</p>
+              </div>
+
+              <form onSubmit={handleRaiseTicketSubmit} className="space-y-3.5">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Ticket Title</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="E.g. Error exporting CSV data"
+                    value={newTicket.title}
+                    onChange={(e) => setNewTicket(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Category</label>
+                  <select
+                    value={newTicket.category}
+                    onChange={(e) => setNewTicket(prev => ({ ...prev, category: e.target.value }))}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                  >
+                    <option value="General Support">General Support</option>
+                    <option value="Billing & Invoicing">Billing & Invoicing</option>
+                    <option value="Portal Bug / Defect">Portal Bug / Defect</option>
+                    <option value="Feature Request">Feature Request</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Description</label>
+                  <textarea
+                    required
+                    value={newTicket.description}
+                    onChange={(e) => setNewTicket(prev => ({ ...prev, description: e.target.value }))}
+                    className="w-full h-20 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 font-semibold"
+                    placeholder="Describe your issue..."
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full btn-primary py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  Submit Ticket
+                </button>
+              </form>
+            </div>
+
+            {/* Raised Tickets Log */}
+            {tickets.length > 0 && (
+              <div className="border-t border-slate-50 pt-4 mt-2 space-y-2 max-h-[150px] overflow-y-auto">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-left">Your open tickets ({tickets.length})</span>
+                <div className="space-y-2">
+                  {tickets.map(t => (
+                    <div key={t.id} className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex justify-between items-center text-[10px] font-bold">
+                      <div className="text-left">
+                        <span className="text-slate-800 block truncate max-w-[120px]">{t.title}</span>
+                        <span className="text-slate-400 text-[9px] font-medium">{t.category}</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 text-[8px] font-black uppercase tracking-wider">
+                        {t.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderPlaceholder = (title) => (
+    <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm text-center py-20 animate-fade-in max-w-3xl mx-auto space-y-4">
+      <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mx-auto text-slate-400">
+        <Sliders className="w-8 h-8" />
+      </div>
+      <div>
+        <h3 className="text-lg font-black text-slate-800 tracking-tight">{title} Portal</h3>
+        <p className="text-slate-400 text-xs font-bold mt-1.5 leading-relaxed">Access administrative registers, batch details, and systemic parameters.</p>
+      </div>
+      <button 
+        onClick={() => {
+          triggerToast(`Simulating details in ${title}...`);
+        }}
+        className="px-5 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all cursor-pointer"
+      >
+        Refresh Registry
+      </button>
+    </div>
+  );
+
+  const getTabContent = () => {
+    switch (activeTab) {
+      case 'Dashboard': return renderDashboard();
+      case 'Students': return renderStudents();
+      case 'Teachers': return renderTeachers();
+      case 'Batches': return renderBatches();
+      case 'Attendance': return renderAttendance();
+      case 'Tests & Results': return renderTestsAndResults();
+      case 'Fee Management': return renderFeeManagement();
+      case 'Enquiries & CRM': return renderEnquiriesCRM();
+      case 'Reports': return renderReports();
+      case 'Communications': return renderCommunications();
+      case 'Settings': return renderSettings();
+      case 'Help': return renderHelp();
+      default:
+        return renderPlaceholder(activeTab);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex font-sans relative overflow-hidden admin-page-enter">
+      
+      {/* Action Toast Alert */}
+      {showToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3.5 rounded-2xl flex items-center space-x-2.5 shadow-2xl animate-slide-up border border-slate-800">
+          <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+          <span className="text-xs font-bold tracking-tight">{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Intervention Modal */}
+      {selectedRiskStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-md w-full space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-50">
+              <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+                <AlertCircle className="w-5 h-5 text-violet-600" />
+                <span>Academic Intervention</span>
+              </h3>
+              <button 
+                onClick={() => setSelectedRiskStudent(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-left">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50 text-xs leading-relaxed space-y-1">
+                <div className="font-extrabold text-slate-800">{selectedRiskStudent.name}</div>
+                <div className="text-slate-500">Flag Reason: {selectedRiskStudent.reason}</div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Intervention Note</label>
+                <textarea
+                  value={interventionNote}
+                  onChange={(e) => setInterventionNote(e.target.value)}
+                  className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 font-semibold"
+                  placeholder="Describe your review note or target actions..."
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3 pt-2">
+              <button 
+                onClick={() => setSelectedRiskStudent(null)}
+                className="flex-1 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold rounded-xl text-xs transition-all cursor-pointer text-center"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={submitIntervention}
+                className="flex-1 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-violet-500/20 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 cursor-pointer text-center"
+              >
+                Log Intervention
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Student Form Modal */}
+      {showAddStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-md w-full space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-50">
+              <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+                <Users className="w-5 h-5 text-primary-600" />
+                <span>Register New Student</span>
+              </h3>
+              <button onClick={() => setShowAddStudent(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddStudentSubmit} className="space-y-4 text-left">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Student Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="E.g. Siddharth Sen"
+                  value={newStudent.name}
+                  onChange={(e) => setNewStudent(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="E.g. sid@gmail.com"
+                  value={newStudent.email}
+                  onChange={(e) => setNewStudent(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Parent Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="E.g. Siddharth Malhotra"
+                  value={newStudent.parentName}
+                  onChange={(e) => setNewStudent(prev => ({ ...prev, parentName: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Assign Batch</label>
+                <select
+                  value={newStudent.batch}
+                  onChange={(e) => setNewStudent(prev => ({ ...prev, batch: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                >
+                  <option value="JEE-Advanced A1">JEE-Advanced A1</option>
+                  <option value="NEET Target B2">NEET Target B2</option>
+                  <option value="Foundation Math F1">Foundation Math F1</option>
+                </select>
+              </div>
+
+              <div className="flex space-x-3 pt-2">
+                <button type="button" onClick={() => setShowAddStudent(false)} className="flex-1 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold rounded-xl text-xs cursor-pointer">
+                  Cancel
+                </button>
+                <button type="submit" className="flex-1 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-xs shadow shadow-primary-500/10 cursor-pointer">
+                  Enrol Student
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Form Modal */}
+      {showAddBatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-md w-full space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-50">
+              <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+                <BookOpen className="w-5 h-5 text-primary-600" />
+                <span>Create New Learning Batch</span>
+              </h3>
+              <button onClick={() => setShowAddBatch(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateBatchSubmit} className="space-y-4 text-left">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Batch Name / Code</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="E.g. NEET Crash Course C1"
+                  value={newBatch.name}
+                  onChange={(e) => setNewBatch(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Subject</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="E.g. Physics / Biology"
+                  value={newBatch.subject}
+                  onChange={(e) => setNewBatch(prev => ({ ...prev, subject: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Assign Instructor</label>
+                <select
+                  value={newBatch.teacher}
+                  onChange={(e) => setNewBatch(prev => ({ ...prev, teacher: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                >
+                  {teachers.map(t => (
+                    <option key={t.id} value={t.name}>{t.name} ({t.subject})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Weekly Timing Schedule</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="E.g. 05:00 PM - 06:30 PM (Sat, Sun)"
+                  value={newBatch.timing}
+                  onChange={(e) => setNewBatch(prev => ({ ...prev, timing: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-2">
+                <button type="button" onClick={() => setShowAddBatch(false)} className="flex-1 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold rounded-xl text-xs cursor-pointer">
+                  Cancel
+                </button>
+                <button type="submit" className="flex-1 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-xs shadow shadow-primary-500/10 cursor-pointer">
+                  Create Batch
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Enquiry Form Modal */}
+      {showAddEnquiry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-md w-full space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-50">
+              <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+                <MessageSquare className="w-5 h-5 text-primary-600" />
+                <span>Log New Enquiry Lead</span>
+              </h3>
+              <button onClick={() => setShowAddEnquiry(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddEnquirySubmit} className="space-y-4 text-left">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Applicant Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="E.g. Priya Sharma"
+                  value={newEnquiry.name}
+                  onChange={(e) => setNewEnquiry(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Contact Number</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="E.g. +91 94444 88888"
+                  value={newEnquiry.phone}
+                  onChange={(e) => setNewEnquiry(prev => ({ ...prev, phone: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Email Address</label>
+                <input
+                  type="email"
+                  placeholder="E.g. priya.sh@gmail.com"
+                  value={newEnquiry.email}
+                  onChange={(e) => setNewEnquiry(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Interested Program</label>
+                <select
+                  value={newEnquiry.course}
+                  onChange={(e) => setNewEnquiry(prev => ({ ...prev, course: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                >
+                  <option value="Class 12 JEE Preparation">Class 12 JEE Preparation</option>
+                  <option value="Class 10 CBSE Maths">Class 10 CBSE Maths</option>
+                  <option value="Foundation Physics">Foundation Physics</option>
+                  <option value="Computer Science CS1">Computer Science CS1</option>
+                </select>
+              </div>
+
+              <div className="flex space-x-3 pt-2">
+                <button type="button" onClick={() => setShowAddEnquiry(false)} className="flex-1 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold rounded-xl text-xs cursor-pointer">
+                  Cancel
+                </button>
+                <button type="submit" className="flex-1 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-xs shadow shadow-primary-500/10 cursor-pointer">
+                  Save Lead
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Publish Test Results Modal */}
+      {showPublishTest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-md w-full space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-50">
+              <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+                <CheckSquare className="w-5 h-5 text-primary-600" />
+                <span>Publish Academic Test Results</span>
+              </h3>
+              <button onClick={() => setShowPublishTest(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handlePublishTestSubmit} className="space-y-4 text-left">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Test Assessment Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="E.g. JEE Physics Mock 5"
+                  value={newTest.name}
+                  onChange={(e) => setNewTest(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Target Batch</label>
+                  <select
+                    value={newTest.batch}
+                    onChange={(e) => setNewTest(prev => ({ ...prev, batch: e.target.value }))}
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                  >
+                    {batches.map(b => (
+                      <option key={b.id} value={b.name}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Conducted Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={newTest.date}
+                    onChange={(e) => setNewTest(prev => ({ ...prev, date: e.target.value }))}
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Class Average Score (%)</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="E.g. 78%"
+                    value={newTest.avgScore}
+                    onChange={(e) => setNewTest(prev => ({ ...prev, avgScore: e.target.value }))}
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Topper Score (%)</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="E.g. 98%"
+                    value={newTest.topScore}
+                    onChange={(e) => setNewTest(prev => ({ ...prev, topScore: e.target.value }))}
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Toppers List (comma-separated)</label>
+                <input
+                  type="text"
+                  placeholder="E.g. Sanya Sen (98%), Varun Dhawan (95%)"
+                  value={newTest.toppers}
+                  onChange={(e) => setNewTest(prev => ({ ...prev, toppers: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-2">
+                <button type="button" onClick={() => setShowPublishTest(false)} className="flex-1 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold rounded-xl text-xs cursor-pointer">
+                  Cancel
+                </button>
+                <button type="submit" className="flex-1 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-xs shadow shadow-primary-500/10 cursor-pointer">
+                  Publish Results
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Leaderboard Details Modal */}
+      {selectedTest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-md w-full space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-50">
+              <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+                <BarChart3 className="w-5 h-5 text-primary-600" />
+                <span>Test Performance details</span>
+              </h3>
+              <button onClick={() => setSelectedTest(null)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-left">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50 text-xs space-y-1">
+                <div className="font-extrabold text-slate-800 text-sm">{selectedTest.name}</div>
+                <div className="text-slate-500">Target Batch: {selectedTest.batch}</div>
+                <div className="text-slate-500">Conducted on: {selectedTest.date}</div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 text-center">
+                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Class Average</span>
+                  <span className="text-xl font-black text-primary-600 mt-1 block">{selectedTest.avgScore}</span>
+                </div>
+                <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 text-center">
+                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Top Mark</span>
+                  <span className="text-xl font-black text-emerald-600 mt-1 block">{selectedTest.topScore}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Toppers Board</h5>
+                <div className="divide-y divide-slate-50">
+                  {selectedTest.toppers.map((topper, i) => (
+                    <div key={i} className="py-2.5 flex justify-between items-center text-xs font-semibold text-slate-700">
+                      <span>{topper.split(' (')[0]}</span>
+                      <span className="font-black text-slate-800">{topper.split(' (')[1]?.replace(')', '') || ''}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={() => setSelectedTest(null)} className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-all cursor-pointer text-center">
+                Close Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Teacher Verification Documents Modal */}
+      {selectedTeacherDocs && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-md w-full space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-50">
+              <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+                <GraduationCap className="w-5 h-5 text-primary-600" />
+                <span>Verification Credentials</span>
+              </h3>
+              <button onClick={() => setSelectedTeacherDocs(null)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-left">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50 text-xs">
+                <div className="font-extrabold text-slate-800 text-sm">{selectedTeacherDocs.name}</div>
+                <div className="text-slate-500 mt-0.5">{selectedTeacherDocs.subject} Department</div>
+              </div>
+
+              <div className="space-y-3">
+                <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vetting documents checklist</h5>
+                
+                {[
+                  { name: 'M.Sc Academic Degree Certificate', status: 'Approved', info: 'Verified by Higher Ed. Registry' },
+                  { name: 'Aadhaar Identification Card (ID)', status: 'Approved', info: 'Linked and UIDAI Authenticated' },
+                  { name: 'Previous Institute Experience Letter', status: selectedTeacherDocs.status === 'Verified' ? 'Approved' : 'Under Review', info: 'Sharma Classes vetting review' }
+                ].map((doc, idx) => (
+                  <div key={idx} className="p-3 bg-slate-50/50 border border-slate-100 rounded-xl flex justify-between items-center">
+                    <div>
+                      <h6 className="text-xs font-bold text-slate-800">{doc.name}</h6>
+                      <p className="text-[9px] text-slate-400 font-bold mt-0.5">{doc.info}</p>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                      doc.status === 'Approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                    }`}>
+                      {doc.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex space-x-3 pt-2">
+                {selectedTeacherDocs.status !== 'Verified' && (
+                  <button
+                    onClick={() => {
+                      toggleTeacherVerification(selectedTeacherDocs.id, selectedTeacherDocs.name);
+                      setSelectedTeacherDocs(null);
+                    }}
+                    className="flex-grow py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all text-center cursor-pointer"
+                  >
+                    Verify Teacher Portal
+                  </button>
+                )}
+                <button onClick={() => setSelectedTeacherDocs(null)} className="flex-grow py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-all text-center cursor-pointer">
+                  Close Review
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 1. LEFT SIDEBAR PANEL */}
+      <aside className="w-64 bg-white border-r border-slate-100 flex flex-col justify-between h-screen sticky top-0 z-30 shrink-0 shadow-sm">
+        <div className="flex flex-col h-full overflow-hidden">
+          
+          {/* Logo Brand area */}
+          <div className="p-6 border-b border-slate-50 flex items-center shrink-0">
+            <div>
+              <div className="text-2xl font-black tracking-tight logo-shimmer">Cograd Pathshala</div>
+              <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase mt-1">Admin Hub</div>
+            </div>
+          </div>
+
+          {/* Navigation Menu */}
+          <nav className="p-4 space-y-1 overflow-y-auto flex-grow scrollbar-thin">
+            {[
+              { name: 'Dashboard', icon: LayoutDashboard },
+              { name: 'Students', icon: Users },
+              { name: 'Teachers', icon: GraduationCap },
+              { name: 'Batches', icon: BookOpen },
+              { name: 'Attendance', icon: UserCheck },
+              { name: 'Tests & Results', icon: CheckSquare },
+              { name: 'Fee Management', icon: CreditCard },
+              { name: 'Enquiries & CRM', icon: MessageSquare },
+              { name: 'Reports', icon: BarChart3 },
+              { name: 'Communications', icon: Mail },
+              { name: 'Settings', icon: Settings }
+            ].map(item => {
+              const IconComp = item.icon;
+              const isActive = activeTab === item.name;
+              return (
+                <button
+                  key={item.name}
+                  onClick={() => setActiveTab(item.name)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-2xl text-[13px] font-bold transition-all duration-300 cursor-pointer group relative active:scale-[0.98] ${
+                    isActive 
+                      ? 'bg-primary-50/70 text-primary-600 border border-primary-100/20 shadow-sm' 
+                      : 'text-slate-500 border border-transparent hover:text-slate-900 hover:bg-slate-50/80'
+                  }`}
+                >
+                  {/* Left Accent indicator line */}
+                  {isActive && (
+                    <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-primary-500 rounded-r-full animate-fade-in" />
+                  )}
+                  
+                  <div className="flex items-center space-x-3.5">
+                    {/* Glowing active pill icon container wrapper */}
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-500 shrink-0 ${
+                      isActive
+                        ? 'bg-gradient-to-br from-primary-500 to-secondary-500 text-white shadow-lg shadow-primary-500/25 scale-105'
+                        : 'bg-slate-50 text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600 group-hover:scale-105 group-hover:rotate-6'
+                    }`}>
+                      <IconComp className={`w-4 h-4 nav-icon-animate ${
+                        isActive ? 'text-white nav-icon-active' : ''
+                      }`} />
+                    </div>
+                    <span className="transition-colors duration-200">{item.name}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Fixed bottom items */}
+          <div className="p-4 border-t border-slate-50 bg-slate-50/50 shrink-0 space-y-1">
+            <button 
+              onClick={() => setActiveTab('Help')}
+              className="w-full flex items-center space-x-3.5 px-3 py-2.5 rounded-2xl text-[13px] font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100/50 transition-all cursor-pointer"
+            >
+              <HelpCircle className="w-4.5 h-4.5 text-slate-400" />
+              <span>Help Center</span>
+            </button>
+            <button 
+              onClick={handleLogout}
+              className="w-full flex items-center space-x-3.5 px-3 py-2.5 rounded-2xl text-[13px] font-bold text-rose-500 hover:text-rose-700 hover:bg-rose-50/50 transition-all cursor-pointer"
+            >
+              <LogOut className="w-4.5 h-4.5 text-rose-400" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* 2. MAIN HUB CONTENT AREA */}
+      <div className="flex-grow flex flex-col min-w-0 h-screen overflow-hidden">
+        
+        {/* TOP HEADER BAR */}
+        <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-8 z-20 shrink-0 sticky top-0 shadow-sm">
+          <div className="flex items-center space-x-2">
+            <h1 className="text-xl lg:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+              <span>{activeTab === 'Dashboard' ? 'Admin Dashboard' : activeTab}</span> 
+            </h1>
+            {activeTab === 'Dashboard' && <Sparkles className="w-5 h-5 text-primary-500 animate-pulse hidden sm:inline" />}
+          </div>
+
+          <div className="flex items-center space-x-6">
+            {/* Search Box */}
+            <div className="relative max-w-xs hidden md:block">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search students, batches..."
+                className="pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all w-60"
+              />
+            </div>
+
+            {/* Notification Center */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2.5 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-100 hover:border-slate-200 transition-all cursor-pointer group animate-bell-hover"
+              >
+                <Bell className="w-5 h-5 text-slate-500 group-hover:scale-105 transition-transform" />
+                {notifications.some(n => n.isNew) && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border border-white rounded-full animate-bounce"></span>
+                )}
+              </button>
+
+              {/* Dropdown Menu */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-2.5 w-80 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 p-4 space-y-3 animate-fade-in text-left">
+                  <div className="flex items-center justify-between border-b border-slate-50 pb-2.5">
+                    <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Admin Alerts</h3>
+                    {notifications.some(n => n.isNew) && (
+                      <button 
+                        onClick={() => {
+                          setNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
+                          triggerToast('All admin alerts marked as read');
+                        }}
+                        className="text-[10px] font-black text-primary-500 hover:text-primary-600 transition-colors cursor-pointer"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="divide-y divide-slate-50 max-h-60 overflow-y-auto pr-1">
+                    {notifications.map(notif => (
+                      <div 
+                        key={notif.id} 
+                        onClick={() => {
+                          setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isNew: false } : n));
+                          setShowNotifications(false);
+                          triggerToast(`Alert detail opened: "${notif.text}"`);
+                        }}
+                        className={`py-3 px-1.5 flex flex-col space-y-1 cursor-pointer transition-colors hover:bg-slate-50/80 rounded-lg text-left ${
+                          notif.isNew ? 'bg-blue-50/10' : ''
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-1.5">
+                          <span className={`text-[11px] leading-relaxed ${notif.isNew ? 'font-extrabold text-slate-800' : 'text-slate-500 font-medium'}`}>
+                            {notif.text}
+                          </span>
+                          {notif.isNew && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 mt-1 flex-shrink-0"></span>
+                          )}
+                        </div>
+                        <span className="text-[9px] font-bold text-slate-400">{notif.time}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Profile Avatar Badge & Settings gear */}
+            <div className="flex items-center space-x-3.5 border-l border-slate-100 pl-6">
+              <button 
+                onClick={() => setActiveTab('Settings')}
+                className="w-9 h-9 rounded-full overflow-hidden border border-slate-200 hover:border-primary-500 hover:ring-2 hover:ring-primary-500/20 transition-all cursor-pointer"
+                title="Go to Settings"
+              >
+                <img 
+                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80" 
+                  alt="Admin User" 
+                  className="w-full h-full object-cover"
+                />
+              </button>
+              <button 
+                onClick={() => setActiveTab('Settings')}
+                className="p-1 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                title="Admin Settings"
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+            </div>
+
+          </div>
+        </header>
+
+        {/* ACTIVE TAB CONTENT */}
+        <main className="flex-grow p-6 lg:p-8 overflow-y-auto max-w-[1400px] w-full mx-auto space-y-8 scrollbar-thin">
+          <div key={activeTab} className="tab-content-enter h-full w-full">
+            {getTabContent()}
+          </div>
+        </main>
+
+      </div>
+
+    </div>
+  );
+};
+
+export default AdminDashboard;
