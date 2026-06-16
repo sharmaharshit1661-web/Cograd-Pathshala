@@ -70,7 +70,7 @@ const Footer = () => {
           <div>
             <h4 className="text-neutral-200 font-semibold text-sm mb-4">Our Values</h4>
             <p className="text-sm text-neutral-500 leading-relaxed mb-4">
-              Empathy, technology-led innovation, community growth, and uncompromising excellence in every classroom.
+              Empathy, technology-led innovation, community growth, and uncompromising excellence in every home tuition.
             </p>
             <div className="flex flex-wrap gap-2">
               {['Empathy', 'Innovation', 'Community', 'Excellence'].map((v) => (

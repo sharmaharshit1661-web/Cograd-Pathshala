@@ -45,7 +45,7 @@ const AdminDashboard = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([
     { id: 1, text: 'Aaryan Khanna submitted a new admission enquiry', time: '5m ago', isNew: true },
-    { id: 2, text: 'Batch JEE-Advanced syllabus is 70% complete', time: '1h ago', isNew: true },
+    { id: 2, text: 'Class 9-10 batch syllabus is 70% complete for this term', time: '1h ago', isNew: true },
     { id: 3, text: 'Monthly fee collection target achieved', time: '3h ago', isNew: false }
   ]);
 
@@ -69,36 +69,63 @@ const AdminDashboard = () => {
   
   // Enquiries List state
   const [enquiries, setEnquiries] = useState([
-    { id: 1, name: 'Aaryan Khanna', course: 'Class 12 JEE Preparation', type: 'New', color: 'bg-blue-100 text-blue-800', phone: '+91 91111 22222', email: 'aaryan@gmail.com' },
-    { id: 2, name: 'Priya Sharma', course: 'Class 10 CBSE Maths', type: 'Follow-up', color: 'bg-amber-100 text-amber-800', phone: '+91 93333 44444', email: 'priya.sh@gmail.com' },
-    { id: 3, name: 'Rahul Gupta', course: 'Foundation Physics', type: 'Enrolled', color: 'bg-emerald-100 text-emerald-800', phone: '+91 95555 66666', email: 'rahul.g@gmail.com' }
+    { id: 1, name: 'Aaryan Khanna', course: 'Class 12 — All Subjects', type: 'New', color: 'bg-blue-100 text-blue-800', phone: '+91 91111 22222', email: 'aaryan@gmail.com' },
+    { id: 2, name: 'Priya Sharma', course: 'Class 10 — Maths & Science', type: 'Follow-up', color: 'bg-amber-100 text-amber-800', phone: '+91 93333 44444', email: 'priya.sh@gmail.com' },
+    { id: 3, name: 'Rahul Gupta', course: 'Class 6 — All Subjects', type: 'Enrolled', color: 'bg-emerald-100 text-emerald-800', phone: '+91 95555 66666', email: 'rahul.g@gmail.com' }
   ]);
 
   // Student roster state
   const [students, setStudents] = useState([
-    { id: 1, name: 'Rahul Malhotra', email: 'rahul.m@gmail.com', parentName: 'Siddharth Malhotra', batch: 'JEE-Advanced A1', date: '2026-01-10', status: 'Active' },
-    { id: 2, name: 'Sanya Sen', email: 'sanya.s@yahoo.com', parentName: 'Deepak Sen', batch: 'NEET Target B2', date: '2026-02-15', status: 'Active' },
-    { id: 3, name: 'Arjun Kapoor', email: 'arjun.k@cograd.com', parentName: 'Sanjay Kapoor', batch: 'JEE-Advanced A1', date: '2026-03-01', status: 'Active' },
-    { id: 4, name: 'Isha Ambani', email: 'isha.a@reliance.com', parentName: 'Mukesh Ambani', batch: 'Foundation Math F1', date: '2026-01-20', status: 'Active' },
-    { id: 5, name: 'Varun Dhawan', email: 'varun.d@cograd.com', parentName: 'David Dhawan', batch: 'NEET Target B2', date: '2026-02-28', status: 'Active' },
-    { id: 6, name: 'Sara Ali Khan', email: 'sara.k@cograd.com', parentName: 'Saif Ali Khan', batch: 'Foundation Math F1', date: '2026-03-12', status: 'Suspended' }
+    { id: 1, name: 'Rahul Malhotra', email: 'rahul.m@gmail.com', parentName: 'Siddharth Malhotra', batch: 'Class 9-10 Secondary C1', date: '2026-01-10', status: 'Active' },
+    { id: 2, name: 'Sanya Sen', email: 'sanya.s@yahoo.com', parentName: 'Deepak Sen', batch: 'Class 11-12 Senior D1', date: '2026-02-15', status: 'Active' },
+    { id: 3, name: 'Arjun Kapoor', email: 'arjun.k@cograd.com', parentName: 'Sanjay Kapoor', batch: 'Class 9-10 Secondary C1', date: '2026-03-01', status: 'Active' },
+    { id: 4, name: 'Isha Verma', email: 'isha.v@gmail.com', parentName: 'Mukesh Verma', batch: 'Class 1-5 Primary A1', date: '2026-01-20', status: 'Active' },
+    { id: 5, name: 'Varun Sharma', email: 'varun.s@gmail.com', parentName: 'David Sharma', batch: 'Class 6-8 Middle B1', date: '2026-02-28', status: 'Active' },
+    { id: 6, name: 'Sara Mehta', email: 'sara.m@gmail.com', parentName: 'Ali Mehta', batch: 'Class 1-5 Primary A1', date: '2026-03-12', status: 'Suspended' }
   ]);
 
   // Teachers state
   const [teachers, setTeachers] = useState([
-    { id: 1, name: 'Dr. Satish Sharma', subject: 'Mathematics', email: 'satish.sharma@cograd.com', rating: 4.9, rate: '₹1,500/hr', batches: ['JEE-Advanced A1', 'Foundation Math F1'], status: 'Verified' },
-    { id: 2, name: 'Prof. Amit Verma', subject: 'Physics', email: 'amit.verma@cograd.com', rating: 4.8, rate: '₹1,400/hr', batches: ['JEE-Advanced A1', 'NEET Target B2'], status: 'Verified' },
-    { id: 3, name: 'Ms. Neha Gupta', subject: 'Chemistry', email: 'neha.gupta@cograd.com', rating: 4.7, rate: '₹1,200/hr', batches: ['NEET Target B2'], status: 'Verified' },
-    { id: 4, name: 'Mr. Rohan Das', subject: 'English', email: 'rohan.das@cograd.com', rating: 4.5, rate: '₹1,000/hr', batches: ['Foundation Math F1'], status: 'Pending' },
-    { id: 5, name: 'Mrs. S. Iyer', subject: 'Computer Science', email: 's.iyer@cograd.com', rating: 4.6, rate: '₹1,300/hr', batches: ['Computer Science CS1'], status: 'Verified' }
+    { id: 1, name: 'Dr. Satish Sharma', subject: 'Mathematics', email: 'satish.sharma@cograd.com', rating: 4.9, rate: '₹1,500/hr', batches: ['Class 9-10 Secondary C1', 'Class 1-5 Primary A1'], status: 'Verified' },
+    { id: 2, name: 'Prof. Amit Verma', subject: 'Science', email: 'amit.verma@cograd.com', rating: 4.8, rate: '₹1,400/hr', batches: ['Class 9-10 Secondary C1', 'Class 11-12 Senior D1'], status: 'Verified' },
+    { id: 3, name: 'Ms. Neha Gupta', subject: 'English', email: 'neha.gupta@cograd.com', rating: 4.7, rate: '₹1,200/hr', batches: ['Class 6-8 Middle B1'], status: 'Verified' },
+    { id: 4, name: 'Mr. Rohan Das', subject: 'Social Studies', email: 'rohan.das@cograd.com', rating: 4.5, rate: '₹1,000/hr', batches: ['Class 1-5 Primary A1'], status: 'Pending' },
+    { id: 5, name: 'Mrs. S. Iyer', subject: 'Computer Science', email: 's.iyer@cograd.com', rating: 4.6, rate: '₹1,300/hr', batches: ['Class 11-12 Senior D1'], status: 'Verified' }
   ]);
+
+  // Per-teacher document verification state (keyed by teacher id)
+  const [teacherDocStatus, setTeacherDocStatus] = useState({
+    1: { degree: 'Approved', aadhar: 'Approved', experience: 'Approved', police: 'Approved' },
+    2: { degree: 'Approved', aadhar: 'Approved', experience: 'Approved', police: 'Approved' },
+    3: { degree: 'Approved', aadhar: 'Approved', experience: 'Approved', police: 'Approved' },
+    4: { degree: 'Approved', aadhar: 'Under Review', experience: 'Under Review', police: 'Under Review' },
+    5: { degree: 'Approved', aadhar: 'Approved', experience: 'Approved', police: 'Approved' }
+  });
+
+  // Toggle individual document status for a teacher
+  const toggleDocStatus = (teacherId, docKey) => {
+    setTeacherDocStatus(prev => ({
+      ...prev,
+      [teacherId]: {
+        ...prev[teacherId],
+        [docKey]: prev[teacherId][docKey] === 'Approved' ? 'Under Review' : 'Approved'
+      }
+    }));
+  };
+
+  // Check if all docs for a teacher are approved
+  const areAllDocsApproved = (teacherId) => {
+    const docs = teacherDocStatus[teacherId];
+    if (!docs) return false;
+    return Object.values(docs).every(v => v === 'Approved');
+  };
 
   // Batches state
   const [batches, setBatches] = useState([
-    { id: 1, name: 'JEE-Advanced A1', teacher: 'Dr. Satish Sharma', subject: 'Mathematics', timing: '09:00 AM - 10:30 AM (M, W, F)', students: 18, status: 'Active' },
-    { id: 2, name: 'NEET Target B2', teacher: 'Prof. Amit Verma', subject: 'Physics', timing: '11:00 AM - 12:30 PM (T, T, S)', students: 24, status: 'Active' },
-    { id: 3, name: 'Foundation Math F1', teacher: 'Dr. Satish Sharma', subject: 'Mathematics', timing: '04:00 PM - 05:30 PM (M, W, F)', students: 15, status: 'Active' },
-    { id: 4, name: 'Computer Science CS1', teacher: 'Mrs. S. Iyer', subject: 'Computer Science', timing: '02:00 PM - 03:30 PM (Sat)', students: 12, status: 'Active' }
+    { id: 1, name: 'Class 1-5 Primary A1', teacher: 'Mr. Rohan Das', subject: 'English & Maths', timing: '09:00 AM - 10:00 AM (M, W, F)', students: 18, status: 'Active' },
+    { id: 2, name: 'Class 6-8 Middle B1', teacher: 'Ms. Neha Gupta', subject: 'Science & English', timing: '11:00 AM - 12:30 PM (T, T, S)', students: 24, status: 'Active' },
+    { id: 3, name: 'Class 9-10 Secondary C1', teacher: 'Dr. Satish Sharma', subject: 'Mathematics', timing: '04:00 PM - 05:30 PM (M, W, F)', students: 15, status: 'Active' },
+    { id: 4, name: 'Class 11-12 Senior D1', teacher: 'Prof. Amit Verma', subject: 'Science', timing: '02:00 PM - 03:30 PM (Sat)', students: 12, status: 'Active' }
   ]);
 
   // Recent payments state
@@ -111,8 +138,8 @@ const AdminDashboard = () => {
 
   // Announcements state
   const [announcements, setAnnouncements] = useState([
-    { id: 1, title: 'Summer Batch Timetable Revision', target: 'All Students & Teachers', priority: 'Medium', date: '2026-06-12', text: 'Please note the JEE Advanced class timings will shift by 30 mins starting next Monday.' },
-    { id: 2, title: 'Term 1 Exam Scheduling', target: 'All Students', priority: 'High', date: '2026-06-10', text: 'Term 1 progress assessments are scheduled to start from June 25th.' }
+    { id: 1, title: 'Summer Batch Timetable Revision', target: 'All Students & Teachers', priority: 'Medium', date: '2026-06-12', text: 'Please note the Class 9-10 batch timings will shift by 30 mins starting next Monday.' },
+    { id: 2, title: 'Term 1 Exam Scheduling', target: 'All Students', priority: 'High', date: '2026-06-10', text: 'Term 1 progress assessments are scheduled to start from June 25th for all classes.' }
   ]);
 
   // Settings state
@@ -131,9 +158,9 @@ const AdminDashboard = () => {
 
   // Tests & Results state
   const [tests, setTests] = useState([
-    { id: 1, name: 'JEE Math Mock Test 4', date: '2026-06-08', batch: 'JEE-Advanced A1', avgScore: '74%', topScore: '98%', toppers: ['Arjun Kapoor (98%)', 'Rahul Malhotra (94%)', 'Siddharth Malhotra (92%)'] },
-    { id: 2, name: 'NEET Physics Prep 3', date: '2026-06-05', batch: 'NEET Target B2', avgScore: '68%', topScore: '95%', toppers: ['Sanya Sen (95%)', 'Varun Dhawan (90%)', 'Isha Ambani (88%)'] },
-    { id: 3, name: 'Foundation algebra assessment', date: '2026-06-01', batch: 'Foundation Math F1', avgScore: '82%', topScore: '100%', toppers: ['Sara Ali Khan (100%)', 'Varun Dhawan (96%)'] }
+    { id: 1, name: 'Class 9-10 Mathematics Unit Test', date: '2026-06-08', batch: 'Class 9-10 Secondary C1', avgScore: '74%', topScore: '98%', toppers: ['Arjun Kapoor (98%)', 'Rahul Malhotra (94%)'] },
+    { id: 2, name: 'Class 6-8 Science Chapter Test', date: '2026-06-05', batch: 'Class 6-8 Middle B1', avgScore: '68%', topScore: '95%', toppers: ['Sanya Sen (95%)', 'Varun Sharma (90%)'] },
+    { id: 3, name: 'Class 1-5 Maths Worksheet Assessment', date: '2026-06-01', batch: 'Class 1-5 Primary A1', avgScore: '82%', topScore: '100%', toppers: ['Sara Mehta (100%)', 'Isha Verma (96%)'] }
   ]);
 
   // Modal open states
@@ -145,16 +172,16 @@ const AdminDashboard = () => {
   const [selectedTeacherDocs, setSelectedTeacherDocs] = useState(null);
 
   // Student Form Inputs
-  const [newStudent, setNewStudent] = useState({ name: '', email: '', parentName: '', batch: 'JEE-Advanced A1', status: 'Active' });
+  const [newStudent, setNewStudent] = useState({ name: '', email: '', parentName: '', batch: 'Class 9-10 Secondary C1', status: 'Active' });
   // Batch Form Inputs
   const [newBatch, setNewBatch] = useState({ name: '', teacher: 'Dr. Satish Sharma', subject: 'Mathematics', timing: '', students: 0, status: 'Active' });
   // Enquiry Form Inputs
-  const [newEnquiry, setNewEnquiry] = useState({ name: '', course: 'Class 12 JEE Preparation', phone: '', email: '' });
+  const [newEnquiry, setNewEnquiry] = useState({ name: '', course: 'Class 9 — All Subjects', phone: '', email: '' });
   // Test Form Inputs
-  const [newTest, setNewTest] = useState({ name: '', date: '', batch: 'JEE-Advanced A1', avgScore: '', topScore: '', toppers: '' });
+  const [newTest, setNewTest] = useState({ name: '', date: '', batch: 'Class 9-10 Secondary C1', avgScore: '', topScore: '', toppers: '' });
 
   // Attendance Sheet Filter State
-  const [attendanceFilter, setAttendanceFilter] = useState({ batch: 'JEE-Advanced A1', date: '2026-06-13' });
+  const [attendanceFilter, setAttendanceFilter] = useState({ batch: 'Class 9-10 Secondary C1', date: '2026-06-13' });
   // Attendance Students Presence State (temporary session logs)
   const [attendanceLogs, setAttendanceLogs] = useState({
     1: 'Present',
@@ -250,7 +277,7 @@ const AdminDashboard = () => {
     setBatches(prev => prev.map(b => b.name === newEntry.batch ? { ...b, students: b.students + 1 } : b));
 
     setShowAddStudent(false);
-    setNewStudent({ name: '', email: '', parentName: '', batch: 'JEE-Advanced A1', status: 'Active' });
+    setNewStudent({ name: '', email: '', parentName: '', batch: 'Class 9-10 Secondary C1', status: 'Active' });
     triggerToast(`Student ${newEntry.name} enrolled successfully!`);
   };
 
@@ -316,7 +343,7 @@ const AdminDashboard = () => {
     };
     setTests(prev => [newEntry, ...prev]);
     setShowPublishTest(false);
-    setNewTest({ name: '', date: '', batch: 'JEE-Advanced A1', avgScore: '', topScore: '', toppers: '' });
+    setNewTest({ name: '', date: '', batch: 'Class 9-10 Secondary C1', avgScore: '', topScore: '', toppers: '' });
     triggerToast(`Test results for ${newEntry.name} published!`);
   };
 
@@ -352,7 +379,7 @@ const AdminDashboard = () => {
         name,
         email: email || `${name.toLowerCase().replace(/\s+/g, '.')}@gmail.com`,
         parentName: 'TBD',
-        batch: course.includes('JEE') ? 'JEE-Advanced A1' : course.includes('Physics') ? 'NEET Target B2' : 'Foundation Math F1',
+        batch: course.includes('Class 11') || course.includes('Class 12') ? 'Class 11-12 Senior D1' : course.includes('Class 9') || course.includes('Class 10') ? 'Class 9-10 Secondary C1' : course.includes('Class 6') || course.includes('Class 7') || course.includes('Class 8') ? 'Class 6-8 Middle B1' : 'Class 1-5 Primary A1',
         date: new Date().toISOString().split('T')[0],
         status: 'Active'
       };
@@ -382,7 +409,7 @@ const AdminDashboard = () => {
     };
     setEnquiries(prev => [newEntry, ...prev]);
     setShowAddEnquiry(false);
-    setNewEnquiry({ name: '', course: 'Class 12 JEE Preparation', phone: '', email: '' });
+    setNewEnquiry({ name: '', course: 'Class 9 — All Subjects', phone: '', email: '' });
     triggerToast(`Enquiry for ${newEntry.name} added to pipeline.`);
   };
 
@@ -738,9 +765,10 @@ const AdminDashboard = () => {
               className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
             >
               <option value="All">All Batches</option>
-              <option value="JEE-Advanced A1">JEE-Advanced A1</option>
-              <option value="NEET Target B2">NEET Target B2</option>
-              <option value="Foundation Math F1">Foundation Math F1</option>
+              <option value="Class 1-5 Primary A1">Class 1-5 Primary A1</option>
+              <option value="Class 6-8 Middle B1">Class 6-8 Middle B1</option>
+              <option value="Class 9-10 Secondary C1">Class 9-10 Secondary C1</option>
+              <option value="Class 11-12 Senior D1">Class 11-12 Senior D1</option>
             </select>
             <select
               value={studentStatusFilter}
@@ -832,9 +860,28 @@ const AdminDashboard = () => {
       t.name.toLowerCase().includes(teacherSearch.toLowerCase()) ||
       t.subject.toLowerCase().includes(teacherSearch.toLowerCase())
     );
+    const pendingTeachers = teachers.filter(t => !areAllDocsApproved(t.id) || t.status === 'Pending');
 
     return (
       <div className="space-y-6">
+        {/* Pending Verification Alert Banner */}
+        {pendingTeachers.length > 0 && (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0 mt-0.5">
+              <AlertCircle className="w-4 h-4 text-amber-600" />
+            </div>
+            <div className="flex-grow">
+              <p className="text-xs font-black text-amber-900 uppercase tracking-wide">⚠️ Document Verification Required</p>
+              <p className="text-xs text-amber-800 font-semibold mt-0.5">
+                {pendingTeachers.map(t => t.name).join(', ')} — credential documents are pending admin review. Parents cannot see a verified badge until all docs are approved.
+              </p>
+            </div>
+            <span className="px-2.5 py-1 bg-amber-100 border border-amber-200 text-amber-700 text-[10px] font-black rounded-full shrink-0">
+              {pendingTeachers.length} Pending
+            </span>
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="relative flex-grow max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
@@ -849,27 +896,50 @@ const AdminDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredTeachers.map(teacher => (
+          {filteredTeachers.map(teacher => {
+            const allDocsOk = areAllDocsApproved(teacher.id);
+            return (
             <div key={teacher.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 hover:shadow-md transition-shadow text-left">
               <div className="flex justify-between items-start">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden shrink-0">
+                  <div className="relative w-10 h-10 rounded-full bg-slate-100 overflow-hidden shrink-0">
                     <img 
                       src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80"
                       alt={teacher.name}
                       className="w-full h-full object-cover"
                     />
+                    {allDocsOk && teacher.status === 'Verified' && (
+                      <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
+                        <CheckCircle2 className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
                   </div>
                   <div>
-                    <h4 className="font-extrabold text-slate-800 text-sm">{teacher.name}</h4>
+                    <h4 className="font-extrabold text-slate-800 text-sm flex items-center gap-1.5">
+                      {teacher.name}
+                      {allDocsOk && teacher.status === 'Verified' && (
+                        <span className="text-[8px] bg-emerald-50 border border-emerald-100 text-emerald-600 font-black px-1.5 py-0.5 rounded tracking-wide">✓ VERIFIED</span>
+                      )}
+                    </h4>
                     <p className="text-[10px] text-slate-400 font-bold">{teacher.subject} Specialist</p>
                   </div>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                  teacher.status === 'Verified' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                  teacher.status === 'Verified' && allDocsOk ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
                 }`}>
-                  {teacher.status}
+                  {teacher.status === 'Verified' && allDocsOk ? 'Verified' : 'Pending Docs'}
                 </span>
+              </div>
+
+              {/* Doc status mini pills */}
+              <div className="flex flex-wrap gap-1.5">
+                {Object.entries(teacherDocStatus[teacher.id] || {}).map(([key, val]) => (
+                  <span key={key} className={`text-[8px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider ${
+                    val === 'Approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100 animate-pulse'
+                  }`}>
+                    {key === 'degree' ? '🎓 Degree' : key === 'aadhar' ? '🪪 Aadhar' : key === 'experience' ? '📄 Exp. Letter' : '🛡️ Police Check'}: {val === 'Approved' ? '✓' : '⏳'}
+                  </span>
+                ))}
               </div>
 
               <div className="border-t border-b border-slate-50 py-3 text-[11px] font-semibold text-slate-500 space-y-2">
@@ -904,13 +974,13 @@ const AdminDashboard = () => {
                 </button>
                 <button
                   onClick={() => setSelectedTeacherDocs(teacher)}
-                  className="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-800 font-bold rounded-xl text-xs transition-all cursor-pointer"
+                  className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-600 hover:text-blue-800 font-bold rounded-xl text-xs transition-all cursor-pointer"
                 >
-                  Docs
+                  Review Docs
                 </button>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       </div>
     );
@@ -992,9 +1062,10 @@ const AdminDashboard = () => {
               onChange={(e) => setAttendanceFilter(prev => ({ ...prev, batch: e.target.value }))}
               className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
             >
-              <option value="JEE-Advanced A1">JEE-Advanced A1</option>
-              <option value="NEET Target B2">NEET Target B2</option>
-              <option value="Foundation Math F1">Foundation Math F1</option>
+              <option value="Class 9-10 Secondary C1">Class 9-10 Secondary C1</option>
+              <option value="Class 1-5 Primary A1">Class 1-5 Primary A1</option>
+              <option value="Class 6-8 Middle B1">Class 6-8 Middle B1</option>
+              <option value="Class 11-12 Senior D1">Class 11-12 Senior D1</option>
             </select>
             <input
               type="date"
@@ -1421,7 +1492,7 @@ const AdminDashboard = () => {
           <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Academic session logs</h4>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
-              { title: 'Best Batch Average', val: '82%', desc: 'Foundation Math F1 leads exam averages.' },
+              { title: 'Best Batch Average', val: '82%', desc: 'Class 1-5 Primary A1 leads assessment averages.' },
               { title: 'AI Flagged At-Risk Students', val: '3 students', desc: 'Slight decrease from last assessment cycle.' },
               { title: 'New Admissions', val: '+4 enrolled', desc: 'Admission conversion up by 15% this quarter.' }
             ].map((card, i) => (
@@ -1949,9 +2020,10 @@ const AdminDashboard = () => {
                   onChange={(e) => setNewStudent(prev => ({ ...prev, batch: e.target.value }))}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
                 >
-                  <option value="JEE-Advanced A1">JEE-Advanced A1</option>
-                  <option value="NEET Target B2">NEET Target B2</option>
-                  <option value="Foundation Math F1">Foundation Math F1</option>
+                  <option value="Class 9-10 Secondary C1">Class 9-10 Secondary C1</option>
+                  <option value="Class 1-5 Primary A1">Class 1-5 Primary A1</option>
+                  <option value="Class 6-8 Middle B1">Class 6-8 Middle B1</option>
+                  <option value="Class 11-12 Senior D1">Class 11-12 Senior D1</option>
                 </select>
               </div>
 
@@ -1988,7 +2060,7 @@ const AdminDashboard = () => {
                 <input
                   type="text"
                   required
-                  placeholder="E.g. NEET Crash Course C1"
+                  placeholder="E.g. Class 9-10 Maths & Science Batch"
                   value={newBatch.name}
                   onChange={(e) => setNewBatch(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
@@ -2102,7 +2174,18 @@ const AdminDashboard = () => {
                   onChange={(e) => setNewEnquiry(prev => ({ ...prev, course: e.target.value }))}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
                 >
-                  <option value="Class 12 JEE Preparation">Class 12 JEE Preparation</option>
+                  <option value="Class 1 — All Subjects">Class 1 — All Subjects</option>
+                  <option value="Class 2 — All Subjects">Class 2 — All Subjects</option>
+                  <option value="Class 3 — All Subjects">Class 3 — All Subjects</option>
+                  <option value="Class 4 — All Subjects">Class 4 — All Subjects</option>
+                  <option value="Class 5 — All Subjects">Class 5 — All Subjects</option>
+                  <option value="Class 6 — All Subjects">Class 6 — All Subjects</option>
+                  <option value="Class 7 — All Subjects">Class 7 — All Subjects</option>
+                  <option value="Class 8 — All Subjects">Class 8 — All Subjects</option>
+                  <option value="Class 9 — All Subjects">Class 9 — All Subjects</option>
+                  <option value="Class 10 — Maths & Science">Class 10 — Maths & Science</option>
+                  <option value="Class 11 — Science Stream">Class 11 — Science Stream</option>
+                  <option value="Class 12 — All Subjects">Class 12 — All Subjects</option>
                   <option value="Class 10 CBSE Maths">Class 10 CBSE Maths</option>
                   <option value="Foundation Physics">Foundation Physics</option>
                   <option value="Computer Science CS1">Computer Science CS1</option>
@@ -2277,14 +2360,14 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Teacher Verification Documents Modal */}
+      {/* Teacher Verification Documents Modal — Full Per-Doc Control */}
       {selectedTeacherDocs && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-md w-full space-y-4 animate-scale-up">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-lg w-full space-y-4 animate-scale-up">
             <div className="flex items-center justify-between pb-2 border-b border-slate-50">
               <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
                 <GraduationCap className="w-5 h-5 text-primary-600" />
-                <span>Verification Credentials</span>
+                <span>Document Verification Portal</span>
               </h3>
               <button onClick={() => setSelectedTeacherDocs(null)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg cursor-pointer">
                 <X className="w-5 h-5" />
@@ -2292,47 +2375,94 @@ const AdminDashboard = () => {
             </div>
 
             <div className="space-y-4 text-left">
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50 text-xs">
-                <div className="font-extrabold text-slate-800 text-sm">{selectedTeacherDocs.name}</div>
-                <div className="text-slate-500 mt-0.5">{selectedTeacherDocs.subject} Department</div>
+              {/* Teacher Summary */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-100 text-xs flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 font-black text-base shrink-0">
+                  {selectedTeacherDocs.name.charAt(0)}
+                </div>
+                <div>
+                  <div className="font-extrabold text-slate-800 text-sm">{selectedTeacherDocs.name}</div>
+                  <div className="text-slate-500 mt-0.5">{selectedTeacherDocs.subject} Specialist</div>
+                  <div className="mt-1">
+                    {areAllDocsApproved(selectedTeacherDocs.id) ? (
+                      <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">🛡️ All documents cleared</span>
+                    ) : (
+                      <span className="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">⚠️ Documents pending review</span>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-3">
-                <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vetting documents checklist</h5>
+              {/* Per-Document Verification Controls */}
+              <div className="space-y-2.5">
+                <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Credential Documents — Click to Toggle Status</h5>
                 
                 {[
-                  { name: 'M.Sc Academic Degree Certificate', status: 'Approved', info: 'Verified by Higher Ed. Registry' },
-                  { name: 'Aadhaar Identification Card (ID)', status: 'Approved', info: 'Linked and UIDAI Authenticated' },
-                  { name: 'Previous Institute Experience Letter', status: selectedTeacherDocs.status === 'Verified' ? 'Approved' : 'Under Review', info: 'Sharma Classes vetting review' }
-                ].map((doc, idx) => (
-                  <div key={idx} className="p-3 bg-slate-50/50 border border-slate-100 rounded-xl flex justify-between items-center">
-                    <div>
-                      <h6 className="text-xs font-bold text-slate-800">{doc.name}</h6>
-                      <p className="text-[9px] text-slate-400 font-bold mt-0.5">{doc.info}</p>
-                    </div>
-                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
-                      doc.status === 'Approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                  { key: 'degree', label: 'Academic Degree Certificate', icon: '🎓', info: 'M.Sc / B.Ed / Graduation proof from university' },
+                  { key: 'aadhar', label: 'Aadhaar Identity Card', icon: '🪪', info: 'UIDAI 12-digit unique ID verification' },
+                  { key: 'experience', label: 'Experience Letter', icon: '📄', info: 'Letter from previous institute or employer' },
+                  { key: 'police', label: 'Police Verification Certificate', icon: '🛡️', info: 'Background check clearance from local authority' }
+                ].map((doc) => {
+                  const status = (teacherDocStatus[selectedTeacherDocs.id] || {})[doc.key] || 'Under Review';
+                  const isApproved = status === 'Approved';
+                  return (
+                    <div key={doc.key} className={`p-3 rounded-xl border flex justify-between items-center gap-3 transition-all ${
+                      isApproved ? 'bg-emerald-50/50 border-emerald-100' : 'bg-amber-50/50 border-amber-100'
                     }`}>
-                      {doc.status}
-                    </span>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-base">{doc.icon}</span>
+                        <div className="min-w-0">
+                          <h6 className="text-xs font-bold text-slate-800 truncate">{doc.label}</h6>
+                          <p className="text-[9px] text-slate-400 font-semibold mt-0.5">{doc.info}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => toggleDocStatus(selectedTeacherDocs.id, doc.key)}
+                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider shrink-0 border cursor-pointer transition-all hover:scale-105 active:scale-95 ${
+                          isApproved 
+                            ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
+                            : 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-emerald-100 hover:text-emerald-700 hover:border-emerald-200'
+                        }`}
+                        title={isApproved ? 'Click to reject this document' : 'Click to approve this document'}
+                      >
+                        {isApproved ? '✓ Approved' : '⏳ Review'}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
 
-              <div className="flex space-x-3 pt-2">
-                {selectedTeacherDocs.status !== 'Verified' && (
+              {/* Overall Action Buttons */}
+              <div className="flex space-x-3 pt-1">
+                {areAllDocsApproved(selectedTeacherDocs.id) && selectedTeacherDocs.status !== 'Verified' && (
                   <button
                     onClick={() => {
                       toggleTeacherVerification(selectedTeacherDocs.id, selectedTeacherDocs.name);
+                      triggerToast(`${selectedTeacherDocs.name} is now a Verified Partner!`);
                       setSelectedTeacherDocs(null);
                     }}
-                    className="flex-grow py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all text-center cursor-pointer"
+                    className="flex-grow py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all text-center cursor-pointer shadow-md shadow-emerald-500/20"
                   >
-                    Verify Teacher Portal
+                    🛡️ Activate Verified Badge
                   </button>
                 )}
-                <button onClick={() => setSelectedTeacherDocs(null)} className="flex-grow py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-all text-center cursor-pointer">
-                  Close Review
+                {!areAllDocsApproved(selectedTeacherDocs.id) && (
+                  <button
+                    onClick={() => {
+                      // Approve all docs at once
+                      setTeacherDocStatus(prev => ({
+                        ...prev,
+                        [selectedTeacherDocs.id]: { degree: 'Approved', aadhar: 'Approved', experience: 'Approved', police: 'Approved' }
+                      }));
+                      triggerToast('All documents approved! You can now grant the Verified badge.');
+                    }}
+                    className="flex-grow py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all text-center cursor-pointer"
+                  >
+                    Approve All Documents
+                  </button>
+                )}
+                <button onClick={() => setSelectedTeacherDocs(null)} className="flex-grow py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all text-center cursor-pointer">
+                  Close
                 </button>
               </div>
             </div>

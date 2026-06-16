@@ -85,7 +85,7 @@ const TeacherDashboard = () => {
     phone: '9876543210',
     experience: '6+ Years',
     qualification: 'M.Sc. in Mathematics, B.Ed.',
-    primarySubject: 'Mathematics (Calculus, Algebra, Geometry)',
+    primarySubject: 'Mathematics & Science (Classes 1–12)',
     medium: 'English, Hindi',
     availableSlots: '25 hours/week',
     travelRange: '5 km radius',
@@ -108,26 +108,28 @@ const TeacherDashboard = () => {
   const [students, setStudents] = useState([
     { id: 1, name: 'Rahul Varma', batchId: 'alpha-24', attendanceRate: 94, avgGrade: 88, status: 'Active', doubtPending: false },
     { id: 2, name: 'Sanya Singh', batchId: 'jee-focus', attendanceRate: 98, avgGrade: 95, status: 'Active', doubtPending: true },
-    { id: 3, name: 'Arjun Mehta', batchId: 'alpha-24', attendanceRate: 85, avgGrade: 76, status: 'Needs Attention', doubtPending: false },
-    { id: 4, name: 'Adit K.', batchId: 'neet-masters', attendanceRate: 90, avgGrade: 84, status: 'Active', doubtPending: true },
-    { id: 5, name: 'Vikram R.', batchId: 'foundation-a', attendanceRate: 92, avgGrade: 82, status: 'Active', doubtPending: false },
-    { id: 6, name: 'Neha Gupta', batchId: 'jee-focus', attendanceRate: 96, avgGrade: 91, status: 'Active', doubtPending: false },
-    { id: 7, name: 'Kunal Sen', batchId: 'neet-masters', attendanceRate: 78, avgGrade: 65, status: 'Needs Attention', doubtPending: false },
-    { id: 8, name: 'Amit Shah', batchId: 'foundation-a', attendanceRate: 89, avgGrade: 80, status: 'Active', doubtPending: false }
+    { id: 1, name: 'Rahul Varma', batchId: 'class-9-10', attendanceRate: 94, avgGrade: 88, status: 'Active', doubtPending: false },
+    { id: 2, name: 'Sanya Singh', batchId: 'class-6-8', attendanceRate: 98, avgGrade: 95, status: 'Active', doubtPending: true },
+    { id: 3, name: 'Arjun Mehta', batchId: 'class-9-10', attendanceRate: 85, avgGrade: 76, status: 'Needs Attention', doubtPending: false },
+    { id: 4, name: 'Adit K.', batchId: 'class-11-12', attendanceRate: 90, avgGrade: 84, status: 'Active', doubtPending: true },
+    { id: 5, name: 'Vikram R.', batchId: 'class-1-5', attendanceRate: 92, avgGrade: 82, status: 'Active', doubtPending: false },
+    { id: 6, name: 'Neha Gupta', batchId: 'class-6-8', attendanceRate: 96, avgGrade: 91, status: 'Active', doubtPending: false },
+    { id: 7, name: 'Kunal Sen', batchId: 'class-11-12', attendanceRate: 78, avgGrade: 65, status: 'Needs Attention', doubtPending: false },
+    { id: 8, name: 'Amit Shah', batchId: 'class-1-5', attendanceRate: 89, avgGrade: 80, status: 'Active', doubtPending: false }
   ]);
 
   const [batches, setBatches] = useState([
-    { id: 'alpha-24', title: 'Mathematics Advanced', badge: 'JEE', badgeColor: 'bg-blue-500', cap: '42/50', progress: 65 },
-    { id: 'jee-focus', title: 'Linear Algebra Focus', badge: 'JEE', badgeColor: 'bg-indigo-500', cap: '30/30', progress: 40 },
-    { id: 'neet-masters', title: 'Calculus Masters', badge: 'NEET', badgeColor: 'bg-purple-500', cap: '15/25', progress: 88 },
-    { id: 'foundation-a', title: 'Foundation Maths', badge: 'K-10', badgeColor: 'bg-emerald-500', cap: '48/50', progress: 25 }
+    { id: 'class-9-10', title: 'Class 9-10 Mathematics', badge: 'Sec', badgeColor: 'bg-blue-500', cap: '42/50', progress: 65 },
+    { id: 'class-11-12', title: 'Class 11-12 Science', badge: 'Sr', badgeColor: 'bg-indigo-500', cap: '30/30', progress: 40 },
+    { id: 'class-6-8', title: 'Class 6-8 English & Science', badge: 'Mid', badgeColor: 'bg-purple-500', cap: '15/25', progress: 88 },
+    { id: 'class-1-5', title: 'Class 1-5 Primary All Subjects', badge: 'Pri', badgeColor: 'bg-emerald-500', cap: '48/50', progress: 25 }
   ]);
 
   const [newBatchTitle, setNewBatchTitle] = useState('');
-  const [newBatchCategory, setNewBatchCategory] = useState('JEE');
-  const [newBatchCap, setNewBatchCap] = useState('50');
+  const [newBatchCategory, setNewBatchCategory] = useState('Secondary');
+  const [newBatchCap, setNewBatchCap] = useState(30);
 
-  const [selectedBatchId, setSelectedBatchId] = useState('alpha-24');
+  const [selectedBatchId, setSelectedBatchId] = useState('class-9-10');
 
   // 3. Attendance Tab State
   const [attendanceDate, setAttendanceDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -143,28 +145,28 @@ const TeacherDashboard = () => {
   const [submittingAttendance, setSubmittingAttendance] = useState(false);
 
   // 4. Content Management & Resource Sharing State
-  const [materials, setMaterials] = useState([
-    { id: 1, name: 'Calculus_101_Lecture_Notes.pdf', batch: 'Mathematics Advanced', size: '2.4 MB', date: '2026-06-11', downloads: 14 },
-    { id: 2, name: 'JEE_Algebra_Practice_Set_2.pdf', batch: 'Linear Algebra Focus', size: '1.8 MB', date: '2026-06-08', downloads: 29 },
-    { id: 3, name: 'Trigonometry_Formulas_Cheat_Sheet.pdf', batch: 'Foundation Maths', size: '920 KB', date: '2026-06-05', downloads: 41 }
+  const [resources, setResources] = useState([
+    { id: 1, name: 'Class_9_Chapter5_Triangles_Notes.pdf', batch: 'Class 9-10 Mathematics', size: '2.4 MB', date: '2026-06-11', downloads: 14 },
+    { id: 2, name: 'Class_11_Physics_Unit1_Worksheet.pdf', batch: 'Class 11-12 Science', size: '1.8 MB', date: '2026-06-08', downloads: 29 },
+    { id: 3, name: 'Class_6_Grammar_Cheat_Sheet.pdf', batch: 'Class 6-8 English & Science', size: '920 KB', date: '2026-06-05', downloads: 41 }
   ]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [customFileName, setCustomFileName] = useState('');
   const [newMaterialDesc, setNewMaterialDesc] = useState('');
   const [newMaterialType, setNewMaterialType] = useState('PDF Document');
-  const [newMaterialBatch, setNewMaterialBatch] = useState('Mathematics Advanced');
+  const [newMaterialBatch, setNewMaterialBatch] = useState('Class 9-10 Mathematics');
   const [shareMaterialEmail, setShareMaterialEmail] = useState('');
   const [shareMaterialId, setShareMaterialId] = useState(1);
 
   // 5. Collaborative Lessons & Co-creation
-  const [collaborativeLessons, setCollaborativeLessons] = useState([
-    { id: 1, title: 'Calculus Integration Techniques', topic: 'Calculus', authors: ['Priya Sharma', 'Amit Sen'], lastEdit: 'Today, 11:20 AM', activeUsers: 2, comments: [
+  const [collabDocs, setCollabDocs] = useState([
+    { id: 1, title: 'Class 9 Chapter 5: Triangles Notes', topic: 'Mathematics', authors: ['Priya Sharma', 'Amit Sen'], lastEdit: 'Today, 11:20 AM', activeUsers: 2, comments: [
       { author: 'Amit Sen', text: 'Priya, I added 3 MCQ exercises to the final assessment slide.', time: '1h ago' },
       { author: 'Priya Sharma', text: 'Awesome Amit, I will format the solution sheet tonight.', time: '30m ago' }
     ]},
-    { id: 2, title: 'Matrices and Determinants Prep', topic: 'Algebra', authors: ['Priya Sharma', 'Neha Gupta'], lastEdit: 'Yesterday', activeUsers: 1, comments: [
-      { author: 'Neha Gupta', text: 'Can we include a section on Cramer\'s rule in the notes?', time: 'Yesterday' }
+    { id: 2, title: 'Science Lab: Light Reflection', topic: 'Science', authors: ['Priya Sharma', 'Neha Gupta'], lastEdit: 'Yesterday', activeUsers: 1, comments: [
+      { author: 'Neha Gupta', text: 'Can we include a section on mirror types in the lab manual?', time: 'Yesterday' }
     ]}
   ]);
   const [activeCollabId, setActiveCollabId] = useState(1);
@@ -172,9 +174,9 @@ const TeacherDashboard = () => {
   const [inviteCollabEmail, setInviteCollabEmail] = useState('');
 
   // 6. AI Lesson Plan Generator
-  const [aiTopic, setAiTopic] = useState('Limits and Continuity');
-  const [aiGrade, setAiGrade] = useState('Grade 11 (JEE Main)');
-  const [aiObjective, setAiObjective] = useState('Understand limit definitions, calculate basic limits, and check continuous functions.');
+  const [aiTopic, setAiTopic] = useState('Geometry: Triangles');
+  const [aiGrade, setAiGrade] = useState('Class 9 (Secondary)');
+  const [aiObjective, setAiObjective] = useState('Understand congruence criteria, apply SSS/SAS/ASA rules, and solve proof problems.');
   const [aiDuration, setAiDuration] = useState('60 Mins');
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiStep, setAiStep] = useState(0);
@@ -194,7 +196,7 @@ const TeacherDashboard = () => {
   const [aiGeneratedFeedback, setAiGeneratedFeedback] = useState('');
   const [aiGeneratingFeedback, setAiGeneratingFeedback] = useState(false);
   
-  const [aiQuestionTopic, setAiQuestionTopic] = useState('Quadratic Polynomials');
+  const [aiQuestionTopic, setAiQuestionTopic] = useState('Linear Equations');
   const [aiQuestionCount, setAiQuestionCount] = useState(5);
   const [aiQuestionDifficulty, setAiQuestionDifficulty] = useState('Medium');
   const [aiGeneratedQuestions, setAiGeneratedQuestions] = useState([]);
@@ -202,7 +204,7 @@ const TeacherDashboard = () => {
 
   // 8. Live Virtual Classroom
   const [isLiveClass, setIsLiveClass] = useState(false);
-  const [liveClassBatch, setLiveClassBatch] = useState('alpha-24');
+  const [liveClassBatch, setLiveClassBatch] = useState('class-9-10');
   const [liveMicMuted, setLiveMicMuted] = useState(false);
   const [liveVideoMuted, setLiveVideoMuted] = useState(false);
   const [liveScreenSharing, setLiveScreenSharing] = useState(false);
@@ -220,24 +222,78 @@ const TeacherDashboard = () => {
 
   // 9. Demo Class Bookings
   const [demoBookings, setDemoBookings] = useState([
-    { id: 1, studentName: 'Aarav Mehta', grade: 'Grade 10', subject: 'Quadratic Equations', requestedSlot: '2026-06-15 at 04:00 PM', parentName: 'Sanjay Mehta', status: 'Pending', msg: 'Aarav is preparing for junior Olympiad and needs advanced concepts.' },
-    { id: 2, studentName: 'Riya Gupta', grade: 'Grade 12', subject: 'Limits & Calculus', requestedSlot: '2026-06-16 at 02:00 PM', parentName: 'Deepa Gupta', status: 'Pending', msg: 'Riya is struggling with board level derivatives.' }
+    { id: 1, studentName: 'Aarav Mehta', grade: 'Class 7', subject: 'Fractions', requestedSlot: '2026-06-15 at 04:00 PM', parentName: 'Sanjay Mehta', status: 'Pending', msg: 'Aarav is struggling with division of fractions.' },
+    { id: 2, studentName: 'Riya Gupta', grade: 'Class 10', subject: 'Geometry', requestedSlot: '2026-06-16 at 02:00 PM', parentName: 'Deepa Gupta', status: 'Pending', msg: 'Riya needs help with triangle congruence proofs.' }
   ]);
+
+  // 10.5 Daily Learning Reports
+  const [dailyReports, setDailyReports] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cograd_daily_reports');
+      return saved ? JSON.parse(saved) : [
+        { id: 1, date: '2026-06-15', batch: 'Class 9-10 Mathematics', batchId: 'class-9-10', topicsCovered: 'Triangles — Congruence rules (SSS, SAS, ASA, AAS) with 4 worked examples on proofs', homeworkAssigned: 'Exercise 5.2 (Q1–Q8)', engagement: 'Excellent', notes: 'Rahul Varma showed exceptional understanding.', submittedAt: '2026-06-15T18:30:00' },
+        { id: 2, date: '2026-06-14', batch: 'Class 6-8 English & Science', batchId: 'class-6-8', topicsCovered: 'Light — Reflection and laws of reflection with mirror diagram activities', homeworkAssigned: 'Draw 3 ray diagrams', engagement: 'Good', notes: 'Batch was attentive.', submittedAt: '2026-06-14T17:45:00' }
+      ];
+    } catch { return []; }
+  });
+  const [dlrBatch, setDlrBatch] = useState('class-9-10');
+  const [dlrTopics, setDlrTopics] = useState('');
+  const [dlrHomework, setDlrHomework] = useState('');
+  const [dlrEngagement, setDlrEngagement] = useState('Good');
+  const [dlrNotes, setDlrNotes] = useState('');
+  const [dlrSubmitting, setDlrSubmitting] = useState(false);
+
+  // Persist daily reports to localStorage
+  const saveDailyReports = (reports) => {
+    localStorage.setItem('cograd_daily_reports', JSON.stringify(reports));
+    setDailyReports(reports);
+  };
+
+  // 10.6 Content Pre-Schedule
+  const [contentSchedule, setContentSchedule] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cograd_content_schedule');
+      return saved ? JSON.parse(saved) : [
+        { id: 1, date: '2026-06-17', batch: 'Class 9-10 Mathematics', batchId: 'class-9-10', chapter: 'Lines & Angles', objectives: 'Identify angle relationships, prove basic theorems', materials: 'Protractor', duration: 90, status: 'Upcoming' },
+        { id: 2, date: '2026-06-18', batch: 'Class 11-12 Science', batchId: 'class-11-12', chapter: 'Laws of Motion', objectives: 'Define inertia, derive F=ma', materials: 'Calculator', duration: 75, status: 'Upcoming' },
+        { id: 3, date: '2026-06-20', batch: 'Class 9-10 Mathematics', batchId: 'class-9-10', chapter: 'Parallel Lines', objectives: 'Apply angle sum property', materials: 'Compass', duration: 90, status: 'Upcoming' }
+      ];
+    } catch { return []; }
+  });
+  const [csDate, setCsDate] = useState('');
+  const [csBatch, setCsBatch] = useState('class-9-10');
+  const [csChapter, setCsChapter] = useState('');
+  const [csObjectives, setCsObjectives] = useState('');
+  const [csMaterials, setCsMaterials] = useState('');
+  const [csDuration, setCsDuration] = useState(60);
+  const [csSubmitting, setCsSubmitting] = useState(false);
+
+  const saveContentSchedule = (schedule) => {
+    localStorage.setItem('cograd_content_schedule', JSON.stringify(schedule));
+    setContentSchedule(schedule);
+  };
+
+  const deleteScheduleItem = (id) => {
+    const updated = contentSchedule.filter(s => s.id !== id);
+    saveContentSchedule(updated);
+    setToastMessage('Scheduled lesson removed.');
+    setShowToast(true);
+  };
 
   // 10. Assignments State
   const [assignments, setAssignments] = useState([
-    { id: 1, name: 'Limits & Continuity Practice', batch: 'Mathematics Advanced', submissions: '22/25', dueDate: '2026-06-18' },
-    { id: 2, name: 'Matrix Theory Homework', batch: 'Linear Algebra Focus', submissions: '30/30', dueDate: '2026-06-15' },
-    { id: 3, name: 'Calculus Assignment #4', batch: 'Calculus Masters', submissions: '12/25', dueDate: '2026-06-20' }
+    { id: 1, name: 'Chapter 5 Triangles Practice Sheet', batch: 'Class 9-10 Mathematics', submissions: '22/25', dueDate: '2026-06-18' },
+    { id: 2, name: 'Laws of Motion Numericals', batch: 'Class 11-12 Science', submissions: '30/30', dueDate: '2026-06-15' },
+    { id: 3, name: 'Light Ray Diagrams', batch: 'Class 6-8 English & Science', submissions: '12/25', dueDate: '2026-06-20' }
   ]);
   const [newAssignName, setNewAssignName] = useState('');
-  const [newAssignBatch, setNewAssignBatch] = useState('Mathematics Advanced');
+  const [newAssignBatch, setNewAssignBatch] = useState('Class 9-10 Mathematics');
   const [newAssignDueDate, setNewAssignDueDate] = useState('');
 
   const [gradingSubmissions, setGradingSubmissions] = useState([
-    { id: 1, studentName: 'Arjun Mehta', assignmentName: 'Limits & Continuity Practice', file: 'Arjun_Calculus_HW.pdf', date: '2026-06-12', accuracy: 80, clarity: 75, timeliness: 90, remarks: 'Good approach, keep it up!', status: 'Graded', finalScore: 82 },
-    { id: 2, studentName: 'Rahul Varma', assignmentName: 'Limits & Continuity Practice', file: 'Rahul_Limits_Homework.pdf', date: '2026-06-12', accuracy: 90, clarity: 95, timeliness: 100, remarks: 'Excellent logical steps and formulas written clearly.', status: 'Graded', finalScore: 95 },
-    { id: 3, studentName: 'Sanya Singh', assignmentName: 'Limits & Continuity Practice', file: 'Sanya_Limits_Sheet.pdf', date: '2026-06-13', accuracy: 0, clarity: 0, timeliness: 0, remarks: '', status: 'Pending', finalScore: 0 }
+    { id: 1, studentName: 'Arjun Mehta', assignmentName: 'Chapter 5 Triangles Practice Sheet', file: 'Arjun_Triangles_HW.pdf', date: '2026-06-12', accuracy: 80, clarity: 75, timeliness: 90, remarks: 'Good approach, keep it up!', status: 'Graded', finalScore: 82 },
+    { id: 2, studentName: 'Rahul Varma', assignmentName: 'Chapter 5 Triangles Practice Sheet', file: 'Rahul_Triangles_Sheet.pdf', date: '2026-06-12', accuracy: 90, clarity: 95, timeliness: 100, remarks: 'Excellent proofs.', status: 'Graded', finalScore: 95 },
+    { id: 3, studentName: 'Sanya Singh', assignmentName: 'Chapter 5 Triangles Practice Sheet', file: 'Sanya_Triangles.pdf', date: '2026-06-13', accuracy: 0, clarity: 0, timeliness: 0, remarks: '', status: 'Pending', finalScore: 0 }
   ]);
   const [selectedGradingSub, setSelectedGradingSub] = useState(null);
   const [rubricAccuracy, setRubricAccuracy] = useState(85);
@@ -247,11 +303,11 @@ const TeacherDashboard = () => {
 
   // 11. Test & Grading Engine (Quiz builder)
   const [tests, setTests] = useState([
-    { id: 1, name: 'Weekly Quiz: Integration', batch: 'Mathematics Advanced', date: '2026-06-24', duration: '60 Mins', status: 'Upcoming', questionsCount: 5 },
-    { id: 2, name: 'Full Term: Algebra Quiz', batch: 'Linear Algebra Focus', date: '2026-06-28', duration: '90 Mins', status: 'Upcoming', questionsCount: 8 }
+    { id: 1, name: 'Chapter 5: Triangles Unit Test', batch: 'Class 9-10 Mathematics', date: '2026-06-22', duration: '60 Mins', status: 'Upcoming', questionsCount: 6 },
+    { id: 2, name: 'Laws of Motion Quiz', batch: 'Class 11-12 Science', date: '2026-06-28', duration: '45 Mins', status: 'Upcoming', questionsCount: 8 }
   ]);
   const [newTestName, setNewTestName] = useState('');
-  const [newTestBatch, setNewTestBatch] = useState('Mathematics Advanced');
+  const [newTestBatch, setNewTestBatch] = useState('Class 9-10 Mathematics');
   const [newTestDate, setNewTestDate] = useState('');
   const [newTestDuration, setNewTestDuration] = useState('60 Mins');
   const [quizQuestions, setQuizQuestions] = useState([]);
@@ -271,15 +327,15 @@ const TeacherDashboard = () => {
 
   // 13. Smart Timetable & Scheduling
   const [timetableSessions, setTimetableSessions] = useState({
-    'Monday-09:00 AM - 10:30 AM': { title: 'Calculus 101', batch: 'Grade 11 • Alpha-24', type: 'Lecture' },
-    'Monday-11:00 AM - 12:30 PM': { title: 'Algebra Focus', batch: 'Grade 12 • JEE-Focus', type: 'Lecture' },
-    'Tuesday-11:00 AM - 12:30 PM': { title: 'Algebra Focus', batch: 'Grade 12 • JEE-Focus', type: 'Lecture' },
-    'Wednesday-09:00 AM - 10:30 AM': { title: 'Calculus 101', batch: 'Grade 11 • Alpha-24', type: 'Lecture' },
-    'Wednesday-02:00 PM - 03:30 PM': { title: 'Geometry Fundamentals', batch: 'Grade 10 • Foundation-A', type: 'Lecture' },
-    'Thursday-11:00 AM - 12:30 PM': { title: 'Algebra Focus', batch: 'Grade 12 • JEE-Focus', type: 'Lecture' },
-    'Friday-09:00 AM - 10:30 AM': { title: 'Calculus 101', batch: 'Grade 11 • Alpha-24', type: 'Lecture' },
-    'Friday-02:00 PM - 03:30 PM': { title: 'Geometry Fundamentals', batch: 'Grade 10 • Foundation-A', type: 'Lecture' },
-    'Saturday-11:00 AM - 12:30 PM': { title: 'Calculus Masters', batch: 'Grade 12 • NEET-Masters', type: 'Lecture' }
+    'Monday-09:00 AM - 10:30 AM': { title: 'Class 9-10 Mathematics', batch: 'Class 9 • Secondary C1', type: 'Lecture' },
+    'Monday-11:00 AM - 12:30 PM': { title: 'Class 11-12 Science', batch: 'Class 11 • Senior D1', type: 'Lecture' },
+    'Tuesday-11:00 AM - 12:30 PM': { title: 'Class 11-12 Science', batch: 'Class 12 • Senior D1', type: 'Lecture' },
+    'Wednesday-09:00 AM - 10:30 AM': { title: 'Class 9-10 Mathematics', batch: 'Class 10 • Secondary C1', type: 'Lecture' },
+    'Wednesday-02:00 PM - 03:30 PM': { title: 'Class 6-8 English & Science', batch: 'Class 7 • Middle B1', type: 'Lecture' },
+    'Thursday-11:00 AM - 12:30 PM': { title: 'Class 11-12 Science', batch: 'Class 11 • Senior D1', type: 'Lecture' },
+    'Friday-09:00 AM - 10:30 AM': { title: 'Class 9-10 Mathematics', batch: 'Class 9 • Secondary C1', type: 'Lecture' },
+    'Friday-02:00 PM - 03:30 PM': { title: 'Class 1-5 Primary All Subjects', batch: 'Class 4 • Primary A1', type: 'Lecture' },
+    'Saturday-11:00 AM - 12:30 PM': { title: 'Class 6-8 English & Science', batch: 'Class 8 • Middle B1', type: 'Lecture' }
   });
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduleSlotKey, setScheduleSlotKey] = useState('');
@@ -306,7 +362,7 @@ const TeacherDashboard = () => {
   });
   const billingLogs = [
     { id: 1, date: '2026-06-12', description: 'Weekly Batch Class: Mathematics Advanced', amount: 4800, status: 'Paid' },
-    { id: 2, date: '2026-06-10', description: 'Weekly Batch Class: Linear Algebra Focus', amount: 3600, status: 'Paid' },
+    { id: 2, date: '2026-06-10', description: 'Weekly Batch Class: Class 9-10 Mathematics', amount: 3600, status: 'Paid' },
     { id: 3, date: '2026-06-08', description: '1-on-1 Session: Adit K. (Trigonometry)', amount: 1200, status: 'Paid' },
     { id: 4, date: '2026-06-05', description: 'Demo Class Booking: Aarav Mehta', amount: 600, status: 'Paid' }
   ];
@@ -324,7 +380,7 @@ const TeacherDashboard = () => {
 
   // 17. Announcements Broadcasting
   const [broadcasts, setBroadcasts] = useState([
-    { id: 1, title: 'Calculus Quiz Postponed', batch: 'Mathematics Advanced', body: 'Please note the quiz scheduled for tomorrow is postponed to Monday. Please use this weekend to practice worksheet 4.', date: 'Today, 12:45 PM', views: 34 },
+    { id: 1, title: 'Chapter 5 Triangles Quiz Postponed', batch: 'Class 9-10 Mathematics', body: 'Please note the quiz scheduled for tomorrow is postponed to Monday. Please use this weekend to revise congruence rules and angle proofs.', date: 'Today, 12:45 PM', views: 34 },
     { id: 2, title: 'Study Material Uploaded', batch: 'All Batches', body: 'New trigonometry cheat sheet has been uploaded in resource sharing. Check it out.', date: '3 days ago', views: 82 }
   ]);
   const [newBTitle, setNewBTitle] = useState('');
@@ -566,7 +622,7 @@ const TeacherDashboard = () => {
     if (isUploading) return;
     setIsUploading(true);
     setUploadProgress(0);
-    const mockFiles = ['Calculus_Limits_Formulas.pdf', 'JEE_Matrix_Sheet.pdf', 'Algebra_Identities.pdf'];
+    const mockFiles = ['Class9_Triangles_Notes.pdf', 'Class10_Algebra_Worksheet.pdf', 'Class6_Light_Diagrams.pdf'];
     const fileName = mockFiles[Math.floor(Math.random() * mockFiles.length)];
     setCustomFileName(fileName);
     
@@ -579,14 +635,14 @@ const TeacherDashboard = () => {
         setTimeout(() => {
           setIsUploading(false);
           const newFile = {
-            id: materials.length + 1,
+            id: resources.length + 1,
             name: fileName,
             batch: newMaterialBatch,
             size: '1.4 MB',
             date: new Date().toISOString().split('T')[0],
             downloads: 0
           };
-          setMaterials(prev => [newFile, ...prev]);
+          setResources(prev => [newFile, ...prev]);
           setToastMessage('New study notes successfully cataloged!');
           setShowToast(true);
         }, 200);
@@ -762,7 +818,7 @@ const TeacherDashboard = () => {
                 </span>
                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               </div>
-              <h3 className="text-base font-extrabold text-slate-800 leading-snug">Grade 11 - Calculus 101</h3>
+              <h3 className="text-base font-extrabold text-slate-800 leading-snug">Class 9 - Mathematics: Triangles</h3>
             </div>
             <div className="text-xs text-slate-500 font-semibold bg-slate-50 py-1.5 px-3 rounded-lg w-max">Batch: Mathematics Advanced</div>
           </div>
@@ -778,7 +834,7 @@ const TeacherDashboard = () => {
               <h3 className="text-base font-extrabold text-slate-800 leading-snug">Grade 12 - Advanced Algebra</h3>
             </div>
             <div className="flex items-center justify-between mt-2">
-              <div className="text-xs text-blue-600 bg-blue-50 py-1.5 px-3 rounded-lg font-bold">Batch: Linear Algebra Focus</div>
+              <div className="text-xs text-blue-600 bg-blue-50 py-1.5 px-3 rounded-lg font-bold">Batch: Class 11-12 Science</div>
               <button 
                 onClick={() => { setActiveTab('Classroom & Batches'); setSubTabs(p => ({ ...p, classroom: 'live_class' })); setIsLiveClass(true); }} 
                 className="bg-blue-500 text-white font-bold text-xs py-2 px-3 rounded-lg hover:bg-blue-600 transition-all cursor-pointer flex items-center gap-1 shadow-sm hover:scale-[1.02] active:scale-95 animate-bounce"
@@ -797,7 +853,7 @@ const TeacherDashboard = () => {
               </div>
               <h3 className="text-base font-extrabold text-slate-800 leading-snug">Grade 10 - Geometry Fundamentals</h3>
             </div>
-            <div className="text-xs text-slate-500 font-semibold bg-slate-50 py-1.5 px-3 rounded-lg w-max">Batch: Foundation-A</div>
+            <div className="text-xs text-slate-500 font-semibold bg-slate-50 py-1.5 px-3 rounded-lg w-max">Batch: Class 1-5 Primary</div>
           </div>
         </div>
       </section>
@@ -908,7 +964,7 @@ const TeacherDashboard = () => {
     const handleAddCollabComment = (e) => {
       e.preventDefault();
       if (!newCollabComment.trim()) return;
-      setCollaborativeLessons(prev => prev.map(c => 
+      setCollabDocs(prev => prev.map(c => 
         c.id === activeCollabId 
           ? { ...c, comments: [...c.comments, { author: 'Priya Sharma', text: newCollabComment, time: 'Just now' }] }
           : c
@@ -921,7 +977,7 @@ const TeacherDashboard = () => {
     const handleInviteCollab = (e) => {
       e.preventDefault();
       if (!inviteCollabEmail.trim()) return;
-      setCollaborativeLessons(prev => prev.map(c => 
+      setCollabDocs(prev => prev.map(c => 
         c.id === activeCollabId 
           ? { ...c, authors: [...c.authors, inviteCollabEmail] }
           : c
@@ -1025,7 +1081,7 @@ const TeacherDashboard = () => {
             <div className="md:col-span-7 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
               <h3 className="text-base font-black text-slate-800">Uploaded Course Materials</h3>
               <div className="divide-y divide-slate-50">
-                {materials.map(mat => (
+                {resources.map(mat => (
                   <div key={mat.id} className="py-4 flex justify-between items-center gap-4">
                     <div className="flex items-start space-x-3 min-w-0">
                       <div className="w-10 h-10 bg-red-50 text-red-500 border border-red-100 rounded-xl flex items-center justify-center font-black text-[10px] shrink-0">PDF</div>
@@ -1036,7 +1092,7 @@ const TeacherDashboard = () => {
                     </div>
                     <div className="flex items-center space-x-1 shrink-0">
                       <button onClick={() => alert("Downloading sample file...")} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg cursor-pointer"><Download className="w-4 h-4" /></button>
-                      <button onClick={() => setMaterials(prev => prev.filter(m => m.id !== mat.id))} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => setResources(prev => prev.filter(m => m.id !== mat.id))} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
                 ))}
@@ -1058,7 +1114,7 @@ const TeacherDashboard = () => {
                     onChange={(e) => setShareMaterialId(parseInt(e.target.value))}
                     className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold text-slate-700 cursor-pointer"
                   >
-                    {materials.map(m => (
+                    {resources.map(m => (
                       <option key={m.id} value={m.id}>{m.name}</option>
                     ))}
                   </select>
@@ -1089,7 +1145,7 @@ const TeacherDashboard = () => {
               <div className="space-y-3">
                 <div className="p-3 bg-white border border-slate-100 rounded-xl flex justify-between items-center text-xs">
                   <div>
-                    <h4 className="font-extrabold text-slate-700">Calculus_101_Lecture_Notes.pdf</h4>
+                    <h4 className="font-extrabold text-slate-700">Class9_Chapter5_Triangles_Notes.pdf</h4>
                     <p className="text-slate-400 mt-0.5">Shared with amit.sen@cograd.com • Today, 10:40 AM</p>
                   </div>
                   <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[9px]">Delivered</span>
@@ -1105,7 +1161,7 @@ const TeacherDashboard = () => {
             <div className="md:col-span-4 space-y-4">
               <h3 className="text-base font-black text-slate-800">Shared Lesson Plans</h3>
               <div className="space-y-3">
-                {collaborativeLessons.map(lesson => (
+                {collabDocs.map(lesson => (
                   <div 
                     key={lesson.id}
                     onClick={() => setActiveCollabId(lesson.id)}
@@ -1128,7 +1184,7 @@ const TeacherDashboard = () => {
 
             <div className="md:col-span-8 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-6">
               {(() => {
-                const activeL = collaborativeLessons.find(c => c.id === activeCollabId) || collaborativeLessons[0];
+                const activeL = collabDocs.find(c => c.id === activeCollabId) || collabDocs[0];
                 return (
                   <>
                     <div className="flex justify-between items-start border-b border-slate-50 pb-4">
@@ -1253,7 +1309,7 @@ const TeacherDashboard = () => {
                 <input 
                   type="text" required value={aiGrade}
                   onChange={(e) => setAiGrade(e.target.value)}
-                  placeholder="e.g. Grade 11 (Calculus)"
+                  placeholder="e.g. Class 9 (Secondary — Maths)"
                   className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold"
                 />
               </div>
@@ -1276,8 +1332,11 @@ const TeacherDashboard = () => {
                   <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Difficulty</label>
                   <select className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none font-bold text-slate-700 cursor-pointer">
                     <option>Standard Board</option>
-                    <option>JEE Main / Olympiad</option>
-                    <option>NEET Physics Math</option>
+                    <option>All Classes (1–12)</option>
+                    <option>Primary (Class 1–5)</option>
+                    <option>Middle (Class 6–8)</option>
+                    <option>Secondary (Class 9–10)</option>
+                    <option>Senior Secondary (Class 11–12)</option>
                   </select>
                 </div>
               </div>
@@ -1496,6 +1555,8 @@ const TeacherDashboard = () => {
   const renderClassroomBatches = () => {
     const isLive = subTabs.classroom === 'live_class';
     const isDemo = subTabs.classroom === 'demo_bookings';
+    const isDLR = subTabs.classroom === 'daily_reports';
+    const isSchedule = subTabs.classroom === 'content_schedule';
 
     const handleCreateBatch = (e) => {
       e.preventDefault();
@@ -1504,7 +1565,7 @@ const TeacherDashboard = () => {
         id: newBatchTitle.toLowerCase().replace(/\s+/g, '-'),
         title: newBatchTitle,
         badge: newBatchCategory,
-        badgeColor: newBatchCategory === 'JEE' ? 'bg-blue-500' : newBatchCategory === 'NEET' ? 'bg-purple-500' : 'bg-emerald-500',
+        badgeColor: newBatchCategory === 'Secondary' ? 'bg-blue-500' : newBatchCategory === 'Senior' ? 'bg-indigo-500' : newBatchCategory === 'Middle' ? 'bg-purple-500' : 'bg-emerald-500',
         cap: `0/${newBatchCap}`,
         progress: 0
       };
@@ -1529,11 +1590,13 @@ const TeacherDashboard = () => {
             <p className="text-slate-500 text-xs mt-1">Manage student batches, enter live streaming virtual classes, and review demo slots.</p>
           </div>
           
-          <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200/50 w-max shadow-inner">
+          <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200/50 w-max shadow-inner flex-wrap gap-1">
             {[
               { id: 'batches', label: 'Batches' },
               { id: 'live_class', label: 'Live Classroom' },
-              { id: 'demo_bookings', label: 'Demo Bookings' }
+              { id: 'demo_bookings', label: 'Demo Bookings' },
+              { id: 'content_schedule', label: '📅 Schedule' },
+              { id: 'daily_reports', label: '📋 Daily Reports' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -1607,9 +1670,10 @@ const TeacherDashboard = () => {
                         onChange={(e) => setNewBatchCategory(e.target.value)}
                         className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-bold text-slate-700 cursor-pointer"
                       >
-                        <option>JEE</option>
-                        <option>NEET</option>
-                        <option>Foundation</option>
+                        <option>Primary</option>
+                        <option>Middle</option>
+                        <option>Secondary</option>
+                        <option>Senior</option>
                       </select>
                     </div>
                     <div>
@@ -1913,6 +1977,384 @@ const TeacherDashboard = () => {
           </div>
         )}
 
+        {/* Daily Learning Reports tab */}
+        {isDLR && (
+          <div className="space-y-6">
+            {/* Submit New Report Form */}
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-5">
+              <div>
+                <h3 className="text-base font-black text-slate-800">Submit Today's Learning Report</h3>
+                <p className="text-xs text-slate-400 font-semibold mt-1">Parents will see this report in their dashboard within seconds. Be thorough and honest.</p>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!dlrTopics.trim()) return;
+                  setDlrSubmitting(true);
+                  setTimeout(() => {
+                    const batchObj = batches.find(b => b.id === dlrBatch);
+                    const newReport = {
+                      id: Date.now(),
+                      date: new Date().toISOString().split('T')[0],
+                      batch: batchObj?.title || dlrBatch,
+                      batchId: dlrBatch,
+                      topicsCovered: dlrTopics,
+                      homeworkAssigned: dlrHomework,
+                      engagement: dlrEngagement,
+                      notes: dlrNotes,
+                      submittedAt: new Date().toISOString(),
+                      teacherName: teacherProfile.name,
+                      subject: teacherProfile.primarySubject
+                    };
+                    const updated = [newReport, ...dailyReports];
+                    saveDailyReports(updated);
+                    setDlrTopics('');
+                    setDlrHomework('');
+                    setDlrNotes('');
+                    setDlrEngagement('Good');
+                    setDlrSubmitting(false);
+                    setToastMessage('Daily learning report submitted! Parents can now see it.');
+                    setShowToast(true);
+                    triggerConfetti();
+                  }, 1200);
+                }}
+                className="space-y-4"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Batch / Class</label>
+                    <select
+                      value={dlrBatch}
+                      onChange={(e) => setDlrBatch(e.target.value)}
+                      className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-bold text-slate-700 cursor-pointer focus:outline-none"
+                    >
+                      {batches.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Student Engagement</label>
+                    <select
+                      value={dlrEngagement}
+                      onChange={(e) => setDlrEngagement(e.target.value)}
+                      className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-bold text-slate-700 cursor-pointer focus:outline-none"
+                    >
+                      <option>Excellent</option>
+                      <option>Good</option>
+                      <option>Average</option>
+                      <option>Poor</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Topics Covered Today <span className="text-rose-500">*</span></label>
+                  <textarea
+                    required
+                    rows={3}
+                    value={dlrTopics}
+                    onChange={(e) => setDlrTopics(e.target.value)}
+                    placeholder="E.g. Chapter 5: Limits — Taught 3 types of indeterminate forms. Solved 5 worked examples on L'Hôpital's rule..."
+                    className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-semibold text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Homework / Practice Assigned</label>
+                  <input
+                    type="text"
+                    value={dlrHomework}
+                    onChange={(e) => setDlrHomework(e.target.value)}
+                    placeholder="E.g. Worksheet 5.3 (Q1–Q8), Practice integrations sheet"
+                    className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-semibold text-slate-700 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Special Notes for Parents (optional)</label>
+                  <textarea
+                    rows={2}
+                    value={dlrNotes}
+                    onChange={(e) => setDlrNotes(e.target.value)}
+                    placeholder="E.g. Rahul Varma needs extra practice on integration by parts before the next session..."
+                    className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-semibold text-slate-700 resize-none focus:outline-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={dlrSubmitting}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 disabled:opacity-70"
+                >
+                  <Send className="w-4 h-4" />
+                  {dlrSubmitting ? 'Submitting report...' : 'Submit & Notify Parents'}
+                </button>
+              </form>
+            </div>
+
+            {/* Recent Submitted Reports */}
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-black text-slate-800">Recent Submitted Reports</h3>
+                <span className="text-[10px] font-black text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full">{dailyReports.length} reports</span>
+              </div>
+              {dailyReports.length === 0 ? (
+                <div className="py-10 text-center">
+                  <div className="text-4xl mb-3">📋</div>
+                  <p className="text-xs font-bold text-slate-400">No reports submitted yet. Submit your first daily report above.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {dailyReports.slice(0, 5).map(report => {
+                    const engEmoji = report.engagement === 'Excellent' ? '🌟' : report.engagement === 'Good' ? '✅' : report.engagement === 'Average' ? '⚠️' : '❌';
+                    return (
+                      <div key={report.id} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-full">{report.date}</span>
+                            <span className="text-[10px] font-bold text-slate-500">{report.batch}</span>
+                          </div>
+                          <span className="text-xs font-black">{engEmoji} {report.engagement}</span>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-wide mb-0.5">Topics Covered</p>
+                          <p className="text-xs text-slate-700 font-semibold leading-relaxed">{report.topicsCovered}</p>
+                        </div>
+                        {report.homeworkAssigned && (
+                          <div>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-wide mb-0.5">Homework Assigned</p>
+                            <p className="text-xs text-slate-600 font-semibold">{report.homeworkAssigned}</p>
+                          </div>
+                        )}
+                        {report.notes && (
+                          <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                            <p className="text-[10px] font-black text-amber-700 uppercase tracking-wide mb-0.5">📌 Parent Note</p>
+                            <p className="text-xs text-amber-800 font-semibold italic">{report.notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ================================================= */}
+        {/* CONTENT PRE-SCHEDULE TAB                          */}
+        {/* ================================================= */}
+        {isSchedule && (
+          <div className="space-y-6">
+
+            {/* Schedule New Lesson Form */}
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-5">
+              <div>
+                <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-base">📅</span>
+                  Schedule Upcoming Lesson
+                </h3>
+                <p className="text-xs text-slate-400 font-semibold mt-1 ml-10">Plan what you'll teach before the session. Parents will see this in their dashboard.</p>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!csChapter.trim() || !csDate) return;
+                  setCsSubmitting(true);
+                  setTimeout(() => {
+                    const batchObj = batches.find(b => b.id === csBatch);
+                    const newItem = {
+                      id: Date.now(),
+                      date: csDate,
+                      batch: batchObj?.title || csBatch,
+                      batchId: csBatch,
+                      chapter: csChapter,
+                      objectives: csObjectives,
+                      materials: csMaterials,
+                      duration: Number(csDuration),
+                      status: 'Upcoming',
+                      createdAt: new Date().toISOString(),
+                      teacherName: teacherProfile.name
+                    };
+                    const sorted = [newItem, ...contentSchedule].sort((a, b) => new Date(a.date) - new Date(b.date));
+                    saveContentSchedule(sorted);
+                    setCsChapter('');
+                    setCsObjectives('');
+                    setCsMaterials('');
+                    setCsDate('');
+                    setCsDuration(60);
+                    setCsSubmitting(false);
+                    setToastMessage('📅 Lesson scheduled! Parents can now see the upcoming topic.');
+                    setShowToast(true);
+                    triggerConfetti();
+                  }, 900);
+                }}
+                className="space-y-4"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Session Date <span className="text-rose-500">*</span></label>
+                    <input
+                      type="date"
+                      required
+                      min={new Date().toISOString().split('T')[0]}
+                      value={csDate}
+                      onChange={(e) => setCsDate(e.target.value)}
+                      className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Batch / Class</label>
+                    <select
+                      value={csBatch}
+                      onChange={(e) => setCsBatch(e.target.value)}
+                      className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-bold text-slate-700 cursor-pointer focus:outline-none"
+                    >
+                      {batches.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Duration (minutes)</label>
+                    <input
+                      type="number"
+                      min={30}
+                      max={180}
+                      step={15}
+                      value={csDuration}
+                      onChange={(e) => setCsDuration(e.target.value)}
+                      className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-bold text-slate-700 focus:outline-none text-center"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Chapter / Topic <span className="text-rose-500">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    value={csChapter}
+                    onChange={(e) => setCsChapter(e.target.value)}
+                    placeholder="E.g. Chapter 9: Differential Equations — Variable Separable Method"
+                    className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Learning Objectives</label>
+                  <textarea
+                    rows={2}
+                    value={csObjectives}
+                    onChange={(e) => setCsObjectives(e.target.value)}
+                    placeholder="E.g. Students will identify DEs by order, solve 3 types of variable-separable problems, apply to real-world examples..."
+                    className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-semibold text-slate-700 resize-none focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Materials / Resources Needed</label>
+                  <input
+                    type="text"
+                    value={csMaterials}
+                    onChange={(e) => setCsMaterials(e.target.value)}
+                    placeholder="E.g. Textbook Ch.9, DEs Practice Worksheet, Graph paper"
+                    className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-semibold text-slate-700 focus:outline-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={csSubmitting}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-black py-3 rounded-xl hover:from-indigo-700 hover:to-violet-700 transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md shadow-indigo-500/20 disabled:opacity-70"
+                >
+                  <Calendar className="w-4 h-4" />
+                  {csSubmitting ? 'Scheduling...' : 'Save to Upcoming Schedule'}
+                </button>
+              </form>
+            </div>
+
+            {/* Upcoming Lessons Timeline */}
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-black text-slate-800">Upcoming Lesson Plan</h3>
+                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-full">{contentSchedule.length} sessions planned</span>
+              </div>
+
+              {contentSchedule.length === 0 ? (
+                <div className="py-10 text-center space-y-2">
+                  <div className="text-4xl">📅</div>
+                  <p className="text-xs font-bold text-slate-400">No lessons scheduled yet. Use the form above to plan your first session.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {contentSchedule.map((item, idx) => {
+                    const sessionDate = new Date(item.date + 'T00:00:00');
+                    const todayDate = new Date();
+                    todayDate.setHours(0, 0, 0, 0);
+                    const isPast = sessionDate < todayDate;
+                    const isToday = sessionDate.toDateString() === todayDate.toDateString();
+                    const daysUntil = Math.round((sessionDate - todayDate) / (1000 * 60 * 60 * 24));
+
+                    return (
+                      <div key={item.id || idx} className={`relative p-4 rounded-2xl border flex gap-4 transition-all group ${
+                        isToday ? 'bg-indigo-50/80 border-indigo-200 shadow-sm' :
+                        isPast ? 'bg-slate-50/50 border-slate-100 opacity-60' :
+                        'bg-white border-slate-100 hover:border-indigo-200 hover:shadow-sm'
+                      }`}>
+                        {/* Date column */}
+                        <div className={`shrink-0 w-14 h-14 rounded-2xl flex flex-col items-center justify-center border font-black ${
+                          isToday ? 'bg-indigo-600 border-indigo-700 text-white' :
+                          isPast ? 'bg-slate-100 border-slate-200 text-slate-400' :
+                          'bg-indigo-50 border-indigo-100 text-indigo-700'
+                        }`}>
+                          <span className="text-[10px] font-extrabold uppercase">{sessionDate.toLocaleDateString('en-IN', { month: 'short' })}</span>
+                          <span className="text-xl leading-none">{sessionDate.getDate()}</span>
+                          <span className="text-[9px] font-bold">{sessionDate.toLocaleDateString('en-IN', { weekday: 'short' })}</span>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-grow min-w-0 space-y-1.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-xs font-black text-slate-800 leading-snug">{item.chapter}</p>
+                              <p className="text-[10px] text-slate-500 font-semibold mt-0.5">{item.batch} &bull; {item.duration} min</p>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {isToday && <span className="text-[9px] font-black text-white bg-indigo-600 px-2 py-0.5 rounded-full animate-pulse">TODAY</span>}
+                              {!isPast && !isToday && daysUntil <= 3 && <span className="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">in {daysUntil}d</span>}
+                              {isPast && <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Done</span>}
+                              <button
+                                onClick={() => deleteScheduleItem(item.id)}
+                                className="p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+                                title="Remove scheduled lesson"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {item.objectives && (
+                            <p className="text-[10px] text-slate-500 font-semibold leading-relaxed">
+                              <span className="font-black text-slate-600">Objectives: </span>{item.objectives}
+                            </p>
+                          )}
+
+                          {item.materials && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded">📚 {item.materials}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
+
       </div>
     );
   };
@@ -2131,7 +2573,7 @@ const TeacherDashboard = () => {
                   <input
                     type="text" required value={newTestName}
                     onChange={(e) => setNewTestName(e.target.value)}
-                    placeholder="e.g. Calculus Integration Midterm"
+                    placeholder="e.g. Class 9 Triangles Unit Test"
                     className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none font-semibold"
                   />
                 </div>
@@ -2911,100 +3353,31 @@ const TeacherDashboard = () => {
 
         {/* Doubt Solver Tab */}
         {isDoubts && (
-          <div className="space-y-4 max-w-2xl mx-auto">
-            <div className="flex justify-between items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200/50 w-max shadow-inner">
-              {[
-                { id: 'all', label: 'All Inquiries' },
-                { id: 'pending', label: 'Pending' },
-                { id: 'resolved', label: 'Resolved' }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setDoubtFilter(tab.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    doubtFilter === tab.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 max-w-2xl mx-auto space-y-6 text-center">
+            <div className="w-16 h-16 bg-emerald-500 text-white rounded-3xl flex items-center justify-center shadow-lg shadow-emerald-500/25 mx-auto">
+              <MessageSquare className="w-8 h-8" />
             </div>
-
-            <div className="space-y-4">
-              {doubts
-                .filter(d => {
-                  if (doubtFilter === 'pending') return !d.reply;
-                  if (doubtFilter === 'resolved') return d.reply;
-                  return true;
-                })
-                .map(d => (
-                  <div key={d.id} className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
-                    <div className="flex items-start space-x-3">
-                      <img src={d.avatar} alt="Student Avatar" className="w-10 h-10 rounded-full object-cover border border-slate-100 shrink-0" />
-                      <div className="min-w-0 flex-grow">
-                        <div className="flex justify-between items-baseline">
-                          <h4 className="font-extrabold text-slate-800 text-sm">{d.student}</h4>
-                          <span className="text-[10px] text-slate-400 font-bold">{d.date}</span>
-                        </div>
-                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-semibold mt-1">"{d.msg}"</p>
-                      </div>
-                    </div>
-
-                    {d.reply && (
-                      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-start space-x-2.5 text-xs">
-                        <CornerUpLeft className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="font-black text-blue-600">You replied: </span>
-                          <span className="text-slate-700 font-semibold">{d.reply}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {!d.reply && doubtReplyId !== d.id && (
-                      <div className="flex justify-end pt-2">
-                        <button 
-                          onClick={() => setDoubtReplyId(d.id)}
-                          className="text-blue-500 hover:text-blue-700 font-extrabold text-xs flex items-center space-x-1 cursor-pointer"
-                        >
-                          <CornerUpLeft className="w-4 h-4" /> <span>Solve Doubt</span>
-                        </button>
-                      </div>
-                    )}
-
-                    {doubtReplyId === d.id && (
-                      <div className="space-y-3 pt-3 border-t border-slate-50">
-                        <div className="flex gap-2">
-                          <input 
-                            type="text"
-                            value={doubtReplyInput}
-                            onChange={(e) => setDoubtReplyInput(e.target.value)}
-                            placeholder="Type academic explanation..."
-                            className="flex-grow py-2 px-3 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-500"
-                          />
-                          <button 
-                            onClick={() => handleSendDoubtText(d.id)}
-                            className="bg-blue-500 hover:bg-blue-600 text-white p-2.5 rounded-xl cursor-pointer shrink-0"
-                          >
-                            <Send className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <button 
-                            type="button"
-                            onClick={() => handleRecordVoiceNote(d.id)}
-                            disabled={isRecordingVoice}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer ${
-                              isRecordingVoice ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                            }`}
-                          >
-                            {isRecordingVoice ? `Recording voice... 0:0${voiceRecordSeconds}` : '🎙️ Record Voice Note'}
-                          </button>
-                          <button onClick={() => setDoubtReplyId(null)} className="text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer">Cancel</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+            <div>
+              <h3 className="text-xl font-black text-slate-800">Doubt Solving via WhatsApp</h3>
+              <p className="text-emerald-600 text-xs font-bold mt-1">Official Moderated Cohort Groups</p>
+            </div>
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4 text-left">
+              <p className="text-slate-600 text-xs leading-relaxed font-semibold">
+                To ensure permanent access to whiteboard drawings, question files, and ease of coordination, Cograd Pathshala redirects all student academic doubts to **WhatsApp Cohorts & Direct Chats**.
+              </p>
+              <div className="p-3 bg-blue-50/50 border border-blue-100/50 rounded-xl flex items-start space-x-2 text-[10px] text-slate-500 font-bold">
+                <span className="text-blue-600 font-black">ℹ</span>
+                <p className="leading-relaxed">Please check your official WhatsApp cohort group chat or student chat direct feeds on your phone to respond to doubt messages.</p>
+              </div>
+            </div>
+            <div className="pt-2">
+              <button 
+                onClick={() => window.open("https://chat.whatsapp.com/CP-OrganicChem", "_blank")}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-4 rounded-xl shadow-lg shadow-emerald-600/15 hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+              >
+                <MessageSquare className="w-4.5 h-4.5" />
+                <span>Open WhatsApp Web Cohorts</span>
+              </button>
             </div>
           </div>
         )}

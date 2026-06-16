@@ -46,10 +46,12 @@ import {
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Home');
+  const [profileSubTab, setProfileSubTab] = useState('profile');
   const [selectedProgressSubject, setSelectedProgressSubject] = useState('All');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isMoodExpanded, setIsMoodExpanded] = useState(false);
   
   // Notification states
   const [unreadNotifications, setUnreadNotifications] = useState([
@@ -93,7 +95,7 @@ const StudentDashboard = () => {
     name: 'Rahul Sharma',
     email: 'rahul.sharma@cograd.com',
     phone: '9876500112',
-    standard: 'Class 12 (JEE Main & Advanced)',
+    standard: 'Class 10 (CBSE Board)',
     avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80',
     studentId: 'CP-2026-STU88',
     parentName: 'Mr. Alok Sharma',
@@ -452,51 +454,18 @@ const StudentDashboard = () => {
     if (!teacherDoubtText.trim()) return;
 
     const teacherObj = [
-      { name: 'Mr. Rajesh Kumar', subject: 'Chemistry', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80' },
-      { name: 'Dr. Priya Sharma', subject: 'Mathematics', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80' },
-      { name: 'Dr. Sarah Johnson', subject: 'Physics', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=80' }
+      { name: 'Mr. Rajesh Kumar', subject: 'Chemistry', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80', phone: '919876543210' },
+      { name: 'Dr. Priya Sharma', subject: 'Mathematics', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80', phone: '919876543210' },
+      { name: 'Dr. Sarah Johnson', subject: 'Physics', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=80', phone: '919876543210' }
     ].find(t => t.name === selectedTeacherForDoubt);
 
-    const newDoubt = {
-      id: Date.now(),
-      teacher: teacherObj.name,
-      subject: teacherObj.subject,
-      avatar: teacherObj.avatar,
-      question: teacherDoubtText,
-      status: 'Pending Review',
-      attachment: teacherDoubtAttachment,
-      answer: null,
-      timestamp: 'Just now',
-      replyTime: null
-    };
-
-    setTeacherDoubts(prev => [newDoubt, ...prev]);
+    const phone = teacherObj ? teacherObj.phone : '919876543210';
+    const text = `Hello ${selectedTeacherForDoubt}, I am a student at Cograd Pathshala. I have an academic doubt:\n\n${teacherDoubtText}`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+    
     setTeacherDoubtText('');
     setTeacherDoubtAttachment(null);
-    triggerToast(`Doubt submitted to ${teacherObj.name}!`);
-
-    // Simulate teacher resolving it in real-time
-    setTimeout(() => {
-      const responses = {
-        'Mr. Rajesh Kumar': 'This is a great question! For this mechanism, recall that the electrophilicity of the carbonyl carbon is the driving factor. I have annotated your image to show the nucleophilic attack of the hydride shift. Let\'s review this in our next class.',
-        'Dr. Priya Sharma': 'Remember that the limits of integration must be evaluated carefully after substituting the variable. In this case, since sec(x) is periodic, check the interval to ensure it does not cross any vertical asymptotes.',
-        'Dr. Sarah Johnson': 'For Young\'s Double Slit Experiment, the path difference Δx = d * sin(θ) ≈ d * y / D. The condition for constructive interference is d * y / D = n * λ. I have uploaded the derivation notes. Please check it.'
-      };
-
-      setTeacherDoubts(prev => prev.map(d => {
-        if (d.id === newDoubt.id) {
-          return {
-            ...d,
-            status: 'Resolved',
-            answer: responses[d.teacher] || 'I have reviewed your doubt. Let\'s discuss this in detail during our session.',
-            replyTime: 'Just now'
-          };
-        }
-        return d;
-      }));
-
-      triggerToast(`${teacherObj.name} resolved your doubt!`);
-    }, 12000);
+    triggerToast(`Redirecting to WhatsApp chat with ${teacherObj?.name || selectedTeacherForDoubt}`);
   };
 
 
@@ -892,10 +861,9 @@ const StudentDashboard = () => {
               { name: 'My Classes', icon: BookOpen },
               { name: 'Study Material', icon: BookMarked },
               { name: 'Tests', icon: FileText },
-              { name: 'Progress', icon: TrendingUp },
               { name: 'AI Doubt Solver', label: 'Doubt Solver', icon: MessageSquare },
               { name: 'Study Groups', icon: Users },
-              { name: 'My Profile', icon: User }
+              { name: 'Profile & Progress', icon: User }
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.name;
@@ -925,7 +893,7 @@ const StudentDashboard = () => {
         <div className="p-3 border-t border-slate-100 bg-slate-50/50">
           <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-slate-100 shadow-sm">
             <button
-              onClick={() => setActiveTab('My Profile')}
+              onClick={() => { setActiveTab('Profile & Progress'); setProfileSubTab('profile'); }}
               className="flex items-center space-x-2.5 text-left flex-grow cursor-pointer hover:opacity-85 transition-opacity"
             >
               <img
@@ -1040,7 +1008,7 @@ const StudentDashboard = () => {
 
             {/* Profile Avatar */}
             <button
-              onClick={() => setActiveTab('My Profile')}
+              onClick={() => { setActiveTab('Profile & Progress'); setProfileSubTab('profile'); }}
               className="w-10 h-10 rounded-full border-2 border-slate-100 hover:border-blue-500 transition-colors cursor-pointer overflow-hidden shadow-sm"
               title="View Profile Details"
             >
@@ -1074,11 +1042,11 @@ const StudentDashboard = () => {
                   <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-700"></div>
                   <div>
                     <h3 className="text-2xl sm:text-3xl font-black mb-2 tracking-tight">Hi Rahul, 👋</h3>
-                    <p className="text-blue-100 text-sm max-w-md font-medium leading-relaxed">
+                    <p className="text-blue-100 text-xs max-w-md font-medium leading-relaxed">
                       You are in high-focus JEE prep mode. Make sure to complete organic homework and attempt today's live lecture.
                     </p>
                     {localStorage.getItem('cograd_parent_message_to_Rahul_Varma') && (
-                      <div className="mt-4 p-3 bg-white/15 backdrop-blur-md rounded-2xl border border-white/10 text-xs text-white max-w-md">
+                      <div className="mt-3 p-2.5 bg-white/15 backdrop-blur-md rounded-2xl border border-white/10 text-xs text-white max-w-md">
                         <div className="font-extrabold uppercase tracking-wider text-[9px] text-amber-300 flex items-center gap-1">
                           <span className="w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
                           <span>Message from Mrs. Sharma (Parent)</span>
@@ -1086,6 +1054,50 @@ const StudentDashboard = () => {
                         <p className="mt-1 font-semibold italic text-slate-100">"{localStorage.getItem('cograd_parent_message_to_Rahul_Varma')}"</p>
                       </div>
                     )}
+                    
+                    {/* Compact Integrated Mood Check-in */}
+                    <div className="mt-3 p-2.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 text-xs space-y-2 max-w-md">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center space-x-1.5">
+                          <Smile className="w-4 h-4 text-blue-200" />
+                          <span className="font-bold text-slate-100 text-[10px]">How's prep mood today?</span>
+                        </div>
+                        <div className="flex items-center space-x-1 justify-end">
+                          {[
+                            { mood: 'Stressed', emoji: '😫' },
+                            { mood: 'Focused', emoji: '🎯' },
+                            { mood: 'Exhausted', emoji: '😴' },
+                            { mood: 'Confident', emoji: '💪' },
+                            { mood: 'Happy', emoji: '😊' }
+                          ].map((m) => {
+                            const isSelected = selectedMood === m.mood;
+                            return (
+                              <button
+                                key={m.mood}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoodSelect(m.mood);
+                                }}
+                                className={`w-6.5 h-6.5 rounded-lg flex items-center justify-center transition-all cursor-pointer text-xs hover:bg-white/10 ${
+                                  isSelected
+                                    ? 'bg-white text-slate-900 scale-110 shadow-sm'
+                                    : ''
+                                }`}
+                                title={m.mood}
+                              >
+                                {m.emoji}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      {moodAdvice && (
+                        <p className="text-[9px] text-blue-100 font-semibold leading-relaxed border-t border-white/5 pt-1.5 animate-slide-up">
+                          💡 {moodAdvice}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <div className="mt-6 flex flex-wrap items-center gap-3">
                     <button
@@ -1163,60 +1175,7 @@ const StudentDashboard = () => {
                 </div>
               </div>
 
-              {/* Well-being & Mood Check-in Card */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                  <div>
-                    <h3 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
-                      <Smile className="w-5 h-5 text-blue-600" />
-                      <span>Well-being & Mood Check-in</span>
-                    </h3>
-                    <p className="text-slate-400 text-xs font-semibold">How is your JEE prep going today? Log your mood for tips and +50 XP!</p>
-                  </div>
-                  {selectedMood && (
-                    <span className="text-xs font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-100 animate-pulse">
-                      Mood Logged: <span className="font-extrabold">{selectedMood}</span>
-                    </span>
-                  )}
-                </div>
 
-                <div className="grid grid-cols-5 gap-2.5 sm:gap-4 mb-4">
-                  {[
-                    { mood: 'Stressed', emoji: '😫', color: 'border-rose-100 hover:bg-rose-50/50 hover:border-rose-300 text-rose-700' },
-                    { mood: 'Focused', emoji: '🎯', color: 'border-blue-100 hover:bg-blue-50/50 hover:border-blue-300 text-blue-700' },
-                    { mood: 'Exhausted', emoji: '😴', color: 'border-amber-100 hover:bg-amber-50/50 hover:border-amber-300 text-amber-700' },
-                    { mood: 'Confident', emoji: '💪', color: 'border-indigo-100 hover:bg-indigo-50/50 hover:border-indigo-300 text-indigo-700' },
-                    { mood: 'Happy', emoji: '😊', color: 'border-emerald-100 hover:bg-emerald-50/50 hover:border-emerald-300 text-emerald-700' }
-                  ].map((m) => {
-                    const isSelected = selectedMood === m.mood;
-                    return (
-                      <button
-                        key={m.mood}
-                        type="button"
-                        onClick={() => handleMoodSelect(m.mood)}
-                        className={`p-3 rounded-2xl border text-center flex flex-col items-center justify-center transition-all duration-300 cursor-pointer active:scale-95 ${
-                          isSelected
-                            ? 'bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-600/10 scale-105'
-                            : `bg-slate-50/30 ${m.color}`
-                        }`}
-                      >
-                        <span className="text-2xl sm:text-3xl mb-1">{m.emoji}</span>
-                        <span className="text-[10px] sm:text-xs font-bold">{m.mood}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {moodAdvice && (
-                  <div className="bg-blue-50 border border-blue-100/50 rounded-2xl p-4 flex items-start space-x-3.5 animate-slide-up">
-                    <Sparkles className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                    <div>
-                      <h5 className="text-xs font-bold text-blue-900">Personalized Wellness Advice</h5>
-                      <p className="text-xs text-blue-700 mt-1 leading-relaxed font-semibold">{moodAdvice}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
 
               {/* Parent Assigned Test Card */}
               {localStorage.getItem('cograd_assigned_tests_Rahul_Varma') && (() => {
@@ -1359,7 +1318,7 @@ const StudentDashboard = () => {
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-black text-slate-800 tracking-tight">Recent Results</h3>
-                      <button onClick={() => setActiveTab('Progress')} className="text-xs text-blue-600 hover:underline font-bold">All Mocks</button>
+                      <button onClick={() => { setActiveTab('Profile & Progress'); setProfileSubTab('progress'); }} className="text-xs text-blue-600 hover:underline font-bold">All Mocks</button>
                     </div>
 
                     <div className="space-y-3">
@@ -1502,93 +1461,25 @@ const StudentDashboard = () => {
                       <button
                         type="submit"
                         disabled={isOffline || !teacherDoubtText.trim()}
-                        className="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-indigo-600/15 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                        className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-emerald-600/15 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
                       >
-                        <Send className="w-3 h-3" />
-                        <span>Send to Teacher</span>
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>Send on WhatsApp</span>
                       </button>
                     </div>
                   </div>
                 </form>
 
-                {/* Teacher doubts list */}
-                <div className="mt-6 space-y-3.5 border-t border-slate-50 pt-5">
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Doubts History with Tutors</h4>
-                  
-                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                    {teacherDoubts.map((doubt) => {
-                      const isExpanded = expandedTeacherDoubtId === doubt.id;
-                      return (
-                        <div
-                          key={doubt.id}
-                          className="border border-slate-100 bg-slate-50/20 rounded-2xl overflow-hidden hover:border-slate-200 transition-colors"
-                        >
-                          {/* Header Summary Row */}
-                          <div
-                            onClick={() => setExpandedTeacherDoubtId(isExpanded ? null : doubt.id)}
-                            className="p-4 flex items-center justify-between gap-4 cursor-pointer select-none hover:bg-slate-50/40 transition-colors"
-                          >
-                            <div className="flex items-center space-x-3 min-w-0">
-                              <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-slate-100">
-                                <img src={doubt.avatar} alt={doubt.teacher} className="w-full h-full object-cover" />
-                              </div>
-                              <div className="min-w-0">
-                                <div className="text-xs font-black text-slate-800 flex items-center space-x-2">
-                                  <span>{doubt.teacher}</span>
-                                  <span className="text-[9px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-lg">{doubt.subject}</span>
-                                </div>
-                                <div className="text-[10px] text-slate-600 font-semibold truncate mt-0.5 max-w-[200px] sm:max-w-xs">{doubt.question}</div>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center space-x-3 shrink-0">
-                              <div className="text-right">
-                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg ${
-                                  doubt.status === 'Resolved'
-                                    ? 'bg-blue-100 text-blue-800'
-                                    : 'bg-amber-100 text-amber-800 animate-pulse'
-                                }`}>
-                                  {doubt.status}
-                                </span>
-                                <span className="text-[8px] text-slate-400 block mt-0.5">{doubt.timestamp}</span>
-                              </div>
-                              <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} />
-                            </div>
-                          </div>
-
-                          {/* Expanded Content Drawer */}
-                          {isExpanded && (
-                            <div className="px-4 pb-4 pt-1 border-t border-slate-50/50 bg-slate-50/30 text-xs text-slate-600 space-y-3">
-                              <div>
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Your Question</span>
-                                <p className="font-semibold text-slate-700">{doubt.question}</p>
-                                {doubt.attachment && (
-                                  <div className="inline-flex items-center space-x-1.5 bg-slate-100 border border-slate-200 text-slate-600 px-2 py-0.5 rounded-lg text-[9px] font-bold mt-1.5">
-                                    <Paperclip className="w-2.5 h-2.5" />
-                                    <span>{doubt.attachment}</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="pt-2 border-t border-slate-100/50">
-                                <span className="text-[9px] font-black text-indigo-500 uppercase tracking-wider block mb-1">Teacher's Explanation</span>
-                                {doubt.status === 'Resolved' ? (
-                                  <div className="bg-indigo-50/40 border border-indigo-100/30 rounded-xl p-3 text-slate-700 leading-relaxed font-medium">
-                                    <p className="whitespace-pre-line">{doubt.answer}</p>
-                                    <span className="text-[8px] text-slate-400 block mt-2 text-right">Resolved: {doubt.replyTime}</span>
-                                  </div>
-                                ) : (
-                                  <p className="italic text-slate-400 font-semibold flex items-center space-x-1.5">
-                                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping"></span>
-                                    <span>Teacher is reviewing your sheet. Expected resolution shortly...</span>
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                {/* Direct WhatsApp info banner */}
+                <div className="mt-6 p-4 bg-emerald-50/40 border border-emerald-100/30 rounded-2xl flex items-start space-x-3 text-xs">
+                  <div className="p-1.5 bg-emerald-500 text-white rounded-lg shrink-0">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-slate-800">Direct WhatsApp Learning Thread</h4>
+                    <p className="text-slate-500 font-semibold leading-relaxed mt-1">
+                      All doubts, voice notes, solved sheets, and lesson updates are saved directly in your official WhatsApp chat thread. This allows you to reference them anytime offline without session timeouts.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -2112,8 +2003,34 @@ const StudentDashboard = () => {
           )}
 
           {/* TAB 5: PROGRESS */}
-          {activeTab === 'Progress' && (
+          {activeTab === 'Profile & Progress' && profileSubTab === 'progress' && (
             <div className="space-y-6 tab-content-enter">
+              {/* Sub-tab Switcher */}
+              <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit border border-slate-200/50 shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => { setProfileSubTab('profile'); setIsEditingProfile(false); }}
+                  className={`px-5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    profileSubTab === 'profile'
+                      ? 'bg-white text-blue-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Profile Details
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setProfileSubTab('progress'); setIsEditingProfile(false); }}
+                  className={`px-5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    profileSubTab === 'progress'
+                      ? 'bg-white text-blue-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Academic Progress
+                </button>
+              </div>
+
               {/* Stats KPI Block */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 {[
@@ -2228,95 +2145,188 @@ const StudentDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Subject-wise Performance Card */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                    <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Subject-wise Performance</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {subjectBreakdown.map((sb) => (
-                        <div key={sb.subject} className="space-y-2 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                          <div className="flex justify-between items-center text-xs font-bold text-slate-700">
-                            <span>{sb.subject}</span>
-                            <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-black uppercase tracking-wider">{sb.grade}</span>
-                          </div>
-                          <div className="flex items-center space-x-3 mt-2">
-                            <div className="h-2.5 bg-slate-200 rounded-full flex-grow overflow-hidden">
-                              <div className={`h-full rounded-full ${
-                                sb.color === 'emerald' ? 'bg-blue-600' :
-                                sb.color === 'blue' ? 'bg-blue-500' : 'bg-indigo-500'
-                              }`} style={{ width: `${sb.rate}%` }}></div>
+                  {/* Subject-wise Performance & Focus Tracker Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Subject-wise Performance Card */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Subject-wise Performance</h3>
+                        <div className="space-y-4">
+                          {subjectBreakdown.map((sb) => (
+                            <div key={sb.subject} className="space-y-2 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                              <div className="flex justify-between items-center text-xs font-bold text-slate-700">
+                                <span>{sb.subject}</span>
+                                <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-black uppercase tracking-wider">{sb.grade}</span>
+                              </div>
+                              <div className="flex items-center space-x-3 mt-2">
+                                <div className="h-2.5 bg-slate-200 rounded-full flex-grow overflow-hidden">
+                                  <div className={`h-full rounded-full ${
+                                    sb.color === 'emerald' ? 'bg-blue-600' :
+                                    sb.color === 'blue' ? 'bg-blue-500' : 'bg-indigo-500'
+                                  }`} style={{ width: `${sb.rate}%` }}></div>
+                                </div>
+                                <span className="text-xs font-black text-slate-800 shrink-0">{sb.rate}%</span>
+                              </div>
                             </div>
-                            <span className="text-xs font-black text-slate-800 shrink-0">{sb.rate}%</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Focus & Strength Tracker */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Focus & Strength Tracker</h3>
+                        
+                        <div className="space-y-3">
+                          {/* Strength block */}
+                          <div className="bg-blue-50/40 border border-blue-100/50 p-3.5 rounded-2xl">
+                            <div className="flex items-center space-x-2 text-blue-800 mb-2">
+                              <CheckCircle2 className="w-4.5 h-4.5 text-blue-600" />
+                              <span className="text-xs font-black uppercase tracking-wider">Top Concept Strengths</span>
+                            </div>
+                            <ul className="text-xs text-blue-700 font-semibold space-y-1 pl-6 list-disc">
+                              <li>Organic reaction mechanisms</li>
+                              <li>Definite Integration derivations</li>
+                              <li>Electrostatics charge fields</li>
+                            </ul>
+                          </div>
+
+                          {/* Growth block */}
+                          <div className="bg-rose-50/40 border border-rose-100/50 p-3.5 rounded-2xl">
+                            <div className="flex items-center space-x-2 text-rose-800 mb-2">
+                              <AlertCircle className="w-4.5 h-4.5 text-rose-600" />
+                              <span className="text-xs font-black uppercase tracking-wider">Growth Focus Areas</span>
+                            </div>
+                            <ul className="text-xs text-rose-700 font-semibold space-y-1 pl-6 list-disc">
+                              <li>Rotational dynamics kinematics</li>
+                              <li>Chemical Kinetics rate calculations</li>
+                              <li>Vector algebra geometry vectors</li>
+                            </ul>
                           </div>
                         </div>
-                      ))}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Interactive Chapter Checklist Tracker */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+                  {/* Chapter Tracker & Leaderboard Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Interactive Chapter Checklist Tracker */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
                       <div>
-                        <h3 className="text-base font-black text-slate-800 tracking-tight">Interactive Syllabus Chapter Tracker</h3>
-                        <p className="text-slate-400 text-xs font-semibold mt-0.5">Click badges to cycle status and update coverage calculations live!</p>
-                      </div>
-                      
-                      {/* Filter pills */}
-                      <div className="flex bg-slate-100 p-1 rounded-xl shrink-0 border border-slate-200/20">
-                        {['All', 'Mathematics', 'Physics', 'Chemistry'].map(subj => (
-                          <button
-                            key={subj}
-                            onClick={() => setSelectedProgressSubject(subj)}
-                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                              selectedProgressSubject === subj
-                                ? 'bg-white text-blue-800 shadow-sm'
-                                : 'text-slate-500 hover:text-slate-800'
-                            }`}
-                          >
-                            {subj === 'Mathematics' ? 'Maths' : subj}
-                          </button>
-                        ))}
+                        <div className="flex flex-col gap-3 mb-4">
+                          <div>
+                            <h3 className="text-base font-black text-slate-800 tracking-tight">Syllabus Chapter Tracker</h3>
+                            <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Click status badges to cycle states</p>
+                          </div>
+                          
+                          {/* Filter pills */}
+                          <div className="flex bg-slate-100 p-1 rounded-xl w-full justify-between border border-slate-200/20">
+                            {['All', 'Mathematics', 'Physics', 'Chemistry'].map(subj => (
+                              <button
+                                key={subj}
+                                onClick={() => setSelectedProgressSubject(subj)}
+                                className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                                  selectedProgressSubject === subj
+                                    ? 'bg-white text-blue-800 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-800'
+                                }`}
+                              >
+                                {subj === 'Mathematics' ? 'Maths' : subj}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                          {syllabusChapters
+                            .filter(ch => selectedProgressSubject === 'All' || ch.subject === selectedProgressSubject)
+                            .map(ch => (
+                              <div
+                                key={ch.id}
+                                className="p-3 border border-slate-100 hover:border-blue-100/50 hover:bg-blue-50/5 rounded-2xl flex items-center justify-between transition-all"
+                              >
+                                <div className="min-w-0 pr-3">
+                                  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                                    ch.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-800' :
+                                    ch.subject === 'Mathematics' ? 'bg-blue-50 text-blue-800' :
+                                    'bg-indigo-50 text-indigo-800'
+                                  }`}>
+                                    {ch.subject}
+                                  </span>
+                                  <h4 className="text-xs font-bold text-slate-800 mt-1.5 truncate">{ch.name}</h4>
+                                </div>
+
+                                <button
+                                  onClick={() => toggleChapterStatus(ch.id)}
+                                  className={`px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-sm shrink-0 ${
+                                    ch.status === 'Completed' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
+                                    ch.status === 'In Progress' ? 'bg-amber-400 hover:bg-amber-500 text-white' :
+                                    'bg-slate-100 hover:bg-slate-200 text-slate-500'
+                                  }`}
+                                >
+                                  {ch.status}
+                                </button>
+                              </div>
+                            ))}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[360px] overflow-y-auto pr-1">
-                      {syllabusChapters
-                        .filter(ch => selectedProgressSubject === 'All' || ch.subject === selectedProgressSubject)
-                        .map(ch => (
-                          <div
-                            key={ch.id}
-                            className="p-3.5 border border-slate-100 hover:border-blue-100/50 hover:bg-blue-50/5 rounded-2xl flex items-center justify-between transition-all"
-                          >
-                            <div className="min-w-0 pr-3">
-                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                                ch.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-800' :
-                                ch.subject === 'Mathematics' ? 'bg-blue-50 text-blue-800' :
-                                'bg-indigo-50 text-indigo-800'
-                              }`}>
-                                {ch.subject}
-                              </span>
-                              <h4 className="text-xs font-bold text-slate-800 mt-2 truncate">{ch.name}</h4>
-                            </div>
-
-                            <button
-                              onClick={() => toggleChapterStatus(ch.id)}
-                              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-sm ${
-                                ch.status === 'Completed' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
-                                ch.status === 'In Progress' ? 'bg-amber-400 hover:bg-amber-500 text-white' :
-                                'bg-slate-100 hover:bg-slate-200 text-slate-500'
-                              }`}
-                            >
-                              {ch.status}
-                            </button>
+                    {/* Batch Leaderboard */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-50 mb-4">
+                          <div>
+                            <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+                              <Trophy className="w-5 h-5 text-amber-500" />
+                              <span>Batch Leaderboard</span>
+                            </h3>
+                            <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Top performing cohort peers</p>
                           </div>
-                        ))}
+                        </div>
+
+                        <div className="space-y-2">
+                          {[
+                            { name: 'Priya Patel', xp: 5120, rank: 1, isMe: false },
+                            { name: 'Harsh Verma', xp: 4980, rank: 2, isMe: false },
+                            { name: 'Aman Kumar', xp: 4900, rank: 3, isMe: false },
+                            { name: 'Rahul Sharma (You)', xp: studentXp, rank: 4, isMe: true },
+                            { name: 'Neha Singh', xp: 4750, rank: 5, isMe: false }
+                          ]
+                            .sort((a, b) => b.xp - a.xp)
+                            .map((u, i) => (
+                              <div
+                                key={i}
+                                className={`p-2.5 rounded-xl text-xs font-semibold flex justify-between items-center transition-colors ${
+                                  u.isMe
+                                    ? 'bg-blue-600 text-white shadow-md'
+                                    : 'bg-slate-50 border border-slate-100 text-slate-700'
+                                }`}
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <span className={`w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center ${
+                                    u.rank === 1 ? 'bg-amber-400 text-amber-900' :
+                                    u.rank === 2 ? 'bg-slate-305' : // dummy or fallback class corrected
+                                    u.rank === 3 ? 'bg-amber-600 text-white' :
+                                    'bg-slate-200 text-slate-800'
+                                  }`} style={u.rank === 2 ? { backgroundColor: '#cbd5e1', color: '#1e293b' } : {}}>
+                                    {u.rank}
+                                  </span>
+                                  <span>{u.name}</span>
+                                </div>
+                                <span className="font-black">{u.xp} XP</span>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Right Column: Badges achieved, Strengths & Stepper */}
+                {/* Right Column: Planner, Stepper, Badges, XP Store */}
                 <div className="lg:col-span-4 space-y-6">
-                  
-                  {/* Daily Target Planner & Goal Setting */}
+                  {/* Daily Target Planner */}
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-50">
                       <div>
@@ -2362,7 +2372,7 @@ const StudentDashboard = () => {
                             type="checkbox"
                             checked={g.completed}
                             onChange={() => {}} // handled by outer click
-                            className="w-4.5 h-4.5 text-blue-600 border-slate-355 rounded-lg focus:ring-0 cursor-pointer"
+                            className="w-4.5 h-4.5 text-blue-600 border-slate-300 rounded-lg focus:ring-0 cursor-pointer"
                           />
                           <span className="flex-grow select-none leading-snug">{g.text}</span>
                         </div>
@@ -2375,7 +2385,7 @@ const StudentDashboard = () => {
                         type="text"
                         value={newGoalText}
                         onChange={(e) => setNewGoalText(e.target.value)}
-                        placeholder="Add a custom daily target..."
+                        placeholder="Add daily target..."
                         className="flex-grow text-xs py-2 px-3 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-600/20 font-semibold"
                       />
                       <button
@@ -2388,40 +2398,7 @@ const StudentDashboard = () => {
                     </form>
                   </div>
 
-                  {/* Strengths & Focus Areas */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
-                    <h3 className="text-base font-black text-slate-800 tracking-tight">Focus & Strength Tracker</h3>
-                    
-                    <div className="space-y-3">
-                      {/* Strength block */}
-                      <div className="bg-blue-50/40 border border-blue-100/50 p-3.5 rounded-2xl">
-                        <div className="flex items-center space-x-2 text-blue-800 mb-2">
-                          <CheckCircle2 className="w-4.5 h-4.5 text-blue-600" />
-                          <span className="text-xs font-black uppercase tracking-wider">Top Concept Strengths</span>
-                        </div>
-                        <ul className="text-xs text-blue-700 font-semibold space-y-1 pl-6 list-disc">
-                          <li>Organic reaction mechanisms</li>
-                          <li>Definite Integration derivations</li>
-                          <li>Electrostatics charge fields</li>
-                        </ul>
-                      </div>
-
-                      {/* Growth block */}
-                      <div className="bg-rose-50/40 border border-rose-100/50 p-3.5 rounded-2xl">
-                        <div className="flex items-center space-x-2 text-rose-800 mb-2">
-                          <AlertCircle className="w-4.5 h-4.5 text-rose-600" />
-                          <span className="text-xs font-black uppercase tracking-wider">Growth Focus Areas</span>
-                        </div>
-                        <ul className="text-xs text-rose-700 font-semibold space-y-1 pl-6 list-disc">
-                          <li>Rotational dynamics kinematics</li>
-                          <li>Chemical Kinetics rate calculations</li>
-                          <li>Vector algebra geometry vectors</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Badges achievements panel */}
+                  {/* Milestone Badges */}
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
                     <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Milestone Badges</h3>
                     <div className="grid grid-cols-2 gap-3">
@@ -2443,88 +2420,47 @@ const StudentDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Leaderboard & XP Redeem Store */}
+                  {/* XP Redeem Shop */}
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-50">
                       <div>
                         <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
                           <Zap className="w-5 h-5 text-amber-500 fill-amber-500 animate-pulse" />
-                          <span>Leaderboard & XP Store</span>
+                          <span>XP Redeem Shop</span>
                         </h3>
-                        <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Trade your earned XP for premium JEE study items!</p>
+                        <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Trade XP for premium JEE resources</p>
                       </div>
                       <span className="text-xs font-black bg-amber-50 text-amber-700 px-3 py-1 rounded-full border border-amber-100 animate-pulse">
-                        {studentXp} XP Available
+                        {studentXp} XP
                       </span>
                     </div>
 
-                    {/* Leaderboard List */}
                     <div className="space-y-2">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Batch Leaderboard (Rank Coordinates)</span>
-                      {[
-                        { name: 'Priya Patel', xp: 5120, rank: 1, isMe: false },
-                        { name: 'Harsh Verma', xp: 4980, rank: 2, isMe: false },
-                        { name: 'Aman Kumar', xp: 4900, rank: 3, isMe: false },
-                        { name: 'Rahul Sharma (You)', xp: studentXp, rank: 4, isMe: true },
-                        { name: 'Neha Singh', xp: 4750, rank: 5, isMe: false }
-                      ]
-                        .sort((a, b) => b.xp - a.xp)
-                        .map((u, i) => (
-                          <div
-                            key={i}
-                            className={`p-2 rounded-xl text-xs font-semibold flex justify-between items-center transition-colors ${
-                              u.isMe
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'bg-slate-50 border border-slate-100 text-slate-700'
-                            }`}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <span className={`w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center ${
-                                u.rank === 1 ? 'bg-amber-400 text-amber-900' :
-                                u.rank === 2 ? 'bg-slate-300 text-slate-905' :
-                                u.rank === 3 ? 'bg-amber-600 text-white' :
-                                'bg-slate-200 text-slate-800'
-                              }`}>
-                                {u.rank}
-                              </span>
-                              <span>{u.name}</span>
+                      {rewardsList.map((reward) => {
+                        const isUnlocked = unlockedRewards.includes(reward.id);
+                        return (
+                          <div key={reward.id} className="p-3 bg-slate-50/50 border border-slate-150 rounded-2xl flex justify-between items-center gap-3">
+                            <div className="min-w-0 flex-grow">
+                              <h4 className="text-xs font-black text-slate-800 leading-tight">{reward.name}</h4>
+                              <p className="text-[9px] text-slate-500 font-semibold mt-0.5">{reward.desc}</p>
+                              <span className="text-[9px] text-amber-700 font-extrabold mt-1 block">Cost: {reward.cost} XP</span>
                             </div>
-                            <span className="font-black">{u.xp} XP</span>
+                            <button
+                              type="button"
+                              disabled={isUnlocked}
+                              onClick={() => handleRedeemReward(reward)}
+                              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors shrink-0 ${
+                                isUnlocked
+                                  ? 'bg-emerald-100 text-emerald-800 cursor-default font-extrabold'
+                                  : 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer active:scale-95'
+                              }`}
+                            >
+                              {isUnlocked ? 'Unlocked' : 'Redeem'}
+                            </button>
                           </div>
-                        ))}
+                        );
+                      })}
                     </div>
-
-                    {/* XP Redeem Shop */}
-                    <div className="pt-3 border-t border-slate-100 space-y-3">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">XP Redeem Shop</span>
-                      <div className="space-y-2">
-                        {rewardsList.map((reward) => {
-                          const isUnlocked = unlockedRewards.includes(reward.id);
-                          return (
-                            <div key={reward.id} className="p-3 bg-slate-50/50 border border-slate-150 rounded-2xl flex justify-between items-center gap-3">
-                              <div className="min-w-0 flex-grow">
-                                <h4 className="text-xs font-black text-slate-800 leading-tight">{reward.name}</h4>
-                                <p className="text-[9px] text-slate-550 font-semibold mt-0.5">{reward.desc}</p>
-                                <span className="text-[9px] text-amber-700 font-extrabold mt-1 block">Cost: {reward.cost} XP</span>
-                              </div>
-                              <button
-                                type="button"
-                                disabled={isUnlocked}
-                                onClick={() => handleRedeemReward(reward)}
-                                className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors shrink-0 ${
-                                  isUnlocked
-                                    ? 'bg-emerald-100 text-emerald-800 cursor-default font-extrabold'
-                                    : 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer active:scale-95'
-                                }`}
-                              >
-                                {isUnlocked ? 'Unlocked' : 'Redeem'}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
                   </div>
 
                   {/* Academic Stepper timeline */}
@@ -2604,82 +2540,42 @@ const StudentDashboard = () => {
                   </div>
                 </div>
 
-                {/* Right Panel: Discussion Panel & Messages */}
+                {/* Right Panel: WhatsApp Info Card & Redirect */}
                 {(() => {
                   const activeGroup = studyGroups.find(g => g.id === activeGroupId);
-                  const chats = groupChats[activeGroupId] || [];
                   return (
-                    <div className="w-full lg:w-2/3 flex flex-col justify-between h-[450px] lg:h-auto">
-                      {/* Active Room Header */}
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 mb-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-sm shadow-inner">
+                    <div className="w-full lg:w-2/3 flex flex-col justify-between h-[450px] lg:h-auto bg-slate-50/20 border border-slate-100/50 p-6 rounded-2xl">
+                      <div className="space-y-6">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-16 h-16 bg-blue-500 text-white rounded-3xl flex items-center justify-center font-black text-2xl shadow-lg shadow-blue-500/25">
                             {activeGroup?.name[0]}
                           </div>
                           <div>
-                            <h4 className="text-sm font-black text-slate-800 leading-none">{activeGroup?.name}</h4>
-                            <span className="text-[10px] font-semibold text-slate-400 mt-1 block">Discussion room for JEE {activeGroup?.subject} topics</span>
+                            <h4 className="text-lg font-black text-slate-800 tracking-tight">{activeGroup?.name}</h4>
+                            <p className="text-slate-400 text-xs font-semibold mt-1">Official WhatsApp Study Cohort</p>
                           </div>
                         </div>
-                        <span className="text-[10px] bg-slate-100 text-slate-500 font-black px-2.5 py-1 rounded-xl uppercase shadow-sm">
-                          Direct Feed
-                        </span>
+
+                        <div className="bg-white border border-slate-100 rounded-2xl p-5 space-y-3.5 text-left">
+                          <p className="text-slate-600 text-xs leading-relaxed font-semibold">
+                            To ensure safety, persistence of study worksheets, and ease of coordination without session timeouts, Cograd Pathshala hosts all student study groups directly on **WhatsApp Cohort Groups**.
+                          </p>
+                          <div className="p-3 bg-blue-50/50 border border-blue-100/50 rounded-xl flex items-start space-x-2 text-[10px] text-slate-500 font-bold">
+                            <span className="text-blue-600 font-black">ℹ</span>
+                            <p className="leading-relaxed">This WhatsApp cohort group is moderated. Vetted study material files, roadmap details, and local peer sessions are planned here.</p>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Chat Messages Log */}
-                      {isOffline ? (
-                        <div className="flex-grow flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-150 p-6 text-center">
-                          <WifiOff className="w-10 h-10 text-rose-500 animate-pulse mb-3" />
-                          <h5 className="text-xs font-black text-slate-800">Peer Chat Unavailable Offline</h5>
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1 max-w-xs">
-                            Please switch your workspace back to online mode in the header to sync live chat rooms.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="flex-grow overflow-y-auto space-y-3 px-1.5 pb-4 max-h-[300px] lg:max-h-none shadow-inner bg-slate-50/20 p-4 rounded-2xl mb-4 border border-slate-100/50">
-                          {chats.map((chat) => {
-                            const isMe = chat.sender === 'You';
-                            return (
-                              <div
-                                key={chat.id}
-                                className={`flex flex-col max-w-[80%] ${isMe ? 'ml-auto items-end' : 'mr-auto items-start'}`}
-                              >
-                                <div className="flex items-center space-x-1.5 text-[9px] font-bold text-slate-400 mb-0.5">
-                                  <span>{chat.sender}</span>
-                                  <span>•</span>
-                                  <span>{chat.time}</span>
-                                </div>
-                                <div className={`p-3 rounded-2xl text-xs font-semibold leading-relaxed shadow-sm ${
-                                  isMe
-                                    ? 'bg-blue-600 text-white rounded-tr-none'
-                                    : 'bg-white border border-slate-150 text-slate-700 rounded-tl-none'
-                                }`}>
-                                  {chat.text}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* Chat Input Bar */}
-                      <form onSubmit={handleSendGroupMessage} className="relative flex items-center border-t border-slate-100 pt-4">
-                        <input
-                          type="text"
-                          disabled={isOffline}
-                          value={newGroupMessage}
-                          onChange={(e) => setNewGroupMessage(e.target.value)}
-                          placeholder={isOffline ? "You are offline..." : `Type your message in ${activeGroup?.name}...`}
-                          className="w-full text-xs pl-4 pr-16 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-500 transition-all font-semibold disabled:opacity-50"
-                        />
-                        <button
-                          type="submit"
-                          disabled={isOffline || !newGroupMessage.trim()}
-                          className="absolute right-2.5 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-600/20 transition-all cursor-pointer disabled:opacity-40"
+                      <div className="pt-6 border-t border-slate-100 mt-6">
+                        <button 
+                          onClick={() => window.open(activeGroup?.waGroupLink, "_blank")}
+                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-4 rounded-xl shadow-lg shadow-emerald-600/15 hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                         >
-                          <Send className="w-4 h-4" />
+                          <MessageSquare className="w-4.5 h-4.5" />
+                          <span>Join Cohort WhatsApp Group</span>
                         </button>
-                      </form>
+                      </div>
                     </div>
                   );
                 })()}
@@ -3083,93 +2979,25 @@ const StudentDashboard = () => {
                           <button
                             type="submit"
                             disabled={isOffline || !teacherDoubtText.trim()}
-                            className="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-indigo-600/15 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                            className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-emerald-600/15 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
                           >
-                            <Send className="w-3 h-3" />
-                            <span>Send to Teacher</span>
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>Send on WhatsApp</span>
                           </button>
                         </div>
                       </div>
                     </form>
-
-                    {/* Teacher doubts list */}
-                    <div className="mt-6 space-y-3.5 border-t border-slate-50 pt-5">
-                      <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Doubts History with Tutors</h4>
-                      
-                      <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                        {teacherDoubts.map((doubt) => {
-                          const isExpanded = expandedTeacherDoubtId === doubt.id;
-                          return (
-                            <div
-                              key={doubt.id}
-                              className="border border-slate-100 bg-slate-50/20 rounded-2xl overflow-hidden hover:border-slate-200 transition-colors"
-                            >
-                              {/* Header Summary Row */}
-                              <div
-                                onClick={() => setExpandedTeacherDoubtId(isExpanded ? null : doubt.id)}
-                                className="p-4 flex items-center justify-between gap-4 cursor-pointer select-none hover:bg-slate-50/40 transition-colors"
-                              >
-                                <div className="flex items-center space-x-3 min-w-0">
-                                  <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-slate-100">
-                                    <img src={doubt.avatar} alt={doubt.teacher} className="w-full h-full object-cover" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="text-xs font-black text-slate-800 flex items-center space-x-2">
-                                      <span>{doubt.teacher}</span>
-                                      <span className="text-[9px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-lg">{doubt.subject}</span>
-                                    </div>
-                                    <div className="text-[10px] text-slate-600 font-semibold truncate mt-0.5 max-w-[200px] sm:max-w-xs">{doubt.question}</div>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center space-x-3 shrink-0">
-                                  <div className="text-right">
-                                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg ${
-                                      doubt.status === 'Resolved'
-                                        ? 'bg-emerald-100 text-emerald-800'
-                                        : 'bg-amber-100 text-amber-800 animate-pulse'
-                                    }`}>
-                                      {doubt.status}
-                                    </span>
-                                    <span className="text-[8px] text-slate-400 block mt-0.5">{doubt.timestamp}</span>
-                                  </div>
-                                  <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} />
-                                </div>
-                              </div>
-
-                              {/* Expanded Content Drawer */}
-                              {isExpanded && (
-                                <div className="px-4 pb-4 pt-1 border-t border-slate-50/50 bg-slate-50/30 text-xs text-slate-600 space-y-3">
-                                  <div>
-                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Your Question</span>
-                                    <p className="font-semibold text-slate-700">{doubt.question}</p>
-                                    {doubt.attachment && (
-                                      <div className="inline-flex items-center space-x-1.5 bg-slate-100 border border-slate-200 text-slate-600 px-2 py-0.5 rounded-lg text-[9px] font-bold mt-1.5">
-                                        <Paperclip className="w-2.5 h-2.5" />
-                                        <span>{doubt.attachment}</span>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  <div className="pt-2 border-t border-slate-100/50">
-                                    <span className="text-[9px] font-black text-indigo-500 uppercase tracking-wider block mb-1">Teacher's Explanation</span>
-                                    {doubt.status === 'Resolved' ? (
-                                      <div className="bg-indigo-50/40 border border-indigo-100/30 rounded-xl p-3 text-slate-700 leading-relaxed font-medium">
-                                        <p className="whitespace-pre-line">{doubt.answer}</p>
-                                        <span className="text-[8px] text-slate-400 block mt-2 text-right">Resolved: {doubt.replyTime}</span>
-                                      </div>
-                                    ) : (
-                                      <p className="italic text-slate-400 font-semibold flex items-center space-x-1.5">
-                                        <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping"></span>
-                                        <span>Teacher is reviewing your sheet. Expected resolution shortly...</span>
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
+ 
+                    {/* Direct WhatsApp info banner */}
+                    <div className="mt-6 p-4 bg-emerald-50/40 border border-emerald-100/30 rounded-2xl flex items-start space-x-3 text-xs">
+                      <div className="p-1.5 bg-emerald-500 text-white rounded-lg shrink-0">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-slate-800">Direct WhatsApp Learning Thread</h4>
+                        <p className="text-slate-500 font-semibold leading-relaxed mt-1">
+                          All doubts, voice notes, solved sheets, and lesson updates are saved directly in your official WhatsApp chat thread. This allows you to reference them anytime offline without session timeouts.
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -3236,8 +3064,33 @@ const StudentDashboard = () => {
           )}
 
           {/* TAB 7: DETAILED STUDENTS PROFILE */}
-          {activeTab === 'My Profile' && (
+          {activeTab === 'Profile & Progress' && profileSubTab === 'profile' && (
             <div className="space-y-6 tab-content-enter">
+              {/* Sub-tab Switcher */}
+              <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit border border-slate-200/50 shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => { setProfileSubTab('profile'); setIsEditingProfile(false); }}
+                  className={`px-5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    profileSubTab === 'profile'
+                      ? 'bg-white text-blue-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Profile Details
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setProfileSubTab('progress'); setIsEditingProfile(false); }}
+                  className={`px-5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    profileSubTab === 'progress'
+                      ? 'bg-white text-blue-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Academic Progress
+                </button>
+              </div>
               
               {/* Header registry card */}
               <div className="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-6">
@@ -3410,10 +3263,18 @@ const StudentDashboard = () => {
                               onChange={(e) => setEditProfileData(prev => ({ ...prev, standard: e.target.value }))}
                               className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
                             >
-                              <option value="Class 12 (JEE Main & Advanced)">Class 12 (JEE Main & Advanced)</option>
-                              <option value="Class 12 (NEET Target)">Class 12 (NEET Target)</option>
-                              <option value="Class 11 (JEE Core Foundation)">Class 11 (JEE Core Foundation)</option>
-                              <option value="Class 10 CBSE Boards Core">Class 10 CBSE Boards Core</option>
+                              <option value="Class 1">Class 1</option>
+                              <option value="Class 2">Class 2</option>
+                              <option value="Class 3">Class 3</option>
+                              <option value="Class 4">Class 4</option>
+                              <option value="Class 5">Class 5</option>
+                              <option value="Class 6">Class 6</option>
+                              <option value="Class 7">Class 7</option>
+                              <option value="Class 8">Class 8</option>
+                              <option value="Class 9 (CBSE Board)">Class 9 (CBSE Board)</option>
+                              <option value="Class 10 (CBSE Board)">Class 10 (CBSE Board)</option>
+                              <option value="Class 11 (Science / Commerce / Arts)">Class 11 (Science / Commerce / Arts)</option>
+                              <option value="Class 12 (Board Prep)">Class 12 (Board Prep)</option>
                             </select>
                           </div>
                         </div>

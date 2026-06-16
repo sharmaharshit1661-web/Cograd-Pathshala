@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle, Sparkles, MapPin, Calendar, Clock, User, Phone, X, BookOpen, ArrowRight, GraduationCap } from 'lucide-react';
 
-const CLASSES = ['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'];
+const CLASSES = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'];
 const SUBJECTS = ['Mathematics', 'Science', 'English', 'Hindi', 'Physics', 'Chemistry', 'Biology', 'History', 'Geography'];
 const TIME_SLOTS = ['9:00 AM', '10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -305,7 +305,7 @@ const DemoBooking = () => {
               <div className="reveal-on-scroll bg-primary-50 border border-primary-100 rounded-2xl p-6">
                 <h3 className="font-semibold text-neutral-900 mb-3">Trust Cograd</h3>
                 <div className="space-y-2.5">
-                  {['Shark Tank India featured brand', '50+ rural schools opened', '10,000+ students learning', '4.9/5 parent satisfaction'].map((item, i) => (
+                  {['Shark Tank India featured brand', '500+ verified home tutors', '10,000+ students learning', '4.9/5 parent satisfaction'].map((item, i) => (
                     <div key={i} className="flex items-center gap-2.5 text-sm text-neutral-600">
                       {i === 0 ? (
                         <img src="/shark-tank.png" alt="Shark Tank India" className="w-5 h-5 object-contain flex-shrink-0" />

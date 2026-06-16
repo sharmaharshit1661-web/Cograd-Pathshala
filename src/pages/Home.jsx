@@ -8,9 +8,9 @@ import {
 
 
 const STATS = [
-  { icon: MapPin,        value: '8',    label: 'Rural Schools',     color: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-100' },
+  { icon: MapPin,        value: '8',    label: 'Active Districts',   color: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-100' },
   { icon: Users,         value: '125+', label: 'Students Impacted', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-  { icon: GraduationCap, value: '25',   label: 'Expert Teachers',   color: 'text-violet-600',  bg: 'bg-violet-50',  border: 'border-violet-100' },
+  { icon: GraduationCap, value: '25',   label: 'Expert Tutors',     color: 'text-violet-600',  bg: 'bg-violet-50',  border: 'border-violet-100' },
   { icon: Award,         value: '95%',  label: 'Parent Satisfaction',color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-100' },
 ];
 
@@ -194,7 +194,7 @@ const Home = () => {
             </h1>
 
             <p className="text-lg sm:text-xl text-neutral-500 max-w-2xl mx-auto leading-relaxed mb-10 animate-slide-up" style={{ animationDelay: '120ms' }}>
-              Cograd Pathshala connects rural students with verified, experienced home teachers — making premium tuition accessible in Tier 3 districts.
+              Cograd Pathshala connects students with verified, experienced home teachers — making premium tuition accessible in Tier 3 districts.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center animate-slide-up" style={{ animationDelay: '220ms' }}>
@@ -332,7 +332,7 @@ const Home = () => {
           <div className="text-center mb-14">
             <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-2">Our Difference</p>
             <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900">Why Families Choose Us</h2>
-            <p className="text-neutral-500 mt-3 max-w-xl mx-auto">Built from the ground up for Tier 3 India — every feature reflects the needs of rural students and families.</p>
+            <p className="text-neutral-500 mt-3 max-w-xl mx-auto">Built from the ground up for Tier 3 India — every feature reflects the needs of home tuition students and families.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

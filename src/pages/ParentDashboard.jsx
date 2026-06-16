@@ -24,7 +24,9 @@ import {
   CheckSquare,
   DollarSign,
   FileText,
-  Users
+  Users,
+  Eye,
+  ShieldCheck
 } from 'lucide-react';
 
 // Helper to safely resolve icons stored as string or serialized objects from localStorage
@@ -59,7 +61,7 @@ const ParentDashboard = () => {
   // Notifications
   const [notifications, setNotifications] = useState([
     { id: 1, text: 'Aarav Mehta was marked PRESENT today at 08:35 AM', time: '1h ago', isNew: true },
-    { id: 2, text: 'Priya Sharma shared feedback on Rahul Varma\'s Calculus test', time: '4h ago', isNew: true },
+    { id: 2, text: 'Teacher shared feedback on Rahul Varma\'s Class 9 Unit Test', time: '4h ago', isNew: true },
     { id: 3, text: 'Fee Invoice for Class 11 tuition generated successfully', time: '2d ago', isNew: false }
   ]);
 
@@ -128,11 +130,11 @@ const ParentDashboard = () => {
           { id: 'h3', title: 'Shakespeare Essay', subject: 'Literature', due: '4 days ago', status: 'Graded', score: 'A-' }
         ],
         schedule: [
-          { id: 's1', type: 'PTM', title: 'PTM with Dr. Sanjay Verma', date: '15 June', time: '4:00 PM', details: 'Zoom Call (15 Mins)', icon: 'video' },
-          { id: 's2', type: 'Exam', title: 'Term Exam: Physics', date: '18 June', time: '9:00 AM', details: 'Offline Main Hall', icon: 'file-text' }
+          { id: 's1', type: 'PTM', title: 'PTM with Dr. Sanjay Verma', date: '15 June', time: '4:00 PM', details: 'Home Visit (30 Mins)', icon: 'home' },
+          { id: 's2', type: 'Exam', title: 'Term Exam: Physics', date: '18 June', time: '9:00 AM', details: 'Home Tuition Paper', icon: 'file-text' }
         ],
         activities: [
-          { id: 'a1', text: 'Checked in at school gates', time: '08:35 AM today', tag: 'Attendance', type: 'info' },
+          { id: 'a1', text: 'Tutor checked-in at home', time: '08:35 AM today', tag: 'Attendance', type: 'info' },
           { id: 'a2', text: 'Submitted Physics Exercise', time: 'Yesterday', tag: 'Homework', type: 'success' },
           { id: 'a3', text: 'Graded in Literature: Shakespeare Essay (A-)', time: '3 days ago', tag: 'Academic', type: 'primary' },
           { id: 'a4', text: 'Monthly tuition fee invoice generated', time: '4 days ago', tag: 'Billing', type: 'warning' }
@@ -167,18 +169,18 @@ const ParentDashboard = () => {
           { name: 'Physics', teacher: 'Amit Sen', attendance: 94, grade: 'A', trend: [80, 82, 84, 88, 90, 91, 93] }
         ],
         homeworks: [
-          { id: 'h1', title: 'Calculus Homework #3', subject: 'Mathematics Advanced', due: '2 days', status: 'Pending' },
+          { id: 'h1', title: 'Chapter 5 Triangles Homework', subject: 'Class 9 Mathematics', due: '2 days', status: 'Pending' },
           { id: 'h2', title: 'Organic Synthesis Lab Report', subject: 'Chemistry', due: 'Yesterday', status: 'Submitted', score: 'Pending Grade' },
           { id: 'h3', title: 'Thermodynamics Assignment', subject: 'Physics', due: '3 days ago', status: 'Graded', score: '24/25' }
         ],
         schedule: [
-          { id: 's1', type: 'Exam', title: 'Calculus Mock Test', date: '16 June', time: '10:00 AM', details: 'Online Portal', icon: 'file-text' },
-          { id: 's2', type: 'PTM', title: 'PTM with Priya Sharma', date: '20 June', time: '5:00 PM', details: 'Zoom Call (15 Mins)', icon: 'video' }
+          { id: 's1', type: 'Exam', title: 'Class 9 Maths Unit Test', date: '16 June', time: '10:00 AM', details: 'Home Tuition Paper', icon: 'file-text' },
+          { id: 's2', type: 'PTM', title: 'PTM with Priya Sharma', date: '20 June', time: '5:00 PM', details: 'Home Visit (30 Mins)', icon: 'home' }
         ],
         activities: [
-          { id: 'a1', text: 'Checked in at school gates', time: '08:28 AM today', tag: 'Attendance', type: 'info' },
+          { id: 'a1', text: 'Tutor checked-in at home', time: '08:28 AM today', tag: 'Attendance', type: 'info' },
           { id: 'a2', text: 'Completed Gradebook Upload: Chemistry Test #2 (88%)', time: 'Yesterday', tag: 'Academic', type: 'success' },
-          { id: 'a3', text: 'Submitted Calculus Homework #3 online', time: 'Yesterday', tag: 'Homework', type: 'success' },
+          { id: 'a3', text: 'Submitted Triangles Homework', time: 'Yesterday', tag: 'Homework', type: 'success' },
           { id: 'a4', text: 'Tuition Fee Invoice generated', time: '3 days ago', tag: 'Billing', type: 'warning' }
         ],
         chatHistory: [
@@ -203,7 +205,7 @@ const ParentDashboard = () => {
 
   // Modals Visibility
   const [showPayModal, setShowPayModal] = useState(false);
-  const [showChatModal, setShowChatModal] = useState(false);
+  // showChatModal removed since messaging is redirected to WhatsApp
   const [showReportModal, setShowReportModal] = useState(false);
   const [showPTMModal, setShowPTMModal] = useState(false);
 
@@ -220,8 +222,13 @@ const ParentDashboard = () => {
   const [selectedTeacher, setSelectedTeacher] = useState('');
   const [bookingDate, setBookingDate] = useState('');
   const [bookingTime, setBookingTime] = useState('');
-  const [ptmMode, setPtmMode] = useState('Zoom');
+  const [ptmMode, setPtmMode] = useState('In-Home');
   const [ptmLoading, setPtmLoading] = useState(false);
+
+  // Parent Support Message Input State
+  const [supportMessageInput, setSupportMessageInput] = useState(() => {
+    return localStorage.getItem(`cograd_parent_message_to_${selectedStudentKey === 'rahul' ? 'Rahul_Varma' : 'Aarav_Mehta'}`) || '';
+  });
 
   // Chat States
   const [chatInput, setChatInput] = useState('');
@@ -240,14 +247,11 @@ const ParentDashboard = () => {
 
   // Parent Assigned Quiz Generator States
   const [quizSubject, setQuizSubject] = useState('Mathematics');
-  const [quizTopic, setQuizTopic] = useState('Calculus Limits');
+  const [quizTopic, setQuizTopic] = useState('Triangles & Geometry');
   const [quizQuestionsCount, setQuizQuestionsCount] = useState(3);
   const [quizLoading, setQuizLoading] = useState(false);
 
-  // Parent Support Message Input State
-  const [supportMessageInput, setSupportMessageInput] = useState(() => {
-    return localStorage.getItem(`cograd_parent_message_to_${selectedStudentKey === 'rahul' ? 'Rahul_Varma' : 'Aarav_Mehta'}`) || '';
-  });
+
 
   // Home Study Hours Planner States
   const [studyHours, setStudyHours] = useState(4);
@@ -418,8 +422,8 @@ const ParentDashboard = () => {
             title: `PTM with ${selectedTeacher}`,
             date: formattedDate,
             time: formattedTime,
-            details: `${ptmMode} meeting scheduled`,
-            icon: 'video'
+            details: `${ptmMode === 'Call' ? 'Telephonic Call' : 'In-Home Visit'} scheduled`,
+            icon: ptmMode === 'Call' ? 'phone' : 'home'
           },
           ...studentCopy.schedule
         ];
@@ -558,8 +562,9 @@ const ParentDashboard = () => {
               { name: 'Overview', icon: LayoutDashboard },
               { name: 'Academics', icon: BookOpen },
               { name: 'Home Support & Quizzes', icon: Sparkles },
+              { name: 'Daily Learning', icon: Eye },
               { name: 'Fee Manager', icon: CreditCard },
-              { name: 'PTM & Messaging', icon: MessageSquare }
+              { name: 'PTM & Support', icon: Calendar }
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.name;
@@ -719,8 +724,8 @@ const ParentDashboard = () => {
                               title: 'PTM with Ms. Anjali Rao',
                               date: '17 June',
                               time: '3:00 PM',
-                              details: 'Physics Review Sync (Zoom)',
-                              icon: 'video'
+                              details: 'Physics Review Sync (Call)',
+                              icon: 'phone'
                             },
                             ...studentCopy.schedule
                           ];
@@ -869,8 +874,7 @@ const ParentDashboard = () => {
                     {/* Chat with Primary Teacher */}
                     <button 
                       onClick={() => {
-                        setSelectedChatTeacherState(activeStudent.primaryTeacher);
-                        setShowChatModal(true);
+                        window.open(`https://wa.me/919876543210?text=Hello%20${activeStudent.primaryTeacher}%2C%20I%20am%20the%20parent%20of%20${activeStudent.name}.`, "_blank");
                       }}
                       className="bg-blue-50/50 hover:bg-blue-50 border border-blue-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:-translate-y-0.5 group active:scale-[0.98]"
                     >
@@ -878,7 +882,7 @@ const ParentDashboard = () => {
                         <MessageSquare className="w-5 h-5" />
                       </div>
                       <span className="text-xs font-bold text-slate-800 block">Chat with Teacher</span>
-                      <span className="text-[9px] text-slate-400 font-semibold mt-1">Talk to {activeStudent.primaryTeacher}</span>
+                      <span className="text-[9px] text-slate-400 font-semibold mt-1">Redirect to WhatsApp Chat</span>
                     </button>
 
                     {/* Book PTM Slots */}
@@ -893,7 +897,7 @@ const ParentDashboard = () => {
                         <Calendar className="w-5 h-5" />
                       </div>
                       <span className="text-xs font-bold text-slate-800 block">Schedule PTM</span>
-                      <span className="text-[9px] text-slate-400 font-semibold mt-1">Book online Zoom slot</span>
+                      <span className="text-[9px] text-slate-400 font-semibold mt-1">Book home visit / call</span>
                     </button>
 
                     {/* Download Report Card */}
@@ -1254,7 +1258,7 @@ const ParentDashboard = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[
                     {
-                      title: selectedStudentKey === 'rahul' ? 'Chemistry Part Syllabus Mock (JEE Level)' : 'Algebra & Functions Chapter Test',
+                      title: selectedStudentKey === 'rahul' ? 'Class 9 Maths Unit Test' : 'English Grammar Chapter Test',
                       subject: selectedStudentKey === 'rahul' ? 'Chemistry' : 'Mathematics',
                       score: selectedStudentKey === 'rahul' ? '88 / 100' : '92 / 100',
                       percentage: selectedStudentKey === 'rahul' ? '88%' : '92%',
@@ -1430,7 +1434,7 @@ const ParentDashboard = () => {
                         onChange={(e) => {
                           setQuizSubject(e.target.value);
                           const defaults = {
-                            Mathematics: 'Calculus Limits',
+                            Mathematics: 'Triangles & Geometry',
                             Physics: 'Newton Laws',
                             Chemistry: 'Chemical Kinetics'
                           };
@@ -1454,7 +1458,7 @@ const ParentDashboard = () => {
                       >
                         {quizSubject === 'Mathematics' && (
                           <>
-                            <option value="Calculus Limits">Calculus Limits</option>
+                            <option value="Triangles & Geometry">Triangles & Geometry</option>
                             <option value="Trigonometric Identities">Trigonometric Identities</option>
                             <option value="Definite Integration">Definite Integration</option>
                           </>
@@ -1667,7 +1671,7 @@ const ParentDashboard = () => {
                       readTime: '3 Mins Read'
                     },
                     {
-                      title: 'Structuring JEE Revision routines',
+                      title: 'Building study routines for board exams',
                       desc: 'How to manage daily schedules, balance school topics, and align with coaching tutorials recommendations.',
                       readTime: '7 Mins Read'
                     }
@@ -1865,28 +1869,23 @@ const ParentDashboard = () => {
           )}
 
 
-          {/* ================================== PTM & MESSAGING TAB ================================== */}
-          {activeTab === 'PTM & Messaging' && (
+          {/* ================================== PTM & SUPPORT TAB ================================== */}
+          {activeTab === 'PTM & Support' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
               {/* Left Side: Teacher Directory list and scheduler trigger */}
               <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm flex flex-col justify-between">
                 <div>
                   <h3 className="font-black text-slate-800 text-base mb-2">Subject Mentors</h3>
-                  <p className="text-xs text-slate-400 font-semibold mb-4">Click a teacher profile card to open direct live messaging chat.</p>
+                  <p className="text-xs text-slate-400 font-semibold mb-4">Click a teacher profile card to launch a direct WhatsApp chat.</p>
 
                   <div className="space-y-3">
                     {activeStudent.teachers.map((teacher, index) => {
-                      const isSelected = selectedChatTeacher === teacher.name;
                       return (
                         <div 
                           key={index}
-                          onClick={() => setSelectedChatTeacherState(teacher.name)}
-                          className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between group ${
-                            isSelected 
-                              ? 'bg-blue-50 border-blue-200' 
-                              : 'bg-slate-50 border-slate-100 hover:bg-slate-100'
-                          }`}
+                          onClick={() => window.open(`https://wa.me/919876543210?text=Hello%20${teacher.name}%2C%20I%20am%20the%20parent%20of%20${activeStudent.name}.`, "_blank")}
+                          className="p-3 rounded-2xl border bg-slate-50 border-slate-100 hover:bg-slate-100 transition-all cursor-pointer flex items-center justify-between group active:scale-[0.98]"
                         >
                           <div className="flex items-center space-x-3">
                             <img
@@ -1900,7 +1899,7 @@ const ParentDashboard = () => {
                             </div>
                           </div>
 
-                          <div className={`w-2 h-2 rounded-full ${index === 0 ? 'bg-emerald-500' : 'bg-slate-300'}`} title={index === 0 ? 'Online' : 'Offline'}></div>
+                          <div className="w-2 h-2 rounded-full bg-emerald-500" title="Online"></div>
                         </div>
                       );
                     })}
@@ -1921,72 +1920,212 @@ const ParentDashboard = () => {
                 </div>
               </div>
 
-              {/* Right Side: Message conversation thread window */}
-              <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col h-[520px] justify-between overflow-hidden">
-                
-                {/* Chat window Header */}
-                <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <img 
-                      src={activeStudent.teachers.find(t => t.name === selectedChatTeacher)?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'}
-                      alt={selectedChatTeacher}
-                      className="w-10 h-10 rounded-full object-cover border border-slate-200"
-                    />
+              {/* Right Side: WhatsApp Info Card */}
+              <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-8 flex flex-col justify-between h-[520px]">
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-16 h-16 bg-emerald-500 text-white rounded-3xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                      <MessageSquare className="w-8 h-8" />
+                    </div>
                     <div>
-                      <h4 className="text-xs font-bold text-slate-800">{selectedChatTeacher}</h4>
-                      <div className="flex items-center text-[9px] text-slate-400 font-semibold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
-                        <span>Mentoring {activeStudent.name} ({activeStudent.teachers.find(t => t.name === selectedChatTeacher)?.subject})</span>
+                      <h3 className="text-xl font-black text-slate-800">Direct WhatsApp Communications</h3>
+                      <p className="text-emerald-600 text-xs font-bold mt-1">Active Coordination • Vetted Safety</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4">
+                    <p className="text-slate-600 text-xs leading-relaxed font-medium">
+                      At Cograd Pathshala, we value direct, secure, and immediate parent-teacher contact. To ensure transparency, we redirect all conversations directly to **official WhatsApp chats** instead of hosting isolated in-app messaging.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="p-4 bg-white border border-slate-100 rounded-xl space-y-1.5">
+                        <div className="text-xs font-bold text-slate-800">For Parents</div>
+                        <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">Instantly reach home tutors, check homework completion updates, or receive check-in confirmations directly on your phone.</p>
+                      </div>
+                      <div className="p-4 bg-white border border-slate-100 rounded-xl space-y-1.5">
+                        <div className="text-xs font-bold text-slate-800">For Mentors</div>
+                        <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">Tutors provide daily learning reports, request pre-schedules, and solve specific student doubt worksheets via WhatsApp.</p>
                       </div>
                     </div>
                   </div>
-                  <div className="text-[10px] text-slate-400 font-bold bg-white border border-slate-200 px-2.5 py-1 rounded-full">
-                    Active Session
+
+                  <div className="flex items-start gap-3 text-xs text-slate-400">
+                    <span className="text-emerald-500 mt-0.5">✔</span>
+                    <p className="leading-relaxed font-semibold">Clicking on any tutor card on the left will immediately launch a WhatsApp chat pre-filled with your student's details.</p>
                   </div>
                 </div>
 
-                {/* Chat Message Lists */}
-                <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-50/20">
-                  {activeStudent.chatHistory.map((chat, idx) => {
-                    const isParent = chat.sender === 'parent';
-                    return (
-                      <div key={idx} className={`flex ${isParent ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[75%] rounded-2xl p-3.5 text-xs shadow-sm ${
-                          isParent 
-                            ? 'bg-blue-600 text-white rounded-tr-none' 
-                            : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none'
-                        }`}>
-                          <p className="leading-relaxed font-semibold">{chat.text}</p>
-                          <span className={`text-[8px] font-medium block mt-1 text-right ${isParent ? 'text-blue-100' : 'text-slate-400'}`}>
-                            {chat.time}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Chat Form Input */}
-                <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-slate-100 flex items-center space-x-3">
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    placeholder={`Write your message to ${selectedChatTeacher}...`}
-                    className="flex-1 bg-slate-50 border border-slate-100 focus:bg-white focus:outline-none text-xs rounded-2xl px-4 py-3 font-semibold text-slate-700"
-                  />
-                  <button
-                    type="submit"
-                    className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-md transition-colors active:scale-95 cursor-pointer shrink-0"
+                <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-slate-50">
+                  <button 
+                    onClick={() => window.open("https://wa.me/919876543210?text=Hello%2C%20I%20need%20help%20coordinating%20my%20child's%20tuition%20schedule.", "_blank")}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3.5 rounded-2xl shadow-lg shadow-emerald-600/15 hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                   >
-                    <Send className="w-4 h-4" />
+                    <MessageSquare className="w-4.5 h-4.5" />
+                    <span>Chat with Support Coordinator</span>
                   </button>
-                </form>
-
+                  <button 
+                    onClick={() => {
+                      setSelectedTeacher(activeStudent.primaryTeacher);
+                      setShowPTMModal(true);
+                    }}
+                    className="sm:w-max px-6 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs py-3.5 rounded-2xl transition-all cursor-pointer active:scale-[0.98]"
+                  >
+                    Schedule PTM Visit
+                  </button>
+                </div>
               </div>
-
             </div>
           )}
+          {/* ============================================================ */}
+          {/* DAILY LEARNING REPORTS TAB - Shows teacher-submitted reports */}
+          {/* ============================================================ */}
+          {activeTab === 'Daily Learning' && (() => {
+            // Read daily reports from localStorage (written by Teacher Dashboard)
+            let reports = [];
+            try {
+              const saved = localStorage.getItem('cograd_daily_reports');
+              reports = saved ? JSON.parse(saved) : [];
+            } catch { reports = []; }
+
+            const today = new Date().toISOString().split('T')[0];
+            const todayReports = reports.filter(r => r.date === today);
+            const hasReportToday = todayReports.length > 0;
+
+            const engEmoji = (e) => e === 'Excellent' ? '🌟' : e === 'Good' ? '✅' : e === 'Average' ? '⚠️' : '❌';
+            const engColor = (e) => e === 'Excellent' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : e === 'Good' ? 'bg-blue-50 text-blue-700 border-blue-100' : e === 'Average' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-rose-50 text-rose-700 border-rose-100';
+
+            return (
+              <div className="space-y-6">
+                {/* Header */}
+                <div>
+                  <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                    <Eye className="w-5 h-5 text-blue-600" />
+                    Daily Learning Feed
+                  </h2>
+                  <p className="text-xs text-slate-400 font-semibold mt-1">Real-time reports submitted by your child's teacher after each session.</p>
+                </div>
+
+                {/* Missing report alert */}
+                {!hasReportToday && (
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-black text-amber-900">⚠️ No Learning Report for Today ({today})</p>
+                      <p className="text-xs text-amber-700 font-semibold mt-0.5">Your child's teacher has not submitted a daily report yet. You can message the teacher from the PTM &amp; Messaging tab to follow up.</p>
+                    </div>
+                  </div>
+                )}
+
+                {reports.length === 0 ? (
+                  <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-12 text-center space-y-3">
+                    <div className="text-5xl">📋</div>
+                    <h3 className="text-sm font-black text-slate-700">No Reports Yet</h3>
+                    <p className="text-xs text-slate-400 font-semibold max-w-sm mx-auto">Once your child's teacher submits a daily learning report after a session, it will appear here with full details.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {reports.map((report, idx) => (
+                      <div key={report.id || idx} className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 space-y-4 hover:shadow-md transition-shadow">
+                        {/* Report header */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                              <BookOpen className="w-4.5 h-4.5 text-blue-600" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-full">{report.date}</span>
+                                {report.date === today && <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full animate-pulse">TODAY</span>}
+                              </div>
+                              <p className="text-xs font-bold text-slate-700 mt-0.5">{report.batch || 'General Class'} {report.teacherName ? `• ${report.teacherName}` : ''}</p>
+                            </div>
+                          </div>
+                          <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black border ${engColor(report.engagement)}`}>
+                            {engEmoji(report.engagement)} {report.engagement}
+                          </span>
+                        </div>
+
+                        {/* Topics Covered */}
+                        <div className="bg-slate-50 rounded-2xl border border-slate-100 p-4 space-y-1">
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Topics Covered in This Session</p>
+                          <p className="text-xs text-slate-700 font-semibold leading-relaxed">{report.topicsCovered}</p>
+                        </div>
+
+                        {/* Homework */}
+                        {report.homeworkAssigned && (
+                          <div className="flex items-start gap-2.5 bg-blue-50/50 border border-blue-100 rounded-xl px-4 py-3">
+                            <CheckSquare className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-[9px] font-black text-blue-600 uppercase tracking-wide">Homework Assigned</p>
+                              <p className="text-xs text-slate-700 font-semibold mt-0.5">{report.homeworkAssigned}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Parent notes */}
+                        {report.notes && (
+                          <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                            <p className="text-[9px] font-black text-amber-600 uppercase tracking-wide mb-1">📌 Special Note for You</p>
+                            <p className="text-xs text-amber-800 font-semibold italic">{report.notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upcoming Schedule Section */}
+                {(() => {
+                  let schedule = [];
+                  try {
+                    const saved = localStorage.getItem('cograd_content_schedule');
+                    schedule = saved ? JSON.parse(saved) : [];
+                  } catch { schedule = []; }
+
+                  const todayDate = new Date();
+                  todayDate.setHours(0, 0, 0, 0);
+                  const upcoming = schedule.filter(s => new Date(s.date + 'T00:00:00') >= todayDate).slice(0, 5);
+
+                  if (upcoming.length === 0) return null;
+
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 pt-2">
+                        <Calendar className="w-4 h-4 text-indigo-600" />
+                        <h3 className="text-sm font-black text-slate-800">Upcoming Lessons Scheduled by Teacher</h3>
+                        <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">{upcoming.length} ahead</span>
+                      </div>
+
+                      {upcoming.map((item, idx) => {
+                        const sessionDate = new Date(item.date + 'T00:00:00');
+                        const isToday = sessionDate.toDateString() === todayDate.toDateString();
+                        const daysUntil = Math.round((sessionDate - todayDate) / (1000 * 60 * 60 * 24));
+                        return (
+                          <div key={item.id || idx} className={`bg-white rounded-2xl border p-4 flex gap-3 ${isToday ? 'border-indigo-200 bg-indigo-50/60' : 'border-slate-100'}`}>
+                            <div className={`shrink-0 w-12 h-12 rounded-xl flex flex-col items-center justify-center border font-black text-center ${isToday ? 'bg-indigo-600 border-indigo-700 text-white' : 'bg-indigo-50 border-indigo-100 text-indigo-700'}`}>
+                              <span className="text-[9px] font-extrabold uppercase">{sessionDate.toLocaleDateString('en-IN', { month: 'short' })}</span>
+                              <span className="text-lg leading-none">{sessionDate.getDate()}</span>
+                            </div>
+                            <div className="flex-grow min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className="text-xs font-black text-slate-800 truncate">{item.chapter}</p>
+                                {isToday && <span className="text-[8px] font-black text-white bg-indigo-600 px-1.5 py-0.5 rounded-full">TODAY</span>}
+                                {!isToday && daysUntil <= 3 && <span className="text-[8px] font-black text-amber-700 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-full">In {daysUntil}d</span>}
+                              </div>
+                              <p className="text-[10px] text-slate-500 font-semibold">{item.batch} &bull; {item.duration} min</p>
+                              {item.objectives && <p className="text-[10px] text-slate-400 font-semibold mt-0.5 leading-relaxed truncate">{item.objectives}</p>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+              </div>
+            );
+          })()}
+
 
         </main>
       </div>
@@ -2127,72 +2266,7 @@ const ParentDashboard = () => {
       )}
 
 
-      {/* 2. MSG CHAT OVERLAY MODAL */}
-      {showChatModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-xl w-full border border-slate-100 shadow-2xl p-0 relative overflow-hidden animate-slide-up flex flex-col h-[500px]">
-            
-            {/* Header */}
-            <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <img 
-                  src={activeStudent.teachers.find(t => t.name === selectedChatTeacher)?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'}
-                  alt={selectedChatTeacher}
-                  className="w-10 h-10 rounded-full object-cover border border-slate-200"
-                />
-                <div>
-                  <h4 className="text-xs font-bold text-slate-800">{selectedChatTeacher}</h4>
-                  <p className="text-[9px] text-slate-400 font-semibold">Mentoring {activeStudent.name} • {activeStudent.teachers.find(t => t.name === selectedChatTeacher)?.subject}</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowChatModal(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Chats messages */}
-            <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-50/20">
-              {activeStudent.chatHistory.map((chat, idx) => {
-                const isParent = chat.sender === 'parent';
-                return (
-                  <div key={idx} className={`flex ${isParent ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] rounded-2xl p-3.5 text-xs shadow-sm ${
-                      isParent 
-                        ? 'bg-blue-600 text-white rounded-tr-none' 
-                        : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none'
-                    }`}>
-                      <p className="leading-relaxed font-semibold">{chat.text}</p>
-                      <span className={`text-[8px] font-medium block mt-1 text-right ${isParent ? 'text-blue-100' : 'text-slate-400'}`}>
-                        {chat.time}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Input field */}
-            <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-slate-100 flex items-center space-x-3">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder={`Write message to ${selectedChatTeacher}...`}
-                className="flex-1 bg-slate-50 border border-slate-100 focus:bg-white focus:outline-none text-xs rounded-2xl px-4 py-3 font-semibold text-slate-700"
-              />
-              <button
-                type="submit"
-                className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-md cursor-pointer active:scale-95 shrink-0"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* 2. MSG CHAT OVERLAY MODAL REMOVED (Redirection to WhatsApp enabled) */}
 
 
       {/* 3. REPORT CARD PREVIEW MODAL */}
@@ -2311,17 +2385,17 @@ const ParentDashboard = () => {
                 <div className="flex border border-slate-100 bg-slate-50 p-1 rounded-xl shadow-inner">
                   <button
                     type="button"
-                    onClick={() => setPtmMode('Zoom')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${ptmMode === 'Zoom' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-700'}`}
+                    onClick={() => setPtmMode('In-Home')}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${ptmMode === 'In-Home' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-700'}`}
                   >
-                    Zoom Video Call
+                    Home Visit
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPtmMode('In-Person')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${ptmMode === 'In-Person' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-700'}`}
+                    onClick={() => setPtmMode('Call')}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${ptmMode === 'Call' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-700'}`}
                   >
-                    Offline tuition center
+                    Telephonic Call
                   </button>
                 </div>
               </div>

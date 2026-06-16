@@ -12,7 +12,9 @@ import {
   CheckCircle,
   X,
   ArrowRight,
-  GraduationCap
+  GraduationCap,
+  Plus,
+  Minus
 } from 'lucide-react';
 
 const CONTACT_METHODS = [
@@ -46,6 +48,25 @@ const CONTACT_METHODS = [
   }
 ];
 
+const FAQS = [
+  {
+    question: 'How much do home tuition classes cost?',
+    answer: 'The cost varies based on the student\'s grade level and subjects, typically ranging from ₹1,500 to ₹3,500 per month. Get a free trial session to receive a custom quote.'
+  },
+  {
+    question: 'What qualifications do your teachers have?',
+    answer: 'All our instructors are local graduates or trained educators who undergo rigorous vetting, background checks, and subject expertise evaluation before matching.'
+  },
+  {
+    question: 'Can I choose my preferred teacher?',
+    answer: 'Yes! After your free demo session, you can share feedback, and we will pair you with a tutor whose style and schedule match your child\'s requirements.'
+  },
+  {
+    question: 'How do you track student progress?',
+    answer: 'We provide monthly progress reports and test result updates on the student dashboard, accompanied by regular discussions with parents.'
+  }
+];
+
 const CONFETTI_PARTICLES = Array.from({ length: 40 }).map((_, i) => {
   const left = Math.random() * 100;
   const size = Math.random() * 8 + 6;
@@ -66,6 +87,11 @@ const Contact = () => {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [refCode, setRefCode] = useState('');
+  const [openFaqIdx, setOpenFaqIdx] = useState(null);
+
+  const toggleFaq = (idx) => {
+    setOpenFaqIdx(prev => prev === idx ? null : idx);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -309,20 +335,55 @@ const Contact = () => {
                 className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100 reveal-on-scroll slide-right"
                 style={{ transitionDelay: '200ms' }}
               >
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">Quick Actions</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-4 tracking-tight">Quick Actions</h3>
                 <div className="space-y-3">
-                  <Link to="/demo-booking" className="flex items-center space-x-3 p-3 rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors font-bold text-sm">
-                    <GraduationCap className="w-5 h-5 flex-shrink-0" />
-                    <span>Book Free Demo Class</span>
-                  </Link>
-                  <Link to="/register/student" className="flex items-center space-x-3 p-3 rounded-xl bg-green-50 text-green-700 hover:bg-green-100 transition-colors font-bold text-sm">
-                    <User className="w-5 h-5 flex-shrink-0" />
-                    <span>Register as Student</span>
-                  </Link>
-                  <Link to="/register/teacher" className="flex items-center space-x-3 p-3 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors font-bold text-sm">
-                    <BookOpen className="w-5 h-5 flex-shrink-0" />
-                    <span>Join as Teacher</span>
-                  </Link>
+                  {[
+                    {
+                      to: '/demo-booking',
+                      label: 'Book Free Demo Class',
+                      desc: 'Schedule a live demo session with our vetted tutors.',
+                      icon: GraduationCap,
+                      color: 'text-primary-600 bg-primary-50'
+                    },
+                    {
+                      to: '/register/student',
+                      label: 'Register as Student',
+                      desc: 'Sign up to find highly qualified teachers in UP.',
+                      icon: User,
+                      color: 'text-emerald-600 bg-emerald-50'
+                    },
+                    {
+                      to: '/register/teacher',
+                      label: 'Join as Teacher',
+                      desc: 'Apply to teach on our platform and grow your career.',
+                      icon: BookOpen,
+                      color: 'text-purple-600 bg-purple-50'
+                    }
+                  ].map((action, index) => {
+                    const Icon = action.icon;
+                    return (
+                      <Link 
+                        key={index}
+                        to={action.to} 
+                        className="group flex items-start space-x-3.5 p-3.5 rounded-2xl border border-slate-100 bg-white hover:bg-slate-50/40 hover:border-slate-200 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
+                      >
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-105 ${action.color}`}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="flex-grow pt-0.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-gray-800 text-[14px] group-hover:text-primary-600 transition-colors duration-200">
+                              {action.label}
+                            </span>
+                            <ArrowRight className="w-4 h-4 text-gray-400 transform group-hover:translate-x-1 transition-transform duration-300" />
+                          </div>
+                          <p className="text-gray-500 text-[11px] leading-relaxed mt-0.5">
+                            {action.desc}
+                          </p>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -332,19 +393,44 @@ const Contact = () => {
                 style={{ transitionDelay: '300ms' }}
               >
                 <h3 className="text-2xl font-bold text-gray-900 mb-4 font-sans">Common Questions</h3>
-                <div className="space-y-3.5 text-sm text-gray-600">
-                  <p className="font-semibold text-gray-800 border-l-2 border-primary-500 pl-3">
-                    • How much do home tuition classes cost?
-                  </p>
-                  <p className="font-semibold text-gray-800 border-l-2 border-primary-500 pl-3">
-                    • What qualifications do your teachers have?
-                  </p>
-                  <p className="font-semibold text-gray-800 border-l-2 border-primary-500 pl-3">
-                    • Can I choose my preferred teacher?
-                  </p>
-                  <p className="font-semibold text-gray-800 border-l-2 border-primary-500 pl-3">
-                    • How do you track student progress?
-                  </p>
+                <div className="space-y-3">
+                  {FAQS.map((faq, idx) => {
+                    const isOpen = openFaqIdx === idx;
+                    return (
+                      <div 
+                        key={idx} 
+                        className="border-b border-gray-100 pb-3 last:border-0 last:pb-0"
+                        onMouseEnter={() => setOpenFaqIdx(idx)}
+                        onMouseLeave={() => setOpenFaqIdx(null)}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => toggleFaq(idx)}
+                          className="w-full flex items-center justify-between text-left focus:outline-none group/faq cursor-pointer"
+                        >
+                          <span className="font-semibold text-gray-800 text-sm group-hover/faq:text-primary-600 transition-colors duration-200">
+                            {faq.question}
+                          </span>
+                          <span className="flex-shrink-0 ml-3 w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center text-gray-500 group-hover/faq:bg-primary-50 group-hover/faq:text-primary-600 transition-colors duration-200">
+                            {isOpen ? (
+                              <Minus className="w-3.5 h-3.5" />
+                            ) : (
+                              <Plus className="w-3.5 h-3.5" />
+                            )}
+                          </span>
+                        </button>
+                        <div 
+                          className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                            isOpen ? 'max-h-24 opacity-100 mt-2.5' : 'max-h-0 opacity-0'
+                          }`}
+                        >
+                          <p className="text-gray-500 text-xs sm:text-[13px] leading-relaxed pl-3 border-l-2 border-primary-500/40">
+                            {faq.answer}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

@@ -6,8 +6,8 @@ import {
 } from 'lucide-react';
 
 const SLIDES = [
-  { id: 1, title: 'Modern Teaching', subtitle: 'Join innovative educators using technology to inspire rural learners.', image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1500&q=80' },
-  { id: 2, title: 'Impact Rural Lives', subtitle: 'Teach students in Tier 3 districts and witness real community change.', image: 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?ixlib=rb-4.0.3&auto=format&fit=crop&w=1500&q=80' },
+  { id: 1, title: 'Modern Teaching', subtitle: 'Join innovative educators using technology to inspire learners.', image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1500&q=80' },
+  { id: 2, title: 'Impact Lives', subtitle: 'Teach students in Tier 3 districts and witness real community change.', image: 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?ixlib=rb-4.0.3&auto=format&fit=crop&w=1500&q=80' },
   { id: 3, title: 'Earn More', subtitle: 'Earn 20–30% higher than local market rates with weekly settlements.', image: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1500&q=80' },
   { id: 4, title: 'Flexible Schedule', subtitle: 'Choose your home visits and scheduling times with complete freedom.', image: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?ixlib=rb-4.0.3&auto=format&fit=crop&w=1500&q=80' },
   { id: 5, title: 'Professional Growth', subtitle: 'Build brand credibility, earn certificates, and advance your career.', image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1500&q=80' },
@@ -58,7 +58,7 @@ const Teacher = () => {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-neutral-900 mb-5 tracking-tight">
             Transform Lives Through{' '}
-            <span className="color-blend-purple">Rural Education</span>
+            <span className="color-blend-purple">Home Tutoring</span>
           </h1>
           <p className="text-lg text-neutral-500 mb-8 leading-relaxed max-w-2xl mx-auto">
             Join Cograd's mission — connect with students in Tier 3 districts, set your own schedule, and earn 20–30% above market rates.

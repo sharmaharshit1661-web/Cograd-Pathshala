@@ -5,6 +5,23 @@ import {
   ShieldCheck, Heart, ArrowRight, Globe, ExternalLink,
 } from 'lucide-react';
 
+/* ── Custom Brand Icons ── */
+const LinkedInIcon = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+    <rect width="4" height="12" x="2" y="9" />
+    <circle cx="4" cy="4" r="2" />
+  </svg>
+);
+
 /* ── Scroll reveal hook ── */
 function useReveal() {
   const ref = useRef(null);
@@ -23,27 +40,29 @@ function useReveal() {
 }
 
 const TIMELINE = [
-  { year: '2020', title: 'Cograd Founded',  desc: 'Started with a vision to democratize education across non-metropolitan India.', icon: Compass },
-  { year: '2021', title: 'First Rural School', desc: 'Opened our first physical school placement in rural Uttar Pradesh.', icon: MapPin },
+  { year: '2020', title: 'Cograd Founded', desc: 'Started with a vision to democratize education across non-metropolitan India.', icon: Compass },
+  { year: '2021', title: 'First Home Tuition', desc: 'Assigned our first verified home tutor in Uttar Pradesh.', icon: MapPin },
   { year: '2022', title: 'Shark Tank India', desc: 'Featured on Shark Tank India, securing investments and national credibility.', img: '/shark-tank.png' },
-  { year: '2023', title: '50+ Schools',     desc: 'Expanded school placements to 50+ rural campuses across districts.', icon: Users },
+  { year: '2023', title: '500+ Assigned Tutors', desc: 'Vetted and assigned 500+ home tutors across major districts.', icon: Users },
   { year: '2024', title: 'Pathshala Launch', desc: 'Launched home tuition platform in Meerut and Allahabad districts.', icon: GraduationCap },
 ];
 
 const VALUES = [
-  { title: 'Empathy',    desc: 'Understanding the unique challenges of rural communities and learning from them.', icon: Heart,       color: 'bg-rose-50   text-rose-600',   border: 'border-rose-100',   glow: 'group-hover:shadow-rose-100' },
-  { title: 'Innovation', desc: 'Using technology to bridge educational divides and build interactive tools.',      icon: Sparkles,    color: 'bg-amber-50  text-amber-600',  border: 'border-amber-100',  glow: 'group-hover:shadow-amber-100' },
-  { title: 'Community',  desc: 'Building sustainable micro-economies by recruiting local, trained teachers.',      icon: Users,       color: 'bg-blue-50   text-blue-600',   border: 'border-blue-100',   glow: 'group-hover:shadow-blue-100' },
-  { title: 'Excellence', desc: 'Maintaining high curriculum standards, thorough vetting, and transparency.',       icon: ShieldCheck, color: 'bg-violet-50 text-violet-600', border: 'border-violet-100', glow: 'group-hover:shadow-violet-100' },
+  { title: 'Empathy', desc: 'Understanding the unique challenges of families and adapting to individual student needs.', icon: Heart, color: 'bg-rose-50   text-rose-600', border: 'border-rose-100', glow: 'group-hover:shadow-rose-100' },
+  { title: 'Innovation', desc: 'Using technology to bridge educational divides and build interactive tools.', icon: Sparkles, color: 'bg-amber-50  text-amber-600', border: 'border-amber-100', glow: 'group-hover:shadow-amber-100' },
+  { title: 'Community', desc: 'Building sustainable micro-economies by recruiting local, trained teachers.', icon: Users, color: 'bg-blue-50   text-blue-600', border: 'border-blue-100', glow: 'group-hover:shadow-blue-100' },
+  { title: 'Excellence', desc: 'Maintaining high curriculum standards, thorough vetting, and transparency.', icon: ShieldCheck, color: 'bg-violet-50 text-violet-600', border: 'border-violet-100', glow: 'group-hover:shadow-violet-100' },
 ];
 
 const TEAM = [
   {
     name: 'Himanshu Chaurasia',
     role: 'Founder & CEO',
-    desc: 'I had the vision to build amazing schools in India. I handle and guide the team as the executive, driving our mission to democratize quality education across rural India.',
+    desc: 'I had the vision to build a trusted network for home tuitions in India. I handle and guide the team as the executive, driving our mission to democratize quality education across India.',
     img: '/himanshu.png',
     tag: 'Visionary',
+    linkedin: 'https://www.linkedin.com/in/chaurasia-himanshu/',
+    website: 'https://cograd.in/',
   },
   {
     name: 'Saurabh Yadav',
@@ -51,6 +70,8 @@ const TEAM = [
     desc: 'I joined the Cograd team as COO at a very early age. I handle the operations side of Cograd, ensuring seamless delivery and excellence in every district we serve.',
     img: '/saurabh.jpg',
     tag: 'Operations',
+    linkedin: 'https://www.linkedin.com/in/saurabh-yadav-8048a013b/',
+    website: 'https://cograd.in/',
   },
 ];
 
@@ -73,7 +94,7 @@ const About = () => {
             About <span className="color-blend-text">Cograd</span>
           </h1>
           <p className="text-lg text-neutral-500 leading-relaxed max-w-2xl mx-auto">
-            We're on a mission to bridge the educational gap in rural India — connecting qualified, vetted teachers with students in Tier 3 districts.
+            We're on a mission to bridge the educational gap — connecting qualified, vetted home teachers with students in Tier 3 districts.
           </p>
         </div>
       </section>
@@ -102,8 +123,8 @@ const About = () => {
                   <Compass className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-neutral-900 mb-0.5">Rural First Approach</h4>
-                  <p className="text-sm text-neutral-500">We initiate where development challenges are greatest.</p>
+                  <h4 className="font-semibold text-neutral-900 mb-0.5">Doorstep Learning Approach</h4>
+                  <p className="text-sm text-neutral-500">We provide direct personal tutoring where development challenges are greatest.</p>
                 </div>
               </div>
             </div>
@@ -112,7 +133,7 @@ const About = () => {
               <h3 className="text-xl font-bold text-neutral-900 mb-6">Our Vision</h3>
               <ul className="space-y-4">
                 {[
-                  'Transform rural educational landscapes through technology.',
+                  'Transform home tuition and local educational landscapes through technology.',
                   'Create sustainable livelihoods for qualified local teachers.',
                   'Build a replicable, high-impact model for Tier 3 districts.',
                   'Empower families with transparent student progress metrics.',
@@ -204,7 +225,7 @@ const About = () => {
               Meet Our <span className="color-blend-text">Founders</span>
             </h2>
             <p className="text-neutral-500 mt-3 max-w-xl mx-auto">
-              Two passionate leaders who left their comfort zones to build a better future for rural India's students.
+              Two passionate leaders who left their comfort zones to build a better future for India's home tuition network.
             </p>
           </div>
 
@@ -241,14 +262,30 @@ const About = () => {
                   </div>
                   <p className="text-sm text-neutral-500 leading-relaxed flex-grow">{m.desc}</p>
 
-                  {/* Social links placeholder */}
+                  {/* Social links */}
                   <div className="flex gap-2 mt-5">
-                    <button className="w-8 h-8 rounded-lg bg-neutral-50 border border-neutral-200 flex items-center justify-center text-neutral-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-all">
-                      <Globe className="w-4 h-4" />
-                    </button>
-                    <button className="w-8 h-8 rounded-lg bg-neutral-50 border border-neutral-200 flex items-center justify-center text-neutral-400 hover:text-sky-500 hover:bg-sky-50 hover:border-sky-200 transition-all">
-                      <ExternalLink className="w-4 h-4" />
-                    </button>
+                    {m.linkedin && (
+                      <a
+                        href={m.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-8 h-8 rounded-lg bg-neutral-50 border border-neutral-200 flex items-center justify-center text-neutral-400 hover:text-[#0077b5] hover:bg-[#0077b5]/10 hover:border-[#0077b5]/20 transition-all duration-300"
+                        title="LinkedIn Profile"
+                      >
+                        <LinkedInIcon className="w-4 h-4" />
+                      </a>
+                    )}
+                    {m.website && (
+                      <a
+                        href={m.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-8 h-8 rounded-lg bg-neutral-50 border border-neutral-200 flex items-center justify-center text-neutral-400 hover:text-primary-600 hover:bg-primary-50 hover:border-primary-200 transition-all duration-300"
+                        title="Website"
+                      >
+                        <Globe className="w-4 h-4" />
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
