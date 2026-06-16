@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Fragment } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -6,8 +6,6 @@ import {
   UserCheck, 
   UploadCloud, 
   CheckSquare, 
-  MessageSquare, 
-  BarChart3, 
   Clock, 
   Mail, 
   Search, 
@@ -30,17 +28,10 @@ import {
   TrendingUp,
   Edit3,
   ShieldCheck,
-  Video,
-  Share2,
   DollarSign,
   FileSpreadsheet,
   Users,
-  Tv,
-  Eraser,
-  Volume2,
-  BrainCircuit,
-  Play,
-  Info
+  BrainCircuit
 } from 'lucide-react';
 
 const CONFETTI_COLORS = ['#3b82f6', '#7c3aed', '#ec4899', '#10b981', '#f59e0b'];
@@ -57,7 +48,6 @@ const TeacherDashboard = () => {
     grading: 'assignments', // assignments, test_engine, gradebook
     schedules: 'timetable', // timetable, attendance
     analytics: 'performance', // performance, earnings
-    communication: 'announcements', // announcements, doubt_solver
     profile: 'public_profile', // public_profile, reviews
   });
 
@@ -73,7 +63,7 @@ const TeacherDashboard = () => {
   // Notification center states
   const [unreadNotifications, setUnreadNotifications] = useState([
     { id: 1, text: 'Rahul Varma submitted Assignment #3', time: '10m ago', isNew: true },
-    { id: 2, text: 'Sanya Singh sent a doubt message', time: '1h ago', isNew: true },
+    { id: 2, text: 'Sanya Singh submitted Homework worksheet', time: '1h ago', isNew: true },
     { id: 3, text: 'New class session scheduled for Batch Alpha-24', time: '2h ago', isNew: true }
   ]);
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
@@ -85,12 +75,12 @@ const TeacherDashboard = () => {
     phone: '9876543210',
     experience: '6+ Years',
     qualification: 'M.Sc. in Mathematics, B.Ed.',
-    primarySubject: 'Mathematics & Science (Classes 1–12)',
+    primarySubject: 'Mathematics & Science (Classes 1–10)',
     medium: 'English, Hindi',
     availableSlots: '25 hours/week',
     travelRange: '5 km radius',
     hourlyRate: '₹600 / hour',
-    bio: 'Passionate mathematics educator dedicated to simplifying complex calculus and algebraic concepts for high school students in Tier 3 areas. Believes in interactive worksheets, weekly assessments, and regular feedback sessions.',
+    bio: 'Passionate educator dedicated to simplifying maths and science concepts for school students. Believes in interactive worksheets, regular homework, and keeping parents informed after every home visit.',
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
     verified: true,
     documents: [
@@ -106,23 +96,18 @@ const TeacherDashboard = () => {
 
   // 2. Shared Data States
   const [students, setStudents] = useState([
-    { id: 1, name: 'Rahul Varma', batchId: 'alpha-24', attendanceRate: 94, avgGrade: 88, status: 'Active', doubtPending: false },
-    { id: 2, name: 'Sanya Singh', batchId: 'jee-focus', attendanceRate: 98, avgGrade: 95, status: 'Active', doubtPending: true },
-    { id: 1, name: 'Rahul Varma', batchId: 'class-9-10', attendanceRate: 94, avgGrade: 88, status: 'Active', doubtPending: false },
-    { id: 2, name: 'Sanya Singh', batchId: 'class-6-8', attendanceRate: 98, avgGrade: 95, status: 'Active', doubtPending: true },
-    { id: 3, name: 'Arjun Mehta', batchId: 'class-9-10', attendanceRate: 85, avgGrade: 76, status: 'Needs Attention', doubtPending: false },
-    { id: 4, name: 'Adit K.', batchId: 'class-11-12', attendanceRate: 90, avgGrade: 84, status: 'Active', doubtPending: true },
-    { id: 5, name: 'Vikram R.', batchId: 'class-1-5', attendanceRate: 92, avgGrade: 82, status: 'Active', doubtPending: false },
-    { id: 6, name: 'Neha Gupta', batchId: 'class-6-8', attendanceRate: 96, avgGrade: 91, status: 'Active', doubtPending: false },
-    { id: 7, name: 'Kunal Sen', batchId: 'class-11-12', attendanceRate: 78, avgGrade: 65, status: 'Needs Attention', doubtPending: false },
-    { id: 8, name: 'Amit Shah', batchId: 'class-1-5', attendanceRate: 89, avgGrade: 80, status: 'Active', doubtPending: false }
+    { id: 1, name: 'Rahul Varma', batchId: 'class-9-10', attendanceRate: 94, avgGrade: 88, status: 'Active' },
+    { id: 2, name: 'Sanya Singh', batchId: 'class-6-8', attendanceRate: 98, avgGrade: 95, status: 'Active' },
+    { id: 3, name: 'Arjun Mehta', batchId: 'class-9-10', attendanceRate: 85, avgGrade: 76, status: 'Needs Attention' },
+    { id: 4, name: 'Vikram R.', batchId: 'class-1-5', attendanceRate: 92, avgGrade: 82, status: 'Active' },
+    { id: 5, name: 'Neha Gupta', batchId: 'class-6-8', attendanceRate: 96, avgGrade: 91, status: 'Active' },
+    { id: 6, name: 'Amit Shah', batchId: 'class-1-5', attendanceRate: 89, avgGrade: 80, status: 'Active' }
   ]);
 
   const [batches, setBatches] = useState([
-    { id: 'class-9-10', title: 'Class 9-10 Mathematics', badge: 'Sec', badgeColor: 'bg-blue-500', cap: '42/50', progress: 65 },
-    { id: 'class-11-12', title: 'Class 11-12 Science', badge: 'Sr', badgeColor: 'bg-indigo-500', cap: '30/30', progress: 40 },
-    { id: 'class-6-8', title: 'Class 6-8 English & Science', badge: 'Mid', badgeColor: 'bg-purple-500', cap: '15/25', progress: 88 },
-    { id: 'class-1-5', title: 'Class 1-5 Primary All Subjects', badge: 'Pri', badgeColor: 'bg-emerald-500', cap: '48/50', progress: 25 }
+    { id: 'class-9-10', title: 'Class 9 Mathematics', badge: 'C9', badgeColor: 'bg-blue-500', cap: '1:1', progress: 65 },
+    { id: 'class-6-8', title: 'Class 7 English & Science', badge: 'C7', badgeColor: 'bg-purple-500', cap: '1:1', progress: 88 },
+    { id: 'class-1-5', title: 'Class 3 All Subjects', badge: 'C3', badgeColor: 'bg-emerald-500', cap: '1:1', progress: 45 }
   ]);
 
   const [newBatchTitle, setNewBatchTitle] = useState('');
@@ -156,22 +141,8 @@ const TeacherDashboard = () => {
   const [newMaterialDesc, setNewMaterialDesc] = useState('');
   const [newMaterialType, setNewMaterialType] = useState('PDF Document');
   const [newMaterialBatch, setNewMaterialBatch] = useState('Class 9-10 Mathematics');
-  const [shareMaterialEmail, setShareMaterialEmail] = useState('');
-  const [shareMaterialId, setShareMaterialId] = useState(1);
 
-  // 5. Collaborative Lessons & Co-creation
-  const [collabDocs, setCollabDocs] = useState([
-    { id: 1, title: 'Class 9 Chapter 5: Triangles Notes', topic: 'Mathematics', authors: ['Priya Sharma', 'Amit Sen'], lastEdit: 'Today, 11:20 AM', activeUsers: 2, comments: [
-      { author: 'Amit Sen', text: 'Priya, I added 3 MCQ exercises to the final assessment slide.', time: '1h ago' },
-      { author: 'Priya Sharma', text: 'Awesome Amit, I will format the solution sheet tonight.', time: '30m ago' }
-    ]},
-    { id: 2, title: 'Science Lab: Light Reflection', topic: 'Science', authors: ['Priya Sharma', 'Neha Gupta'], lastEdit: 'Yesterday', activeUsers: 1, comments: [
-      { author: 'Neha Gupta', text: 'Can we include a section on mirror types in the lab manual?', time: 'Yesterday' }
-    ]}
-  ]);
-  const [activeCollabId, setActiveCollabId] = useState(1);
-  const [newCollabComment, setNewCollabComment] = useState('');
-  const [inviteCollabEmail, setInviteCollabEmail] = useState('');
+
 
   // 6. AI Lesson Plan Generator
   const [aiTopic, setAiTopic] = useState('Geometry: Triangles');
@@ -202,23 +173,7 @@ const TeacherDashboard = () => {
   const [aiGeneratedQuestions, setAiGeneratedQuestions] = useState([]);
   const [aiGeneratingQuestions, setAiGeneratingQuestions] = useState(false);
 
-  // 8. Live Virtual Classroom
-  const [isLiveClass, setIsLiveClass] = useState(false);
-  const [liveClassBatch, setLiveClassBatch] = useState('class-9-10');
-  const [liveMicMuted, setLiveMicMuted] = useState(false);
-  const [liveVideoMuted, setLiveVideoMuted] = useState(false);
-  const [liveScreenSharing, setLiveScreenSharing] = useState(false);
-  const [liveRecording, setLiveRecording] = useState(false);
-  const [liveRecordSeconds, setLiveRecordSeconds] = useState(0);
-  const [liveChat, setLiveChat] = useState([
-    { id: 1, sender: "System", text: "Virtual classroom session created. Stream online.", time: "11:00 AM" }
-  ]);
-  const [liveChatInput, setLiveChatInput] = useState('');
-  const [liveWhiteboardActive, setLiveWhiteboardActive] = useState(false);
-  const [whiteboardColor, setWhiteboardColor] = useState('#3b82f6');
-  const [whiteboardBrushSize, setWhiteboardBrushSize] = useState(5);
-  const canvasRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+
 
   // 9. Demo Class Bookings
   const [demoBookings, setDemoBookings] = useState([
@@ -343,17 +298,6 @@ const TeacherDashboard = () => {
   const [scheduleType, setScheduleType] = useState('Lecture');
   const [scheduleTitle, setScheduleTitle] = useState('');
 
-  // 14. Doubt Resolver States
-  const [doubts, setDoubts] = useState([
-    { id: 1, student: 'Adit K.', msg: "Sir, I'm having trouble with Question 4 on the derivatives worksheet. Should we apply the chain rule twice?", isNew: true, avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80', reply: '', date: 'Today, 10:15 AM', type: 'text' },
-    { id: 2, student: 'Vikram R.', msg: 'Is the test tomorrow covering the entire Chapter 3 or just the first three sections?', isNew: false, avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80', reply: 'It covers sections 3.1 to 3.4 only. Focus on quadratic polynomials.', date: 'Yesterday, 4:30 PM', type: 'text' }
-  ]);
-  const [doubtReplyId, setDoubtReplyId] = useState(null);
-  const [doubtReplyInput, setDoubtReplyInput] = useState('');
-  const [doubtFilter, setDoubtFilter] = useState('all');
-  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
-  const [voiceRecordSeconds, setVoiceRecordSeconds] = useState(0);
-
   // 15. Earnings & Profit States
   const [earningsStats, setEarningsStats] = useState({
     totalEarned: 45200,
@@ -378,15 +322,6 @@ const TeacherDashboard = () => {
   const [selectedReviewReplyId, setSelectedReviewReplyId] = useState(null);
   const [reviewReplyInput, setReviewReplyInput] = useState('');
 
-  // 17. Announcements Broadcasting
-  const [broadcasts, setBroadcasts] = useState([
-    { id: 1, title: 'Chapter 5 Triangles Quiz Postponed', batch: 'Class 9-10 Mathematics', body: 'Please note the quiz scheduled for tomorrow is postponed to Monday. Please use this weekend to revise congruence rules and angle proofs.', date: 'Today, 12:45 PM', views: 34 },
-    { id: 2, title: 'Study Material Uploaded', batch: 'All Batches', body: 'New trigonometry cheat sheet has been uploaded in resource sharing. Check it out.', date: '3 days ago', views: 82 }
-  ]);
-  const [newBTitle, setNewBTitle] = useState('');
-  const [newBTarget, setNewBTarget] = useState('Mathematics Advanced');
-  const [newBBody, setNewBBody] = useState('');
-
   // Interactive dashboard states
   const [gradingConfetti, setGradingConfetti] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -400,49 +335,7 @@ const TeacherDashboard = () => {
     return () => clearTimeout(toastTimer);
   }, []);
 
-  // ----------------------------------------------------
-  // USE EFFECTS FOR SIMULATED LIVE CLASSROOM ACTIVITY
-  // ----------------------------------------------------
-  useEffect(() => {
-    let chatInterval;
-    if (isLiveClass) {
-      const studentChatPool = [
-        "Ma'am, should we solve this using the product rule or the quotient rule?",
-        "Oh, now I see how the limit resolves to 2!",
-        "Yes, the blackboard explanation is super clear.",
-        "Could you please write down the chain rule formula once again?",
-        "Understood, thank you ma'am!",
-        "Will you post this session recording in the Resources section?",
-        "Completed the drawing exercise!"
-      ];
-      const studentsNames = ["Rahul Varma", "Sanya Singh", "Arjun Mehta", "Adit K.", "Neha Gupta", "Kunal Sen"];
 
-      chatInterval = setInterval(() => {
-        const randName = studentsNames[Math.floor(Math.random() * studentsNames.length)];
-        const randMsg = studentChatPool[Math.floor(Math.random() * studentChatPool.length)];
-        setLiveChat(prev => [
-          ...prev,
-          {
-            id: prev.length + 1,
-            sender: randName,
-            text: randMsg,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          }
-        ]);
-      }, 7000);
-    }
-    return () => clearInterval(chatInterval);
-  }, [isLiveClass]);
-
-  useEffect(() => {
-    let recTimer;
-    if (liveRecording) {
-      recTimer = setInterval(() => {
-        setLiveRecordSeconds(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(recTimer);
-  }, [liveRecording]);
 
   // ----------------------------------------------------
   // EVENT HANDLERS
@@ -451,8 +344,9 @@ const TeacherDashboard = () => {
     localStorage.removeItem('cograd_logged_in');
     localStorage.removeItem('cograd_role');
     localStorage.removeItem('cograd_teacher_name');
-    alert('Logged out successfully. Returning to Home.');
-    navigate('/');
+    setToastMessage('Logged out successfully. Redirecting...');
+    setShowToast(true);
+    setTimeout(() => navigate('/'), 900);
   };
 
   const triggerConfetti = () => {
@@ -528,34 +422,17 @@ const TeacherDashboard = () => {
 
   const handleWithdrawFunds = () => {
     if (earningsStats.availablePayout <= 0) {
-      alert("No available payout balance.");
+      setToastMessage('No available payout balance to withdraw.');
+      setShowToast(true);
       return;
     }
     setIsProcessingPayout(true);
     setPayoutProgress(0);
   };
 
-  const formatTime = (secs) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0');
-    const s = (secs % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-  };
 
-  const clearWhiteboard = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  };
 
-  const handleToggleRecording = () => {
-    if (!liveRecording) {
-      setLiveRecordSeconds(0);
-      setLiveRecording(true);
-    } else {
-      setLiveRecording(false);
-    }
-  };
+
 
   // AI Parent Feedback generator simulation
   const handleGenerateFeedback = () => {
@@ -589,33 +466,7 @@ const TeacherDashboard = () => {
     }, 1800);
   };
 
-  // Whiteboard drawing event handlers
-  const handleMouseDown = (e) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-    ctx.strokeStyle = whiteboardColor;
-    ctx.lineWidth = whiteboardBrushSize;
-    ctx.lineCap = 'round';
-    setIsDrawing(true);
-  };
 
-  const handleMouseMove = (e) => {
-    if (!isDrawing) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-    ctx.stroke();
-  };
-
-  const handleMouseUp = () => {
-    setIsDrawing(false);
-  };
 
   // Material upload simulation
   const handleMaterialUpload = () => {
@@ -760,7 +611,7 @@ const TeacherDashboard = () => {
   const renderDashboard = () => (
     <div className="space-y-8 animate-fade-in">
       {/* Overview stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center space-x-4">
           <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shadow-inner">
             <GraduationCap className="w-6 h-6" />
@@ -779,15 +630,7 @@ const TeacherDashboard = () => {
             <div className="text-xl font-black text-slate-800 mt-1">91.4% Rate</div>
           </div>
         </div>
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-500 shadow-inner">
-            <MessageSquare className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Unsolved Doubts</div>
-            <div className="text-xl font-black text-slate-800 mt-1">{doubts.filter(d => !d.reply).length} Questions</div>
-          </div>
-        </div>
+
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center space-x-4">
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500 shadow-inner">
             <DollarSign className="w-6 h-6" />
@@ -803,7 +646,7 @@ const TeacherDashboard = () => {
       <section className="space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-black text-slate-900 tracking-tight">Today's Teaching Schedule</h2>
-          <button onClick={() => { setActiveTab('Schedules & Attendance'); setSubTabs(p => ({ ...p, schedules: 'timetable' })); }} className="text-blue-500 hover:text-blue-700 text-xs font-extrabold flex items-center space-x-1 transition-colors cursor-pointer">
+          <button onClick={() => { setActiveTab('Schedule & Attendance'); setSubTabs(p => ({ ...p, schedules: 'timetable' })); }} className="text-blue-500 hover:text-blue-700 text-xs font-extrabold flex items-center space-x-1 transition-colors cursor-pointer">
             <span>View full calendar</span>
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -827,19 +670,19 @@ const TeacherDashboard = () => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-black text-blue-500 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" /> 11:00 AM - 12:30 PM (NOW)
+                  <Clock className="w-3.5 h-3.5" /> 11:00 AM - 12:00 PM (NOW)
                 </span>
                 <span className="bg-blue-500 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full animate-pulse">ONGOING</span>
               </div>
-              <h3 className="text-base font-extrabold text-slate-800 leading-snug">Grade 12 - Advanced Algebra</h3>
+              <h3 className="text-base font-extrabold text-slate-800 leading-snug">Class 7 — Science (Home Visit)</h3>
             </div>
             <div className="flex items-center justify-between mt-2">
-              <div className="text-xs text-blue-600 bg-blue-50 py-1.5 px-3 rounded-lg font-bold">Batch: Class 11-12 Science</div>
+              <div className="text-xs text-blue-600 bg-blue-50 py-1.5 px-3 rounded-lg font-bold">Student: Sanya Singh</div>
               <button 
-                onClick={() => { setActiveTab('Classroom & Batches'); setSubTabs(p => ({ ...p, classroom: 'live_class' })); setIsLiveClass(true); }} 
-                className="bg-blue-500 text-white font-bold text-xs py-2 px-3 rounded-lg hover:bg-blue-600 transition-all cursor-pointer flex items-center gap-1 shadow-sm hover:scale-[1.02] active:scale-95 animate-bounce"
+                onClick={() => { setActiveTab('My Students'); setSubTabs(p => ({ ...p, classroom: 'daily_reports' })); }} 
+                className="bg-blue-500 text-white font-bold text-xs py-2 px-3 rounded-lg hover:bg-blue-600 transition-all cursor-pointer flex items-center gap-1 shadow-sm"
               >
-                <Play className="w-3.5 h-3.5 fill-current" /> <span>Enter Room</span>
+                <FileSpreadsheet className="w-3.5 h-3.5" /> <span>Daily Report</span>
               </button>
             </div>
           </div>
@@ -866,7 +709,7 @@ const TeacherDashboard = () => {
           <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-base font-black text-slate-900">Recent Parent Reviews</h3>
-              <button onClick={() => { setActiveTab('Public Profile & Reviews'); setSubTabs(p => ({ ...p, profile: 'reviews' })); }} className="text-blue-500 hover:text-blue-700 text-xs font-bold cursor-pointer">View Reviews</button>
+              <button onClick={() => { setActiveTab('Profile & Reviews'); setSubTabs(p => ({ ...p, profile: 'reviews' })); }} className="text-blue-500 hover:text-blue-700 text-xs font-bold cursor-pointer">View Reviews</button>
             </div>
             <div className="space-y-4 divide-y divide-slate-50">
               {reviewsList.slice(0, 2).map(review => (
@@ -882,21 +725,19 @@ const TeacherDashboard = () => {
           </section>
 
           <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
-            <h3 className="text-base font-black text-slate-900">Quick AI Lesson Planner</h3>
+            <h3 className="text-base font-black text-slate-900">Upload Study Material</h3>
             <div className="flex items-center space-x-3">
               <input
                 type="text"
-                value={aiTopic}
-                onChange={(e) => setAiTopic(e.target.value)}
-                placeholder="Enter lecture topic (e.g. Vectors)"
+                placeholder="Add notes or worksheet for your student"
                 className="flex-grow py-2.5 px-4 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               />
               <button 
-                onClick={() => { setActiveTab('AI Assistant'); setSubTabs(p => ({ ...p, ai: 'lesson_plan' })); setAiGenerating(true); setAiStep(0); }}
+                onClick={() => { setActiveTab('Study Materials'); setSubTabs(p => ({ ...p, content: 'content_manager' })); }}
                 className="bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm transition-all cursor-pointer shrink-0 flex items-center gap-1"
               >
-                <Sparkles className="w-3.5 h-3.5 fill-current" />
-                Draft Plan
+                <UploadCloud className="w-3.5 h-3.5" />
+                Upload
               </button>
             </div>
           </section>
@@ -904,42 +745,22 @@ const TeacherDashboard = () => {
 
         {/* Right column */}
         <div className="lg:col-span-5 space-y-8">
-          <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
-            <h3 className="text-base font-black text-slate-900">Pending Doubt Solve</h3>
-            {doubts.filter(d => !d.reply).slice(0, 1).map(d => (
-              <div key={d.id} className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <img src={d.avatar} alt="Student" className="w-8 h-8 rounded-full border border-slate-100" />
-                  <div>
-                    <h4 className="text-xs font-black text-slate-800">{d.student}</h4>
-                    <p className="text-[10px] text-slate-400">{d.date}</p>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-600 leading-normal bg-slate-50 p-3 rounded-xl border border-slate-100/50">"{d.msg}"</p>
-                <button 
-                  onClick={() => { setActiveTab('Communication & Doubts'); setSubTabs(p => ({ ...p, communication: 'doubt_solver' })); setDoubtReplyId(d.id); }}
-                  className="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-extrabold text-xs rounded-xl transition-colors cursor-pointer text-center"
-                >
-                  Write Response / Record Voice Note
-                </button>
-              </div>
-            ))}
-          </section>
+
 
           <section className="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-3xl p-6 text-white space-y-4 shadow-xl relative overflow-hidden">
             <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
-              <DollarSign className="w-36 h-36 text-white" />
+              <Calendar className="w-36 h-36 text-white" />
             </div>
             <div>
-              <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Available Payout Balance</span>
-              <h3 className="text-2xl font-black mt-1">₹{earningsStats.availablePayout}</h3>
-              <p className="text-[10px] text-slate-400 mt-1">Calculated from completed demo classes & batch hours</p>
+              <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">This Month's Sessions</span>
+              <h3 className="text-2xl font-black mt-1">{earningsStats.completedSessions || 24} completed</h3>
+              <p className="text-[10px] text-slate-400 mt-1">Home visits logged with daily reports sent to parents</p>
             </div>
             <button 
-              onClick={() => { setActiveTab('Analytics & Earnings'); setSubTabs(p => ({ ...p, analytics: 'earnings' })); }}
+              onClick={() => { setActiveTab('My Students'); setSubTabs(p => ({ ...p, classroom: 'daily_reports' })); }}
               className="w-full bg-white hover:bg-slate-100 text-slate-900 font-black text-xs py-3 rounded-xl transition-all cursor-pointer text-center"
             >
-              Go to Payout Dashboard
+              Submit Daily Report
             </button>
           </section>
         </div>
@@ -950,70 +771,15 @@ const TeacherDashboard = () => {
 
   // 2. Content & Resources
   const renderContentResources = () => {
-    const isSharing = subTabs.content === 'sharing';
-    const isCoCreation = subTabs.content === 'co_creation';
-
-    const handleShareResource = (e) => {
-      e.preventDefault();
-      if (!shareMaterialEmail.trim()) return;
-      setToastMessage(`Resource shared with teacher: ${shareMaterialEmail}`);
-      setShowToast(true);
-      setShareMaterialEmail('');
-    };
-
-    const handleAddCollabComment = (e) => {
-      e.preventDefault();
-      if (!newCollabComment.trim()) return;
-      setCollabDocs(prev => prev.map(c => 
-        c.id === activeCollabId 
-          ? { ...c, comments: [...c.comments, { author: 'Priya Sharma', text: newCollabComment, time: 'Just now' }] }
-          : c
-      ));
-      setNewCollabComment('');
-      setToastMessage("Collaboration feedback posted!");
-      setShowToast(true);
-    };
-
-    const handleInviteCollab = (e) => {
-      e.preventDefault();
-      if (!inviteCollabEmail.trim()) return;
-      setCollabDocs(prev => prev.map(c => 
-        c.id === activeCollabId 
-          ? { ...c, authors: [...c.authors, inviteCollabEmail] }
-          : c
-      ));
-      setToastMessage(`Co-creator invitation sent to: ${inviteCollabEmail}`);
-      setShowToast(true);
-      setInviteCollabEmail('');
-    };
+    const isSharing = false;
+    const isCoCreation = false;
 
     return (
       <div className="space-y-6 animate-fade-in max-w-5xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Content Repository & Resource Sharing</h2>
-            <p className="text-slate-500 text-xs mt-1">Upload lecture notes, send assets to peers, and co-create lesson modules.</p>
-          </div>
-          
-          {/* Sub-tab selection */}
-          <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200/50 w-max shadow-inner">
-            {[
-              { id: 'content_manager', label: 'Content Manager' },
-              { id: 'sharing', label: 'Resource Sharing' },
-              { id: 'co_creation', label: 'Lesson Co-creation' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setSubTabs(prev => ({ ...prev, content: tab.id }))}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  subTabs.content === tab.id 
-                    ? 'bg-white text-slate-800 shadow-sm border border-slate-200/20' 
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Content Repository</h2>
+            <p className="text-slate-500 text-xs mt-1">Upload worksheets and study material files for your home tuition students.</p>
           </div>
         </div>
 
@@ -1091,7 +857,7 @@ const TeacherDashboard = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-1 shrink-0">
-                      <button onClick={() => alert("Downloading sample file...")} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg cursor-pointer"><Download className="w-4 h-4" /></button>
+                      <button onClick={() => { setToastMessage(`Downloading ${mat.name}...`); setShowToast(true); }} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg cursor-pointer"><Download className="w-4 h-4" /></button>
                       <button onClick={() => setResources(prev => prev.filter(m => m.id !== mat.id))} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
@@ -1101,160 +867,14 @@ const TeacherDashboard = () => {
           </div>
         )}
 
-        {/* Resource Sharing Tab */}
-        {isSharing && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
-              <h3 className="text-base font-black text-slate-800">Direct Peer Sharing</h3>
-              <form onSubmit={handleShareResource} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Select Document to Share</label>
-                  <select 
-                    value={shareMaterialId}
-                    onChange={(e) => setShareMaterialId(parseInt(e.target.value))}
-                    className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold text-slate-700 cursor-pointer"
-                  >
-                    {resources.map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Recipient Teacher's Email</label>
-                  <input
-                    type="email"
-                    required
-                    value={shareMaterialEmail}
-                    onChange={(e) => setShareMaterialEmail(e.target.value)}
-                    placeholder="e.g. amit.sen@cograd.com"
-                    className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold"
-                  />
-                </div>
-                <button type="submit" className="w-full bg-blue-500 text-white font-bold text-xs py-3 rounded-xl hover:bg-blue-600 transition-all cursor-pointer flex items-center justify-center gap-1">
-                  <Share2 className="w-4 h-4" /> Share Document
-                </button>
-              </form>
-            </div>
 
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
-              <h3 className="text-base font-black text-slate-800">Resource Sharing Log</h3>
-              <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-center space-x-3 text-xs text-slate-500">
-                <Info className="w-5 h-5 text-blue-500 shrink-0" />
-                <p>Shared folders are synchronized instantly. Teachers with correct access can download or clone files to their active batch boards.</p>
-              </div>
-              <div className="space-y-3">
-                <div className="p-3 bg-white border border-slate-100 rounded-xl flex justify-between items-center text-xs">
-                  <div>
-                    <h4 className="font-extrabold text-slate-700">Class9_Chapter5_Triangles_Notes.pdf</h4>
-                    <p className="text-slate-400 mt-0.5">Shared with amit.sen@cograd.com • Today, 10:40 AM</p>
-                  </div>
-                  <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[9px]">Delivered</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Collaborative Lessons & Co-creation Tab */}
-        {isCoCreation && (
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-            <div className="md:col-span-4 space-y-4">
-              <h3 className="text-base font-black text-slate-800">Shared Lesson Plans</h3>
-              <div className="space-y-3">
-                {collabDocs.map(lesson => (
-                  <div 
-                    key={lesson.id}
-                    onClick={() => setActiveCollabId(lesson.id)}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                      activeCollabId === lesson.id 
-                        ? 'border-blue-500 bg-blue-50/10 shadow-sm'
-                        : 'border-slate-100 bg-white hover:border-slate-200'
-                    }`}
-                  >
-                    <h4 className="text-sm font-extrabold text-slate-800">{lesson.title}</h4>
-                    <p className="text-xs text-slate-400 font-semibold mt-1">Topic: {lesson.topic}</p>
-                    <div className="flex items-center space-x-2 mt-3 text-[10px] text-slate-500">
-                      <Users className="w-3.5 h-3.5" />
-                      <span>{lesson.authors.length} Collaborators</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="md:col-span-8 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-6">
-              {(() => {
-                const activeL = collabDocs.find(c => c.id === activeCollabId) || collabDocs[0];
-                return (
-                  <>
-                    <div className="flex justify-between items-start border-b border-slate-50 pb-4">
-                      <div>
-                        <h3 className="text-lg font-black text-slate-800">{activeL.title}</h3>
-                        <p className="text-xs text-slate-400 mt-1">Co-authors: {activeL.authors.join(', ')}</p>
-                      </div>
-                      <span className="bg-blue-500 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded">Active Draft</span>
-                    </div>
-
-                    {/* Peer Inviting Form */}
-                    <form onSubmit={handleInviteCollab} className="flex gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/50">
-                      <input 
-                        type="email"
-                        required
-                        value={inviteCollabEmail}
-                        onChange={(e) => setInviteCollabEmail(e.target.value)}
-                        placeholder="Invite teacher by email..."
-                        className="flex-grow bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold"
-                      />
-                      <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs px-4 py-1.5 rounded-lg cursor-pointer shrink-0">Invite</button>
-                    </form>
-
-                    {/* Lesson structure preview */}
-                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50 text-xs text-slate-600 space-y-2">
-                      <h4 className="font-extrabold text-slate-800">Draft Framework:</h4>
-                      <p>• Warm-up Activity: Discuss real world rates of change (15 mins)</p>
-                      <p>• Concept Overview: Power rule proof and notation (20 mins)</p>
-                      <p>• Assignment exercises: 10 differentiation questions (25 mins)</p>
-                    </div>
-
-                    {/* Comments section */}
-                    <div className="space-y-4">
-                      <h4 className="text-sm font-black text-slate-800 flex items-center gap-1"><MessageSquare className="w-4 h-4 text-blue-500" /> Collaboration Feed</h4>
-                      <div className="space-y-3 bg-slate-50/50 border border-slate-100 rounded-2xl p-4 max-h-48 overflow-y-auto pr-1">
-                        {activeL.comments.map((c, i) => (
-                          <div key={i} className="text-xs">
-                            <div className="flex justify-between font-bold text-slate-700">
-                              <span>{c.author}</span>
-                              <span className="text-[10px] text-slate-400 font-semibold">{c.time}</span>
-                            </div>
-                            <p className="text-slate-600 mt-1 italic leading-normal font-semibold bg-white p-2.5 rounded-lg border border-slate-100">"{c.text}"</p>
-                          </div>
-                        ))}
-                      </div>
-
-                      <form onSubmit={handleAddCollabComment} className="flex gap-2">
-                        <input
-                          type="text"
-                          required
-                          value={newCollabComment}
-                          onChange={(e) => setNewCollabComment(e.target.value)}
-                          placeholder="Suggest a modification or ask a question..."
-                          className="flex-grow py-2 px-3 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-500"
-                        />
-                        <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white p-2.5 rounded-xl cursor-pointer shadow-sm"><Send className="w-4.5 h-4.5" /></button>
-                      </form>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-        )}
 
       </div>
     );
   };
 
   // 3. AI Assistant
+  // eslint-disable-next-line no-unused-vars
   const renderAIAssistant = () => {
     const isTeachingAssistant = subTabs.ai === 'teaching_assistance';
 
@@ -1398,7 +1018,7 @@ const TeacherDashboard = () => {
                       <p className="text-xs text-slate-400 font-bold">{generatedPlan.grade} • {generatedPlan.duration}</p>
                     </div>
                     <div className="flex items-center space-x-1">
-                      <button onClick={() => alert("Downloading lesson outline...")} className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 cursor-pointer" title="Download"><Download className="w-4 h-4" /></button>
+                      <button onClick={() => { setToastMessage('Downloading lesson outline...'); setShowToast(true); }} className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 cursor-pointer" title="Download"><Download className="w-4 h-4" /></button>
                       <button onClick={() => { navigator.clipboard.writeText(JSON.stringify(generatedPlan)); setToastMessage("Copied to clipboard!"); setShowToast(true); }} className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 cursor-pointer" title="Copy"><Check className="w-4 h-4" /></button>
                     </div>
                   </div>
@@ -1553,7 +1173,7 @@ const TeacherDashboard = () => {
 
   // 4. Classroom & Batches
   const renderClassroomBatches = () => {
-    const isLive = subTabs.classroom === 'live_class';
+    const isLive = false;
     const isDemo = subTabs.classroom === 'demo_bookings';
     const isDLR = subTabs.classroom === 'daily_reports';
     const isSchedule = subTabs.classroom === 'content_schedule';
@@ -1586,14 +1206,13 @@ const TeacherDashboard = () => {
       <div className="space-y-6 animate-fade-in max-w-5xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Classroom & Batch Management</h2>
-            <p className="text-slate-500 text-xs mt-1">Manage student batches, enter live streaming virtual classes, and review demo slots.</p>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">My Students</h2>
+            <p className="text-slate-500 text-xs mt-1">Manage home tuition students, demo bookings, schedules, and daily reports for parents.</p>
           </div>
           
           <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200/50 w-max shadow-inner flex-wrap gap-1">
             {[
-              { id: 'batches', label: 'Batches' },
-              { id: 'live_class', label: 'Live Classroom' },
+              { id: 'batches', label: 'My Students' },
               { id: 'demo_bookings', label: 'Demo Bookings' },
               { id: 'content_schedule', label: '📅 Schedule' },
               { id: 'daily_reports', label: '📋 Daily Reports' }
@@ -1724,216 +1343,7 @@ const TeacherDashboard = () => {
           </div>
         )}
 
-        {/* Live Classroom tab */}
-        {isLive && (
-          <div className="space-y-6">
-            {!isLiveClass ? (
-              <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-8 text-center max-w-md mx-auto space-y-5">
-                <Tv className="w-16 h-16 text-blue-500 mx-auto animate-pulse" />
-                <div>
-                  <h3 className="text-lg font-black text-slate-800">Launch Live Virtual Stream</h3>
-                  <p className="text-xs text-slate-400 mt-1.5 leading-relaxed font-semibold">Select your scheduled batch below to initiate a premium live classroom with participants, text chat, and drawing whiteboard.</p>
-                </div>
-                <div>
-                  <label className="block text-left text-xs font-bold text-slate-500 mb-1.5 uppercase">Select Live Class Batch</label>
-                  <select 
-                    value={liveClassBatch}
-                    onChange={(e) => setLiveClassBatch(e.target.value)}
-                    className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none font-bold text-slate-700 cursor-pointer"
-                  >
-                    {batches.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
-                  </select>
-                </div>
-                <button 
-                  onClick={() => setIsLiveClass(true)}
-                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-black py-3 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <Video className="w-4.5 h-4.5" /> Start Classroom Session
-                </button>
-              </div>
-            ) : (
-              /* Inside Live Classroom Workspace */
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-slate-900 rounded-3xl p-6 text-white min-h-[580px]">
-                
-                {/* Left Area - Stream / Whiteboard */}
-                <div className="lg:col-span-8 flex flex-col justify-between space-y-4">
-                  <div className="relative bg-slate-950 border border-slate-800 rounded-2xl flex-grow overflow-hidden flex items-center justify-center min-h-[350px]">
-                    
-                    {/* Blinking record label */}
-                    {liveRecording && (
-                      <div className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-black tracking-wider uppercase px-2.5 py-1 rounded-full flex items-center gap-1.5 animate-pulse z-10">
-                        <span className="w-2 h-2 rounded-full bg-white"></span>
-                        <span>REC • {formatTime(liveRecordSeconds)}</span>
-                      </div>
-                    )}
 
-                    {!liveWhiteboardActive ? (
-                      /* Video stream placeholder */
-                      <div className="text-center space-y-3 animate-fade-in">
-                        <div className="w-20 h-20 bg-blue-600 border-4 border-blue-500 text-white rounded-full flex items-center justify-center font-black text-2xl mx-auto shadow-lg animate-pulse">
-                          PS
-                        </div>
-                        <h4 className="text-sm font-black tracking-wide">Priya Sharma (You)</h4>
-                        <p className="text-[10px] text-slate-500">Broadcasting HD audio & video stream to 18 students...</p>
-                      </div>
-                    ) : (
-                      /* Interactive Whiteboard Canvas */
-                      <div className="w-full h-full flex flex-col bg-white text-slate-800 p-4 animate-fade-in">
-                        <div className="flex justify-between items-center pb-2 border-b border-slate-100 shrink-0">
-                          <h4 className="text-xs font-black text-slate-700 flex items-center gap-1"><BookOpen className="w-4 h-4 text-blue-500" /> Interactive Drawing Canvas</h4>
-                          <div className="flex items-center space-x-2">
-                            {/* Color selects */}
-                            {['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#0f172a'].map(color => (
-                              <button
-                                key={color}
-                                onClick={() => setWhiteboardColor(color)}
-                                className={`w-5 h-5 rounded-full border border-slate-300 transition-transform ${
-                                  whiteboardColor === color ? 'scale-125 ring-2 ring-offset-2 ring-blue-500' : ''
-                                }`}
-                                style={{ backgroundColor: color }}
-                              />
-                            ))}
-                            <span className="h-4 w-px bg-slate-200 mx-1"></span>
-                            <span className="text-[10px] font-bold text-slate-500 ml-2">Brush: {whiteboardBrushSize}px</span>
-                            <input
-                              type="range" min="2" max="20"
-                              value={whiteboardBrushSize}
-                              onChange={(e) => setWhiteboardBrushSize(parseInt(e.target.value))}
-                              className="w-16 h-1 cursor-pointer accent-blue-500"
-                            />
-                            <span className="h-4 w-px bg-slate-200 mx-1"></span>
-                            <button onClick={clearWhiteboard} className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg cursor-pointer flex items-center gap-1 text-[10px] font-bold">
-                              <Eraser className="w-3.5 h-3.5" /> Clear
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Drawing body */}
-                        <canvas
-                          ref={canvasRef}
-                          width={600}
-                          height={280}
-                          onMouseDown={handleMouseDown}
-                          onMouseMove={handleMouseMove}
-                          onMouseUp={handleMouseUp}
-                          onMouseLeave={handleMouseUp}
-                          className="w-full bg-slate-50 border border-slate-100 rounded-xl cursor-crosshair flex-grow mt-2"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Bottom Controls */}
-                  <div className="bg-slate-950 border border-slate-800 px-5 py-4 rounded-2xl flex items-center justify-between gap-4 shrink-0">
-                    <div className="flex items-center space-x-2">
-                      <button 
-                        onClick={() => setLiveMicMuted(!liveMicMuted)} 
-                        className={`p-3 rounded-xl transition-all cursor-pointer ${liveMicMuted ? 'bg-red-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
-                        title={liveMicMuted ? 'Unmute Mic' : 'Mute Mic'}
-                      >
-                        {liveMicMuted ? <AlertCircle className="w-4.5 h-4.5" /> : <Volume2 className="w-4.5 h-4.5" />}
-                      </button>
-                      <button 
-                        onClick={() => setLiveVideoMuted(!liveVideoMuted)} 
-                        className={`p-3 rounded-xl transition-all cursor-pointer ${liveVideoMuted ? 'bg-red-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
-                        title={liveVideoMuted ? 'Start Video' : 'Stop Video'}
-                      >
-                        <Video className="w-4.5 h-4.5" />
-                      </button>
-                      <button 
-                        onClick={() => setLiveScreenSharing(!liveScreenSharing)} 
-                        className={`p-3 rounded-xl transition-all cursor-pointer ${liveScreenSharing ? 'bg-blue-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
-                        title={liveScreenSharing ? 'Stop Sharing' : 'Share Desktop'}
-                      >
-                        <Tv className="w-4.5 h-4.5" />
-                      </button>
-                      <button 
-                        onClick={() => setLiveWhiteboardActive(!liveWhiteboardActive)} 
-                        className={`p-3 rounded-xl transition-all cursor-pointer ${liveWhiteboardActive ? 'bg-blue-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
-                        title="Toggle Blackboard"
-                      >
-                        <Edit3 className="w-4.5 h-4.5" />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center space-x-3">
-                      <button 
-                        onClick={handleToggleRecording}
-                        className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          liveRecording ? 'bg-red-600 text-white animate-pulse' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-                        }`}
-                      >
-                        <span className={`w-2 h-2 rounded-full ${liveRecording ? 'bg-white' : 'bg-red-500'}`}></span>
-                        <span>{liveRecording ? 'Recording' : 'Record Class'}</span>
-                      </button>
-
-                      <button 
-                        onClick={() => { setIsLiveClass(false); setToastMessage('Live class session saved to portal.'); setShowToast(true); }}
-                        className="bg-red-500 hover:bg-red-600 text-white font-black text-xs px-5 py-2.5 rounded-xl shadow transition-colors cursor-pointer"
-                      >
-                        End Class
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Area - Participants & Chat */}
-                <div className="lg:col-span-4 flex flex-col justify-between h-full space-y-4">
-                  {/* Students grid */}
-                  <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-3 flex-grow overflow-y-auto max-h-56 scrollbar-thin">
-                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">Students Online (6)</h4>
-                    <div className="space-y-2">
-                      {students.slice(0, 6).map(s => (
-                        <div key={s.id} className="flex justify-between items-center p-2 bg-slate-900 border border-slate-800 rounded-xl text-xs">
-                          <span className="font-bold">{s.name}</span>
-                          <div className="flex items-center space-x-2 text-[10px] text-slate-400">
-                            <span>Camera Online</span>
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Chat feed */}
-                  <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col h-[280px]">
-                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Classroom Chat</h4>
-                    <div className="flex-grow overflow-y-auto space-y-2.5 pr-1 text-xs max-h-[170px] scrollbar-thin">
-                      {liveChat.map(c => (
-                        <div key={c.id}>
-                          <span className="font-extrabold text-blue-400">{c.sender}: </span>
-                          <span className="text-slate-300 font-semibold">{c.text}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <form 
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        if (!liveChatInput.trim()) return;
-                        setLiveChat(prev => [
-                          ...prev,
-                          { id: prev.length + 1, sender: "You", text: liveChatInput, time: "Now" }
-                        ]);
-                        setLiveChatInput('');
-                      }} 
-                      className="flex gap-1.5 border-t border-slate-800 pt-2 mt-2"
-                    >
-                      <input 
-                        type="text"
-                        value={liveChatInput}
-                        onChange={(e) => setLiveChatInput(e.target.value)}
-                        placeholder="Write a message to classroom..."
-                        className="flex-grow bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:border-blue-500 font-semibold"
-                      />
-                      <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg cursor-pointer"><Send className="w-3.5 h-3.5" /></button>
-                    </form>
-                  </div>
-                </div>
-
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Demo Bookings tab */}
         {isDemo && (
@@ -2793,7 +2203,7 @@ const TeacherDashboard = () => {
 
               <div className="flex gap-3 mt-6">
                 <button 
-                  onClick={() => { alert("Downloading report PDF..."); setSelectedReportStudent(null); }}
+                  onClick={() => { setToastMessage('Downloading report PDF...'); setShowToast(true); setSelectedReportStudent(null); }}
                   className="flex-grow bg-blue-500 text-white font-bold text-xs py-3 rounded-xl hover:bg-blue-600 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Download className="w-4 h-4" /> Download Certificate Report
@@ -3062,6 +2472,7 @@ const TeacherDashboard = () => {
   };
 
   // 7. Analytics & Earnings
+  // eslint-disable-next-line no-unused-vars
   const renderAnalyticsEarnings = () => {
     const isEarnings = subTabs.analytics === 'earnings';
 
@@ -3210,174 +2621,6 @@ const TeacherDashboard = () => {
                 </div>
               </div>
 
-            </div>
-          </div>
-        )}
-
-      </div>
-    );
-  };
-
-  // 8. Communication & Doubts
-  const renderCommunicationDoubts = () => {
-    const isDoubts = subTabs.communication === 'doubt_solver';
-
-    const handleCreateAnnouncement = (e) => {
-      e.preventDefault();
-      if (!newBTitle || !newBBody) return;
-      const newB = {
-        id: broadcasts.length + 1,
-        title: newBTitle,
-        batch: newBTarget,
-        body: newBBody,
-        date: 'Just now',
-        views: 0
-      };
-      setBroadcasts(prev => [newB, ...prev]);
-      setNewBTitle('');
-      setNewBBody('');
-      setToastMessage('Broadcast announcement published!');
-      setShowToast(true);
-      triggerConfetti();
-    };
-
-    const handleSendDoubtText = (id) => {
-      if (!doubtReplyInput.trim()) return;
-      setDoubts(prev => prev.map(d => d.id === id ? { ...d, isNew: false, reply: doubtReplyInput, type: 'text' } : d));
-      setDoubtReplyInput('');
-      setDoubtReplyId(null);
-      setToastMessage('Response posted to doubt feed!');
-      setShowToast(true);
-      triggerConfetti();
-    };
-
-    const handleRecordVoiceNote = (id) => {
-      setIsRecordingVoice(true);
-      setVoiceRecordSeconds(3);
-      setTimeout(() => {
-        setIsRecordingVoice(false);
-        setDoubts(prev => prev.map(d => d.id === id ? { ...d, isNew: false, reply: 'Voice Note Attachment (0:03)', type: 'voice' } : d));
-        setToastMessage('Voice note reply published!');
-        setShowToast(true);
-        triggerConfetti();
-      }, 3000);
-    };
-
-    return (
-      <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-          <div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Broadcasting & Doubt Solver Feed</h2>
-            <p className="text-slate-500 text-xs mt-1">Publish alerts to batches, review incoming doubts, and post voice/text replies.</p>
-          </div>
-          
-          <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200/50 w-max shadow-inner">
-            {[
-              { id: 'announcements', label: 'Broadcasts' },
-              { id: 'doubt_solver', label: 'Doubt Solver' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setSubTabs(prev => ({ ...prev, communication: tab.id }))}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  subTabs.communication === tab.id 
-                    ? 'bg-white text-slate-800 shadow-sm border border-slate-200/20' 
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Broadcasts Tab */}
-        {!isDoubts && (
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-            <form onSubmit={handleCreateAnnouncement} className="md:col-span-5 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
-              <h3 className="text-base font-black text-slate-800">Draft Announcement</h3>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Title</label>
-                <input 
-                  type="text" required value={newBTitle}
-                  onChange={(e) => setNewBTitle(e.target.value)}
-                  placeholder="e.g. Test Syllabus Updated"
-                  className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none font-semibold"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Target Cohort</label>
-                <select 
-                  value={newBTarget}
-                  onChange={(e) => setNewBTarget(e.target.value)}
-                  className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none font-bold text-slate-700 cursor-pointer"
-                >
-                  <option>All Batches</option>
-                  {batches.map(b => (
-                    <option key={b.id} value={b.title}>{b.title}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Announcement Body</label>
-                <textarea 
-                  required value={newBBody}
-                  onChange={(e) => setNewBBody(e.target.value)}
-                  rows="4"
-                  placeholder="Write clear instructions for students..."
-                  className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none font-semibold resize-none"
-                />
-              </div>
-              <button type="submit" className="w-full bg-blue-500 text-white font-bold text-xs py-3 rounded-xl hover:bg-blue-600 transition-all cursor-pointer">Post Announcement</button>
-            </form>
-
-            <div className="md:col-span-7 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
-              <h3 className="text-base font-black text-slate-800">Announcements Log</h3>
-              <div className="space-y-4">
-                {broadcasts.map(b => (
-                  <div key={b.id} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-2 text-xs">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-extrabold text-slate-800 text-sm leading-snug">{b.title}</h4>
-                        <p className="text-slate-400 font-semibold mt-0.5">Cohort: {b.batch} • {b.date}</p>
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-bold shrink-0">{b.views} Views</span>
-                    </div>
-                    <p className="text-slate-600 leading-normal font-semibold">"{b.body}"</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Doubt Solver Tab */}
-        {isDoubts && (
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 max-w-2xl mx-auto space-y-6 text-center">
-            <div className="w-16 h-16 bg-emerald-500 text-white rounded-3xl flex items-center justify-center shadow-lg shadow-emerald-500/25 mx-auto">
-              <MessageSquare className="w-8 h-8" />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-slate-800">Doubt Solving via WhatsApp</h3>
-              <p className="text-emerald-600 text-xs font-bold mt-1">Official Moderated Cohort Groups</p>
-            </div>
-            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4 text-left">
-              <p className="text-slate-600 text-xs leading-relaxed font-semibold">
-                To ensure permanent access to whiteboard drawings, question files, and ease of coordination, Cograd Pathshala redirects all student academic doubts to **WhatsApp Cohorts & Direct Chats**.
-              </p>
-              <div className="p-3 bg-blue-50/50 border border-blue-100/50 rounded-xl flex items-start space-x-2 text-[10px] text-slate-500 font-bold">
-                <span className="text-blue-600 font-black">ℹ</span>
-                <p className="leading-relaxed">Please check your official WhatsApp cohort group chat or student chat direct feeds on your phone to respond to doubt messages.</p>
-              </div>
-            </div>
-            <div className="pt-2">
-              <button 
-                onClick={() => window.open("https://chat.whatsapp.com/CP-OrganicChem", "_blank")}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-4 rounded-xl shadow-lg shadow-emerald-600/15 hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
-              >
-                <MessageSquare className="w-4.5 h-4.5" />
-                <span>Open WhatsApp Web Cohorts</span>
-              </button>
             </div>
           </div>
         )}
@@ -3686,14 +2929,12 @@ const TeacherDashboard = () => {
 
   const getActiveTabContent = () => {
     switch (activeTab) {
-      case 'Content & Resources': return renderContentResources();
-      case 'AI Assistant': return renderAIAssistant();
-      case 'Classroom & Batches': return renderClassroomBatches();
-      case 'Assignments & Grading': return renderAssignmentsGrading();
-      case 'Schedules & Attendance': return renderSchedulesAttendance();
-      case 'Analytics & Earnings': return renderAnalyticsEarnings();
-      case 'Communication & Doubts': return renderCommunicationDoubts();
-      case 'Public Profile & Reviews': return renderPublicProfileReviews();
+      case 'Study Materials': return renderContentResources();
+      case 'My Students': return renderClassroomBatches();
+      case 'Homework': return renderAssignmentsGrading();
+      case 'Schedule & Attendance': return renderSchedulesAttendance();
+
+      case 'Profile & Reviews': return renderPublicProfileReviews();
       case 'My Dashboard':
       default:
         return renderDashboard();
@@ -3739,14 +2980,12 @@ const TeacherDashboard = () => {
           <nav className="p-4 space-y-1 overflow-y-auto flex-grow scrollbar-thin">
             {[
               { name: 'My Dashboard', icon: LayoutDashboard },
-              { name: 'Content & Resources', icon: BookOpen },
-              { name: 'AI Assistant', icon: BrainCircuit },
-              { name: 'Classroom & Batches', icon: Tv },
-              { name: 'Assignments & Grading', icon: CheckSquare },
-              { name: 'Schedules & Attendance', icon: Calendar },
-              { name: 'Analytics & Earnings', icon: BarChart3 },
-              { name: 'Communication & Doubts', icon: MessageSquare, badge: doubts.filter(d => d.isNew).length },
-              { name: 'Public Profile & Reviews', icon: User }
+              { name: 'My Students', icon: Users },
+              { name: 'Study Materials', icon: BookOpen },
+              { name: 'Homework', icon: CheckSquare },
+              { name: 'Schedule & Attendance', icon: Calendar },
+
+              { name: 'Profile & Reviews', icon: User }
             ].map(item => {
               const IconComp = item.icon;
               const isActive = activeTab === item.name;
@@ -3773,7 +3012,7 @@ const TeacherDashboard = () => {
                         : 'bg-slate-50 text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600 group-hover:scale-[1.03]'
                     }`}>
                       <IconComp className={`w-4.5 h-4.5 transition-transform duration-300 ${
-                        isActive ? 'animate-pulse' : 'group-hover:rotate-6'
+                        isActive ? '' : 'group-hover:rotate-6'
                       }`} />
                     </div>
                     
@@ -3795,7 +3034,7 @@ const TeacherDashboard = () => {
           {/* Aligned Profile Section (Fixed bottom) */}
           <div className="p-4 border-t border-slate-100 bg-slate-50/60 shrink-0 flex items-center justify-between">
             <button 
-              onClick={() => { setActiveTab('Public Profile & Reviews'); setSubTabs(p => ({ ...p, profile: 'public_profile' })); }}
+              onClick={() => { setActiveTab('Profile & Reviews'); setSubTabs(p => ({ ...p, profile: 'public_profile' })); }}
               className="flex items-center space-x-3 min-w-0 hover:opacity-80 transition-opacity text-left cursor-pointer group"
             >
               <img 
@@ -3911,7 +3150,7 @@ const TeacherDashboard = () => {
             {/* User Badge Icon */}
             <div className="flex items-center space-x-2.5 border-l border-slate-100 pl-6">
               <button 
-                onClick={() => { setActiveTab('Public Profile & Reviews'); setSubTabs(p => ({ ...p, profile: 'public_profile' })); }}
+                onClick={() => { setActiveTab('Profile & Reviews'); setSubTabs(p => ({ ...p, profile: 'public_profile' })); }}
                 className="w-9 h-9 rounded-full overflow-hidden border border-slate-200 hover:border-blue-500 hover:ring-2 hover:ring-blue-500/20 transition-all cursor-pointer"
               >
                 <img src={teacherProfile.avatar} alt="User" className="w-full h-full object-cover" />

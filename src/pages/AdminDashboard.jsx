@@ -10,7 +10,6 @@ import {
   CreditCard, 
   MessageSquare, 
   BarChart3, 
-  Mail, 
   Settings, 
   HelpCircle, 
   LogOut, 
@@ -21,14 +20,11 @@ import {
   X, 
   AlertCircle, 
   ChevronRight, 
-  Sparkles, 
-  MoreHorizontal,
-  Sliders,
-  CheckCircle2,
+  Sliders, 
+  CheckCircle2, 
   Plus,
   Trash2,
   FileText,
-  Calendar,
   Megaphone,
   Save,
   Download
@@ -56,41 +52,30 @@ const AdminDashboard = () => {
     { id: 3, name: 'Varun Dhawan', amount: '₹15,200', status: 'Pending' }
   ]);
 
-  // At-Risk Students state
-  const [atRiskStudents, setAtRiskStudents] = useState([
-    { id: 1, name: 'Arjun Kapoor', reason: 'Low test scores (3 consecutive)', status: 'Pending' },
-    { id: 2, name: 'Sara Ali Khan', reason: 'Absent for 4 days this week', status: 'Pending' },
-    { id: 3, name: 'Ranbir Kapoor', reason: 'Declining attendance trend', status: 'Pending' }
-  ]);
-
-  // Intervention Modal
-  const [selectedRiskStudent, setSelectedRiskStudent] = useState(null);
-  const [interventionNote, setInterventionNote] = useState('');
-  
   // Enquiries List state
   const [enquiries, setEnquiries] = useState([
-    { id: 1, name: 'Aaryan Khanna', course: 'Class 12 — All Subjects', type: 'New', color: 'bg-blue-100 text-blue-800', phone: '+91 91111 22222', email: 'aaryan@gmail.com' },
+    { id: 1, name: 'Aaryan Khanna', course: 'Class 5 — Maths & English', type: 'New', color: 'bg-blue-100 text-blue-800', phone: '+91 91111 22222', email: 'aaryan@gmail.com' },
     { id: 2, name: 'Priya Sharma', course: 'Class 10 — Maths & Science', type: 'Follow-up', color: 'bg-amber-100 text-amber-800', phone: '+91 93333 44444', email: 'priya.sh@gmail.com' },
     { id: 3, name: 'Rahul Gupta', course: 'Class 6 — All Subjects', type: 'Enrolled', color: 'bg-emerald-100 text-emerald-800', phone: '+91 95555 66666', email: 'rahul.g@gmail.com' }
   ]);
 
   // Student roster state
   const [students, setStudents] = useState([
-    { id: 1, name: 'Rahul Malhotra', email: 'rahul.m@gmail.com', parentName: 'Siddharth Malhotra', batch: 'Class 9-10 Secondary C1', date: '2026-01-10', status: 'Active' },
-    { id: 2, name: 'Sanya Sen', email: 'sanya.s@yahoo.com', parentName: 'Deepak Sen', batch: 'Class 11-12 Senior D1', date: '2026-02-15', status: 'Active' },
-    { id: 3, name: 'Arjun Kapoor', email: 'arjun.k@cograd.com', parentName: 'Sanjay Kapoor', batch: 'Class 9-10 Secondary C1', date: '2026-03-01', status: 'Active' },
-    { id: 4, name: 'Isha Verma', email: 'isha.v@gmail.com', parentName: 'Mukesh Verma', batch: 'Class 1-5 Primary A1', date: '2026-01-20', status: 'Active' },
-    { id: 5, name: 'Varun Sharma', email: 'varun.s@gmail.com', parentName: 'David Sharma', batch: 'Class 6-8 Middle B1', date: '2026-02-28', status: 'Active' },
-    { id: 6, name: 'Sara Mehta', email: 'sara.m@gmail.com', parentName: 'Ali Mehta', batch: 'Class 1-5 Primary A1', date: '2026-03-12', status: 'Suspended' }
+    { id: 1, name: 'Rahul Malhotra', email: 'rahul.m@gmail.com', parentName: 'Siddharth Malhotra', batch: 'Class 9', date: '2026-01-10', status: 'Active' },
+    { id: 2, name: 'Sanya Sen', email: 'sanya.s@yahoo.com', parentName: 'Deepak Sen', batch: 'Class 8', date: '2026-02-15', status: 'Active' },
+    { id: 3, name: 'Arjun Kapoor', email: 'arjun.k@cograd.com', parentName: 'Sanjay Kapoor', batch: 'Class 9', date: '2026-03-01', status: 'Active' },
+    { id: 4, name: 'Isha Verma', email: 'isha.v@gmail.com', parentName: 'Mukesh Verma', batch: 'Class 3', date: '2026-01-20', status: 'Active' },
+    { id: 5, name: 'Varun Sharma', email: 'varun.s@gmail.com', parentName: 'David Sharma', batch: 'Class 7', date: '2026-02-28', status: 'Active' },
+    { id: 6, name: 'Sara Mehta', email: 'sara.m@gmail.com', parentName: 'Ali Mehta', batch: 'Class 2', date: '2026-03-12', status: 'Suspended' }
   ]);
 
   // Teachers state
   const [teachers, setTeachers] = useState([
-    { id: 1, name: 'Dr. Satish Sharma', subject: 'Mathematics', email: 'satish.sharma@cograd.com', rating: 4.9, rate: '₹1,500/hr', batches: ['Class 9-10 Secondary C1', 'Class 1-5 Primary A1'], status: 'Verified' },
-    { id: 2, name: 'Prof. Amit Verma', subject: 'Science', email: 'amit.verma@cograd.com', rating: 4.8, rate: '₹1,400/hr', batches: ['Class 9-10 Secondary C1', 'Class 11-12 Senior D1'], status: 'Verified' },
-    { id: 3, name: 'Ms. Neha Gupta', subject: 'English', email: 'neha.gupta@cograd.com', rating: 4.7, rate: '₹1,200/hr', batches: ['Class 6-8 Middle B1'], status: 'Verified' },
-    { id: 4, name: 'Mr. Rohan Das', subject: 'Social Studies', email: 'rohan.das@cograd.com', rating: 4.5, rate: '₹1,000/hr', batches: ['Class 1-5 Primary A1'], status: 'Pending' },
-    { id: 5, name: 'Mrs. S. Iyer', subject: 'Computer Science', email: 's.iyer@cograd.com', rating: 4.6, rate: '₹1,300/hr', batches: ['Class 11-12 Senior D1'], status: 'Verified' }
+    { id: 1, name: 'Dr. Satish Sharma', subject: 'Mathematics', email: 'satish.sharma@cograd.com', rating: 4.9, rate: '₹600/hr', batches: ['Class 9', 'Class 3'], status: 'Verified' },
+    { id: 2, name: 'Prof. Amit Verma', subject: 'Science', email: 'amit.verma@cograd.com', rating: 4.8, rate: '₹550/hr', batches: ['Class 9', 'Class 7'], status: 'Verified' },
+    { id: 3, name: 'Ms. Neha Gupta', subject: 'English', email: 'neha.gupta@cograd.com', rating: 4.7, rate: '₹500/hr', batches: ['Class 7'], status: 'Verified' },
+    { id: 4, name: 'Mr. Rohan Das', subject: 'Social Studies', email: 'rohan.das@cograd.com', rating: 4.5, rate: '₹450/hr', batches: ['Class 2'], status: 'Pending' },
+    { id: 5, name: 'Mrs. S. Iyer', subject: 'Hindi', email: 's.iyer@cograd.com', rating: 4.6, rate: '₹480/hr', batches: ['Class 5'], status: 'Verified' }
   ]);
 
   // Per-teacher document verification state (keyed by teacher id)
@@ -120,13 +105,6 @@ const AdminDashboard = () => {
     return Object.values(docs).every(v => v === 'Approved');
   };
 
-  // Batches state
-  const [batches, setBatches] = useState([
-    { id: 1, name: 'Class 1-5 Primary A1', teacher: 'Mr. Rohan Das', subject: 'English & Maths', timing: '09:00 AM - 10:00 AM (M, W, F)', students: 18, status: 'Active' },
-    { id: 2, name: 'Class 6-8 Middle B1', teacher: 'Ms. Neha Gupta', subject: 'Science & English', timing: '11:00 AM - 12:30 PM (T, T, S)', students: 24, status: 'Active' },
-    { id: 3, name: 'Class 9-10 Secondary C1', teacher: 'Dr. Satish Sharma', subject: 'Mathematics', timing: '04:00 PM - 05:30 PM (M, W, F)', students: 15, status: 'Active' },
-    { id: 4, name: 'Class 11-12 Senior D1', teacher: 'Prof. Amit Verma', subject: 'Science', timing: '02:00 PM - 03:30 PM (Sat)', students: 12, status: 'Active' }
-  ]);
 
   // Recent payments state
   const [recentPayments, setRecentPayments] = useState([
@@ -152,36 +130,32 @@ const AdminDashboard = () => {
     currency: '₹ (INR)',
     autoReminders: true,
     emailAlerts: true,
-    whatsappSync: false,
-    aiRiskAnalysis: true
+    whatsappSync: false
   });
 
   // Tests & Results state
   const [tests, setTests] = useState([
-    { id: 1, name: 'Class 9-10 Mathematics Unit Test', date: '2026-06-08', batch: 'Class 9-10 Secondary C1', avgScore: '74%', topScore: '98%', toppers: ['Arjun Kapoor (98%)', 'Rahul Malhotra (94%)'] },
-    { id: 2, name: 'Class 6-8 Science Chapter Test', date: '2026-06-05', batch: 'Class 6-8 Middle B1', avgScore: '68%', topScore: '95%', toppers: ['Sanya Sen (95%)', 'Varun Sharma (90%)'] },
-    { id: 3, name: 'Class 1-5 Maths Worksheet Assessment', date: '2026-06-01', batch: 'Class 1-5 Primary A1', avgScore: '82%', topScore: '100%', toppers: ['Sara Mehta (100%)', 'Isha Verma (96%)'] }
+    { id: 1, name: 'Class 9 Mathematics Unit Test', date: '2026-06-08', batch: 'Class 9', avgScore: '74%', topScore: '98%', toppers: ['Arjun Kapoor (98%)', 'Rahul Malhotra (94%)'] },
+    { id: 2, name: 'Class 8 Science Chapter Test', date: '2026-06-05', batch: 'Class 8', avgScore: '68%', topScore: '95%', toppers: ['Sanya Sen (95%)', 'Varun Sharma (90%)'] },
+    { id: 3, name: 'Class 3 Maths Worksheet Assessment', date: '2026-06-01', batch: 'Class 3', avgScore: '82%', topScore: '100%', toppers: ['Sara Mehta (100%)', 'Isha Verma (96%)'] }
   ]);
 
   // Modal open states
   const [showAddStudent, setShowAddStudent] = useState(false);
-  const [showAddBatch, setShowAddBatch] = useState(false);
   const [showAddEnquiry, setShowAddEnquiry] = useState(false);
   const [showPublishTest, setShowPublishTest] = useState(false);
   const [selectedTest, setSelectedTest] = useState(null);
   const [selectedTeacherDocs, setSelectedTeacherDocs] = useState(null);
 
   // Student Form Inputs
-  const [newStudent, setNewStudent] = useState({ name: '', email: '', parentName: '', batch: 'Class 9-10 Secondary C1', status: 'Active' });
-  // Batch Form Inputs
-  const [newBatch, setNewBatch] = useState({ name: '', teacher: 'Dr. Satish Sharma', subject: 'Mathematics', timing: '', students: 0, status: 'Active' });
+  const [newStudent, setNewStudent] = useState({ name: '', email: '', parentName: '', batch: 'Class 9', status: 'Active' });
   // Enquiry Form Inputs
   const [newEnquiry, setNewEnquiry] = useState({ name: '', course: 'Class 9 — All Subjects', phone: '', email: '' });
   // Test Form Inputs
-  const [newTest, setNewTest] = useState({ name: '', date: '', batch: 'Class 9-10 Secondary C1', avgScore: '', topScore: '', toppers: '' });
+  const [newTest, setNewTest] = useState({ name: '', date: '', batch: 'Class 9', avgScore: '', topScore: '', toppers: '' });
 
   // Attendance Sheet Filter State
-  const [attendanceFilter, setAttendanceFilter] = useState({ batch: 'Class 9-10 Secondary C1', date: '2026-06-13' });
+  const [attendanceFilter, setAttendanceFilter] = useState({ batch: 'Class 9', date: '2026-06-13' });
   // Attendance Students Presence State (temporary session logs)
   const [attendanceLogs, setAttendanceLogs] = useState({
     1: 'Present',
@@ -247,16 +221,6 @@ const AdminDashboard = () => {
     triggerToast(`Fee reminder dispatched to ${name}!`);
   };
 
-  const startIntervention = (student) => {
-    setSelectedRiskStudent(student);
-    setInterventionNote(`Academic review flag intervention: Discussing ${student.reason.toLowerCase()}.`);
-  };
-
-  const submitIntervention = () => {
-    setAtRiskStudents(prev => prev.map(s => s.id === selectedRiskStudent.id ? { ...s, status: 'Intervened' } : s));
-    triggerToast(`Academic intervention logged for ${selectedRiskStudent.name}!`);
-    setSelectedRiskStudent(null);
-  };
 
   // Student actions
   const handleAddStudentSubmit = (e) => {
@@ -272,22 +236,15 @@ const AdminDashboard = () => {
       date: new Date().toISOString().split('T')[0]
     };
     setStudents(prev => [newEntry, ...prev]);
-    
-    // Update batch student count
-    setBatches(prev => prev.map(b => b.name === newEntry.batch ? { ...b, students: b.students + 1 } : b));
 
     setShowAddStudent(false);
-    setNewStudent({ name: '', email: '', parentName: '', batch: 'Class 9-10 Secondary C1', status: 'Active' });
+    setNewStudent({ name: '', email: '', parentName: '', batch: 'Class 9', status: 'Active' });
     triggerToast(`Student ${newEntry.name} enrolled successfully!`);
   };
 
   const handleDeleteStudent = (id, name) => {
     if (window.confirm(`Are you sure you want to remove ${name}?`)) {
-      const studentObj = students.find(s => s.id === id);
       setStudents(prev => prev.filter(s => s.id !== id));
-      if (studentObj) {
-        setBatches(prev => prev.map(b => b.name === studentObj.batch ? { ...b, students: Math.max(0, b.students - 1) } : b));
-      }
       triggerToast(`Student ${name} removed from registry.`);
     }
   };
@@ -303,29 +260,7 @@ const AdminDashboard = () => {
     triggerToast(`Verification toggled for ${name}.`);
   };
 
-  // Batch actions
-  const handleCreateBatchSubmit = (e) => {
-    e.preventDefault();
-    if (!newBatch.name || !newBatch.timing) {
-      triggerToast('Please fill out batch name and timing!');
-      return;
-    }
-    const id = batches.length + 1;
-    const newEntry = {
-      ...newBatch,
-      id,
-      students: 0
-    };
-    setBatches(prev => [...prev, newEntry]);
-    setShowAddBatch(false);
-    setNewBatch({ name: '', teacher: 'Dr. Satish Sharma', subject: 'Mathematics', timing: '', students: 0, status: 'Active' });
-    triggerToast(`Batch ${newEntry.name} created successfully!`);
-  };
 
-  const toggleBatchStatus = (id, name) => {
-    setBatches(prev => prev.map(b => b.id === id ? { ...b, status: b.status === 'Active' ? 'Archived' : 'Active' } : b));
-    triggerToast(`Batch ${name} status toggled.`);
-  };
 
   // Test actions
   const handlePublishTestSubmit = (e) => {
@@ -343,7 +278,7 @@ const AdminDashboard = () => {
     };
     setTests(prev => [newEntry, ...prev]);
     setShowPublishTest(false);
-    setNewTest({ name: '', date: '', batch: 'Class 9-10 Secondary C1', avgScore: '', topScore: '', toppers: '' });
+    setNewTest({ name: '', date: '', batch: 'Class 9', avgScore: '', topScore: '', toppers: '' });
     triggerToast(`Test results for ${newEntry.name} published!`);
   };
 
@@ -384,7 +319,6 @@ const AdminDashboard = () => {
         status: 'Active'
       };
       setStudents(prev => [newStudentEntry, ...prev]);
-      setBatches(prev => prev.map(b => b.name === newStudentEntry.batch ? { ...b, students: b.students + 1 } : b));
       triggerToast(`Enquiry enrolled! Student ${name} added to ${newStudentEntry.batch}.`);
     } else {
       triggerToast(`Enquiry ${name} moved to Follow-up.`);
@@ -485,20 +419,20 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Active Batches */}
+        {/* Verified Teachers */}
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group cursor-pointer">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 rounded-xl bg-purple-500 text-white flex items-center justify-center shadow-md shadow-purple-500/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-              <BookOpen className="w-6 h-6" />
+              <GraduationCap className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Batches</p>
-              <h3 className="text-2xl font-black text-slate-800 mt-0.5">{batches.length + 30}</h3>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Verified Teachers</p>
+              <h3 className="text-2xl font-black text-slate-800 mt-0.5">{teachers.filter(t => t.status === 'Verified').length}</h3>
             </div>
           </div>
           <div className="flex items-center text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
             <TrendingUp className="w-3 h-3 mr-1" />
-            <span>4%</span>
+            <span>Active</span>
           </div>
         </div>
 
@@ -538,29 +472,28 @@ const AdminDashboard = () => {
 
       </div>
 
-      {/* Row 1 Layout: Today's Classes & Centre Health Score */}
+      {/* Row 1 Layout: Today's Home Tuitions & Pending Verifications */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Today's Classes Card */}
+        {/* Today's Home Tuitions Card */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-black text-slate-800 tracking-tight">Today's Classes</h3>
+            <h3 className="text-lg font-black text-slate-800 tracking-tight">Today's Home Tuitions</h3>
             <button 
-              onClick={() => setActiveTab('Batches')}
+              onClick={() => setActiveTab('Attendance')}
               className="text-xs font-bold text-primary-500 hover:text-primary-600 transition-colors flex items-center cursor-pointer"
             >
-              <span>View Schedule</span>
+              <span>View Attendance</span>
               <ChevronRight className="w-4 h-4 ml-0.5" />
             </button>
           </div>
 
           <div className="divide-y divide-slate-50">
             {[
-              { time: '09:00 AM - 10:30 AM', subject: 'Advanced Mathematics', teacher: 'Dr. Satish Sharma', status: 'ONGOING', badgeColor: 'bg-emerald-50 text-emerald-600 border border-emerald-100' },
-              { time: '11:00 AM - 12:30 PM', subject: 'Applied Physics II', teacher: 'Prof. Amit Verma', status: 'UPCOMING', badgeColor: 'bg-amber-50 text-amber-600 border border-amber-100' },
-              { time: '01:30 PM - 03:00 PM', subject: 'Organic Chemistry', teacher: 'Ms. Neha Gupta', status: 'UPCOMING', badgeColor: 'bg-amber-50 text-amber-600 border border-amber-100' },
-              { time: '07:00 AM - 08:30 AM', subject: 'English Literature', teacher: 'Mr. Rohan Das', status: 'COMPLETED', badgeColor: 'bg-slate-50 text-slate-400 border border-slate-100' },
-              { time: '04:00 PM - 05:30 PM', subject: 'Computer Science', teacher: 'Mrs. S. Iyer', status: 'UPCOMING', badgeColor: 'bg-amber-50 text-amber-600 border border-amber-100' }
+              { time: '09:00 AM - 10:00 AM', subject: 'Class 3 — Maths & English', teacher: 'Mr. Rohan Das', status: 'ONGOING', badgeColor: 'bg-emerald-50 text-emerald-600 border border-emerald-100' },
+              { time: '11:00 AM - 12:00 PM', subject: 'Class 7 — Science', teacher: 'Prof. Amit Verma', status: 'UPCOMING', badgeColor: 'bg-amber-50 text-amber-600 border border-amber-100' },
+              { time: '04:00 PM - 05:00 PM', subject: 'Class 9 — Mathematics', teacher: 'Dr. Satish Sharma', status: 'UPCOMING', badgeColor: 'bg-amber-50 text-amber-600 border border-amber-100' },
+              { time: '05:30 PM - 06:30 PM', subject: 'Class 5 — Hindi', teacher: 'Mrs. S. Iyer', status: 'UPCOMING', badgeColor: 'bg-amber-50 text-amber-600 border border-amber-100' }
             ].map((c, i) => (
               <div key={i} className="py-3.5 flex items-center justify-between gap-4">
                 <div className="flex items-center space-x-3.5 min-w-0">
@@ -579,46 +512,34 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Centre Health Score Radial Gauge Card */}
+        {/* Pending Teacher Verifications */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col justify-between">
-          <h3 className="text-lg font-black text-slate-800 tracking-tight">Centre Health Score</h3>
+          <h3 className="text-lg font-black text-slate-800 tracking-tight">Pending Verifications</h3>
           
-          {/* Radial Score Gauge */}
-          <div className="flex flex-col items-center py-4 relative">
-            <svg className="w-32 h-32 transform -rotate-90">
-              <circle
-                cx="64"
-                cy="64"
-                r="52"
-                className="stroke-slate-100"
-                strokeWidth="10"
-                fill="transparent"
-              />
-              <circle
-                cx="64"
-                cy="64"
-                r="52"
-                className="stroke-primary-500 transition-all duration-1000"
-                strokeWidth="10"
-                fill="transparent"
-                strokeDasharray="326.7"
-                strokeDashoffset={326.7 * (1 - 0.88)}
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center mt-1">
-              <span className="text-3xl font-black text-slate-800 block">88</span>
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Very Good</span>
-            </div>
+          <div className="space-y-3 mt-4">
+            {teachers.filter(t => t.status === 'Pending').length > 0 ? (
+              teachers.filter(t => t.status === 'Pending').map(t => (
+                <div key={t.id} className="p-3.5 bg-amber-50/50 border border-amber-100 rounded-2xl">
+                  <span className="font-extrabold text-xs text-slate-800 block">{t.name}</span>
+                  <p className="text-[11px] text-slate-500 font-medium mt-1">{t.subject} • Documents under review</p>
+                  <button
+                    onClick={() => setActiveTab('Teachers')}
+                    className="mt-2 text-[10px] font-bold text-amber-700 hover:text-amber-900 cursor-pointer"
+                  >
+                    Review documents →
+                  </button>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-slate-400 text-center py-6">All teachers verified.</p>
+            )}
           </div>
 
-          {/* Performance Progress Metrics */}
-          <div className="space-y-3 mt-4">
+          <div className="space-y-3 mt-4 pt-4 border-t border-slate-50">
             {[
               { name: 'Student Attendance', val: '92%', progress: 92, color: 'bg-primary-500' },
               { name: 'Fee Regularity', val: '78%', progress: 78, color: 'bg-amber-500' },
-              { name: 'Test Completion', val: '85%', progress: 85, color: 'bg-primary-500' },
-              { name: 'Parent Feedback', val: '42%', progress: 42, color: 'bg-rose-400' }
+              { name: 'Parent Feedback', val: '88%', progress: 88, color: 'bg-emerald-500' }
             ].map((p, i) => (
               <div key={i} className="space-y-1">
                 <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
@@ -635,23 +556,17 @@ const AdminDashboard = () => {
 
       </div>
 
-      {/* Row 2 Layout: Recent Enquiries, Fee Defaulters & At-Risk Students */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Row 2 Layout: Demo Requests & Fee Defaulters */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Recent Enquiries */}
+        {/* Demo Booking Requests */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-black text-slate-800 tracking-tight">Recent Enquiries</h3>
-            <button 
-              onClick={() => setActiveTab('Enquiries & CRM')}
-              className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg cursor-pointer"
-            >
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
+            <h3 className="text-lg font-black text-slate-800 tracking-tight">Demo Booking Requests</h3>
           </div>
 
           <div className="space-y-3">
-            {enquiries.map((e) => (
+            {enquiries.filter(e => e.type !== 'Enrolled').map((e) => (
               <div key={e.id} className="p-3.5 bg-slate-50/50 hover:bg-slate-50 border border-slate-100/50 rounded-2xl transition-all flex flex-col space-y-1.5 relative">
                 <div className="flex items-center justify-between">
                   <span className="font-extrabold text-xs text-slate-800">{e.name}</span>
@@ -701,35 +616,6 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* At-Risk Students (AI Flagged) */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-          <div className="flex items-center space-x-2">
-            <h3 className="text-lg font-black text-slate-800 tracking-tight">At-Risk Students</h3>
-            <span className="px-2 py-0.5 rounded bg-violet-100 text-violet-700 text-[8px] font-black uppercase tracking-wider">AI FLAGGED</span>
-          </div>
-
-          <div className="divide-y divide-slate-50">
-            {atRiskStudents.map(student => (
-              <div key={student.id} className="py-3 flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <h4 className="text-xs font-black text-slate-800 truncate">{student.name}</h4>
-                  <p className="text-[10px] text-slate-400 font-bold mt-1.5 truncate leading-relaxed">{student.reason}</p>
-                </div>
-                <button
-                  onClick={() => student.status === 'Pending' && startIntervention(student)}
-                  className={`px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex-shrink-0 cursor-pointer ${
-                    student.status === 'Pending'
-                      ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-sm shadow-violet-500/20 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95'
-                      : 'bg-emerald-50 text-emerald-600 border border-emerald-100 cursor-default'
-                  }`}
-                >
-                  {student.status === 'Pending' ? 'Intervene' : 'Intervened'}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
       </div>
 
     </div>
@@ -764,11 +650,10 @@ const AdminDashboard = () => {
               onChange={(e) => setStudentBatchFilter(e.target.value)}
               className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
             >
-              <option value="All">All Batches</option>
-              <option value="Class 1-5 Primary A1">Class 1-5 Primary A1</option>
-              <option value="Class 6-8 Middle B1">Class 6-8 Middle B1</option>
-              <option value="Class 9-10 Secondary C1">Class 9-10 Secondary C1</option>
-              <option value="Class 11-12 Senior D1">Class 11-12 Senior D1</option>
+              <option value="All">All Classes</option>
+              {['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'].map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
             </select>
             <select
               value={studentStatusFilter}
@@ -986,64 +871,7 @@ const AdminDashboard = () => {
     );
   };
 
-  const renderBatches = () => {
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-sm font-black text-slate-500 uppercase tracking-wider">Active Learning Programs</h3>
-          <button
-            onClick={() => setShowAddBatch(true)}
-            className="btn-primary py-2 px-4 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer"
-          >
-            <Plus className="w-4.5 h-4.5" />
-            <span>Create Batch</span>
-          </button>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-          {batches.map(batch => (
-            <div key={batch.id} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden">
-              <div className="absolute right-0 top-0 w-24 h-24 bg-primary-500/5 rounded-full -mr-8 -mt-8"></div>
-              
-              <div className="space-y-3 relative z-10">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black text-primary-600 uppercase tracking-widest bg-primary-50 px-2 py-0.5 rounded">
-                    {batch.subject}
-                  </span>
-                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                    batch.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-50 text-slate-400 border border-slate-100'
-                  }`}>
-                    {batch.status}
-                  </span>
-                </div>
-                <div>
-                  <h4 className="text-base font-black text-slate-800 tracking-tight">{batch.name}</h4>
-                  <p className="text-[10px] text-slate-400 font-bold mt-0.5">Instructor: {batch.teacher}</p>
-                </div>
-                <div className="text-[11px] font-bold text-slate-500 flex items-center space-x-1">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{batch.timing}</span>
-                </div>
-              </div>
-
-              <div className="border-t border-slate-50 mt-4 pt-4 flex justify-between items-center relative z-10">
-                <div className="text-xs">
-                  <span className="font-extrabold text-slate-800">{batch.students}</span>
-                  <span className="text-slate-400 font-bold ml-1">enrolled students</span>
-                </div>
-                <button
-                  onClick={() => toggleBatchStatus(batch.id, batch.name)}
-                  className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-800 rounded-xl text-[10px] font-extrabold transition-all cursor-pointer"
-                >
-                  {batch.status === 'Active' ? 'Archive Batch' : 'Restore'}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
 
   const renderAttendance = () => {
     const activeBatchStudents = students.filter(s => s.batch === attendanceFilter.batch);
@@ -1062,10 +890,9 @@ const AdminDashboard = () => {
               onChange={(e) => setAttendanceFilter(prev => ({ ...prev, batch: e.target.value }))}
               className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
             >
-              <option value="Class 9-10 Secondary C1">Class 9-10 Secondary C1</option>
-              <option value="Class 1-5 Primary A1">Class 1-5 Primary A1</option>
-              <option value="Class 6-8 Middle B1">Class 6-8 Middle B1</option>
-              <option value="Class 11-12 Senior D1">Class 11-12 Senior D1</option>
+              {['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'].map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
             </select>
             <input
               type="date"
@@ -1193,21 +1020,16 @@ const AdminDashboard = () => {
                   </span>
                 </div>
 
-                <div className="bg-slate-50 p-3.5 rounded-xl text-[11px] font-semibold text-slate-600 space-y-1.5">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Top Scorers leaderboard</div>
-                  {test.toppers.map((topper, idx) => (
-                    <div key={idx} className="flex justify-between items-center">
-                      <span className="flex items-center space-x-1.5">
-                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white ${
-                          idx === 0 ? 'bg-amber-400' : idx === 1 ? 'bg-slate-400' : 'bg-amber-600'
-                        }`}>
-                          {idx + 1}
-                        </span>
-                        <span className="text-slate-800 font-bold">{topper.split(' (')[0]}</span>
-                      </span>
-                      <span className="text-slate-500 font-black">{topper.split(' (')[1]?.replace(')', '') || ''}</span>
-                    </div>
-                  ))}
+                <div className="bg-slate-50 p-3.5 rounded-xl text-[11px] font-semibold text-slate-600 space-y-1">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Performance Summary</div>
+                  <div className="flex justify-between text-slate-700">
+                    <span>Target Class:</span>
+                    <span className="font-extrabold text-slate-800">{test.batch}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-700">
+                    <span>Average Marks:</span>
+                    <span className="font-extrabold text-slate-800">{test.avgScore}</span>
+                  </div>
                 </div>
               </div>
 
@@ -1216,7 +1038,7 @@ const AdminDashboard = () => {
                   onClick={() => setSelectedTest(test)}
                   className="text-xs font-bold text-primary-500 hover:text-primary-600 transition-colors flex items-center justify-end cursor-pointer ml-auto"
                 >
-                  <span>Leaderboard details</span>
+                  <span>View Test Details</span>
                   <ChevronRight className="w-4 h-4 ml-0.5" />
                 </button>
               </div>
@@ -1334,6 +1156,7 @@ const AdminDashboard = () => {
     );
   };
 
+  // eslint-disable-next-line no-unused-vars
   const renderEnquiriesCRM = () => {
     const filteredCRM = enquiries.filter(e => 
       e.name.toLowerCase().includes(crmSearch.toLowerCase()) ||
@@ -1412,6 +1235,7 @@ const AdminDashboard = () => {
     );
   };
 
+  // eslint-disable-next-line no-unused-vars
   const renderReports = () => {
     return (
       <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-8 text-left">
@@ -1492,8 +1316,7 @@ const AdminDashboard = () => {
           <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Academic session logs</h4>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
-              { title: 'Best Batch Average', val: '82%', desc: 'Class 1-5 Primary A1 leads assessment averages.' },
-              { title: 'AI Flagged At-Risk Students', val: '3 students', desc: 'Slight decrease from last assessment cycle.' },
+              { title: 'Best Class Average', val: '82%', desc: 'Class 1-5 Primary A1 leads assessment averages.' },
               { title: 'New Admissions', val: '+4 enrolled', desc: 'Admission conversion up by 15% this quarter.' }
             ].map((card, i) => (
               <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
@@ -1508,6 +1331,7 @@ const AdminDashboard = () => {
     );
   };
 
+  // eslint-disable-next-line no-unused-vars
   const renderCommunications = () => {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-left">
@@ -1688,8 +1512,7 @@ const AdminDashboard = () => {
             {[
               { key: 'autoReminders', label: 'Auto-dispatch overdue fee reminders', desc: 'Sends notifications to parent handles on balance thresholds.' },
               { key: 'emailAlerts', label: 'Email notification dispatches', desc: 'Allows the system to broadcast notices to teacher/student inbox.' },
-              { key: 'whatsappSync', label: 'WhatsApp messaging synchronization', desc: 'Syncs enquiry pipeline updates to registered numbers.' },
-              { key: 'aiRiskAnalysis', label: 'AI Risk Trend analysis active', desc: 'Triggers flagging warnings on student low marks or attendance decay.' }
+              { key: 'whatsappSync', label: 'WhatsApp messaging synchronization', desc: 'Syncs enquiry pipeline updates to registered numbers.' }
             ].map(toggle => (
               <div key={toggle.key} className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-100/50">
                 <div className="max-w-[75%]">
@@ -1763,9 +1586,8 @@ const AdminDashboard = () => {
             <div className="space-y-4">
               {[
                 { q: 'How do I verify a new teacher partner?', a: 'Navigate to the Teachers tab, click on "Docs" next to the teacher\'s name to review their credentials, and then click "Verify Partner" to activate their portal access.' },
-                { q: 'What happens when I complete enrollment for a CRM enquiry lead?', a: 'The lead is marked as Enrolled. The system automatically registers a new student record in the Students portal, maps their batch, and increments the batch student count in real time.' },
-                { q: 'Can I disable automatic fee reminders?', a: 'Yes. Go to the Settings tab, scroll down to Automation & parameters, toggle off the "Auto-dispatch overdue fee reminders" option, and save configurations.' },
-                { q: 'How are AI Risk warning flags determined?', a: 'The AI analyzes student academic data and alerts the center if a student logs three consecutive low test scores or shows an abnormal decline in weekly attendance trends.' }
+                { q: 'What happens when I complete enrollment for a CRM enquiry lead?', a: 'The lead is marked as Enrolled. The system automatically registers a new student record in the Students portal.' },
+                { q: 'Can I disable automatic fee reminders?', a: 'Yes. Go to the Settings tab, scroll down to Automation & parameters, toggle off the "Auto-dispatch overdue fee reminders" option, and save configurations.' }
               ].map((faq, idx) => (
                 <div key={idx} className="p-4 bg-slate-50/50 hover:bg-slate-50 border border-slate-100/50 rounded-2xl transition-all space-y-2">
                   <h4 className="font-extrabold text-xs text-slate-800 flex items-start space-x-2">
@@ -1885,13 +1707,9 @@ const AdminDashboard = () => {
       case 'Dashboard': return renderDashboard();
       case 'Students': return renderStudents();
       case 'Teachers': return renderTeachers();
-      case 'Batches': return renderBatches();
       case 'Attendance': return renderAttendance();
       case 'Tests & Results': return renderTestsAndResults();
       case 'Fee Management': return renderFeeManagement();
-      case 'Enquiries & CRM': return renderEnquiriesCRM();
-      case 'Reports': return renderReports();
-      case 'Communications': return renderCommunications();
       case 'Settings': return renderSettings();
       case 'Help': return renderHelp();
       default:
@@ -1910,57 +1728,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Intervention Modal */}
-      {selectedRiskStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-md w-full space-y-4 animate-scale-up">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-50">
-              <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
-                <AlertCircle className="w-5 h-5 text-violet-600" />
-                <span>Academic Intervention</span>
-              </h3>
-              <button 
-                onClick={() => setSelectedRiskStudent(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="space-y-3 text-left">
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50 text-xs leading-relaxed space-y-1">
-                <div className="font-extrabold text-slate-800">{selectedRiskStudent.name}</div>
-                <div className="text-slate-500">Flag Reason: {selectedRiskStudent.reason}</div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Intervention Note</label>
-                <textarea
-                  value={interventionNote}
-                  onChange={(e) => setInterventionNote(e.target.value)}
-                  className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 font-semibold"
-                  placeholder="Describe your review note or target actions..."
-                />
-              </div>
-            </div>
-
-            <div className="flex space-x-3 pt-2">
-              <button 
-                onClick={() => setSelectedRiskStudent(null)}
-                className="flex-1 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold rounded-xl text-xs transition-all cursor-pointer text-center"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={submitIntervention}
-                className="flex-1 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-violet-500/20 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 cursor-pointer text-center"
-              >
-                Log Intervention
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Student Form Modal */}
       {showAddStudent && (
@@ -2014,16 +1782,15 @@ const AdminDashboard = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Assign Batch</label>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Assign Class</label>
                 <select
                   value={newStudent.batch}
                   onChange={(e) => setNewStudent(prev => ({ ...prev, batch: e.target.value }))}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
                 >
-                  <option value="Class 9-10 Secondary C1">Class 9-10 Secondary C1</option>
-                  <option value="Class 1-5 Primary A1">Class 1-5 Primary A1</option>
-                  <option value="Class 6-8 Middle B1">Class 6-8 Middle B1</option>
-                  <option value="Class 11-12 Senior D1">Class 11-12 Senior D1</option>
+                  {['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'].map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
                 </select>
               </div>
 
@@ -2033,83 +1800,6 @@ const AdminDashboard = () => {
                 </button>
                 <button type="submit" className="flex-1 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-xs shadow shadow-primary-500/10 cursor-pointer">
                   Enrol Student
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Batch Form Modal */}
-      {showAddBatch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-md w-full space-y-4 animate-scale-up">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-50">
-              <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
-                <BookOpen className="w-5 h-5 text-primary-600" />
-                <span>Create New Learning Batch</span>
-              </h3>
-              <button onClick={() => setShowAddBatch(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg cursor-pointer">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateBatchSubmit} className="space-y-4 text-left">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Batch Name / Code</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="E.g. Class 9-10 Maths & Science Batch"
-                  value={newBatch.name}
-                  onChange={(e) => setNewBatch(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Subject</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="E.g. Physics / Biology"
-                  value={newBatch.subject}
-                  onChange={(e) => setNewBatch(prev => ({ ...prev, subject: e.target.value }))}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Assign Instructor</label>
-                <select
-                  value={newBatch.teacher}
-                  onChange={(e) => setNewBatch(prev => ({ ...prev, teacher: e.target.value }))}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
-                >
-                  {teachers.map(t => (
-                    <option key={t.id} value={t.name}>{t.name} ({t.subject})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Weekly Timing Schedule</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="E.g. 05:00 PM - 06:30 PM (Sat, Sun)"
-                  value={newBatch.timing}
-                  onChange={(e) => setNewBatch(prev => ({ ...prev, timing: e.target.value }))}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
-                />
-              </div>
-
-              <div className="flex space-x-3 pt-2">
-                <button type="button" onClick={() => setShowAddBatch(false)} className="flex-1 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold rounded-xl text-xs cursor-pointer">
-                  Cancel
-                </button>
-                <button type="submit" className="flex-1 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-xs shadow shadow-primary-500/10 cursor-pointer">
-                  Create Batch
                 </button>
               </div>
             </form>
@@ -2240,8 +1930,8 @@ const AdminDashboard = () => {
                     onChange={(e) => setNewTest(prev => ({ ...prev, batch: e.target.value }))}
                     className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
                   >
-                    {batches.map(b => (
-                      <option key={b.id} value={b.name}>{b.name}</option>
+                    {['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'].map(c => (
+                      <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
                 </div>
@@ -2330,27 +2020,15 @@ const AdminDashboard = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 text-center">
-                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Class Average</span>
-                  <span className="text-xl font-black text-primary-600 mt-1 block">{selectedTest.avgScore}</span>
+                  <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 text-center">
+                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Class Average</span>
+                    <span className="text-xl font-black text-primary-600 mt-1 block">{selectedTest.avgScore}</span>
+                  </div>
+                  <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 text-center">
+                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Top Mark</span>
+                    <span className="text-xl font-black text-emerald-600 mt-1 block">{selectedTest.topScore}</span>
+                  </div>
                 </div>
-                <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 text-center">
-                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Top Mark</span>
-                  <span className="text-xl font-black text-emerald-600 mt-1 block">{selectedTest.topScore}</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Toppers Board</h5>
-                <div className="divide-y divide-slate-50">
-                  {selectedTest.toppers.map((topper, i) => (
-                    <div key={i} className="py-2.5 flex justify-between items-center text-xs font-semibold text-slate-700">
-                      <span>{topper.split(' (')[0]}</span>
-                      <span className="font-black text-slate-800">{topper.split(' (')[1]?.replace(')', '') || ''}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
               <button onClick={() => setSelectedTest(null)} className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-all cursor-pointer text-center">
                 Close Details
@@ -2492,17 +2170,13 @@ const AdminDashboard = () => {
           {/* Navigation Menu */}
           <nav className="px-3 py-3 space-y-0.5 overflow-y-auto flex-grow scrollbar-thin">
             {[
-              { name: 'Dashboard',       icon: LayoutDashboard },
-              { name: 'Students',        icon: Users },
-              { name: 'Teachers',        icon: GraduationCap },
-              { name: 'Batches',         icon: BookOpen },
-              { name: 'Attendance',      icon: UserCheck },
+              { name: 'Dashboard',      icon: LayoutDashboard },
+              { name: 'Students',       icon: Users },
+              { name: 'Teachers',       icon: GraduationCap },
+              { name: 'Attendance',     icon: UserCheck },
               { name: 'Tests & Results', icon: CheckSquare },
-              { name: 'Fee Management',  icon: CreditCard },
-              { name: 'Enquiries & CRM', icon: MessageSquare },
-              { name: 'Reports',         icon: BarChart3 },
-              { name: 'Communications',  icon: Mail },
-              { name: 'Settings',        icon: Settings },
+              { name: 'Fee Management', icon: CreditCard },
+              { name: 'Settings',       icon: Settings },
             ].map(item => {
               const IconComp = item.icon;
               const isActive = activeTab === item.name;
@@ -2562,7 +2236,7 @@ const AdminDashboard = () => {
                 {activeTab === 'Dashboard' ? 'Overview' : activeTab}
               </h1>
               <p className="text-[11px] text-slate-400 mt-0.5 font-medium hidden sm:block">
-                {activeTab === 'Dashboard' ? 'Centre performance at a glance' : `Manage ${activeTab.toLowerCase()}`}
+                {activeTab === 'Dashboard' ? 'Home tuition platform overview' : `Manage ${activeTab.toLowerCase()}`}
               </p>
             </div>
           </div>

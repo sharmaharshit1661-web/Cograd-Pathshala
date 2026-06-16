@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   DollarSign, Users, TrendingUp, Clock, ShieldAlert, GraduationCap,
-  Award, Heart, ChevronLeft, ChevronRight, ArrowRight, CheckCircle,
+  Award, Heart, ChevronLeft, ChevronRight, ArrowRight,
 } from 'lucide-react';
 
 const SLIDES = [

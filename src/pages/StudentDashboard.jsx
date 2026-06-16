@@ -4,12 +4,9 @@ import {
   LayoutDashboard,
   BookOpen,
   FileText,
-  TrendingUp,
   LogOut,
   Bell,
   Search,
-  Mic,
-  Send,
   Download,
   Play,
   Flame,
@@ -23,15 +20,9 @@ import {
   BookMarked,
   Star,
   X,
-  ChevronRight,
   Camera,
   Edit3,
   Save,
-  UploadCloud,
-  MessageSquare,
-  Paperclip,
-  ShieldCheck,
-  Users,
   CheckSquare,
   Smile,
   Trophy,
@@ -39,7 +30,6 @@ import {
   Wifi,
   Plus,
   RotateCcw,
-  Zap,
   HelpCircle
 } from 'lucide-react';
 
@@ -51,13 +41,14 @@ const StudentDashboard = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [isMoodExpanded, setIsMoodExpanded] = useState(false);
   
   // Notification states
   const [unreadNotifications, setUnreadNotifications] = useState([
-    { id: 1, text: 'New Organic Chemistry notes uploaded', time: '10m ago', isNew: true },
-    { id: 2, text: 'Mock Test #8 results are live', time: '2h ago', isNew: true },
-    { id: 3, text: 'Priya Sharma scheduled a backup math class', time: '1d ago', isNew: false }
+    { id: 1, text: 'New Maths notes uploaded by Priya Sharma', time: '10m ago', isNew: true },
+    { id: 2, text: 'Unit test results are available', time: '2h ago', isNew: true },
+    { id: 3, text: 'Home tuition session scheduled for tomorrow', time: '1d ago', isNew: false }
   ]);
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
 
@@ -95,23 +86,21 @@ const StudentDashboard = () => {
     name: 'Rahul Sharma',
     email: 'rahul.sharma@cograd.com',
     phone: '9876500112',
-    standard: 'Class 10 (CBSE Board)',
+    standard: 'Class 10 (CBSE)',
     avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80',
     studentId: 'CP-2026-STU88',
     parentName: 'Mr. Alok Sharma',
     parentPhone: '9876500999',
     district: 'Meerut',
     state: 'Uttar Pradesh',
-    medium: 'English & Hinglish',
+    medium: 'English & Hindi',
     joinDate: '12 April 2026',
-    tuitionSlot: 'Evening (04:00 PM - 07:00 PM)',
-    subjects: ['Mathematics', 'Physics', 'Chemistry'],
+    tuitionSlot: 'Evening (04:00 PM - 05:00 PM)',
+    subjects: ['Mathematics', 'Science', 'English'],
     address: 'House No. 42, Sector 4, Shastri Nagar, Meerut',
-    streak: 12,
-    rank: '#4',
     attendance: '91%',
     pendingHW: '1',
-    testsThisWeek: '2'
+    testsThisWeek: '1'
   });
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -127,24 +116,18 @@ const StudentDashboard = () => {
 
   // Syllabus Chapter checklist state
   const [syllabusChapters, setSyllabusChapters] = useState([
-    { id: 'm1', subject: 'Mathematics', name: 'Definite Integration', status: 'Completed' },
-    { id: 'm2', subject: 'Mathematics', name: 'Matrices & Determinants', status: 'Completed' },
-    { id: 'm3', subject: 'Mathematics', name: 'Vector Algebra', status: 'In Progress' },
-    { id: 'm4', subject: 'Mathematics', name: 'Probability & Distributions', status: 'Not Started' },
-    { id: 'p1', subject: 'Physics', name: 'Electrostatics', status: 'Completed' },
-    { id: 'p2', subject: 'Physics', name: 'Current Electricity', status: 'Completed' },
-    { id: 'p3', subject: 'Physics', name: 'Rotational Dynamics', status: 'In Progress' },
-    { id: 'p4', subject: 'Physics', name: 'Wave Optics', status: 'Not Started' },
-    { id: 'c1', subject: 'Chemistry', name: 'Organic Reaction Mechanisms', status: 'Completed' },
-    { id: 'c2', subject: 'Chemistry', name: 'Coordination Chemistry', status: 'Completed' },
-    { id: 'c3', subject: 'Chemistry', name: 'Chemical Kinetics', status: 'In Progress' },
-    { id: 'c4', subject: 'Chemistry', name: 'Biomolecules & Polymers', status: 'Not Started' }
+    { id: 'm1', subject: 'Mathematics', name: 'Real Numbers', status: 'Completed' },
+    { id: 'm2', subject: 'Mathematics', name: 'Polynomials', status: 'Completed' },
+    { id: 'm3', subject: 'Mathematics', name: 'Triangles', status: 'In Progress' },
+    { id: 'm4', subject: 'Mathematics', name: 'Statistics', status: 'Not Started' },
+    { id: 's1', subject: 'Science', name: 'Light — Reflection', status: 'Completed' },
+    { id: 's2', subject: 'Science', name: 'Electricity', status: 'In Progress' },
+    { id: 's3', subject: 'Science', name: 'Life Processes', status: 'Not Started' },
+    { id: 'e1', subject: 'English', name: 'Grammar & Writing', status: 'Completed' },
+    { id: 'e2', subject: 'English', name: 'Literature — First Flight', status: 'In Progress' }
   ]);
 
-  // AI Doubt Solver persona and uploader states
-  const [tutorPersona, setTutorPersona] = useState('chemistry'); // chemistry, mathematics, physics
-  const [isScanning, setIsScanning] = useState(false);
-  const [scannerProgress, setScannerProgress] = useState(0);
+
 
   // Reference dynamic state back to studentProfile for simple mapping
   const studentProfile = profileData;
@@ -154,7 +137,7 @@ const StudentDashboard = () => {
   const recentResults = [
     {
       id: 1,
-      title: 'Chemistry Part Syllabus Test (JEE Level)',
+      title: 'Chemistry Part Syllabus Test (Class 10 CBSE)',
       score: '88/100',
       percentage: 88,
       rank: '#4',
@@ -198,53 +181,7 @@ const StudentDashboard = () => {
     }
   ];
 
-  // Ask AI Doubt Solver state
-  const [aiQuestion, setAiQuestion] = useState('');
-  const [aiHistory, setAiHistory] = useState([
-    {
-      question: 'What is the Cannizzaro reaction mechanism?',
-      answer: 'The Cannizzaro reaction is a redox reaction in which two molecules of a non-enolizable aldehyde are reacted with a strong base (like NaOH) to yield a primary alcohol and a carboxylic acid salt. One aldehyde molecule is oxidized, while the other is reduced.\n\n**Mechanism:**\n1. Nucleophilic attack of OH⁻ on the carbonyl carbon of one aldehyde.\n2. Hydride shift from the tetrahedral intermediate to a second aldehyde molecule (rate-determining step).\n3. Proton transfer to yield the final alcohol and carboxylate salt products.',
-      timestamp: 'Yesterday'
-    }
-  ]);
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [simulatedVoiceState, setSimulatedVoiceState] = useState('idle'); // idle, listening
 
-  // Ask Teacher Doubt state
-  const [doubtMode, setDoubtMode] = useState('ai'); // 'ai' or 'teacher'
-  const [selectedTeacherForDoubt, setSelectedTeacherForDoubt] = useState('Mr. Rajesh Kumar');
-  const [teacherDoubtText, setTeacherDoubtText] = useState('');
-  const [teacherDoubtAttachment, setTeacherDoubtAttachment] = useState(null);
-  const [isUploadingDoubtFile, setIsUploadingDoubtFile] = useState(false);
-  const [uploadDoubtProgress, setUploadDoubtProgress] = useState(0);
-  const [expandedTeacherDoubtId, setExpandedTeacherDoubtId] = useState(null);
-
-  const [teacherDoubts, setTeacherDoubts] = useState([
-    {
-      id: 1,
-      teacher: 'Mr. Rajesh Kumar',
-      subject: 'Chemistry',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
-      question: 'Why is phenol more acidic than ethanol?',
-      status: 'Resolved',
-      attachment: 'resonance_phenol.png',
-      answer: 'Phenol is more acidic because the phenoxide ion formed after losing a proton is stabilized by resonance (delocalization of the negative charge over the benzene ring). In contrast, the ethoxide ion from ethanol has no resonance stabilization, and the ethyl group exhibits an electron-donating +I effect which destabilizes the negative charge.',
-      timestamp: '2 days ago',
-      replyTime: 'Yesterday, 10:30 AM'
-    },
-    {
-      id: 2,
-      teacher: 'Dr. Priya Sharma',
-      subject: 'Mathematics',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
-      question: 'How do we solve integration of sec^3(x) dx?',
-      status: 'Resolved',
-      attachment: 'calculus_exercise_5.pdf',
-      answer: 'We solve this using Integration by Parts. Let I = ∫ sec^3(x) dx = ∫ sec(x) * sec^2(x) dx. Let u = sec(x) and dv = sec^2(x) dx. Then du = sec(x)tan(x) dx and v = tan(x). Applying parts: I = sec(x)tan(x) - ∫ sec(x)tan^2(x) dx. Since tan^2(x) = sec^2(x) - 1, we get I = sec(x)tan(x) - ∫ sec^3(x) dx + ∫ sec(x) dx. Thus 2I = sec(x)tan(x) + ln|sec(x) + tan(x)| + C. Finally, I = 0.5 * [sec(x)tan(x) + ln|sec(x) + tan(x)|] + C.',
-      timestamp: '3 days ago',
-      replyTime: '2 days ago'
-    }
-  ]);
 
   // --- PREMIUM DASHBOARD FEATURES STATE ---
 
@@ -282,29 +219,7 @@ const StudentDashboard = () => {
     { timestamp: '14:40', note: 'Nucleophilic addition follows nucleophilic attack on carbon followed by protonation.' }
   ]);
 
-  // 5. Peer Learning & Study Groups State
-  const [studyGroups] = useState([
-    { id: 'g1', name: 'Organic Chem Warriors', subject: 'Chemistry', activePeers: 14, description: 'Solving advance mechanics & reaction roadmaps' },
-    { id: 'g2', name: 'Math Integration Ninjas', subject: 'Mathematics', activePeers: 8, description: 'Mastering definite integrations & double integrals' },
-    { id: 'g3', name: 'HC Verma Doubt Solvers', subject: 'Physics', activePeers: 22, description: 'Daily chapter problems discussions & notes share' }
-  ]);
-  const [activeGroupId, setActiveGroupId] = useState('g1');
-  const [groupChats, setGroupChats] = useState({
-    g1: [
-      { id: 1, sender: 'Aryan', text: "Hey guys, did you check Rajesh sir's newly uploaded organic notes?", time: '12:30 PM' },
-      { id: 2, sender: 'Divya', text: 'Yes! The Carbonyl reactions roadmap is extremely helpful.', time: '12:32 PM' },
-      { id: 3, sender: 'You', text: 'I am starting the worksheet questions now.', time: '12:35 PM' }
-    ],
-    g2: [
-      { id: 1, sender: 'Kunal', text: 'How do we solve integration of sec^3(x)? It seems tricky.', time: '11:00 AM' },
-      { id: 2, sender: 'Preeti', text: "Priya ma'am resolved it yesterday! Check history, she used integration by parts.", time: '11:05 AM' }
-    ],
-    g3: [
-      { id: 1, sender: 'Rohan', text: 'Who has solved chapter 15 Rotational Dynamics question 28?', time: 'Yesterday' },
-      { id: 2, sender: 'Simran', text: 'I have. The trick is to conserve angular momentum about the hinge point.', time: 'Yesterday' }
-    ]
-  });
-  const [newGroupMessage, setNewGroupMessage] = useState('');
+
 
   // 6. Smart Notes & Flashcards State
   const [flashcardDecks] = useState([
@@ -346,127 +261,13 @@ const StudentDashboard = () => {
 
   // 7. Achievements & Portfolio Tracker State
   const [earnedCertificates] = useState([
-    { id: 1, title: 'JEE Prep Consistency Master', date: 'June 01, 2026', type: 'Streak Master', unlockedAt: '10 Day Streak' },
+    { id: 1, title: 'Board Prep Consistency Master', date: 'June 01, 2026', type: 'Streak Master', unlockedAt: '10 Day Streak' },
     { id: 2, title: 'Chemistry Mock Test Gold Badge', date: 'June 10, 2026', type: 'Mock Champion', unlockedAt: 'Score > 85%' }
   ]);
-  const [studentXp, setStudentXp] = useState(4850);
-  const [unlockedRewards, setUnlockedRewards] = useState(['r1']); // rewardIds
-  const rewardsList = [
-    { id: 'r1', name: 'Virtual Student Hub Access', cost: 1000, desc: 'Unlocks advanced peer groups chats' },
-    { id: 'r2', name: '1-on-1 Personal Mentor Call', cost: 3000, desc: '30-minute private advice slot with Mr. Rajesh Kumar' },
-    { id: 'r3', name: 'Advanced JEE Practice Set PDF', cost: 1500, desc: 'Exclusively curated physical chem questions' }
-  ];
   const [downloadingCertId, setDownloadingCertId] = useState(null);
   const [certDownloadProgress, setCertDownloadProgress] = useState(0);
 
   // --- END PREMIUM FEATURES STATE ---
-
-
-  const handleAiSubmit = (e) => {
-    if (e) e.preventDefault();
-    if (!aiQuestion.trim()) return;
-
-    setIsAiLoading(true);
-    const questionText = aiQuestion;
-    setAiQuestion('');
-
-    setTimeout(() => {
-      let resolvedAnswer = '';
-      if (questionText.toLowerCase().includes('sn1') || questionText.toLowerCase().includes('sn2')) {
-        resolvedAnswer = `**SN1 vs SN2 Mechanisms:**\n\n- **SN1 (Substitution Nucleophilic Unimolecular):** Renders a 2-step process with a carbocation intermediate. Rate depends only on substrate concentration: Rate = k[R-X]. Favored by polar protic solvents and tertiary substrates.\n- **SN2 (Substitution Nucleophilic Bimolecular):** Renders a 1-step concerted process with transition state and inversion of configuration (Walden Inversion). Rate depends on both: Rate = k[R-X][Nu⁻]. Favored by polar aprotic solvents and primary substrates.`;
-      } else if (questionText.toLowerCase().includes('bohr') || questionText.toLowerCase().includes('orbit')) {
-        resolvedAnswer = `**Bohr's Orbit Radius Derivation:**\n\nFor a hydrogenic atom, the electrostatic force balances the centripetal force:\n$$\\frac{m v^2}{r} = \\frac{Z e^2}{4 \\pi \\epsilon_0 r^2}$$\n\nApplying Bohr's quantization condition ($mvr = nh/2\\pi$), we solve for $r_n$:\n$$r_n = \\frac{\\epsilon_0 n^2 h^2}{\\pi m Z e^2} = 0.529 \\frac{n^2}{Z} \\text{ Å}$$\n\nThis shows the radius is directly proportional to the square of the principal quantum number ($n^2$).`;
-      } else if (questionText.toLowerCase().includes('avogadro')) {
-        resolvedAnswer = `**Avogadro's Hypothesis:**\n\n"Equal volumes of all gases, at the same temperature and pressure, contain the same number of molecules."\n\n- **Formula:** $V \\propto n$ (where $n$ is the number of moles).\n- **At STP:** 1 mole of any ideal gas occupies exactly $22.4 \\text{ Liters}$ and contains $6.022 \\times 10^{23}$ particles.`;
-      } else {
-        resolvedAnswer = `**AI Resolution for:** "${questionText}"\n\nBased on your JEE Prep syllabus, here is the analytical breakdown:\n1. **Core Concept:** This question falls under physical chemistry / general principles.\n2. **Detailed Steps:** Follow the conservation laws. Apply standard molecular kinetics equations where pressure is held constant.\n3. **Exam Tip:** Keep track of units (e.g. converting liters to $m^3$ or Kelvin temperatures).`;
-      }
-
-      setAiHistory((prev) => [
-        { question: questionText, answer: resolvedAnswer, timestamp: 'Just Now' },
-        ...prev
-      ]);
-      setIsAiLoading(false);
-      triggerToast('AI Doubt Solver completed resolution!');
-    }, 1500);
-  };
-
-  // Voice Simulation
-  const simulateVoiceInput = () => {
-    setSimulatedVoiceState('listening');
-    triggerToast('Listening... Speak your academic doubt.');
-    setTimeout(() => {
-      setAiQuestion('Explain SN1 vs SN2 reaction kinetics in detail');
-      setSimulatedVoiceState('idle');
-      triggerToast('Speech parsed successfully!');
-    }, 2500);
-  };
-
-  // Image Scan Simulation
-  const triggerImageScan = () => {
-    setIsScanning(true);
-    setScannerProgress(0);
-    triggerToast("Scanning handwritten page... OCR parser active");
-    
-    let current = 0;
-    const interval = setInterval(() => {
-      current += 20;
-      setScannerProgress(current);
-      if (current >= 100) {
-        clearInterval(interval);
-        setTimeout(() => {
-          setIsScanning(false);
-          const parsedQuestion = tutorPersona === 'chemistry'
-            ? "Explain SN1 vs SN2 reaction kinetics in detail"
-            : tutorPersona === 'mathematics'
-              ? "Derive the radius formula for Bohr's orbit"
-              : "Explain Lenz's Law of Electromagnetic Induction";
-          setAiQuestion(parsedQuestion);
-          triggerToast("Handwritten page successfully parsed by AI!");
-        }, 400);
-      }
-    }, 200);
-  };
-
-  // Direct Teacher Doubt Helpers
-  const simulateTeacherDoubtUpload = () => {
-    setIsUploadingDoubtFile(true);
-    setUploadDoubtProgress(0);
-    triggerToast("Uploading attachment to teacher inbox...");
-    
-    let current = 0;
-    const interval = setInterval(() => {
-      current += 25;
-      setUploadDoubtProgress(current);
-      if (current >= 100) {
-        clearInterval(interval);
-        setTimeout(() => {
-          setIsUploadingDoubtFile(false);
-          setTeacherDoubtAttachment("doubt_worksheet_scan.png");
-          triggerToast("Worksheet attached successfully!");
-        }, 300);
-      }
-    }, 200);
-  };
-
-  const handleTeacherDoubtSubmit = (e) => {
-    e.preventDefault();
-    if (!teacherDoubtText.trim()) return;
-
-    const teacherObj = [
-      { name: 'Mr. Rajesh Kumar', subject: 'Chemistry', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80', phone: '919876543210' },
-      { name: 'Dr. Priya Sharma', subject: 'Mathematics', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80', phone: '919876543210' },
-      { name: 'Dr. Sarah Johnson', subject: 'Physics', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=80', phone: '919876543210' }
-    ].find(t => t.name === selectedTeacherForDoubt);
-
-    const phone = teacherObj ? teacherObj.phone : '919876543210';
-    const text = `Hello ${selectedTeacherForDoubt}, I am a student at Cograd Pathshala. I have an academic doubt:\n\n${teacherDoubtText}`;
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
-    
-    setTeacherDoubtText('');
-    setTeacherDoubtAttachment(null);
-    triggerToast(`Redirecting to WhatsApp chat with ${teacherObj?.name || selectedTeacherForDoubt}`);
-  };
 
 
   // --- PREMIUM DASHBOARD FEATURES HANDLERS ---
@@ -495,15 +296,14 @@ const StudentDashboard = () => {
     localStorage.setItem('cograd_student_mood_Rahul_Sharma', mood);
     localStorage.setItem('cograd_student_mood_Rahul_Varma', mood);
     const adviceMap = {
-      Stressed: "It's completely normal to feel stressed during JEE prep. Try the 4-7-8 breathing method: inhale for 4s, hold for 7s, exhale for 8s. A 10-minute break will restore your focus!",
+      Stressed: "It's completely normal to feel stressed during board prep. Try the 4-7-8 breathing method: inhale for 4s, hold for 7s, exhale for 8s. A 10-minute break will restore your focus!",
       Focused: "Awesome! You are in the flow state. Keep distractions away and tackle your toughest math derivations or chemical kinetics problems now.",
       Exhausted: "Your brain needs rest. Continuous study without breaks leads to diminishing returns. Power nap for 20 minutes or listen to some light music.",
-      Confident: "Superb! Use this confidence to attempt a mock challenge question or help a peer in the study groups tab.",
-      Happy: "Great mood! Share your positive energy in the peer group and complete your scheduled carbonyl chemistry revision sheet."
+      Confident: "Superb! Use this confidence to tackle your challenging worksheet questions.",
+      Happy: "Great mood! Complete your scheduled chemistry revision worksheet."
     };
     setMoodAdvice(adviceMap[mood] || '');
     triggerToast(`Mood logged: ${mood}! Check recommendations.`);
-    setStudentXp(prev => prev + 50); // Award 50 XP
   };
 
   // 3. Goal Planner
@@ -518,7 +318,6 @@ const StudentDashboard = () => {
     setUserGoals(prev => [...prev, newGoal]);
     setNewGoalText('');
     triggerToast('Goal added to your daily planner!');
-    setStudentXp(prev => prev + 20); // award 20 XP
   };
 
   const handleToggleGoal = (id) => {
@@ -526,8 +325,7 @@ const StudentDashboard = () => {
       if (g.id === id) {
         const nextState = !g.completed;
         if (nextState) {
-          triggerToast('Goal completed! +50 XP earned.');
-          setStudentXp(xp => xp + 50); // award 50 XP
+          triggerToast('Goal completed! Keep going!');
         }
         return { ...g, completed: nextState };
       }
@@ -560,47 +358,7 @@ const StudentDashboard = () => {
 
     setSavedVideoNotes(prev => [newNote, ...prev]);
     setVideoNotes('');
-    triggerToast('Note saved with video timestamp! +20 XP');
-    setStudentXp(prev => prev + 20);
-  };
-
-  // 5. Peer Chat
-  const handleSendGroupMessage = (e) => {
-    e.preventDefault();
-    if (!newGroupMessage.trim()) return;
-
-    const newMessage = {
-      id: Date.now(),
-      sender: 'You',
-      text: newGroupMessage.trim(),
-      time: 'Just now'
-    };
-
-    setGroupChats(prev => ({
-      ...prev,
-      [activeGroupId]: [...(prev[activeGroupId] || []), newMessage]
-    }));
-    setNewGroupMessage('');
-
-    // Simulated automated peer reply after 3 seconds
-    setTimeout(() => {
-      const automatedReplies = {
-        g1: { sender: 'Aryan', text: "Nice! Let's schedule a study session for that organic chemistry worksheet soon." },
-        g2: { sender: 'Kunal', text: "Thanks! That parts formula makes perfect sense now. I am working on the practice problems next." },
-        g3: { sender: 'Rohan', text: "Got it! Angular momentum conservation makes rotational dynamics much cleaner." }
-      };
-      const reply = automatedReplies[activeGroupId] || { sender: 'Aryan', text: 'Glad we are studying together!' };
-      const botMsg = {
-        id: Date.now() + 1,
-        sender: reply.sender,
-        text: reply.text,
-        time: 'Just now'
-      };
-      setGroupChats(prev => ({
-        ...prev,
-        [activeGroupId]: [...(prev[activeGroupId] || []), botMsg]
-      }));
-    }, 3000);
+    triggerToast('Note saved with video timestamp!');
   };
 
   // 6. Flashcards
@@ -625,8 +383,7 @@ const StudentDashboard = () => {
   };
 
   const handleMarkMastered = () => {
-    triggerToast('Marked as Mastered! +30 XP earned.');
-    setStudentXp(prev => prev + 30);
+    triggerToast('Marked as Mastered!');
     setDeckProgress(prev => ({
       ...prev,
       [activeDeckId]: prev[activeDeckId] + 1
@@ -655,19 +412,7 @@ const StudentDashboard = () => {
     }, 200);
   };
 
-  // 8. Rewards store
-  const handleRedeemReward = (reward) => {
-    if (studentXp < reward.cost) {
-      triggerToast(`Insufficient XP! You need ${reward.cost - studentXp} more XP.`);
-      return;
-    }
 
-    setStudentXp(prev => prev - reward.cost);
-    setUnlockedRewards(prev => [...prev, reward.id]);
-    triggerToast(`Redeemed: ${reward.name}! Unlocked successfully.`);
-  };
-
-  // --- END PREMIUM FEATURES HANDLERS ---
 
   // Study Materials list with individual download progress states
 
@@ -714,40 +459,49 @@ const StudentDashboard = () => {
     { id: 103, subject: 'Physics', topic: 'Electrostatics & Gauss\'s Law application', teacher: 'Dr. Sarah Johnson', date: '5 days ago', duration: '95 mins', rating: 4.9 }
   ];
 
-  // Tab - Tests States
+  // Homework & Assessment States
+  const [worksheets, setWorksheets] = useState([
+    { id: 'w1', title: 'Mathematics Worksheet - Quadrilaterals & Circles', assignedBy: 'Ms. Priya Sharma', due: 'Tomorrow', status: 'Pending' },
+    { id: 'w2', title: 'Physics Practice Sheet - Spherical Mirrors & Lenses', assignedBy: 'Ms. Anjali Rao', due: '2 days ago', status: 'Submitted', file: 'Physics_Practice_Sheet_Rahul.pdf' },
+    { id: 'w3', title: 'Chemistry Homework - Carbon Compounds', assignedBy: 'Dr. Sanjay Verma', due: '4 days ago', status: 'Graded', score: '9/10', remarks: 'Excellent work on chemical structures!' }
+  ]);
+  const [selectedWorksheetId, setSelectedWorksheetId] = useState('w1');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+
+  const handleUploadWorksheet = (e) => {
+    e.preventDefault();
+    if (!selectedFile) {
+      triggerToast('Please select a file to upload first.');
+      return;
+    }
+    setUploadLoading(true);
+    setTimeout(() => {
+      setWorksheets(prev => prev.map(w => {
+        if (w.id === selectedWorksheetId) {
+          return { ...w, status: 'Submitted', file: selectedFile.name };
+        }
+        return w;
+      }));
+      setUploadLoading(false);
+      setSelectedFile(null);
+      triggerToast('Worksheet uploaded successfully!');
+    }, 1500);
+  };
+
   const [activeTestState, setActiveTestState] = useState(null); // 'taking', 'submitted', null
-  const [testTimeRemaining, setTestTimeRemaining] = useState(180); // 3 mins demo timer
   const [testAnswers, setTestAnswers] = useState({ q1: '', q2: '', q3: '' });
   
   const handleStartTest = () => {
     setActiveTestState('taking');
-    setTestTimeRemaining(180);
     setTestAnswers({ q1: '', q2: '', q3: '' });
-    triggerToast('Mock Test started. Standard timer running.');
+    triggerToast('Informal self-check quiz started.');
   };
 
   const handleSubmitTest = () => {
     setActiveTestState('submitted');
-    triggerToast('Mock Test submitted successfully! Report generated.');
+    triggerToast('Quiz completed successfully!');
   };
-
-  useEffect(() => {
-    let tInterval;
-    if (activeTestState === 'taking') {
-      tInterval = setInterval(() => {
-        setTestTimeRemaining((prev) => {
-          if (prev <= 1) {
-            clearInterval(tInterval);
-            handleSubmitTest();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(tInterval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTestState]);
 
   // Mock Active Test details
   const mockTestQuestions = [
@@ -795,7 +549,6 @@ const StudentDashboard = () => {
     averageTestScore: 82,
     assignmentsSubmitted: 18,
     assignmentsPending: 1,
-    doubtSolvedCount: 34,
     studyHours: 142
   };
 
@@ -807,8 +560,8 @@ const StudentDashboard = () => {
 
   const achievementBadges = [
     { id: 1, title: 'Streak Master', desc: 'Maintained a study streak of 10+ days', icon: Flame, color: 'text-amber-500 bg-amber-50' },
-    { id: 2, title: 'Doubt Buster', desc: 'Resolved 30+ academic doubts using AI Solver', icon: Sparkles, color: 'text-purple-500 bg-purple-50' },
-    { id: 3, title: 'Top Scorer', desc: 'Ranked in the top 5 of JEE weekly mocks', icon: Award, color: 'text-blue-500 bg-blue-50' },
+    { id: 2, title: 'Concept Master', desc: 'Scored 90%+ in a home test worksheet', icon: Sparkles, color: 'text-purple-500 bg-purple-50' },
+    { id: 3, title: 'Homework Champion', desc: 'Submitted all worksheets on time for 3 consecutive weeks', icon: Award, color: 'text-blue-500 bg-blue-50' },
     { id: 4, title: 'Regular Attendee', desc: 'Maintained attendance above 90% for a month', icon: CheckCircle2, color: 'text-blue-500 bg-blue-50' }
   ];
 
@@ -858,12 +611,10 @@ const StudentDashboard = () => {
           <nav className="px-3 py-4 space-y-0.5">
             {[
               { name: 'Home', icon: LayoutDashboard },
-              { name: 'My Classes', icon: BookOpen },
+              { name: 'My Schedule', icon: BookOpen },
               { name: 'Study Material', icon: BookMarked },
-              { name: 'Tests', icon: FileText },
-              { name: 'AI Doubt Solver', label: 'Doubt Solver', icon: MessageSquare },
-              { name: 'Study Groups', icon: Users },
-              { name: 'Profile & Progress', icon: User }
+              { name: 'Homework', icon: FileText },
+              { name: 'My Progress', icon: User }
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.name;
@@ -893,7 +644,7 @@ const StudentDashboard = () => {
         <div className="p-3 border-t border-slate-100 bg-slate-50/50">
           <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-slate-100 shadow-sm">
             <button
-              onClick={() => { setActiveTab('Profile & Progress'); setProfileSubTab('profile'); }}
+              onClick={() => { setActiveTab('My Progress'); setProfileSubTab('profile'); }}
               className="flex items-center space-x-2.5 text-left flex-grow cursor-pointer hover:opacity-85 transition-opacity"
             >
               <img
@@ -903,7 +654,7 @@ const StudentDashboard = () => {
               />
               <div className="text-left">
                 <div className="text-xs font-bold text-slate-800">{profileData.name}</div>
-                <div className="text-[10px] font-semibold text-slate-400">JEE Aspirant</div>
+                <div className="text-[10px] font-semibold text-slate-400">Class 10 Student</div>
               </div>
             </button>
             <button
@@ -1008,7 +759,7 @@ const StudentDashboard = () => {
 
             {/* Profile Avatar */}
             <button
-              onClick={() => { setActiveTab('Profile & Progress'); setProfileSubTab('profile'); }}
+              onClick={() => { setActiveTab('My Progress'); setProfileSubTab('profile'); }}
               className="w-10 h-10 rounded-full border-2 border-slate-100 hover:border-blue-500 transition-colors cursor-pointer overflow-hidden shadow-sm"
               title="View Profile Details"
             >
@@ -1043,7 +794,7 @@ const StudentDashboard = () => {
                   <div>
                     <h3 className="text-2xl sm:text-3xl font-black mb-2 tracking-tight">Hi Rahul, 👋</h3>
                     <p className="text-blue-100 text-xs max-w-md font-medium leading-relaxed">
-                      You are in high-focus JEE prep mode. Make sure to complete organic homework and attempt today's live lecture.
+                      Welcome back! Your home tutor Priya Sharma will visit today at 4 PM. Complete your pending homework before the session.
                     </p>
                     {localStorage.getItem('cograd_parent_message_to_Rahul_Varma') && (
                       <div className="mt-3 p-2.5 bg-white/15 backdrop-blur-md rounded-2xl border border-white/10 text-xs text-white max-w-md">
@@ -1101,75 +852,56 @@ const StudentDashboard = () => {
                   </div>
                   <div className="mt-6 flex flex-wrap items-center gap-3">
                     <button
-                      onClick={() => {
-                        if (isOffline) {
-                          triggerToast('You are offline. Cannot join live classes.');
-                        } else {
-                          setActiveTab('My Classes');
-                        }
-                      }}
+                      onClick={() => setActiveTab('My Schedule')}
                       className="bg-white text-blue-800 hover:bg-blue-50 font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm transition-all duration-300 cursor-pointer flex items-center space-x-1"
                     >
-                      <span>Join Live Room</span>
+                      <span>View Schedule</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                     <span className="text-xs text-blue-200 font-semibold bg-white/10 px-3.5 py-2 rounded-2xl">
-                      Target: JEE Advanced 2026
+                      Class 10 • CBSE
                     </span>
                   </div>
                 </div>
 
-                {/* Up Next - Live Class Card */}
+                {/* Up Next - Home Tuition Session */}
                 <div className="lg:col-span-5 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="inline-flex items-center space-x-1 bg-red-50 text-red-600 text-xs font-bold px-2.5 py-1 rounded-xl">
-                      <span className="w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
-                      <span>UP NEXT LIVE</span>
+                    <span className="inline-flex items-center space-x-1 bg-emerald-50 text-emerald-600 text-xs font-bold px-2.5 py-1 rounded-xl">
+                      <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                      <span>UP NEXT</span>
                     </span>
-                    <span className="text-xs font-semibold text-slate-400">Starts in</span>
+                    <span className="text-xs font-semibold text-slate-400">Home visit in</span>
                   </div>
 
                   <div>
-                    <h4 className="text-lg font-black text-slate-800 tracking-tight">Organic Chemistry: Carbonyl Compounds</h4>
-                    <p className="text-slate-500 text-xs mt-1">Instructor: Mr. Rajesh Kumar</p>
+                    <h4 className="text-lg font-black text-slate-800 tracking-tight">Mathematics — Triangles</h4>
+                    <p className="text-slate-500 text-xs mt-1">Tutor: Priya Sharma • At your home</p>
                   </div>
 
                   <div className="my-5 py-3 px-4 bg-slate-50 rounded-2xl flex items-center justify-between">
                     <div className="flex items-center space-x-2 text-slate-700">
                       <Clock className="w-4 h-4 text-slate-500" />
-                      <span className="text-xs font-bold">Countdown:</span>
+                      <span className="text-xs font-bold">Today at 4:00 PM</span>
                     </div>
                     <span className="text-base font-black text-slate-800 tabular-nums">
-                      {timeLeft > 0 ? formatTime(timeLeft) : 'Starts Now!'}
+                      {timeLeft > 0 ? formatTime(timeLeft) : 'Starting soon!'}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center">
                     <button
                       onClick={() => {
                         setReminderSet(!reminderSet);
-                        triggerToast(reminderSet ? 'Reminder Cancelled' : 'Reminder Set! Notification queued 5m before class.');
+                        triggerToast(reminderSet ? 'Reminder cancelled' : 'Reminder set for your tuition session.');
                       }}
-                      className={`flex-1 py-2.5 text-xs font-bold rounded-2xl border transition-all cursor-pointer ${
+                      className={`w-full py-2.5 text-xs font-bold rounded-2xl border transition-all cursor-pointer ${
                         reminderSet
                           ? 'bg-blue-50 text-blue-700 border-blue-100'
                           : 'bg-white text-slate-600 border-slate-100 hover:bg-slate-50'
                       }`}
                     >
                       {reminderSet ? 'Reminder Set ✓' : 'Set Reminder'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (isOffline) {
-                          triggerToast('You are offline. Cannot join live classes.');
-                        } else {
-                          window.open('https://zoom.us', '_blank');
-                        }
-                      }}
-                      className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-2xl shadow-sm hover:shadow-md transition-all text-center flex items-center justify-center space-x-1 cursor-pointer"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      <span>Join Class</span>
                     </button>
                   </div>
                 </div>
@@ -1203,7 +935,7 @@ const StudentDashboard = () => {
                           )}
                         </div>
                         <p className="text-xs text-slate-700 font-bold mt-1">Topic: {testObj.subject} — {testObj.topic} ({testObj.questionCount} Questions)</p>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Assigned by parent to check concept understanding. Earns +100 XP upon completion!</p>
+                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Assigned by parent to check concept understanding. Complete before your next session!</p>
                       </div>
                     </div>
 
@@ -1231,12 +963,11 @@ const StudentDashboard = () => {
               })()}
 
               {/* Row 2: Stats Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {[
-                  { title: 'Attendance', val: studentProfile.attendance, desc: 'Aim for 95%+', icon: CheckCircle2, color: 'text-blue-600 bg-blue-50' },
-                  { title: 'Batch Rank', val: studentProfile.rank, desc: 'Out of 120 Students', icon: Award, color: 'text-amber-600 bg-amber-50' },
-                  { title: 'Tests This Week', val: studentProfile.testsThisWeek, desc: 'Completed: 1', icon: FileText, color: 'text-purple-600 bg-purple-50' },
-                  { title: 'Pending HW', val: studentProfile.pendingHW, desc: 'Due: Tomorrow', icon: AlertCircle, color: 'text-rose-600 bg-rose-50' }
+                  { title: 'Attendance', val: studentProfile.attendance, desc: 'Home tuition sessions', icon: CheckCircle2, color: 'text-blue-600 bg-blue-50' },
+                  { title: 'Pending HW', val: studentProfile.pendingHW, desc: 'Due: Tomorrow', icon: AlertCircle, color: 'text-rose-600 bg-rose-50' },
+                  { title: 'This Week', val: studentProfile.testsThisWeek + ' test', desc: 'School assessment', icon: FileText, color: 'text-purple-600 bg-purple-50' }
                 ].map((stat, idx) => {
                   const Icon = stat.icon;
                   return (
@@ -1260,17 +991,17 @@ const StudentDashboard = () => {
               {/* Row 3: My Batches & Recent Results */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
-                {/* My Batches List */}
+                {/* My Home Tutors */}
                 <div className="lg:col-span-7 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-black text-slate-800 tracking-tight">My Batches</h3>
-                    <span className="text-xs font-semibold text-slate-400">Total Enrolled: 2</span>
+                    <h3 className="text-lg font-black text-slate-800 tracking-tight">My Home Tutors</h3>
+                    <span className="text-xs font-semibold text-slate-400">Verified teachers</span>
                   </div>
 
                   <div className="space-y-4">
                     {[
-                      { id: 'b1', name: 'JEE Advanced Focus Batch', tutor: 'Mr. Rajesh Kumar (Chem) & Sarah J. (Phys)', syllabus: 68, rating: 'A-', code: 'JEE-CHEM-PHYS' },
-                      { id: 'b2', name: 'Class 12 Boards Core Syllabus', tutor: 'Dr. Priya Sharma (Maths)', syllabus: 88, rating: 'A+', code: 'C12-BOARD-MATH' }
+                      { id: 'b1', name: 'Priya Sharma', tutor: 'Mathematics & Science', syllabus: 68, rating: 'A-', code: 'MATH-SCI' },
+                      { id: 'b2', name: 'Neha Gupta', tutor: 'English', syllabus: 55, rating: 'A', code: 'ENG' }
                     ].map((batch) => (
                       <div
                         key={batch.id}
@@ -1281,14 +1012,14 @@ const StudentDashboard = () => {
                             <span className="text-sm font-black text-slate-800">{batch.name}</span>
                             <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-bold">{batch.rating}</span>
                           </div>
-                          <p className="text-slate-400 text-xs font-medium">Tutor: {batch.tutor}</p>
+                          <p className="text-slate-400 text-xs font-medium">Subjects: {batch.tutor}</p>
                           
                           {/* Syllabus progress bar */}
                           <div className="flex items-center space-x-3 w-48 sm:w-56 mt-2">
                             <div className="h-1.5 bg-slate-200 rounded-full flex-grow">
                               <div className="h-full bg-blue-600 rounded-full" style={{ width: `${batch.syllabus}%` }}></div>
                             </div>
-                            <span className="text-[10px] text-slate-500 font-bold shrink-0">{batch.syllabus}% Syllabus</span>
+                            <span className="text-[10px] text-slate-500 font-bold shrink-0">{batch.syllabus}% Syllabus covered</span>
                           </div>
                         </div>
 
@@ -1318,7 +1049,7 @@ const StudentDashboard = () => {
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-black text-slate-800 tracking-tight">Recent Results</h3>
-                      <button onClick={() => { setActiveTab('Profile & Progress'); setProfileSubTab('progress'); }} className="text-xs text-blue-600 hover:underline font-bold">All Mocks</button>
+                      <button onClick={() => { setActiveTab('My Progress'); setProfileSubTab('progress'); }} className="text-xs text-blue-600 hover:underline font-bold">View Progress</button>
                     </div>
 
                     <div className="space-y-3">
@@ -1349,138 +1080,6 @@ const StudentDashboard = () => {
                     </div>
                   </div>
 
-                  <div className="mt-4 bg-blue-50 border border-blue-100/30 rounded-2xl p-3.5 flex items-center space-x-3">
-                    <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shrink-0">
-                      <Award className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h5 className="text-xs font-bold text-blue-900">Leaderboard update is live</h5>
-                      <p className="text-[10px] text-emerald-700">You climbed 2 positions in Chemistry this week!</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 4: Ask Doubt to Your Teacher */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                <div className="flex items-center justify-between border-b border-slate-50 pb-4 mb-4">
-                  <div className="flex items-center space-x-2.5">
-                    <div className="w-10 h-10 bg-indigo-500 rounded-2xl flex items-center justify-center shadow-md shadow-indigo-500/25">
-                      <MessageSquare className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-black text-slate-800 tracking-tight">Ask Doubt to Your Teacher</h3>
-                      <p className="text-slate-400 text-xs font-medium">Select a home tutor below to send them your academic questions directly.</p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-xl uppercase tracking-wider">Direct Connect</span>
-                </div>
-
-                {/* Teacher Selector */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-5">
-                  {[
-                    { name: 'Mr. Rajesh Kumar', subject: 'Chemistry', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80', status: 'Online' },
-                    { name: 'Dr. Priya Sharma', subject: 'Mathematics', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80', status: 'Online' },
-                    { name: 'Dr. Sarah Johnson', subject: 'Physics', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=80', status: 'Away' }
-                  ].map((t) => {
-                    const isSelected = selectedTeacherForDoubt === t.name;
-                    return (
-                      <button
-                        key={t.name}
-                        type="button"
-                        onClick={() => setSelectedTeacherForDoubt(t.name)}
-                        className={`p-3.5 rounded-2xl border text-left flex items-center space-x-3 transition-all cursor-pointer active:scale-98 ${
-                          isSelected
-                            ? 'border-indigo-500 bg-indigo-50/20 ring-2 ring-indigo-500/10 shadow-sm'
-                            : 'border-slate-100 hover:border-slate-200 bg-slate-50/20 hover:bg-slate-50/50'
-                        }`}
-                      >
-                        <div className="w-10 h-10 rounded-full overflow-hidden relative flex-shrink-0 border border-slate-100">
-                          <img src={t.avatar} alt={t.name} className="w-full h-full object-cover" />
-                          <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${t.status === 'Online' ? 'bg-green-500' : 'bg-amber-500'}`} />
-                        </div>
-                        <div className="min-w-0 flex-grow">
-                          <div className="text-xs font-black text-slate-800 truncate">{t.name}</div>
-                          <div className="text-[10px] text-slate-400 font-bold mt-0.5">{t.subject} • {t.status}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Form to submit doubt */}
-                <form onSubmit={handleTeacherDoubtSubmit} className="space-y-4">
-                  <div className="relative">
-                    <textarea
-                      value={teacherDoubtText}
-                      disabled={isOffline}
-                      onChange={(e) => setTeacherDoubtText(e.target.value)}
-                      placeholder={
-                        isOffline ? "You are offline. Please go online in the header to ask doubts to teachers." :
-                        selectedTeacherForDoubt === 'Mr. Rajesh Kumar' ? 'Ask Rajesh sir about organic mechanisms, isomerism, or inorganic complexes...' :
-                        selectedTeacherForDoubt === 'Dr. Priya Sharma' ? 'Ask Priya ma\'am about derivatives, integrations, matrices, or probability...' :
-                        'Ask Sarah ma\'am about electromagnetic waves, wave optics, or electrostatics...'
-                      }
-                      rows="3"
-                      className="w-full text-xs p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium resize-none disabled:opacity-50"
-                    />
-                    
-                    {/* Attachment and Send Row */}
-                    <div className="flex items-center justify-between mt-2.5 bg-slate-50/85 p-2 rounded-xl border border-slate-100">
-                      <div className="flex items-center space-x-2">
-                        {isUploadingDoubtFile ? (
-                          <div className="flex items-center space-x-2 text-[10px] font-bold text-indigo-600 px-2 py-1">
-                            <span className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></span>
-                            <span>Uploading {uploadDoubtProgress}%</span>
-                          </div>
-                        ) : teacherDoubtAttachment ? (
-                          <div className="flex items-center space-x-1.5 bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg text-[10px] font-bold">
-                            <Paperclip className="w-3 h-3" />
-                            <span className="truncate max-w-[150px]">{teacherDoubtAttachment}</span>
-                            <button
-                              type="button"
-                              onClick={() => setTeacherDoubtAttachment(null)}
-                              className="text-indigo-400 hover:text-indigo-600 ml-1 cursor-pointer"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={isOffline}
-                            onClick={simulateTeacherDoubtUpload}
-                            className="flex items-center space-x-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-800 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border border-dashed border-slate-200 disabled:opacity-50 disabled:pointer-events-none"
-                          >
-                            <Camera className="w-3.5 h-3.5" />
-                            <span>Attach Homework Scan</span>
-                          </button>
-                        )}
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={isOffline || !teacherDoubtText.trim()}
-                        className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-emerald-600/15 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>Send on WhatsApp</span>
-                      </button>
-                    </div>
-                  </div>
-                </form>
-
-                {/* Direct WhatsApp info banner */}
-                <div className="mt-6 p-4 bg-emerald-50/40 border border-emerald-100/30 rounded-2xl flex items-start space-x-3 text-xs">
-                  <div className="p-1.5 bg-emerald-500 text-white rounded-lg shrink-0">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="font-extrabold text-slate-800">Direct WhatsApp Learning Thread</h4>
-                    <p className="text-slate-500 font-semibold leading-relaxed mt-1">
-                      All doubts, voice notes, solved sheets, and lesson updates are saved directly in your official WhatsApp chat thread. This allows you to reference them anytime offline without session timeouts.
-                    </p>
-                  </div>
                 </div>
               </div>
 
@@ -1538,7 +1137,7 @@ const StudentDashboard = () => {
           )}
 
           {/* TAB 2: MY CLASSES */}
-          {activeTab === 'My Classes' && (
+          {activeTab === 'My Schedule' && (
             <div className="space-y-6 tab-content-enter">
               {/* Scheduled Classes */}
               <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
@@ -1854,21 +1453,19 @@ const StudentDashboard = () => {
           )}
 
           {/* TAB 4: TESTS */}
-          {activeTab === 'Tests' && (
+          {activeTab === 'Homework' && (
             <div className="space-y-6 tab-content-enter">
               {/* Test Simulator Card */}
               {activeTestState === 'taking' ? (
                 <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
                     <div>
-                      <span className="text-xs bg-blue-600 text-white font-bold px-2.5 py-1 rounded-xl">JEE Mock Arena</span>
-                      <h3 className="text-lg font-black text-slate-800 mt-2">Active Test: Chemistry & Physics Mini Mock #1</h3>
+                      <span className="text-xs bg-blue-600 text-white font-bold px-2.5 py-1 rounded-xl">Informal Self-Check Quiz</span>
+                      <h3 className="text-lg font-black text-slate-800 mt-2">Active: Topic Quick Review</h3>
                     </div>
-                    <div className="bg-slate-50 border border-slate-100 px-4 py-2 rounded-2xl text-right">
-                      <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">Time Remaining</span>
-                      <span className="text-lg font-black text-red-500 tabular-nums">
-                        {Math.floor(testTimeRemaining / 60)}:{(testTimeRemaining % 60).toString().padStart(2, '0')}
-                      </span>
+                    <div className="bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-2xl text-right">
+                      <span className="text-[10px] text-emerald-700 font-bold block uppercase tracking-wide">Self-Paced Mode</span>
+                      <span className="text-xs font-black text-emerald-800">No timers</span>
                     </div>
                   </div>
 
@@ -1901,43 +1498,37 @@ const StudentDashboard = () => {
 
                   <div className="mt-8 pt-5 border-t border-slate-100 flex items-center justify-end space-x-3">
                     <button
-                      onClick={() => {
-                        if (confirm('Cancel test session? Responses will not be graded.')) {
-                          setActiveTestState(null);
-                        }
-                      }}
+                      onClick={() => setActiveTestState(null)}
                       className="px-5 py-2.5 bg-white border border-slate-100 text-slate-500 font-bold text-xs rounded-xl cursor-pointer hover:bg-slate-50"
                     >
-                      Cancel Exam
+                      Cancel Quiz
                     </button>
                     <button
                       onClick={handleSubmitTest}
                       className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
                     >
-                      Submit Paper
+                      Submit Answers
                     </button>
                   </div>
                 </div>
               ) : activeTestState === 'submitted' ? (
                 <div className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm text-center max-w-lg mx-auto">
-                  <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
+                  <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-100">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
-                  <h3 className="text-xl font-black text-slate-800">Test Submitted Successfully!</h3>
-                  <p className="text-xs text-slate-500 mt-2">Your automated evaluation report has been finalized.</p>
+                  <h3 className="text-xl font-black text-slate-800">Quiz Completed!</h3>
+                  <p className="text-xs text-slate-500 mt-2">Excellent job! Here is your informal self-check breakdown:</p>
 
-                  <div className="my-6 p-4 bg-slate-50 rounded-2xl grid grid-cols-3 gap-2">
-                    <div className="text-center">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Correct</span>
-                      <span className="text-base font-black text-blue-600">2 / 3</span>
+                  <div className="my-6 p-4 bg-slate-50 rounded-2xl grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+                    <div className="p-2">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Q1: Cannizzaro Reaction</span>
+                      <span className="text-xs font-bold text-slate-700 block mt-1">Your answer: {testAnswers.q1 || 'Not answered'}</span>
+                      <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">Correct: Formaldehyde</span>
                     </div>
-                    <div className="text-center border-x border-slate-200">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Incorrect</span>
-                      <span className="text-base font-black text-red-500">1 / 3</span>
-                    </div>
-                    <div className="text-center">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Total Score</span>
-                      <span className="text-base font-black text-slate-800">4 / 12</span>
+                    <div className="p-2 border-l border-slate-200">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Q2: Concave mirror in water</span>
+                      <span className="text-xs font-bold text-slate-700 block mt-1">Your answer: {testAnswers.q2 || 'Not answered'}</span>
+                      <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">Correct: Remains Unchanged</span>
                     </div>
                   </div>
 
@@ -1945,55 +1536,139 @@ const StudentDashboard = () => {
                     onClick={() => setActiveTestState(null)}
                     className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
                   >
-                    Back to Test Lobby
+                    Back to Homework Center
                   </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   
-                  {/* Left: Active Mock test */}
-                  <div className="lg:col-span-2 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                    <h3 className="text-lg font-black text-slate-800 tracking-tight mb-4">Active Assessment Papers</h3>
-                    
-                    <div className="p-5 border border-blue-100 bg-blue-50/10 rounded-2xl">
-                      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                        <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">JEE Mains Mini Mock</span>
-                        <span className="text-[10px] text-slate-400 font-bold">Duration: 180s (Demo Timer)</span>
+                  {/* Left Column: Worksheets List & Upload Panel */}
+                  <div className="lg:col-span-2 space-y-6">
+                    {/* Pending Assignments List */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                      <h3 className="text-lg font-black text-slate-800 tracking-tight mb-4">Assigned Home Worksheets</h3>
+                      <div className="space-y-3">
+                        {worksheets.map((sheet) => (
+                          <div key={sheet.id} className="p-4 border border-slate-100 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 hover:bg-white transition-all">
+                            <div>
+                              <div className="flex items-center space-x-2.5">
+                                <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${
+                                  sheet.status === 'Graded' ? 'bg-emerald-50 text-emerald-800 border border-emerald-100' :
+                                  sheet.status === 'Submitted' ? 'bg-blue-50 text-blue-800 border border-blue-100' :
+                                  'bg-amber-50 text-amber-800 border border-amber-100'
+                                }`}>
+                                  {sheet.status}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-bold">Assigned by: {sheet.assignedBy}</span>
+                              </div>
+                              <h4 className="text-xs font-black text-slate-800 mt-2">{sheet.title}</h4>
+                              <p className="text-[10px] text-slate-500 font-semibold mt-1">Due: {sheet.due}</p>
+                              {sheet.remarks && (
+                                <p className="text-[10px] text-emerald-600 font-bold mt-2 bg-emerald-50/50 p-2 rounded-lg border border-emerald-100/30">
+                                  Tutor Remarks: "{sheet.remarks}"
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2 shrink-0">
+                              {sheet.status === 'Pending' && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedWorksheetId(sheet.id);
+                                    triggerToast(`Selected ${sheet.title} for upload`);
+                                  }}
+                                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer transition-colors"
+                                >
+                                  Submit Solution
+                                </button>
+                              )}
+                              {sheet.status === 'Graded' && (
+                                <span className="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-xl">
+                                  Score: {sheet.score}
+                                </span>
+                              )}
+                              {sheet.status === 'Submitted' && (
+                                <span className="text-[10px] font-semibold text-slate-400 italic">
+                                  Under Review
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <h4 className="text-sm font-black text-slate-800">Chemistry & Physics Mini Mock #1</h4>
-                      <p className="text-xs text-slate-500 mt-1">Includes Alkyl halides, Bohr derivation model, and electrostatics calculation problems.</p>
+                    </div>
+
+                    {/* Upload Homework Scan Panel */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                      <h3 className="text-lg font-black text-slate-800 tracking-tight mb-2">Upload Completed Worksheet</h3>
+                      <p className="text-slate-400 text-xs font-semibold mb-5">Scan your notebook pages or export your worksheet as a PDF/Image to submit it to your tutor.</p>
                       
-                      <div className="mt-5 flex items-center justify-end space-x-3">
-                        <button
-                          onClick={handleStartTest}
-                          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
-                        >
-                          Start Test Room
-                        </button>
-                      </div>
+                      <form onSubmit={handleUploadWorksheet} className="space-y-4">
+                        <div>
+                          <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Select Target Homework Worksheet</label>
+                          <select
+                            value={selectedWorksheetId}
+                            onChange={(e) => setSelectedWorksheetId(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-100 hover:bg-slate-100 rounded-xl px-4 py-3 text-xs font-bold text-slate-800 outline-none transition-colors"
+                          >
+                            {worksheets.filter(w => w.status === 'Pending').map(w => (
+                              <option key={w.id} value={w.id}>{w.title}</option>
+                            ))}
+                            {worksheets.filter(w => w.status === 'Pending').length === 0 && (
+                              <option value="">No pending worksheets to submit</option>
+                            )}
+                          </select>
+                        </div>
+
+                        <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center bg-slate-50/20 hover:bg-slate-50/50 hover:border-blue-400 transition-all cursor-pointer relative">
+                          <input
+                            type="file"
+                            onChange={(e) => setSelectedFile(e.target.files[0])}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          />
+                          <div className="space-y-2">
+                            <div className="text-2xl">📁</div>
+                            <h4 className="text-xs font-black text-slate-700">
+                              {selectedFile ? selectedFile.name : 'Click or Drag file here to upload'}
+                            </h4>
+                            <p className="text-[10px] text-slate-400 font-semibold">Supports PDF, PNG, JPG (Max 10MB)</p>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                          <button
+                            type="submit"
+                            disabled={uploadLoading || !selectedFile || !selectedWorksheetId}
+                            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
+                          >
+                            <span>{uploadLoading ? 'Uploading...' : 'Submit to Tutor'}</span>
+                          </button>
+                        </div>
+                      </form>
                     </div>
                   </div>
 
-                  {/* Right: Previous results */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                    <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Past Test Performance</h3>
-                    <div className="space-y-3">
-                      {[
-                        { title: 'Weekly Mock Test #7', score: '92/100', rank: '#2', date: '28 May 2026' },
-                        { title: 'Physics Part Syllabus', score: '68/100', rank: '#24', date: '22 May 2026' },
-                        { title: 'Chemistry Mechanics MCQ', score: '80/100', rank: '#8', date: '15 May 2026' }
-                      ].map((mock, idx) => (
-                        <div key={idx} className="p-3 bg-slate-50/50 border border-slate-100 rounded-2xl flex justify-between items-center text-xs">
-                          <div>
-                            <span className="font-bold text-slate-700">{mock.title}</span>
-                            <span className="text-[10px] text-slate-400 block mt-0.5">Date: {mock.date}</span>
-                          </div>
-                          <div className="text-right">
-                            <span className="font-black text-slate-800">{mock.score}</span>
-                            <span className="text-[9px] text-blue-600 block font-bold">Rank: {mock.rank}</span>
-                          </div>
-                        </div>
-                      ))}
+                  {/* Right Column: Informal Quiz Trigger */}
+                  <div className="space-y-6">
+                    {/* Start self-check quiz */}
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-3xl p-6 shadow-lg shadow-blue-600/10">
+                      <h3 className="text-base font-black tracking-tight">Informal Topic Self-Check</h3>
+                      <p className="text-white/80 text-xs font-medium leading-relaxed mt-2">
+                        Assess your understanding of recently covered concepts at your own pace. Timers are turned off.
+                      </p>
+                      <button
+                        onClick={handleStartTest}
+                        className="w-full mt-6 bg-white hover:bg-slate-50 text-blue-805 font-bold text-xs py-3.5 rounded-xl shadow-sm transition-all cursor-pointer text-center block"
+                      >
+                        Start Quick Quiz
+                      </button>
+                    </div>
+
+                    {/* Brief Guidance box */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-3">
+                      <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">💡 Tuitions Homework Policy</h3>
+                      <p className="text-[10px] text-slate-500 font-semibold leading-relaxed">
+                        Solutions are reviewed by your dedicated tutor within 24 hours of submission. Graded feedback and ratings will show up directly in this dashboard.
+                      </p>
                     </div>
                   </div>
 
@@ -2003,7 +1678,7 @@ const StudentDashboard = () => {
           )}
 
           {/* TAB 5: PROGRESS */}
-          {activeTab === 'Profile & Progress' && profileSubTab === 'progress' && (
+          {activeTab === 'My Progress' && profileSubTab === 'progress' && (
             <div className="space-y-6 tab-content-enter">
               {/* Sub-tab Switcher */}
               <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit border border-slate-200/50 shadow-inner">
@@ -2032,12 +1707,11 @@ const StudentDashboard = () => {
               </div>
 
               {/* Stats KPI Block */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 {[
                   { label: 'Syllabus Covered', val: `${progressStats.syllabusCoverage}%`, color: 'text-blue-600 bg-blue-50' },
                   { label: 'Average Test Score', val: `${progressStats.averageTestScore}%`, color: 'text-blue-600 bg-blue-50' },
                   { label: 'Assigned Homework', val: progressStats.assignmentsSubmitted, color: 'text-indigo-600 bg-indigo-50' },
-                  { label: 'Doubts Asked', val: progressStats.doubtSolvedCount, color: 'text-purple-600 bg-purple-50' },
                   { label: 'Total Study Hours', val: `${progressStats.studyHours}h`, color: 'text-amber-600 bg-amber-50' },
                   { label: 'Streak Days', val: profileData.streak, color: 'text-rose-600 bg-rose-50' }
                 ].map((stat, idx) => (
@@ -2212,115 +1886,67 @@ const StudentDashboard = () => {
                   {/* Chapter Tracker & Leaderboard Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Interactive Chapter Checklist Tracker */}
-                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-                      <div>
-                        <div className="flex flex-col gap-3 mb-4">
-                          <div>
-                            <h3 className="text-base font-black text-slate-800 tracking-tight">Syllabus Chapter Tracker</h3>
-                            <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Click status badges to cycle states</p>
-                          </div>
-                          
-                          {/* Filter pills */}
-                          <div className="flex bg-slate-100 p-1 rounded-xl w-full justify-between border border-slate-200/20">
-                            {['All', 'Mathematics', 'Physics', 'Chemistry'].map(subj => (
+                  {/* Chapter Tracker */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex flex-col gap-3 mb-4">
+                        <div>
+                          <h3 className="text-base font-black text-slate-800 tracking-tight">Syllabus Chapter Tracker</h3>
+                          <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Click status badges to cycle states</p>
+                        </div>
+                        
+                        {/* Filter pills */}
+                        <div className="flex bg-slate-100 p-1 rounded-xl w-full justify-between border border-slate-200/20">
+                          {['All', 'Mathematics', 'Physics', 'Chemistry'].map(subj => (
+                            <button
+                              key={subj}
+                              onClick={() => setSelectedProgressSubject(subj)}
+                              className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                                selectedProgressSubject === subj
+                                  ? 'bg-white text-blue-800 shadow-sm'
+                                  : 'text-slate-500 hover:text-slate-800'
+                              }`}
+                            >
+                              {subj === 'Mathematics' ? 'Maths' : subj}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                        {syllabusChapters
+                          .filter(ch => selectedProgressSubject === 'All' || ch.subject === selectedProgressSubject)
+                          .map(ch => (
+                            <div
+                              key={ch.id}
+                              className="p-3 border border-slate-100 hover:border-blue-100/50 hover:bg-blue-50/5 rounded-2xl flex items-center justify-between transition-all"
+                            >
+                              <div className="min-w-0 pr-3">
+                                <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                                  ch.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-800' :
+                                  ch.subject === 'Mathematics' ? 'bg-blue-50 text-blue-800' :
+                                  'bg-indigo-50 text-indigo-800'
+                                }`}>
+                                  {ch.subject}
+                                </span>
+                                <h4 className="text-xs font-bold text-slate-800 mt-1.5 truncate">{ch.name}</h4>
+                              </div>
+
                               <button
-                                key={subj}
-                                onClick={() => setSelectedProgressSubject(subj)}
-                                className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
-                                  selectedProgressSubject === subj
-                                    ? 'bg-white text-blue-800 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-800'
+                                onClick={() => toggleChapterStatus(ch.id)}
+                                className={`px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-sm shrink-0 ${
+                                  ch.status === 'Completed' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
+                                  ch.status === 'In Progress' ? 'bg-amber-400 hover:bg-amber-500 text-white' :
+                                  'bg-slate-100 hover:bg-slate-200 text-slate-500'
                                 }`}
                               >
-                                {subj === 'Mathematics' ? 'Maths' : subj}
+                                {ch.status}
                               </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
-                          {syllabusChapters
-                            .filter(ch => selectedProgressSubject === 'All' || ch.subject === selectedProgressSubject)
-                            .map(ch => (
-                              <div
-                                key={ch.id}
-                                className="p-3 border border-slate-100 hover:border-blue-100/50 hover:bg-blue-50/5 rounded-2xl flex items-center justify-between transition-all"
-                              >
-                                <div className="min-w-0 pr-3">
-                                  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                                    ch.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-800' :
-                                    ch.subject === 'Mathematics' ? 'bg-blue-50 text-blue-800' :
-                                    'bg-indigo-50 text-indigo-800'
-                                  }`}>
-                                    {ch.subject}
-                                  </span>
-                                  <h4 className="text-xs font-bold text-slate-800 mt-1.5 truncate">{ch.name}</h4>
-                                </div>
-
-                                <button
-                                  onClick={() => toggleChapterStatus(ch.id)}
-                                  className={`px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-sm shrink-0 ${
-                                    ch.status === 'Completed' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
-                                    ch.status === 'In Progress' ? 'bg-amber-400 hover:bg-amber-500 text-white' :
-                                    'bg-slate-100 hover:bg-slate-200 text-slate-500'
-                                  }`}
-                                >
-                                  {ch.status}
-                                </button>
-                              </div>
-                            ))}
-                        </div>
+                            </div>
+                          ))}
                       </div>
                     </div>
-
-                    {/* Batch Leaderboard */}
-                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-50 mb-4">
-                          <div>
-                            <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
-                              <Trophy className="w-5 h-5 text-amber-500" />
-                              <span>Batch Leaderboard</span>
-                            </h3>
-                            <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Top performing cohort peers</p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          {[
-                            { name: 'Priya Patel', xp: 5120, rank: 1, isMe: false },
-                            { name: 'Harsh Verma', xp: 4980, rank: 2, isMe: false },
-                            { name: 'Aman Kumar', xp: 4900, rank: 3, isMe: false },
-                            { name: 'Rahul Sharma (You)', xp: studentXp, rank: 4, isMe: true },
-                            { name: 'Neha Singh', xp: 4750, rank: 5, isMe: false }
-                          ]
-                            .sort((a, b) => b.xp - a.xp)
-                            .map((u, i) => (
-                              <div
-                                key={i}
-                                className={`p-2.5 rounded-xl text-xs font-semibold flex justify-between items-center transition-colors ${
-                                  u.isMe
-                                    ? 'bg-blue-600 text-white shadow-md'
-                                    : 'bg-slate-50 border border-slate-100 text-slate-700'
-                                }`}
-                              >
-                                <div className="flex items-center space-x-2">
-                                  <span className={`w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center ${
-                                    u.rank === 1 ? 'bg-amber-400 text-amber-900' :
-                                    u.rank === 2 ? 'bg-slate-305' : // dummy or fallback class corrected
-                                    u.rank === 3 ? 'bg-amber-600 text-white' :
-                                    'bg-slate-200 text-slate-800'
-                                  }`} style={u.rank === 2 ? { backgroundColor: '#cbd5e1', color: '#1e293b' } : {}}>
-                                    {u.rank}
-                                  </span>
-                                  <span>{u.name}</span>
-                                </div>
-                                <span className="font-black">{u.xp} XP</span>
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-                    </div>
+                  </div>
                   </div>
                 </div>
 
@@ -2420,58 +2046,15 @@ const StudentDashboard = () => {
                     </div>
                   </div>
 
-                  {/* XP Redeem Shop */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-50">
-                      <div>
-                        <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
-                          <Zap className="w-5 h-5 text-amber-500 fill-amber-500 animate-pulse" />
-                          <span>XP Redeem Shop</span>
-                        </h3>
-                        <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Trade XP for premium JEE resources</p>
-                      </div>
-                      <span className="text-xs font-black bg-amber-50 text-amber-700 px-3 py-1 rounded-full border border-amber-100 animate-pulse">
-                        {studentXp} XP
-                      </span>
-                    </div>
-
-                    <div className="space-y-2">
-                      {rewardsList.map((reward) => {
-                        const isUnlocked = unlockedRewards.includes(reward.id);
-                        return (
-                          <div key={reward.id} className="p-3 bg-slate-50/50 border border-slate-150 rounded-2xl flex justify-between items-center gap-3">
-                            <div className="min-w-0 flex-grow">
-                              <h4 className="text-xs font-black text-slate-800 leading-tight">{reward.name}</h4>
-                              <p className="text-[9px] text-slate-500 font-semibold mt-0.5">{reward.desc}</p>
-                              <span className="text-[9px] text-amber-700 font-extrabold mt-1 block">Cost: {reward.cost} XP</span>
-                            </div>
-                            <button
-                              type="button"
-                              disabled={isUnlocked}
-                              onClick={() => handleRedeemReward(reward)}
-                              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors shrink-0 ${
-                                isUnlocked
-                                  ? 'bg-emerald-100 text-emerald-800 cursor-default font-extrabold'
-                                  : 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer active:scale-95'
-                              }`}
-                            >
-                              {isUnlocked ? 'Unlocked' : 'Redeem'}
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
                   {/* Academic Stepper timeline */}
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
                     <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Academic Stepper</h3>
                     <div className="space-y-4 relative pl-4 border-l-2 border-slate-100">
                       {[
-                        { title: 'Core Syllabus Finish', time: 'Oct 15, 2026', desc: 'Focusing on physical chem & mechanics', active: true, done: true },
-                        { title: 'Full Mock Test Phase', time: 'Nov - Dec 2026', desc: 'Complete 3-hour exam drills', active: true, done: false },
-                        { title: 'JEE Main Phase 1 Attempt', time: 'Jan 2027', desc: 'First official attempt run', active: false, done: false },
-                        { title: 'JEE Advanced Exam Finale', time: 'May 2027', desc: 'Targeting Top 500 AIR rank', active: false, done: false }
+                        { title: 'Core Syllabus Finish', time: 'Oct 15, 2026', desc: 'Focusing on school curriculum syllabus', active: true, done: true },
+                        { title: 'Full Mock Test Phase', time: 'Nov - Dec 2026', desc: 'Complete board-pattern practice tests', active: true, done: false },
+                        { title: 'Board Mock Exams Run', time: 'Jan 2027', desc: 'Complete school mock exams', active: false, done: false },
+                        { title: 'School Board Final Exams', time: 'May 2027', desc: 'Targeting 95%+ aggregate board score', active: false, done: false }
                       ].map((step, idx) => (
                         <div key={idx} className="relative text-xs">
                           {/* Dot accent */}
@@ -2492,579 +2075,11 @@ const StudentDashboard = () => {
             </div>
           )}
 
-          {/* TAB: STUDY GROUPS */}
-          {activeTab === 'Study Groups' && (
-            <div className="space-y-6 tab-content-enter">
-              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col lg:flex-row gap-6 min-h-[580px]">
-                
-                {/* Left Panel: Available Rooms */}
-                <div className="w-full lg:w-1/3 space-y-4 lg:border-r lg:border-slate-150 lg:pr-6">
-                  <div>
-                    <h3 className="text-lg font-black text-slate-800 tracking-tight">Peer Study Hub</h3>
-                    <p className="text-slate-400 text-xs">Collaborate, share notes, and solve doubts with cohort peers.</p>
-                  </div>
 
-                  <div className="space-y-2.5">
-                    {studyGroups.map((group) => {
-                      const isSelected = activeGroupId === group.id;
-                      return (
-                        <button
-                          key={group.id}
-                          onClick={() => {
-                            setActiveGroupId(group.id);
-                            triggerToast(`Joined group chat: ${group.name}`);
-                          }}
-                          className={`w-full text-left p-4 rounded-2xl border transition-all cursor-pointer ${
-                            isSelected
-                              ? 'border-blue-500 bg-blue-50/20 ring-2 ring-blue-500/10 shadow-sm'
-                              : 'border-slate-100 hover:border-slate-200 bg-slate-50/30'
-                          }`}
-                        >
-                          <div className="flex justify-between items-start">
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                              group.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-800' :
-                              group.subject === 'Mathematics' ? 'bg-blue-50 text-blue-800' :
-                              'bg-indigo-50 text-indigo-800'
-                            }`}>
-                              {group.subject}
-                            </span>
-                            <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full">
-                              {group.activePeers} online
-                            </span>
-                          </div>
-                          <h4 className="text-xs font-black text-slate-800 mt-2.5">{group.name}</h4>
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-relaxed">{group.description}</p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
 
-                {/* Right Panel: WhatsApp Info Card & Redirect */}
-                {(() => {
-                  const activeGroup = studyGroups.find(g => g.id === activeGroupId);
-                  return (
-                    <div className="w-full lg:w-2/3 flex flex-col justify-between h-[450px] lg:h-auto bg-slate-50/20 border border-slate-100/50 p-6 rounded-2xl">
-                      <div className="space-y-6">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-16 h-16 bg-blue-500 text-white rounded-3xl flex items-center justify-center font-black text-2xl shadow-lg shadow-blue-500/25">
-                            {activeGroup?.name[0]}
-                          </div>
-                          <div>
-                            <h4 className="text-lg font-black text-slate-800 tracking-tight">{activeGroup?.name}</h4>
-                            <p className="text-slate-400 text-xs font-semibold mt-1">Official WhatsApp Study Cohort</p>
-                          </div>
-                        </div>
-
-                        <div className="bg-white border border-slate-100 rounded-2xl p-5 space-y-3.5 text-left">
-                          <p className="text-slate-600 text-xs leading-relaxed font-semibold">
-                            To ensure safety, persistence of study worksheets, and ease of coordination without session timeouts, Cograd Pathshala hosts all student study groups directly on **WhatsApp Cohort Groups**.
-                          </p>
-                          <div className="p-3 bg-blue-50/50 border border-blue-100/50 rounded-xl flex items-start space-x-2 text-[10px] text-slate-500 font-bold">
-                            <span className="text-blue-600 font-black">ℹ</span>
-                            <p className="leading-relaxed">This WhatsApp cohort group is moderated. Vetted study material files, roadmap details, and local peer sessions are planned here.</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="pt-6 border-t border-slate-100 mt-6">
-                        <button 
-                          onClick={() => window.open(activeGroup?.waGroupLink, "_blank")}
-                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-4 rounded-xl shadow-lg shadow-emerald-600/15 hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
-                        >
-                          <MessageSquare className="w-4.5 h-4.5" />
-                          <span>Join Cohort WhatsApp Group</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-              </div>
-            </div>
-          )}
-
-          {/* TAB 6: DEDICATED AI DOUBT SOLVER (24/7 AI TUTOR) */}
-          {activeTab === 'AI Doubt Solver' && (
-            <div className="space-y-6 tab-content-enter">
-              {/* Premium Sub-Navigation Mode Toggle */}
-              <div className="flex bg-slate-100 p-1 rounded-2xl w-fit border border-slate-200/50">
-                <button
-                  type="button"
-                  onClick={() => setDoubtMode('ai')}
-                  className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center space-x-2 cursor-pointer ${
-                    doubtMode === 'ai'
-                      ? 'bg-white text-blue-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-blue-600 animate-pulse" />
-                  <span>24/7 AI Tutor</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDoubtMode('teacher')}
-                  className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center space-x-2 cursor-pointer ${
-                    doubtMode === 'teacher'
-                      ? 'bg-white text-indigo-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>Ask Home Tutors</span>
-                </button>
-              </div>
-
-              {doubtMode === 'ai' ? (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  {/* Left Panel: Chat and Solver console */}
-                  <div className="lg:col-span-8 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between min-h-[580px]">
-                    <div>
-                      {/* Active persona header */}
-                      <div className="flex items-center justify-between border-b border-slate-50 pb-4 mb-5">
-                        <div className="flex items-center space-x-3.5">
-                          <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner relative">
-                            <Sparkles className="w-6 h-6 text-blue-500 animate-pulse" />
-                            <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" />
-                          </div>
-                          <div>
-                            <h3 className="text-sm font-black text-slate-800 leading-none">
-                              {tutorPersona === 'chemistry' ? 'Dr. Atoms (Chemistry Tutor)' :
-                               tutorPersona === 'mathematics' ? 'Prof. Vector (Math Tutor)' :
-                               'Dr. Volt (Physics Tutor)'}
-                            </h3>
-                            <p className="text-[10px] font-bold text-blue-600 mt-1">Active 24/7 • Specialized JEE / Boards Mentor</p>
-                          </div>
-                        </div>
-                        <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-3 py-1 rounded-xl uppercase tracking-wider shadow-sm">AI Active Session</span>
-                      </div>
-
-                      {/* Handwriting OCR Scanner zone */}
-                      <div className="mb-5 bg-slate-50/50 hover:bg-slate-50 border-2 border-dashed border-slate-200 hover:border-blue-500/40 rounded-2xl p-5 text-center relative overflow-hidden transition-all group">
-                        {isScanning ? (
-                          <div className="py-4 space-y-3 relative z-10">
-                            {/* Green Laser Bar Animation */}
-                            <div className="absolute inset-x-0 top-0 h-0.5 bg-blue-600 shadow-md shadow-emerald-500 animate-bounce"></div>
-                            <UploadCloud className="w-8 h-8 text-blue-500 mx-auto animate-pulse" />
-                            <span className="text-xs font-black text-blue-800 block">AI OCR scanning handwritten text...</span>
-                            
-                            {/* Progress bar */}
-                            <div className="max-w-xs mx-auto">
-                              <div className="flex justify-between text-[9px] font-bold text-blue-700 mb-1">
-                                <span>Parsing equations...</span>
-                                <span className="tabular-nums">{scannerProgress}%</span>
-                              </div>
-                              <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-blue-600 rounded-full transition-all" style={{ width: `${scannerProgress}%` }}></div>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={triggerImageScan}
-                            className="w-full h-full py-4 text-center cursor-pointer flex flex-col items-center justify-center space-y-2.5"
-                          >
-                            <Camera className="w-8 h-8 text-slate-400 group-hover:text-blue-500 transition-colors" />
-                            <div>
-                              <span className="text-xs font-extrabold text-slate-700 block group-hover:text-slate-900 transition-colors">Scan Handwriting or Upload textbook page</span>
-                              <p className="text-[10px] text-slate-400 font-semibold mt-1">Simulates OCR parsing for math equations and chemical mechanisms</p>
-                            </div>
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Solve pills */}
-                      <div className="space-y-1.5 mb-5">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Suggested Concept prompts</span>
-                        <div className="flex flex-wrap gap-2">
-                          {tutorPersona === 'chemistry' ? (
-                            ['Explain SN1 vs SN2 kinetics', 'Cannizzaro reaction steps', 'Bohr hydrogen energy level', 'Electronegativity values'].map(pill => (
-                              <button
-                                key={pill}
-                                onClick={() => setAiQuestion(pill)}
-                                className="text-[10px] bg-slate-50 border border-slate-100 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 text-slate-600 px-3 py-1 rounded-xl font-bold transition-all cursor-pointer"
-                              >
-                                {pill}
-                              </button>
-                            ))
-                          ) : tutorPersona === 'mathematics' ? (
-                            ['Derive definite integration formula', 'Derive vector dot product derivation', 'Matrix multiplication rules', 'Probability formula'].map(pill => (
-                              <button
-                                key={pill}
-                                onClick={() => setAiQuestion(pill)}
-                                className="text-[10px] bg-slate-50 border border-slate-100 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 text-slate-600 px-3 py-1 rounded-xl font-bold transition-all cursor-pointer"
-                              >
-                                {pill}
-                              </button>
-                            ))
-                          ) : (
-                            ['Explain Lenz\'s Law induction basis', 'Derive Moment of Inertia for rod', 'State Coulomb\'s Law force', 'Bohr orbit radius derivation'].map(pill => (
-                              <button
-                                key={pill}
-                                onClick={() => setAiQuestion(pill)}
-                                className="text-[10px] bg-slate-50 border border-slate-100 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 text-slate-600 px-3 py-1 rounded-xl font-bold transition-all cursor-pointer"
-                              >
-                                {pill}
-                              </button>
-                            ))
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Solver Responses */}
-                      <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
-                        {isAiLoading && (
-                          <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center space-x-3.5 animate-pulse">
-                            <span className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
-                            <span className="text-xs font-bold text-slate-500">AI Tutor is drafting a detailed step-by-step resolution...</span>
-                          </div>
-                        )}
-
-                        {aiHistory.map((item, idx) => (
-                          <div key={idx} className="p-4.5 border border-slate-100 bg-blue-50/5 rounded-2xl shadow-sm">
-                            <div className="flex items-start justify-between gap-4 mb-3">
-                              <div className="flex items-center space-x-2.5">
-                                <span className="w-6 h-6 bg-blue-100 text-blue-800 rounded-lg text-[10px] font-black flex items-center justify-center shadow-inner">Q</span>
-                                <h4 className="text-xs font-extrabold text-slate-800">{item.question}</h4>
-                              </div>
-                              <span className="text-[9px] text-slate-400 font-bold">{item.timestamp}</span>
-                            </div>
-                            <div className="pl-8 text-xs text-slate-600 leading-relaxed font-semibold whitespace-pre-line border-l-2 border-blue-500/20">
-                              {item.answer}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Input panel form */}
-                    <form onSubmit={handleAiSubmit} className="relative flex items-center mt-5 pt-4 border-t border-slate-100">
-                      <input
-                        type="text"
-                        value={aiQuestion}
-                        onChange={(e) => setAiQuestion(e.target.value)}
-                        placeholder={`Ask anything to your 24/7 ${tutorPersona === 'chemistry' ? 'Chemistry' : tutorPersona === 'mathematics' ? 'Mathematics' : 'Physics'} Tutor...`}
-                        className="w-full text-xs pl-4 pr-24 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-500 transition-all font-semibold"
-                      />
-                      <div className="absolute right-2 flex items-center space-x-1.5">
-                        <button
-                          type="button"
-                          onClick={simulateVoiceInput}
-                          className={`p-2 rounded-xl border transition-colors cursor-pointer ${
-                            simulatedVoiceState === 'listening'
-                              ? 'bg-rose-50 border-rose-100 text-rose-600 animate-pulse'
-                              : 'bg-white border-slate-100 text-slate-400 hover:text-slate-600 shadow-sm'
-                          }`}
-                          title="Simulate Speech query"
-                        >
-                          <Mic className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={isAiLoading || !aiQuestion.trim()}
-                          className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer disabled:opacity-40"
-                        >
-                          {isAiLoading ? (
-                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin block"></span>
-                          ) : (
-                            <Send className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-
-                  {/* Right Panel: Persona switcher & Formula sheets */}
-                  <div className="lg:col-span-4 space-y-6">
-                    {/* Persona switcher */}
-                    <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
-                      <h3 className="text-base font-black text-slate-800 tracking-tight">Active AI Tutor Personas</h3>
-                      
-                      <div className="space-y-2">
-                        {[
-                          { id: 'chemistry', name: 'Dr. Atoms', role: 'Chemistry Expert', color: 'emerald', bg: 'bg-blue-50/50 hover:bg-blue-50 border-blue-600/20' },
-                          { id: 'mathematics', name: 'Prof. Vector', role: 'Maths Genius', color: 'blue', bg: 'bg-blue-50/50 hover:bg-blue-50 border-blue-600/20' },
-                          { id: 'physics', name: 'Dr. Volt', role: 'Physics Expert', color: 'indigo', bg: 'bg-blue-50/50 hover:bg-blue-50 border-blue-600/20' }
-                        ].map(persona => (
-                          <button
-                            key={persona.id}
-                            onClick={() => {
-                              setTutorPersona(persona.id);
-                              triggerToast(`Switched Tutor expert to ${persona.name}`);
-                            }}
-                            className={`w-full flex items-center justify-between p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
-                              tutorPersona === persona.id
-                                ? `${persona.bg} shadow`
-                                : 'bg-white border-slate-100 hover:bg-slate-50'
-                            }`}
-                          >
-                            <div className="flex items-center space-x-3">
-                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs uppercase ${
-                                persona.color === 'emerald' ? 'bg-blue-100 text-blue-700' :
-                                persona.color === 'blue' ? 'bg-blue-100 text-blue-700' :
-                                'bg-indigo-100 text-indigo-700'
-                              }`}>
-                                {persona.name.split(' ')[1][0]}
-                              </div>
-                              <div>
-                                <h4 className="text-xs font-black text-slate-800">{persona.name}</h4>
-                                <p className="text-[10px] text-slate-400 font-bold">{persona.role}</p>
-                              </div>
-                            </div>
-                            
-                            {tutorPersona === persona.id && (
-                              <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Quick formulas list */}
-                    <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
-                      <h3 className="text-base font-black text-slate-800 tracking-tight mb-3">Tutor Reference sheets</h3>
-                      <p className="text-slate-400 text-[10px] font-bold mb-4">Click template formula below to request derivation from tutor.</p>
-                      
-                      <div className="space-y-2">
-                        {tutorPersona === 'chemistry' ? (
-                          [
-                            { title: 'Cannizzaro RedOx steps', formula: 'Explain Cannizzaro reaction mechanism' },
-                            { title: 'SN1 / SN2 Solvolysis rate', formula: 'Compare SN1 vs SN2 kinetics' },
-                            { title: 'Half Life Order reaction', formula: 'Derive half life equation for first order reaction' }
-                          ].map((sheet, i) => (
-                            <button
-                              key={i}
-                              onClick={() => setAiQuestion(sheet.formula)}
-                              className="w-full p-2.5 bg-slate-50/50 hover:bg-blue-50/20 hover:border-blue-100 rounded-xl border border-slate-100 text-left text-[11px] font-bold text-slate-600 hover:text-blue-800 transition-all flex items-center justify-between cursor-pointer"
-                            >
-                              <span>{sheet.title}</span>
-                              <ChevronRight className="w-3.5 h-3.5" />
-                            </button>
-                          ))
-                        ) : tutorPersona === 'mathematics' ? (
-                          [
-                            { title: 'Definite Integral by parts', formula: 'Explain definite integration formula derivation' },
-                            { title: 'Vector projection theorems', formula: 'Explain vector dot product derivation' },
-                            { title: 'Matrix Inverse computation', formula: 'Show step by step matrix inverse rules' }
-                          ].map((sheet, i) => (
-                            <button
-                              key={i}
-                              onClick={() => setAiQuestion(sheet.formula)}
-                              className="w-full p-2.5 bg-slate-50/50 hover:bg-blue-50/20 hover:border-blue-100 rounded-xl border border-slate-100 text-left text-[11px] font-bold text-slate-600 hover:text-blue-800 transition-all flex items-center justify-between cursor-pointer"
-                            >
-                              <span>{sheet.title}</span>
-                              <ChevronRight className="w-3.5 h-3.5" />
-                            </button>
-                          ))
-                        ) : (
-                          [
-                            { title: 'Bohr Orbit radius derivation', formula: 'Derive the radius formula for Bohr\'s orbit' },
-                            { title: 'Lenz\'s EMF induction basis', formula: 'Explain Lenz\'s Law of Electromagnetic Induction' },
-                            { title: 'Gauss flux distribution law', formula: 'Explain Gauss\'s Law applications' }
-                          ].map((sheet, i) => (
-                            <button
-                              key={i}
-                              onClick={() => setAiQuestion(sheet.formula)}
-                              className="w-full p-2.5 bg-slate-50/50 hover:bg-blue-50/20 hover:border-blue-100 rounded-xl border border-slate-100 text-left text-[11px] font-bold text-slate-600 hover:text-blue-800 transition-all flex items-center justify-between cursor-pointer"
-                            >
-                              <span>{sheet.title}</span>
-                              <ChevronRight className="w-3.5 h-3.5" />
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  {/* Left Column: Direct Teacher Doubt form & History list */}
-                  <div className="lg:col-span-8 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                    <div className="flex items-center justify-between border-b border-slate-50 pb-4 mb-4">
-                      <div className="flex items-center space-x-2.5">
-                        <div className="w-10 h-10 bg-indigo-500 rounded-2xl flex items-center justify-center shadow-md shadow-indigo-500/25">
-                          <MessageSquare className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-black text-slate-800 tracking-tight">Ask Doubt to Your Teacher</h3>
-                          <p className="text-slate-400 text-xs font-medium">Select a home tutor below to send them your academic questions directly.</p>
-                        </div>
-                      </div>
-                      <span className="text-[10px] bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-xl uppercase tracking-wider">Direct Connect</span>
-                    </div>
-
-                    {/* Teacher Selector */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-5">
-                      {[
-                        { name: 'Mr. Rajesh Kumar', subject: 'Chemistry', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80', status: 'Online' },
-                        { name: 'Dr. Priya Sharma', subject: 'Mathematics', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80', status: 'Online' },
-                        { name: 'Dr. Sarah Johnson', subject: 'Physics', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=80', status: 'Away' }
-                      ].map((t) => {
-                        const isSelected = selectedTeacherForDoubt === t.name;
-                        return (
-                          <button
-                            key={t.name}
-                            type="button"
-                            onClick={() => setSelectedTeacherForDoubt(t.name)}
-                            className={`p-3.5 rounded-2xl border text-left flex items-center space-x-3 transition-all cursor-pointer active:scale-98 ${
-                              isSelected
-                                ? 'border-indigo-500 bg-indigo-50/20 ring-2 ring-indigo-500/10 shadow-sm'
-                                : 'border-slate-100 hover:border-slate-200 bg-slate-50/20 hover:bg-slate-50/50'
-                            }`}
-                          >
-                            <div className="w-10 h-10 rounded-full overflow-hidden relative flex-shrink-0 border border-slate-100">
-                              <img src={t.avatar} alt={t.name} className="w-full h-full object-cover" />
-                              <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${t.status === 'Online' ? 'bg-green-500' : 'bg-amber-500'}`} />
-                            </div>
-                            <div className="min-w-0 flex-grow">
-                              <div className="text-xs font-black text-slate-800 truncate">{t.name}</div>
-                              <div className="text-[10px] text-slate-400 font-bold mt-0.5">{t.subject} • {t.status}</div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Form to submit doubt */}
-                    <form onSubmit={handleTeacherDoubtSubmit} className="space-y-4">
-                      <div className="relative">
-                        <textarea
-                          value={teacherDoubtText}
-                          disabled={isOffline}
-                          onChange={(e) => setTeacherDoubtText(e.target.value)}
-                          placeholder={
-                            isOffline ? "You are offline. Please go online in the header to ask doubts to teachers." :
-                            selectedTeacherForDoubt === 'Mr. Rajesh Kumar' ? 'Ask Rajesh sir about organic mechanisms, isomerism, or inorganic complexes...' :
-                            selectedTeacherForDoubt === 'Dr. Priya Sharma' ? 'Ask Priya ma\'am about derivatives, integrations, matrices, or probability...' :
-                            'Ask Sarah ma\'am about electromagnetic waves, wave optics, or electrostatics...'
-                          }
-                          rows="4"
-                          className="w-full text-xs p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium resize-none disabled:opacity-50"
-                        />
-                        
-                        {/* Attachment and Send Row */}
-                        <div className="flex items-center justify-between mt-2.5 bg-slate-50/85 p-2 rounded-xl border border-slate-100">
-                          <div className="flex items-center space-x-2">
-                            {isUploadingDoubtFile ? (
-                              <div className="flex items-center space-x-2 text-[10px] font-bold text-indigo-600 px-2 py-1">
-                                <span className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></span>
-                                <span>Uploading {uploadDoubtProgress}%</span>
-                              </div>
-                            ) : teacherDoubtAttachment ? (
-                              <div className="flex items-center space-x-1.5 bg-indigo-55 text-indigo-700 px-2.5 py-1 rounded-lg text-[10px] font-bold">
-                                <Paperclip className="w-3 h-3" />
-                                <span className="truncate max-w-[150px]">{teacherDoubtAttachment}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => setTeacherDoubtAttachment(null)}
-                                  className="text-indigo-400 hover:text-indigo-600 ml-1 cursor-pointer"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                disabled={isOffline}
-                                onClick={simulateTeacherDoubtUpload}
-                                className="flex items-center space-x-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-800 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border border-dashed border-slate-200 disabled:opacity-50 disabled:pointer-events-none"
-                              >
-                                <Camera className="w-3.5 h-3.5" />
-                                <span>Attach Homework Scan</span>
-                              </button>
-                            )}
-                          </div>
-
-                          <button
-                            type="submit"
-                            disabled={isOffline || !teacherDoubtText.trim()}
-                            className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-emerald-600/15 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
-                          >
-                            <MessageSquare className="w-3.5 h-3.5" />
-                            <span>Send on WhatsApp</span>
-                          </button>
-                        </div>
-                      </div>
-                    </form>
- 
-                    {/* Direct WhatsApp info banner */}
-                    <div className="mt-6 p-4 bg-emerald-50/40 border border-emerald-100/30 rounded-2xl flex items-start space-x-3 text-xs">
-                      <div className="p-1.5 bg-emerald-500 text-white rounded-lg shrink-0">
-                        <ShieldCheck className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h4 className="font-extrabold text-slate-800">Direct WhatsApp Learning Thread</h4>
-                        <p className="text-slate-500 font-semibold leading-relaxed mt-1">
-                          All doubts, voice notes, solved sheets, and lesson updates are saved directly in your official WhatsApp chat thread. This allows you to reference them anytime offline without session timeouts.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Home Tutors Credentials & Verified Info */}
-                  <div className="lg:col-span-4 space-y-6">
-                    {/* Tutors card */}
-                    <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
-                      <h3 className="text-base font-black text-slate-800 tracking-tight">Active Home Tutors</h3>
-                      <div className="space-y-3.5">
-                        {[
-                          { name: 'Mr. Rajesh Kumar', subject: 'Chemistry', qual: 'M.Sc, IIT Delhi Alumnus', active: '4 PM - 7 PM', exp: '8+ Years Exp', rating: '4.9/5.0' },
-                          { name: 'Dr. Priya Sharma', subject: 'Mathematics', qual: 'Ph.D, Delhi University', active: '5 PM - 8 PM', exp: '12+ Years Exp', rating: '4.8/5.0' },
-                          { name: 'Dr. Sarah Johnson', subject: 'Physics', qual: 'Ph.D, IISc Bangalore', active: '3 PM - 6 PM', exp: '10+ Years Exp', rating: '4.9/5.0' }
-                        ].map((tut, i) => (
-                          <div key={i} className="p-4 bg-slate-50/50 border border-slate-100 rounded-2xl space-y-2">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h4 className="text-xs font-black text-slate-800">{tut.name}</h4>
-                                <span className="text-[10px] text-indigo-600 font-bold block mt-0.5">{tut.subject} • {tut.qual}</span>
-                              </div>
-                              <span className="text-[9px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-lg">{tut.rating} ★</span>
-                            </div>
-                            <div className="flex justify-between items-center text-[9px] text-slate-400 font-bold pt-1.5 border-t border-slate-100/50">
-                              <span>Slots: {tut.active}</span>
-                              <span>{tut.exp}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Resolution stats */}
-                    <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
-                      <h3 className="text-base font-black text-slate-800 tracking-tight">Resolution Efficiency</h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="p-3 bg-indigo-50/30 border border-indigo-100/30 rounded-2xl text-center">
-                          <span className="text-[9px] text-slate-400 font-extrabold uppercase block">Avg. Reply Time</span>
-                          <span className="text-base font-black text-indigo-700 mt-1 block">~2.4 Hours</span>
-                        </div>
-                        <div className="p-3 bg-blue-50/30 border border-blue-100/30 rounded-2xl text-center">
-                          <span className="text-[9px] text-slate-400 font-extrabold uppercase block">Resolved Rate</span>
-                          <span className="text-base font-black text-blue-700 mt-1 block">98.6%</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Vetted badge */}
-                    <div className="bg-slate-50 border border-slate-100 rounded-3xl p-4 flex items-start space-x-3.5">
-                      <div className="p-2 bg-blue-600 text-white rounded-xl shadow-md shrink-0">
-                        <ShieldCheck className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-black text-slate-800">Verified Home Tutors</h4>
-                        <p className="text-[10px] text-slate-500 font-semibold leading-relaxed mt-1">
-                          All assigned tutors are background checked, academic certified, and follow Cograd Pathshala safety standards.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* TAB 7: DETAILED STUDENTS PROFILE */}
-          {activeTab === 'Profile & Progress' && profileSubTab === 'profile' && (
+          {activeTab === 'My Progress' && profileSubTab === 'profile' && (
             <div className="space-y-6 tab-content-enter">
               {/* Sub-tab Switcher */}
               <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit border border-slate-200/50 shadow-inner">
@@ -3121,7 +2136,7 @@ const StudentDashboard = () => {
                     <p className="text-xs text-slate-400 font-bold mt-1">Enrollment ID: <span className="text-slate-600 font-black">{profileData.studentId}</span></p>
                     
                     <div className="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
-                      <span className="text-[9px] bg-blue-50 border border-blue-100 text-blue-800 px-3 py-1 rounded-full font-black uppercase tracking-wider">JEE Main 2026 Target</span>
+                      <span className="text-[9px] bg-blue-50 border border-blue-100 text-blue-800 px-3 py-1 rounded-full font-black uppercase tracking-wider">CBSE Board Exam Target</span>
                       <span className="text-[9px] bg-slate-50 border border-slate-100 text-slate-600 px-3 py-1 rounded-full font-black uppercase tracking-wider">Join Date: {profileData.joinDate}</span>
                     </div>
                   </div>
@@ -3867,7 +2882,7 @@ const StudentDashboard = () => {
                   type="button"
                   onClick={() => {
                     if (!parentTestAnswers.q1 || !parentTestAnswers.q2 || !parentTestAnswers.q3) {
-                      alert('Please answer all questions before submitting.');
+                      triggerToast('Please answer all questions before submitting.');
                       return;
                     }
                     let score = 0;
@@ -3880,8 +2895,7 @@ const StudentDashboard = () => {
                     
                     // Save result in localStorage
                     localStorage.setItem('cograd_assigned_tests_result_Rahul_Varma', `${score}/3`);
-                    triggerToast(`Test completed! Score: ${score}/3. +100 XP`);
-                    setStudentXp(prev => prev + 100);
+                    triggerToast(`Test completed! Score: ${score}/3.`);
                   }}
                   className="w-full btn-primary py-3 rounded-2xl text-xs font-bold shadow-md cursor-pointer"
                 >

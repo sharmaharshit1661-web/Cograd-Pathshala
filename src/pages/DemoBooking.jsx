@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { CheckCircle, Sparkles, MapPin, Calendar, Clock, User, Phone, X, BookOpen, ArrowRight, GraduationCap } from 'lucide-react';
+import { CheckCircle, MapPin, Calendar, Clock, User, Phone, X, BookOpen, ArrowRight, GraduationCap } from 'lucide-react';
 
-const CLASSES = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'];
-const SUBJECTS = ['Mathematics', 'Science', 'English', 'Hindi', 'Physics', 'Chemistry', 'Biology', 'History', 'Geography'];
+const CLASSES = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
+const SUBJECTS = ['Mathematics', 'Science', 'English', 'Hindi', 'Social Studies', 'Computer Basics'];
 const TIME_SLOTS = ['9:00 AM', '10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 

@@ -194,7 +194,7 @@ const Home = () => {
             </h1>
 
             <p className="text-lg sm:text-xl text-neutral-500 max-w-2xl mx-auto leading-relaxed mb-10 animate-slide-up" style={{ animationDelay: '120ms' }}>
-              Cograd Pathshala connects students with verified, experienced home teachers — making premium tuition accessible in Tier 3 districts.
+              Cograd Pathshala connects students (Class 1–10) with verified, experienced home teachers — making quality tuition accessible at your doorstep.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center animate-slide-up" style={{ animationDelay: '220ms' }}>

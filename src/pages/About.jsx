@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Award, Users, MapPin, GraduationCap, Sparkles, Compass,
-  ShieldCheck, Heart, ArrowRight, Globe, ExternalLink,
+  Users, MapPin, GraduationCap, Sparkles, Compass,
+  ShieldCheck, Heart, ArrowRight, Globe,
 } from 'lucide-react';
 
 /* ── Custom Brand Icons ── */

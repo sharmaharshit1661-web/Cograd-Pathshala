@@ -81,8 +81,12 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', h);
   }, []);
 
-  /* close mobile on route change */
-  useEffect(() => setMobileOpen(false), [location]);
+  useEffect(() => {
+    if (mobileOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMobileOpen(false);
+    }
+  }, [location, mobileOpen]);
 
   /* trap focus / esc on modal */
   useEffect(() => {

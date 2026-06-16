@@ -15,16 +15,13 @@ import {
   CheckCircle2,
   AlertCircle,
   Sparkles,
-  Send,
   X,
   ChevronDown,
-  Award,
   TrendingUp,
   Video,
   CheckSquare,
   DollarSign,
   FileText,
-  Users,
   Eye,
   ShieldCheck
 } from 'lucide-react';
@@ -62,7 +59,7 @@ const ParentDashboard = () => {
   const [notifications, setNotifications] = useState([
     { id: 1, text: 'Aarav Mehta was marked PRESENT today at 08:35 AM', time: '1h ago', isNew: true },
     { id: 2, text: 'Teacher shared feedback on Rahul Varma\'s Class 9 Unit Test', time: '4h ago', isNew: true },
-    { id: 3, text: 'Fee Invoice for Class 11 tuition generated successfully', time: '2d ago', isNew: false }
+    { id: 3, text: 'Fee invoice for Class 7 tuition generated successfully', time: '2d ago', isNew: false }
   ]);
 
   // Dynamic state for Child data
@@ -148,30 +145,28 @@ const ParentDashboard = () => {
       'rahul': {
         id: 'CP-2026-STU88',
         name: 'Rahul Varma',
-        class: 'Class 11 (Science Stream)',
+        class: 'Class 7',
         avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80',
         attendance: 94,
-        rank: 2,
-        totalInBatch: 50,
         feeDue: 4500,
         feeDueDate: '5 days left (18 June)',
         feeStatus: 'Unpaid',
         averageGrade: 'A',
         primaryTeacher: 'Priya Sharma',
         teachers: [
-          { name: 'Priya Sharma', subject: 'Mathematics Advanced', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80' },
-          { name: 'Neha Gupta', subject: 'Chemistry', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=150&q=80' },
-          { name: 'Amit Sen', subject: 'Physics', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80' }
+          { name: 'Priya Sharma', subject: 'Mathematics', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80' },
+          { name: 'Neha Gupta', subject: 'Science', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=150&q=80' },
+          { name: 'Amit Sen', subject: 'English', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80' }
         ],
         subjects: [
-          { name: 'Mathematics Advanced', teacher: 'Priya Sharma', attendance: 95, grade: 'A', trend: [75, 78, 82, 85, 90, 92, 95] },
-          { name: 'Chemistry', teacher: 'Neha Gupta', attendance: 92, grade: 'A-', trend: [65, 70, 75, 78, 82, 85, 88] },
-          { name: 'Physics', teacher: 'Amit Sen', attendance: 94, grade: 'A', trend: [80, 82, 84, 88, 90, 91, 93] }
+          { name: 'Mathematics', teacher: 'Priya Sharma', attendance: 95, grade: 'A', trend: [75, 78, 82, 85, 90, 92, 95] },
+          { name: 'Science', teacher: 'Neha Gupta', attendance: 92, grade: 'A-', trend: [65, 70, 75, 78, 82, 85, 88] },
+          { name: 'English', teacher: 'Amit Sen', attendance: 94, grade: 'A', trend: [80, 82, 84, 88, 90, 91, 93] }
         ],
         homeworks: [
-          { id: 'h1', title: 'Chapter 5 Triangles Homework', subject: 'Class 9 Mathematics', due: '2 days', status: 'Pending' },
-          { id: 'h2', title: 'Organic Synthesis Lab Report', subject: 'Chemistry', due: 'Yesterday', status: 'Submitted', score: 'Pending Grade' },
-          { id: 'h3', title: 'Thermodynamics Assignment', subject: 'Physics', due: '3 days ago', status: 'Graded', score: '24/25' }
+          { id: 'h1', title: 'Fractions Worksheet', subject: 'Mathematics', due: '2 days', status: 'Pending' },
+          { id: 'h2', title: 'Plant Life Cycle Notes', subject: 'Science', due: 'Yesterday', status: 'Submitted', score: 'Pending Grade' },
+          { id: 'h3', title: 'Grammar Exercise', subject: 'English', due: '3 days ago', status: 'Graded', score: '18/20' }
         ],
         schedule: [
           { id: 's1', type: 'Exam', title: 'Class 9 Maths Unit Test', date: '16 June', time: '10:00 AM', details: 'Home Tuition Paper', icon: 'file-text' },
@@ -184,8 +179,8 @@ const ParentDashboard = () => {
           { id: 'a4', text: 'Tuition Fee Invoice generated', time: '3 days ago', tag: 'Billing', type: 'warning' }
         ],
         chatHistory: [
-          { sender: 'parent', text: 'Hello teacher, how is Rahul performing in the advanced calculus lectures?', time: '4 days ago' },
-          { sender: 'teacher', text: 'Hello! Rahul is performing exceptionally well. He is quick to grasp complex integration concepts, but needs to focus slightly more on homework submission speed.', time: '4 days ago' },
+          { sender: 'parent', text: 'Hello teacher, how is Rahul doing with fractions this week?', time: '4 days ago' },
+          { sender: 'teacher', text: 'Hello! Rahul is improving steadily. He understands the basics well — just needs a little more practice with word problems.', time: '4 days ago' },
           { sender: 'parent', text: 'Understood. I will push him to complete drafts earlier.', time: '3 days ago' }
         ]
       }
@@ -226,6 +221,7 @@ const ParentDashboard = () => {
   const [ptmLoading, setPtmLoading] = useState(false);
 
   // Parent Support Message Input State
+  // eslint-disable-next-line no-unused-vars
   const [supportMessageInput, setSupportMessageInput] = useState(() => {
     return localStorage.getItem(`cograd_parent_message_to_${selectedStudentKey === 'rahul' ? 'Rahul_Varma' : 'Aarav_Mehta'}`) || '';
   });
@@ -244,19 +240,6 @@ const ParentDashboard = () => {
 
   // Derive the active chat teacher name
   const selectedChatTeacher = selectedChatTeacherState || activeStudent.primaryTeacher;
-
-  // Parent Assigned Quiz Generator States
-  const [quizSubject, setQuizSubject] = useState('Mathematics');
-  const [quizTopic, setQuizTopic] = useState('Triangles & Geometry');
-  const [quizQuestionsCount, setQuizQuestionsCount] = useState(3);
-  const [quizLoading, setQuizLoading] = useState(false);
-
-
-
-  // Home Study Hours Planner States
-  const [studyHours, setStudyHours] = useState(4);
-  const [restHours, setRestHours] = useState(8);
-  const [playHours, setPlayHours] = useState(2);
 
   // Report Card Download State
   const [downloadLoading, setDownloadLoading] = useState(false);
@@ -286,11 +269,11 @@ const ParentDashboard = () => {
       return;
     }
     if (payMethod === 'card' && (!cardNumber || !cardExpiry || !cardCvv)) {
-      alert('Please fill out all card fields.');
+      triggerToast('Please fill in all card details to proceed.');
       return;
     }
     if (payMethod === 'upi' && !upiId) {
-      alert('Please fill out your UPI ID.');
+      triggerToast('Please enter your UPI ID to proceed.');
       return;
     }
 
@@ -346,6 +329,7 @@ const ParentDashboard = () => {
   };
 
   // Message Send handler with simulator reply
+  // eslint-disable-next-line no-unused-vars
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
@@ -397,7 +381,7 @@ const ParentDashboard = () => {
   const handleBookPTMSubmit = (e) => {
     e.preventDefault();
     if (!selectedTeacher || !bookingDate || !bookingTime) {
-      alert('Please fill out all booking fields.');
+      triggerToast('Please fill out all booking fields to continue.');
       return;
     }
 
@@ -560,8 +544,7 @@ const ParentDashboard = () => {
           <nav className="px-3 py-4 space-y-0.5">
             {[
               { name: 'Overview', icon: LayoutDashboard },
-              { name: 'Academics', icon: BookOpen },
-              { name: 'Home Support & Quizzes', icon: Sparkles },
+              { name: 'Progress', icon: BookOpen },
               { name: 'Daily Learning', icon: Eye },
               { name: 'Fee Manager', icon: CreditCard },
               { name: 'PTM & Support', icon: Calendar }
@@ -639,7 +622,7 @@ const ParentDashboard = () => {
                   onChange={(e) => setSelectedStudentKey(e.target.value)}
                   className="appearance-none bg-transparent outline-none pr-6 text-sm font-bold text-slate-800 cursor-pointer w-full"
                 >
-                  <option value="rahul">Rahul Varma - Class 11</option>
+                  <option value="rahul">Rahul Varma - Class 7</option>
                   <option value="aarav">Aarav Mehta - Class 10</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 pointer-events-none" />
@@ -802,11 +785,11 @@ const ParentDashboard = () => {
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Attendance</span>
                   </div>
 
-                  {/* Batch Rank badge */}
+                  {/* Home tutor badge */}
                   <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 hover:scale-[1.02] transition-transform shadow-inner flex flex-col items-center text-center justify-center">
-                    <Award className="w-5 h-5 text-amber-500 mb-1" />
-                    <span className="text-lg font-black text-slate-800">#{activeStudent.rank}<span className="text-xs text-slate-400">/{activeStudent.totalInBatch}</span></span>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Batch Rank</span>
+                    <ShieldCheck className="w-5 h-5 text-blue-500 mb-1" />
+                    <span className="text-sm font-black text-slate-800 truncate max-w-full px-1">{activeStudent.primaryTeacher.split(' ')[0]}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Home Tutor</span>
                   </div>
 
                   {/* Avg Grade badge */}
@@ -928,7 +911,7 @@ const ParentDashboard = () => {
                       <p className="text-[11px] text-slate-400 font-semibold">Mock examinations and tests progress trend</p>
                     </div>
                     <button 
-                      onClick={() => setActiveTab('Academics')}
+                      onClick={() => setActiveTab('Progress')}
                       className="text-xs text-blue-600 font-bold flex items-center hover:underline"
                     >
                       <span>Detailed Analysis</span>
@@ -1124,7 +1107,7 @@ const ParentDashboard = () => {
 
 
           {/* ================================== ACADEMICS TAB ================================== */}
-          {activeTab === 'Academics' && (
+          {activeTab === 'Progress' && (
             <div className="space-y-6">
               
               {/* Header card with student information and selector */}
@@ -1328,371 +1311,6 @@ const ParentDashboard = () => {
           )}
 
 
-          {activeTab === 'Home Support & Quizzes' && (
-            <div className="space-y-6">
-              
-              {/* Row 1: Child Well-being Summary & Parent Messaging */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Mood and mental health check */}
-                <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider mb-3 flex items-center justify-between">
-                      <span>Mental Health & Well-being</span>
-                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping"></span>
-                    </h3>
-
-                    {/* Check if mood is set in localStorage */}
-                    {(() => {
-                      const loggedMood = localStorage.getItem(`cograd_student_mood_${selectedStudentKey === 'rahul' ? 'Rahul_Varma' : 'Aarav_Mehta'}`) || (selectedStudentKey === 'rahul' ? 'Focused' : 'Stressed');
-                      const moodMap = {
-                        Focused: { emoji: '🎯', desc: 'Rahul is highly concentrated on revision topics today.', color: 'bg-blue-50 text-blue-800 border-blue-100' },
-                        Stressed: { emoji: '😫', desc: 'Aarav is feeling overloaded with exam syllabus topics.', color: 'bg-rose-50 text-rose-800 border-rose-100' },
-                        Exhausted: { emoji: '😴', desc: 'Student needs power breaks to rest and recharge.', color: 'bg-amber-50 text-amber-800 border-amber-100' },
-                        Confident: { emoji: '💪', desc: 'Student is feeling highly confident about mock quizzes.', color: 'bg-indigo-50 text-indigo-800 border-indigo-100' },
-                        Happy: { emoji: '😊', desc: 'Excellent mood parameters logged today in workspace.', color: 'bg-emerald-50 text-emerald-800 border-emerald-100' }
-                      };
-                      const moodDetails = moodMap[loggedMood] || moodMap.Focused;
-                      
-                      return (
-                        <div className="space-y-4">
-                          <div className={`p-4 rounded-2xl border ${moodDetails.color} flex items-center space-x-3.5`}>
-                            <span className="text-3xl shrink-0">{moodDetails.emoji}</span>
-                            <div>
-                              <span className="text-[10px] uppercase font-extrabold block tracking-wide">Last Logged Mood</span>
-                              <span className="text-sm font-black block mt-0.5">{loggedMood}</span>
-                            </div>
-                          </div>
-                          <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                            {moodDetails.desc} Logged mood data updates dynamically from their student workspace portal.
-                          </p>
-                          <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 text-[10px] text-slate-600 font-bold leading-relaxed">
-                            <strong className="text-slate-800 block mb-0.5">Counselor Advice:</strong>
-                            {loggedMood === 'Stressed' 
-                              ? 'We advise maintaining a 10-minute resting gap for every 50 minutes of tuition revision.' 
-                              : 'Keep student in flow state. Make sure study room has minimal background noises.'}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-
-                {/* Send supportive note */}
-                <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 p-6 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider mb-2">Support Message to Child</h3>
-                    <p className="text-xs text-slate-400 font-medium mb-4">Write a positive motivating note. It will appear at the top of your child's home feed in their workspace.</p>
-                    
-                    <textarea
-                      value={supportMessageInput}
-                      onChange={(e) => setSupportMessageInput(e.target.value)}
-                      placeholder="e.g. We are so proud of your hard work, Rahul! Remember to take short breaks and sleep on time. You got this!"
-                      rows="4"
-                      className="w-full bg-slate-50 border border-slate-100 focus:bg-white focus:outline-none rounded-2xl p-4 text-xs font-semibold text-slate-700 leading-relaxed resize-none"
-                    />
-                  </div>
-
-                  <div className="flex justify-between items-center pt-4 border-t border-slate-100 mt-4">
-                    <span className="text-[10px] text-slate-400 font-bold">Saves instantly to student dashboard</span>
-                    <button
-                      onClick={() => {
-                        if (!supportMessageInput.trim()) {
-                          alert('Please write a message first.');
-                          return;
-                        }
-                        const key = `cograd_parent_message_to_${selectedStudentKey === 'rahul' ? 'Rahul_Varma' : 'Aarav_Mehta'}`;
-                        localStorage.setItem(key, supportMessageInput.trim());
-                        triggerToast('Supportive message sent to child workspace!');
-                      }}
-                      className="btn-primary py-2.5 px-6 rounded-xl text-xs font-bold shadow-md cursor-pointer"
-                    >
-                      Publish Supportive Note
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Row 2: Assigned Tests Center & Study Planner */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Topic-wise test generator */}
-                <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-4">
-                  <div>
-                    <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider">Topic-Wise Test Assignment</h3>
-                    <p className="text-xs text-slate-400 font-semibold">Generate customized assessments for your child to test concept clarity at home.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    
-                    {/* Subject selection */}
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 mb-1">Select Subject</label>
-                      <select
-                        value={quizSubject}
-                        onChange={(e) => {
-                          setQuizSubject(e.target.value);
-                          const defaults = {
-                            Mathematics: 'Triangles & Geometry',
-                            Physics: 'Newton Laws',
-                            Chemistry: 'Chemical Kinetics'
-                          };
-                          setQuizTopic(defaults[e.target.value] || 'General Review');
-                        }}
-                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 cursor-pointer focus:outline-none"
-                      >
-                        <option value="Mathematics">Mathematics</option>
-                        <option value="Physics">Physics</option>
-                        <option value="Chemistry">Chemistry</option>
-                      </select>
-                    </div>
-
-                    {/* Topic select */}
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 mb-1">Select Chapter Topic</label>
-                      <select
-                        value={quizTopic}
-                        onChange={(e) => setQuizTopic(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 cursor-pointer focus:outline-none"
-                      >
-                        {quizSubject === 'Mathematics' && (
-                          <>
-                            <option value="Triangles & Geometry">Triangles & Geometry</option>
-                            <option value="Trigonometric Identities">Trigonometric Identities</option>
-                            <option value="Definite Integration">Definite Integration</option>
-                          </>
-                        )}
-                        {quizSubject === 'Physics' && (
-                          <>
-                            <option value="Newton Laws">Newton's Laws of Motion</option>
-                            <option value="Wave Optics Interference">Wave Optics Interference</option>
-                            <option value="Electrostatics Charges">Electrostatics Charges</option>
-                          </>
-                        )}
-                        {quizSubject === 'Chemistry' && (
-                          <>
-                            <option value="Chemical Kinetics">Chemical Kinetics</option>
-                            <option value="Carbonyl Roadmaps">Carbonyl Compounds</option>
-                            <option value="Coordination Compounds">Coordination Compounds</option>
-                          </>
-                        )}
-                      </select>
-                    </div>
-
-                    {/* Count select */}
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 mb-1">Questions Count</label>
-                      <select
-                        value={quizQuestionsCount}
-                        onChange={(e) => setQuizQuestionsCount(parseInt(e.target.value))}
-                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 cursor-pointer focus:outline-none"
-                      >
-                        <option value={3}>3 Questions (Quick Test)</option>
-                        <option value={5}>5 Questions (Standard Test)</option>
-                        <option value={10}>10 Questions (Complete Test)</option>
-                      </select>
-                    </div>
-
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setQuizLoading(true);
-                      setTimeout(() => {
-                        setQuizLoading(false);
-                        const testData = {
-                          id: 'quiz_' + Date.now(),
-                          subject: quizSubject,
-                          topic: quizTopic,
-                          questionCount: quizQuestionsCount,
-                          date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-                          status: 'Pending'
-                        };
-                        const targetKey = `cograd_assigned_tests_${selectedStudentKey === 'rahul' ? 'Rahul_Varma' : 'Aarav_Mehta'}`;
-                        localStorage.setItem(targetKey, JSON.stringify(testData));
-                        localStorage.removeItem(`cograd_assigned_tests_result_${selectedStudentKey === 'rahul' ? 'Rahul_Varma' : 'Aarav_Mehta'}`);
-                        triggerToast(`Assigned Topic-wise test to ${activeStudent.name}!`);
-                      }, 1200);
-                    }}
-                    disabled={quizLoading}
-                    className="w-full btn-primary py-3 rounded-2xl text-xs font-bold text-center flex items-center justify-center space-x-2 cursor-pointer"
-                  >
-                    {quizLoading ? (
-                      <>
-                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                        <span>Generating Test Paper...</span>
-                      </>
-                    ) : (
-                      <span>Generate & Assign Test to Child Dashboard</span>
-                    )}
-                  </button>
-
-                  {/* Active Assigned Tests list table */}
-                  <div className="pt-4 border-t border-slate-100">
-                    <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide block mb-3">Active Assigned Test Tracker</span>
-
-                    {(() => {
-                      const key = `cograd_assigned_tests_${selectedStudentKey === 'rahul' ? 'Rahul_Varma' : 'Aarav_Mehta'}`;
-                      const raw = localStorage.getItem(key);
-                      if (!raw) {
-                        return (
-                          <p className="text-xs text-slate-400 font-semibold text-center py-4 bg-slate-50 border border-slate-100 rounded-2xl border-dashed">
-                            No customized test papers assigned yet. Generate one above.
-                          </p>
-                        );
-                      }
-                      try {
-                        const testObj = JSON.parse(raw);
-                        if (!testObj || !testObj.topic) throw new Error();
-                        const score = localStorage.getItem(`cograd_assigned_tests_result_${selectedStudentKey === 'rahul' ? 'Rahul_Varma' : 'Aarav_Mehta'}`);
-                        return (
-                          <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between">
-                            <div>
-                              <span className="text-xs font-bold text-slate-800">{testObj.topic}</span>
-                              <div className="flex items-center space-x-2 text-[10px] text-slate-400 font-semibold mt-0.5">
-                                <span>Subject: {testObj.subject}</span>
-                                <span>•</span>
-                                <span>Assigned: {testObj.date}</span>
-                              </div>
-                            </div>
-
-                            <div>
-                              {score ? (
-                                <div className="text-right">
-                                  <span className="px-2.5 py-0.5 text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-100 rounded font-bold uppercase">Completed</span>
-                                  <span className="text-xs text-emerald-600 font-extrabold block mt-0.5">Score: {score}</span>
-                                </div>
-                              ) : (
-                                <div className="text-right">
-                                  <span className="px-2.5 py-0.5 text-[9px] bg-amber-50 text-amber-700 border border-amber-100 rounded font-bold uppercase animate-pulse">Pending Attempt</span>
-                                  <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">{testObj.questionCount} Questions</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      } catch {
-                        return (
-                          <p className="text-xs text-slate-400 font-semibold text-center py-4 bg-slate-50 border border-slate-100 rounded-2xl border-dashed">
-                            No customized test papers assigned yet. Generate one above.
-                          </p>
-                        );
-                      }
-                    })()}
-                  </div>
-                </div>
-
-                {/* Home Study Hours Planner */}
-                <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider mb-2">Home Study Scheduler</h3>
-                    <p className="text-xs text-slate-400 font-medium mb-4">Set recommended study intervals for home learning routines.</p>
-
-                    <div className="space-y-4">
-                      
-                      {/* Study hours */}
-                      <div>
-                        <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
-                          <span>Revision Study Hours</span>
-                          <span className="text-blue-600">{studyHours} hrs/day</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="2"
-                          max="8"
-                          value={studyHours}
-                          onChange={(e) => setStudyHours(parseInt(e.target.value))}
-                          className="w-full accent-blue-600 cursor-pointer h-1.5 bg-slate-100 rounded-lg appearance-none"
-                        />
-                      </div>
-
-                      {/* Sleep hours */}
-                      <div>
-                        <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
-                          <span>Sleep & Rest Hours</span>
-                          <span className="text-blue-600">{restHours} hrs/day</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="6"
-                          max="10"
-                          value={restHours}
-                          onChange={(e) => setRestHours(parseInt(e.target.value))}
-                          className="w-full accent-blue-600 cursor-pointer h-1.5 bg-slate-100 rounded-lg appearance-none"
-                        />
-                      </div>
-
-                      {/* Leisure/Play hours */}
-                      <div>
-                        <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
-                          <span>Leisure & Hobbies</span>
-                          <span className="text-blue-600">{playHours} hrs/day</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="1"
-                          max="4"
-                          value={playHours}
-                          onChange={(e) => setPlayHours(parseInt(e.target.value))}
-                          className="w-full accent-blue-600 cursor-pointer h-1.5 bg-slate-100 rounded-lg appearance-none"
-                        />
-                      </div>
-
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      triggerToast('Home study routine updated and synced with child dashboard!');
-                    }}
-                    className="w-full mt-6 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-2xl py-3 text-xs font-bold flex items-center justify-center space-x-1 hover:text-slate-900 transition-colors"
-                  >
-                    <span>Sync Home Routine Schedule</span>
-                  </button>
-                </div>
-
-              </div>
-
-              {/* Home learning support guides list */}
-              <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
-                <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider mb-4">Home Learning Support Guides</h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[
-                    {
-                      title: 'Mitigating Board Exam Stress',
-                      desc: 'A parent manual on structuring a calm home study environment, ensuring balanced nutrition, and supporting emotional wellness.',
-                      readTime: '5 Mins Read'
-                    },
-                    {
-                      title: 'Reviewing Math Homework sheets',
-                      desc: 'Simple strategies to monitor Calculus or Algebra worksheets. Focus on steps verification over final answer grades.',
-                      readTime: '3 Mins Read'
-                    },
-                    {
-                      title: 'Building study routines for board exams',
-                      desc: 'How to manage daily schedules, balance school topics, and align with coaching tutorials recommendations.',
-                      readTime: '7 Mins Read'
-                    }
-                  ].map((guide, gIdx) => (
-                    <div key={gIdx} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between hover:shadow-sm transition-shadow">
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-800 mb-1">{guide.title}</h4>
-                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed">{guide.desc}</p>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px] text-blue-600 font-bold mt-4 pt-3 border-t border-slate-100">
-                        <span className="hover:underline cursor-pointer" onClick={() => alert(`Opening PDF Guide: ${guide.title}`)}>Read Guide PDF</span>
-                        <span className="text-slate-400 font-semibold">{guide.readTime}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-          )}
-
           {/* ================================== FEES TAB ================================== */}
           {activeTab === 'Fee Manager' && (
             <div className="space-y-6">
@@ -1803,7 +1421,7 @@ const ParentDashboard = () => {
                           ) : (
                             <button 
                               onClick={() => {
-                                alert(`Receipt INV-2026-M06 generated for ${activeStudent.name}. Opening PDF view (mocked).`);
+                                triggerToast(`Receipt INV-2026-M06 generated for ${activeStudent.name}. Downloading PDF...`);
                               }}
                               className="text-slate-400 hover:text-slate-700 font-bold cursor-pointer"
                             >
@@ -1829,7 +1447,7 @@ const ParentDashboard = () => {
                         </td>
                         <td className="py-4 text-right">
                           <button 
-                            onClick={() => alert('Opening Receipt INV-2026-M05')}
+                            onClick={() => triggerToast('Downloading Receipt INV-2026-M05...')}
                             className="text-slate-400 hover:text-slate-700 font-semibold cursor-pointer"
                           >
                             Receipt PDF
@@ -1852,7 +1470,7 @@ const ParentDashboard = () => {
                         </td>
                         <td className="py-4 text-right">
                           <button 
-                            onClick={() => alert('Opening Receipt INV-2026-M04')}
+                            onClick={() => triggerToast('Downloading Receipt INV-2026-M04...')}
                             className="text-slate-400 hover:text-slate-700 font-semibold cursor-pointer"
                           >
                             Receipt PDF
@@ -1984,8 +1602,10 @@ const ParentDashboard = () => {
             let reports = [];
             try {
               const saved = localStorage.getItem('cograd_daily_reports');
-              reports = saved ? JSON.parse(saved) : [];
-            } catch { reports = []; }
+              if (saved) reports = JSON.parse(saved);
+            } catch {
+              // reports is already []
+            }
 
             const today = new Date().toISOString().split('T')[0];
             const todayReports = reports.filter(r => r.date === today);
@@ -2079,8 +1699,10 @@ const ParentDashboard = () => {
                   let schedule = [];
                   try {
                     const saved = localStorage.getItem('cograd_content_schedule');
-                    schedule = saved ? JSON.parse(saved) : [];
-                  } catch { schedule = []; }
+                    if (saved) schedule = JSON.parse(saved);
+                  } catch {
+                    // schedule is already []
+                  }
 
                   const todayDate = new Date();
                   todayDate.setHours(0, 0, 0, 0);

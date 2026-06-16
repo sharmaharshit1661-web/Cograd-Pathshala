@@ -19,10 +19,10 @@ const TUTORS_DATA = [
     subject: 'Mathematics',
     rating: 4.9,
     experience: '8 years',
-    specialties: ['Calculus', 'Algebra', 'Geometry'],
+    specialties: ['CBSE Maths', 'ICSE Maths', 'Geometry'],
     rate: '$45/hour',
     image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=80',
-    bio: 'PhD in Applied Mathematics. Dedicated to making complex mathematical theories simple and intuitive for students.'
+    bio: 'PhD in Applied Mathematics. Dedicated to making school board algebra and geometry simple and intuitive for students.'
   },
   {
     id: 2,
@@ -30,10 +30,10 @@ const TUTORS_DATA = [
     subject: 'Physics',
     rating: 4.8,
     experience: '12 years',
-    specialties: ['Quantum Physics', 'Mechanics', 'Thermodynamics'],
+    specialties: ['CBSE Physics', 'ICSE Physics', 'State Board'],
     rate: '$50/hour',
     image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
-    bio: 'Former university professor. Specializes in preparing high school and college students for physics competitions.'
+    bio: 'Former university professor. Specializes in preparing secondary school students for physics board examinations.'
   },
   {
     id: 3,
@@ -41,10 +41,10 @@ const TUTORS_DATA = [
     subject: 'English',
     rating: 4.9,
     experience: '6 years',
-    specialties: ['Literature', 'Writing', 'Grammar'],
+    specialties: ['CBSE English', 'ICSE English', 'IB English'],
     rate: '$40/hour',
     image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
-    bio: 'Passionate English educator focusing on communication skills, literature appreciation, and academic writing.'
+    bio: 'Passionate English educator focusing on communication skills, literature appreciation, and board-level academic writing.'
   },
   {
     id: 4,
@@ -52,10 +52,10 @@ const TUTORS_DATA = [
     subject: 'Chemistry',
     rating: 4.7,
     experience: '9 years',
-    specialties: ['Organic Chemistry', 'Inorganic Chemistry', 'Lab Practice'],
+    specialties: ['CBSE Chemistry', 'ICSE Chemistry', 'State Board'],
     rate: '$42/hour',
     image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
-    bio: 'Chemistry enthusiast who designs creative visual aids and fun home-based experiments to explain chemical reactions.'
+    bio: 'Chemistry enthusiast who designs creative visual aids and fun home-based experiments to explain school board science concepts.'
   },
   {
     id: 5,
@@ -63,10 +63,10 @@ const TUTORS_DATA = [
     subject: 'Biology',
     rating: 4.9,
     experience: '10 years',
-    specialties: ['Genetics', 'Human Anatomy', 'Botany'],
+    specialties: ['CBSE Biology', 'ICSE Biology', 'State Board'],
     rate: '$45/hour',
     image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
-    bio: 'Medical research scholar. Focuses on bringing practical research insights into secondary and higher secondary biology lessons.'
+    bio: 'Medical research scholar. Focuses on bringing practical biological insights into secondary school board biology lessons.'
   },
   {
     id: 6,
@@ -74,10 +74,10 @@ const TUTORS_DATA = [
     subject: 'Computer Science',
     rating: 4.8,
     experience: '7 years',
-    specialties: ['Python', 'Data Structures', 'Web Development'],
+    specialties: ['CBSE Coding', 'ICSE Computer Applications', 'State Board CS'],
     rate: '$48/hour',
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
-    bio: 'Software engineer turned educator. Helps students build real-world coding projects and master foundational CS concepts.'
+    bio: 'Software engineer turned educator. Helps students build real-world coding projects aligned with board school curriculum.'
   }
 ];
 
@@ -114,8 +114,8 @@ const WHY_CHOOSE_US = [
   },
   {
     icon: Users,
-    title: 'Community Support',
-    description: 'Access local student networks, group study opportunities, and shared learning materials.'
+    title: 'Personal Mentor Matching',
+    description: 'Tutors are carefully matched based on the child\'s unique learning needs, curriculum, and personality.'
   },
   {
     icon: Search,
