@@ -24,7 +24,7 @@ import {
   Edit3,
   Save,
   CheckSquare,
-  Smile,
+
   Trophy,
   WifiOff,
   Wifi,
@@ -41,8 +41,7 @@ const StudentDashboard = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  // eslint-disable-next-line no-unused-vars
-  const [isMoodExpanded, setIsMoodExpanded] = useState(false);
+
   
   // Notification states
   const [unreadNotifications, setUnreadNotifications] = useState([
@@ -188,11 +187,7 @@ const StudentDashboard = () => {
   // 1. Offline Mode State
   const [isOffline, setIsOffline] = useState(false);
 
-  // 2. Well-being & Mood State
-  const [selectedMood, setSelectedMood] = useState(() => {
-    return localStorage.getItem('cograd_student_mood_Rahul_Sharma') || null;
-  });
-  const [moodAdvice, setMoodAdvice] = useState('');
+
 
   // Parent Assigned Test states
   const [showParentTestModal, setShowParentTestModal] = useState(false);
@@ -289,22 +284,7 @@ const StudentDashboard = () => {
     return () => clearInterval(playInterval);
   }, [videoPlaying, activeVideoLecture]);
 
-  // 2. Mood & Well-being
-  const handleMoodSelect = (mood) => {
-    setSelectedMood(mood);
-    // Write mood to localStorage for parent dashboard connection
-    localStorage.setItem('cograd_student_mood_Rahul_Sharma', mood);
-    localStorage.setItem('cograd_student_mood_Rahul_Varma', mood);
-    const adviceMap = {
-      Stressed: "It's completely normal to feel stressed during board prep. Try the 4-7-8 breathing method: inhale for 4s, hold for 7s, exhale for 8s. A 10-minute break will restore your focus!",
-      Focused: "Awesome! You are in the flow state. Keep distractions away and tackle your toughest math derivations or chemical kinetics problems now.",
-      Exhausted: "Your brain needs rest. Continuous study without breaks leads to diminishing returns. Power nap for 20 minutes or listen to some light music.",
-      Confident: "Superb! Use this confidence to tackle your challenging worksheet questions.",
-      Happy: "Great mood! Complete your scheduled chemistry revision worksheet."
-    };
-    setMoodAdvice(adviceMap[mood] || '');
-    triggerToast(`Mood logged: ${mood}! Check recommendations.`);
-  };
+
 
   // 3. Goal Planner
   const handleAddGoal = (e) => {
@@ -806,49 +786,7 @@ const StudentDashboard = () => {
                       </div>
                     )}
                     
-                    {/* Compact Integrated Mood Check-in */}
-                    <div className="mt-3 p-2.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 text-xs space-y-2 max-w-md">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex items-center space-x-1.5">
-                          <Smile className="w-4 h-4 text-blue-200" />
-                          <span className="font-bold text-slate-100 text-[10px]">How's prep mood today?</span>
-                        </div>
-                        <div className="flex items-center space-x-1 justify-end">
-                          {[
-                            { mood: 'Stressed', emoji: '😫' },
-                            { mood: 'Focused', emoji: '🎯' },
-                            { mood: 'Exhausted', emoji: '😴' },
-                            { mood: 'Confident', emoji: '💪' },
-                            { mood: 'Happy', emoji: '😊' }
-                          ].map((m) => {
-                            const isSelected = selectedMood === m.mood;
-                            return (
-                              <button
-                                key={m.mood}
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleMoodSelect(m.mood);
-                                }}
-                                className={`w-6.5 h-6.5 rounded-lg flex items-center justify-center transition-all cursor-pointer text-xs hover:bg-white/10 ${
-                                  isSelected
-                                    ? 'bg-white text-slate-900 scale-110 shadow-sm'
-                                    : ''
-                                }`}
-                                title={m.mood}
-                              >
-                                {m.emoji}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      {moodAdvice && (
-                        <p className="text-[9px] text-blue-100 font-semibold leading-relaxed border-t border-white/5 pt-1.5 animate-slide-up">
-                          💡 {moodAdvice}
-                        </p>
-                      )}
-                    </div>
+
                   </div>
                   <div className="mt-6 flex flex-wrap items-center gap-3">
                     <button
