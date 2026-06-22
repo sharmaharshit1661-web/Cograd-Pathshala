@@ -9,7 +9,6 @@ import {
 const NAV_LINKS = [
   { label: 'Find Teachers', to: '/student' },
   { label: 'Teach with Us', to: '/teacher' },
-  { label: 'Book Demo', to: '/demo-booking' },
   { label: 'About',          to: '/about' },
   { label: 'Contact',        to: '/contact' },
 ];

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   MapPin, Users, GraduationCap, Award,
   TrendingUp, ShieldCheck, Star, ArrowRight, Zap,
-  Play, Heart, Sparkles, ClipboardCheck, UserCheck,
+  Play, Heart, Sparkles, ClipboardCheck, UserCheck, Search,
 } from 'lucide-react';
 
 
@@ -81,144 +81,196 @@ const Home = () => {
     <div ref={pageRef} className="min-h-screen bg-neutral-50">
 
       {/* ─── HERO ─── */}
-      <section className="relative pt-32 pb-24 overflow-hidden bg-white">
+      <section className="relative min-h-[100dvh] flex items-center justify-center pt-24 pb-16 overflow-hidden bg-white">
         {/* Backgrounds */}
         <div className="absolute inset-0 bg-grid-subtle pointer-events-none" />
         <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-primary-50 rounded-full blur-[120px] opacity-50 pointer-events-none" />
         <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-secondary-50 rounded-full blur-[120px] opacity-40 pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-primary-50/30 to-transparent rounded-full blur-[80px] pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
           {/* Left Side Tree Photo Frame */}
-          <div className="absolute left-4 xl:left-8 top-1/2 -translate-y-1/2 hidden xl:flex flex-col items-center gap-8 z-20 pointer-events-none select-none">
+          <div className="absolute left-4 xl:left-8 top-1/2 -translate-y-1/2 hidden xl:flex flex-col items-center gap-10 z-20 pointer-events-none select-none">
             {/* The decorative vine/branch stem */}
             <div className="absolute top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-neutral-200/80 to-transparent" />
             
             {/* Image 1 */}
-            <div className="relative group transition-all duration-500 hover:scale-110 hover:-rotate-1 pointer-events-auto -translate-x-4 -rotate-6">
-              <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
-                <img 
-                  src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=240&h=320&q=80" 
-                  className="w-24 h-32 rounded-lg object-cover" 
-                  alt="Student" 
-                />
+            <div style={{ animation: 'float 7.2s ease-in-out infinite', animationDelay: '0s' }}>
+              <div className="relative group transition-all duration-500 hover:scale-110 hover:-rotate-1 pointer-events-auto -translate-x-4 -rotate-6">
+                <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
+                  <img 
+                    src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=240&h=320&q=80" 
+                    className="w-28 h-36 rounded-lg object-cover" 
+                    alt="Student" 
+                  />
+                </div>
+                {/* Hanging pin */}
+                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
               </div>
-              {/* Hanging pin */}
-              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
             </div>
 
             {/* Image 2 */}
-            <div className="relative group transition-all duration-500 hover:scale-110 hover:rotate-1 pointer-events-auto translate-x-4 rotate-6">
-              <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
-                <img 
-                  src="https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=240&h=320&q=80" 
-                  className="w-24 h-32 rounded-lg object-cover" 
-                  alt="Books" 
-                />
+            <div style={{ animation: 'float 7.8s ease-in-out infinite', animationDelay: '1.2s' }}>
+              <div className="relative group transition-all duration-500 hover:scale-110 hover:rotate-1 pointer-events-auto translate-x-4 rotate-6">
+                <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
+                  <img 
+                    src="https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=240&h=320&q=80" 
+                    className="w-28 h-36 rounded-lg object-cover" 
+                    alt="Books" 
+                  />
+                </div>
+                {/* Hanging pin */}
+                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
               </div>
-              {/* Hanging pin */}
-              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
             </div>
 
             {/* Image 3 */}
-            <div className="relative group transition-all duration-500 hover:scale-110 hover:-rotate-1 pointer-events-auto -translate-x-2 -rotate-3">
-              <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
-                <img 
-                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=240&h=320&q=80" 
-                  className="w-24 h-32 rounded-lg object-cover" 
-                  alt="Group Study" 
-                />
+            <div style={{ animation: 'float 6.9s ease-in-out infinite', animationDelay: '0.6s' }}>
+              <div className="relative group transition-all duration-500 hover:scale-110 hover:-rotate-1 pointer-events-auto -translate-x-2 -rotate-3">
+                <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
+                  <img 
+                    src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=240&h=320&q=80" 
+                    className="w-28 h-36 rounded-lg object-cover" 
+                    alt="Group Study" 
+                  />
+                </div>
+                {/* Hanging pin */}
+                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
               </div>
-              {/* Hanging pin */}
-              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
             </div>
           </div>
 
           {/* Right Side Tree Photo Frame */}
-          <div className="absolute right-4 xl:right-8 top-1/2 -translate-y-1/2 hidden xl:flex flex-col items-center gap-8 z-20 pointer-events-none select-none">
+          <div className="absolute right-4 xl:right-8 top-1/2 -translate-y-1/2 hidden xl:flex flex-col items-center gap-10 z-20 pointer-events-none select-none">
             {/* The decorative vine/branch stem */}
             <div className="absolute top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-neutral-200/80 to-transparent" />
             
             {/* Image 1 */}
-            <div className="relative group transition-all duration-500 hover:scale-110 hover:rotate-1 pointer-events-auto translate-x-4 rotate-6">
-              <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
-                <img 
-                  src="https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=240&h=320&q=80" 
-                  className="w-24 h-32 rounded-lg object-cover" 
-                  alt="Classroom" 
-                />
+            <div style={{ animation: 'float 7.5s ease-in-out infinite', animationDelay: '0.3s' }}>
+              <div className="relative group transition-all duration-500 hover:scale-110 hover:rotate-1 pointer-events-auto translate-x-4 rotate-6">
+                <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
+                  <img 
+                    src="https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=240&h=320&q=80" 
+                    className="w-28 h-36 rounded-lg object-cover" 
+                    alt="Classroom" 
+                  />
+                </div>
+                {/* Hanging pin */}
+                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
               </div>
-              {/* Hanging pin */}
-              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
             </div>
 
             {/* Image 2 */}
-            <div className="relative group transition-all duration-500 hover:scale-110 hover:-rotate-1 pointer-events-auto -translate-x-4 -rotate-6">
-              <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
-                <img 
-                  src="https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=240&h=320&q=80" 
-                  className="w-24 h-32 rounded-lg object-cover" 
-                  alt="Teacher" 
-                />
+            <div style={{ animation: 'float 6.7s ease-in-out infinite', animationDelay: '1.5s' }}>
+              <div className="relative group transition-all duration-500 hover:scale-110 hover:-rotate-1 pointer-events-auto -translate-x-4 -rotate-6">
+                <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
+                  <img 
+                    src="https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=240&h=320&q=80" 
+                    className="w-28 h-36 rounded-lg object-cover" 
+                    alt="Teacher" 
+                  />
+                </div>
+                {/* Hanging pin */}
+                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
               </div>
-              {/* Hanging pin */}
-              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
             </div>
 
             {/* Image 3 */}
-            <div className="relative group transition-all duration-500 hover:scale-110 hover:rotate-1 pointer-events-auto translate-x-2 rotate-3">
-              <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
-                <img 
-                  src="https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&w=240&h=320&q=80" 
-                  className="w-24 h-32 rounded-lg object-cover" 
-                  alt="Study" 
-                />
+            <div style={{ animation: 'float 7.4s ease-in-out infinite', animationDelay: '0.9s' }}>
+              <div className="relative group transition-all duration-500 hover:scale-110 hover:rotate-1 pointer-events-auto translate-x-2 rotate-3">
+                <div className="p-1 bg-white rounded-xl shadow-lg border border-neutral-100/60 ring-4 ring-neutral-50/50">
+                  <img 
+                    src="https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&w=240&h=320&q=80" 
+                    className="w-28 h-36 rounded-lg object-cover" 
+                    alt="Study" 
+                  />
+                </div>
+                {/* Hanging pin */}
+                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
               </div>
-              {/* Hanging pin */}
-              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-neutral-300 rounded-full border-2 border-white shadow-sm" />
             </div>
           </div>
 
           <div className="max-w-4xl mx-auto text-center">
 
             {/* Badge */}
-            <div className="inline-flex items-center px-5 py-2.5 bg-white border rounded-full text-xs sm:text-sm font-semibold mb-8 animate-fade-in animate-badge-glow badge-shimmer-sweep shadow-sm">
+            <div className="inline-flex items-center px-5 py-2.5 bg-white border rounded-full text-xs sm:text-sm font-semibold mb-3 animate-fade-in animate-badge-glow badge-shimmer-sweep shadow-sm">
               <Sparkles className="w-3.5 h-3.5 mr-2 text-amber-500" />
               <span className="text-gradient-shark">Shark Tank India Featured EdTech</span>
             </div>
 
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-neutral-900 mb-6 tracking-tight animate-slide-up leading-[1.08]">
-              Quality Education<br />
-              at Your{' '}
-              <span className="color-blend-text">Doorstep</span>
+            <h1 className="text-4xl sm:text-5xl lg:text-[3.75rem] font-black text-neutral-900 mb-6 tracking-tight animate-slide-up leading-[1.1]">
+              Find a <span className="text-primary-600">Vetted Home Tutor</span><br />
+              Matched by a{' '}
+              <span className="color-blend-text">Subject Test</span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-neutral-500 max-w-2xl mx-auto leading-relaxed mb-10 animate-slide-up" style={{ animationDelay: '120ms' }}>
-              Cograd Pathshala connects students (Class 1–10) with verified, experienced home teachers — making quality tuition accessible at your doorstep.
+            <p className="text-base sm:text-lg text-neutral-500 max-w-2xl mx-auto mb-8 animate-slide-up font-medium leading-relaxed" style={{ animationDelay: '120ms' }}>
+              1-on-1 home tuition for Class 1–10 students in Meerut, Allahabad, Lucknow & Delhi NCR.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center animate-slide-up" style={{ animationDelay: '220ms' }}>
-              <Link to="/student" className="btn-primary text-base px-8 py-4 flex items-center gap-2 shadow-lg shadow-primary-500/25">
-                Find a Teacher <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link to="/demo-booking" className="btn-outline-primary text-base px-8 py-4 flex items-center gap-2">
-                <Play className="w-4 h-4" />
-                Book Free Demo
-              </Link>
+            <div className="max-w-2xl mx-auto bg-white border border-neutral-200/80 rounded-2xl p-3.5 shadow-xl shadow-primary-500/5 mb-6 animate-slide-up" style={{ animationDelay: '220ms' }}>
+              <div className="text-left text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2.5 px-1 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-primary-500 animate-bounce" />
+                <span>Find a verified home tutor in your area</span>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* City Dropdown */}
+                <div className="relative flex-1">
+                  <select 
+                    id="city-select"
+                    className="w-full h-12 pl-4 pr-10 bg-slate-50 border border-neutral-200 rounded-xl text-sm font-semibold text-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all cursor-pointer appearance-none"
+                    defaultValue="Meerut"
+                  >
+                    <option value="Meerut">Meerut</option>
+                    <option value="Allahabad">Allahabad</option>
+                    <option value="Lucknow">Lucknow</option>
+                    <option value="Delhi NCR">Delhi NCR</option>
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
+                    <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                      <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                    </svg>
+                  </div>
+                </div>
+                {/* Area Input */}
+                <div className="flex-[2] relative">
+                  <input 
+                    type="text" 
+                    id="area-input"
+                    placeholder="Enter your area or sector (e.g. Shastri Nagar)..." 
+                    className="w-full h-12 px-4 bg-slate-50 border border-neutral-200 rounded-xl text-sm font-medium text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                  />
+                </div>
+                {/* Search Button */}
+                <button 
+                  onClick={() => {
+                    const city = document.getElementById('city-select').value;
+                    const area = document.getElementById('area-input').value;
+                    window.location.href = `/student?location=${encodeURIComponent(city)}&area=${encodeURIComponent(area)}`;
+                  }}
+                  className="btn-primary h-12 px-8 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary-500/20 active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  <Search className="w-4 h-4" />
+                  <span>Find Tutors</span>
+                </button>
+              </div>
             </div>
 
-            {/* Social proof row */}
-            <div className="flex flex-wrap items-center justify-center gap-6 mt-12 text-sm text-neutral-500 animate-fade-in" style={{ animationDelay: '350ms' }}>
+            {/* Social proof / Trust Signals row */}
+            <div className="flex flex-wrap items-center justify-center gap-6 mt-6 text-sm text-neutral-500 animate-fade-in" style={{ animationDelay: '320ms' }}>
               <span className="flex items-center gap-2">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-4 h-4 text-amber-400 fill-amber-400" />
                 ))}
-                <span className="ml-1 font-semibold text-neutral-700">4.9 / 5</span>
+                <span className="ml-1 font-semibold text-neutral-700">4.9/5 Parent Rating</span>
               </span>
               <span className="w-px h-4 bg-neutral-200" />
-              <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-primary-400" /> 125+ students enrolled</span>
+              <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-primary-400" /> 2,500+ students matched</span>
               <span className="w-px h-4 bg-neutral-200" />
-              <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-500" /> 25+ vetted tutors</span>
+              <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-500" /> 500+ verified home tutors</span>
+              <span className="w-px h-4 bg-neutral-200" />
+              <span className="flex items-center gap-1.5 font-semibold text-neutral-600"><MapPin className="w-4 h-4 text-rose-500" /> Serving Meerut, Allahabad & beyond</span>
             </div>
           </div>
         </div>
@@ -264,8 +316,8 @@ const Home = () => {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-2">How It Works</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900">From sign-up to first lesson in 4 steps</h2>
-            <p className="text-neutral-500 mt-3 max-w-xl mx-auto text-sm">The test is what makes us different — it means your child's tutor is chosen by data, not guesswork.</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900">From registration to first lesson in 4 steps</h2>
+            <p className="text-neutral-500 mt-3 max-w-xl mx-auto text-sm">Our diagnostic subject test is what makes us different — matching your child by actual data, not a sales call.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { 
   Search, 
   Star, 
@@ -9,7 +9,8 @@ import {
   TrendingUp, 
   CheckCircle, 
   X, 
-  Sparkles
+  Sparkles,
+  MapPin
 } from 'lucide-react';
 
 const TUTORS_DATA = [
@@ -20,7 +21,8 @@ const TUTORS_DATA = [
     rating: 4.9,
     experience: '8 years',
     specialties: ['CBSE Maths', 'ICSE Maths', 'Geometry'],
-    rate: '$45/hour',
+    rate: '₹600/hour',
+    city: 'Meerut',
     image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=80',
     bio: 'PhD in Applied Mathematics. Dedicated to making school board algebra and geometry simple and intuitive for students.'
   },
@@ -31,7 +33,8 @@ const TUTORS_DATA = [
     rating: 4.8,
     experience: '12 years',
     specialties: ['CBSE Physics', 'ICSE Physics', 'State Board'],
-    rate: '$50/hour',
+    rate: '₹650/hour',
+    city: 'Allahabad',
     image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
     bio: 'Former university professor. Specializes in preparing secondary school students for physics board examinations.'
   },
@@ -42,7 +45,8 @@ const TUTORS_DATA = [
     rating: 4.9,
     experience: '6 years',
     specialties: ['CBSE English', 'ICSE English', 'IB English'],
-    rate: '$40/hour',
+    rate: '₹500/hour',
+    city: 'Lucknow',
     image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
     bio: 'Passionate English educator focusing on communication skills, literature appreciation, and board-level academic writing.'
   },
@@ -53,7 +57,8 @@ const TUTORS_DATA = [
     rating: 4.7,
     experience: '9 years',
     specialties: ['CBSE Chemistry', 'ICSE Chemistry', 'State Board'],
-    rate: '$42/hour',
+    rate: '₹600/hour',
+    city: 'Meerut',
     image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
     bio: 'Chemistry enthusiast who designs creative visual aids and fun home-based experiments to explain school board science concepts.'
   },
@@ -64,7 +69,8 @@ const TUTORS_DATA = [
     rating: 4.9,
     experience: '10 years',
     specialties: ['CBSE Biology', 'ICSE Biology', 'State Board'],
-    rate: '$45/hour',
+    rate: '₹650/hour',
+    city: 'Allahabad',
     image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
     bio: 'Medical research scholar. Focuses on bringing practical biological insights into secondary school board biology lessons.'
   },
@@ -75,7 +81,8 @@ const TUTORS_DATA = [
     rating: 4.8,
     experience: '7 years',
     specialties: ['CBSE Coding', 'ICSE Computer Applications', 'State Board CS'],
-    rate: '$48/hour',
+    rate: '₹700/hour',
+    city: 'Delhi NCR',
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
     bio: 'Software engineer turned educator. Helps students build real-world coding projects aligned with board school curriculum.'
   }
@@ -125,18 +132,37 @@ const WHY_CHOOSE_US = [
 ];
 
 const Student = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialLocation = searchParams.get('location') || 'All';
+  const initialArea = searchParams.get('area') || '';
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('All');
+  const [selectedCity, setSelectedCity] = useState(initialLocation);
+  const [areaQuery, setAreaQuery] = useState(initialArea);
+
   const [bookingTutor, setBookingTutor] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const containerRef = useRef(null);
+
+  // Sync state if search params change (e.g. searching again from home)
+  useEffect(() => {
+    const loc = searchParams.get('location') || 'All';
+    const ar = searchParams.get('area') || '';
+    setSelectedCity(loc);
+    setAreaQuery(ar);
+  }, [searchParams]);
 
   const filteredTutors = TUTORS_DATA.filter(tutor => {
     const matchesSearch = tutor.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           tutor.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           tutor.specialties.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesSubject = selectedSubject === 'All' || tutor.subject === selectedSubject;
-    return matchesSearch && matchesSubject;
+    const matchesCity = selectedCity === 'All' || tutor.city === selectedCity;
+    const matchesArea = !areaQuery || 
+                        tutor.bio.toLowerCase().includes(areaQuery.toLowerCase()) || 
+                        tutor.specialties.some(s => s.toLowerCase().includes(areaQuery.toLowerCase()));
+    return matchesSearch && matchesSubject && matchesCity && matchesArea;
   });
 
   useEffect(() => {
@@ -204,6 +230,49 @@ const Student = () => {
                 </button>
               </div>
             </div>
+
+            {/* Filter by City */}
+            <div className="flex flex-wrap justify-center gap-2 mb-6 animate-slide-up">
+              <span className="text-xs font-bold text-gray-400 self-center uppercase tracking-wider mr-2">City:</span>
+              {['All', 'Meerut', 'Allahabad', 'Lucknow', 'Delhi NCR'].map((city) => (
+                <button
+                  key={city}
+                  onClick={() => {
+                    setSelectedCity(city);
+                    if (city === 'All') {
+                      searchParams.delete('location');
+                    } else {
+                      searchParams.set('location', city);
+                    }
+                    setSearchParams(searchParams);
+                  }}
+                  className={`px-4 py-1.5 rounded-xl border text-xs font-semibold transition-all duration-300 active:scale-95 ${
+                    selectedCity === city
+                      ? 'bg-primary-500 text-white border-transparent shadow-sm'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {city}
+                </button>
+              ))}
+            </div>
+
+            {areaQuery && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary-50 border border-primary-100 rounded-full text-xs font-semibold text-primary-700 animate-slide-up mb-6 animate-fade-in">
+                <MapPin className="w-3.5 h-3.5 text-primary-500" />
+                <span>Area filter: <strong>"{areaQuery}"</strong></span>
+                <button 
+                  onClick={() => { 
+                    setAreaQuery(''); 
+                    searchParams.delete('area'); 
+                    setSearchParams(searchParams); 
+                  }} 
+                  className="hover:text-primary-900 font-bold ml-1 text-[10px]"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto animate-slide-up">
               <Link to="/register/student" className="btn-primary flex-1 py-3 btn-shimmer active:scale-95">
