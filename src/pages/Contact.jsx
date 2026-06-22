@@ -35,8 +35,8 @@ const CONTACT_METHODS = [
   {
     icon: MapPin,
     title: 'Visit Us',
-    value: 'Meerut & Allahabad',
-    desc: 'Currently serving Tier 3 districts in UP',
+    value: 'Anywhere in India',
+    desc: 'Serving families across metro and tier-2/3 cities',
     color: 'from-purple-400 to-purple-600'
   },
   {
@@ -325,8 +325,8 @@ const Contact = () => {
                 <div className="bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl p-6 text-center">
                   <MapPin className="w-12 h-12 text-primary-500 mx-auto mb-3 animate-pin-bounce" />
                   <h4 className="text-lg font-bold text-gray-900 mb-1">Currently Serving</h4>
-                  <p className="text-gray-700 font-semibold mb-2">Meerut & Allahabad Districts</p>
-                  <p className="text-gray-500 text-xs">Expanding support to neighboring tier 3 districts soon</p>
+                  <p className="text-gray-700 font-semibold mb-2">Anywhere in India</p>
+                  <p className="text-gray-500 text-xs">We match vetted local home tutors nationwide</p>
                 </div>
               </div>
 
@@ -348,7 +348,7 @@ const Contact = () => {
                     {
                       to: '/register/student',
                       label: 'Register as Student',
-                      desc: 'Sign up to find highly qualified teachers in UP.',
+                      desc: 'Sign up to find highly qualified teachers in India.',
                       icon: User,
                       color: 'text-emerald-600 bg-emerald-50'
                     },

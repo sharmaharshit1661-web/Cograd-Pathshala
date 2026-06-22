@@ -213,8 +213,8 @@ const Navbar = () => {
 
         {/* ── MOBILE DRAWER ── */}
         <div
-          className={`lg:hidden absolute inset-x-0 top-full bg-white border-b border-neutral-100 shadow-xl transition-all duration-300 overflow-hidden ${
-            mobileOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
+          className={`lg:hidden absolute inset-x-0 top-full bg-white border-b border-neutral-100 shadow-xl transition-all duration-300 overflow-y-auto ${
+            mobileOpen ? 'max-h-[calc(100dvh-68px)] opacity-100' : 'max-h-0 opacity-0'
           }`}
         >
           <div className="px-5 pt-4 pb-6 space-y-1">

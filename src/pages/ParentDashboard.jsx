@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DashboardShell from '../components/DashboardShell';
 import {
   LayoutDashboard,
   BookOpen,
@@ -8,8 +9,6 @@ import {
   MessageSquare,
   Download,
   Plus,
-  Bell,
-  LogOut,
   ChevronRight,
   Clock,
   CheckCircle2,
@@ -49,9 +48,6 @@ const ParentDashboard = () => {
   const [activeTab, setActiveTab] = useState('Overview');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   // Parent profile metadata
   const parentName = localStorage.getItem('cograd_parent_name') || 'Mrs. Sharma';
 
@@ -523,161 +519,45 @@ const ParentDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row relative admin-page-enter">
-      
-      {/* 1. LEFT SIDEBAR */}
-      <aside className={`w-full md:w-64 bg-white border-r border-slate-100/60 flex flex-col justify-between shrink-0 h-auto md:h-screen md:sticky md:top-0 z-20 ${mobileMenuOpen ? 'block' : 'hidden md:flex'}`}>
-        <div className="flex flex-col overflow-y-auto flex-grow">
-          {/* Logo Header */}
-          <div className="px-5 py-5 border-b border-slate-100/60 flex items-center justify-between">
-            <div>
-              <span className="logo-shimmer font-black text-lg leading-none tracking-tight">Cograd Pathshala</span>
-              <div className="text-[10px] text-amber-600 font-bold uppercase tracking-wider mt-1">Parent Dashboard</div>
-            </div>
-            {/* Close button for mobile menu */}
-            <button className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-700" onClick={() => setMobileMenuOpen(false)}>
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Navigation Items */}
-          <nav className="px-3 py-4 space-y-0.5">
-            {[
-              { name: 'Overview', icon: LayoutDashboard },
-              { name: 'Progress', icon: BookOpen },
-              { name: 'Daily Learning', icon: Eye },
-              { name: 'Fee Manager', icon: CreditCard },
-              { name: 'PTM & Support', icon: Calendar }
-            ].map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.name;
-              return (
-                <button
-                  key={tab.name}
-                  onClick={() => {
-                    setActiveTab(tab.name);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-200 active:scale-[0.98] cursor-pointer group ${
-                    isActive
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 ${
-                    isActive ? 'bg-white/20' : 'bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-slate-600 group-hover:shadow-sm'
-                  }`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <span className={isActive ? 'font-bold' : ''}>{tab.name}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Profile Block */}
-        <div className="p-3 border-t border-slate-100 bg-slate-50/50">
-          <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-slate-100 shadow-sm">
-            <div className="flex items-center space-x-2.5 text-left flex-grow">
-              <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 font-bold flex items-center justify-center border border-amber-200 text-sm shrink-0">
-                {parentName.replace(/Mrs\.|Mr\./, '').trim().charAt(0) || 'P'}
-              </div>
-              <div className="text-left min-w-0">
-                <div className="text-xs font-bold text-slate-800 truncate">{parentName}</div>
-                <div className="text-[10px] font-semibold text-slate-400">Parent Account</div>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-              title="Logout"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* 2. MAIN CONTENT AREA */}
-      <div className="flex-1 flex flex-col min-w-0">
-        
-        {/* TOP NAVBAR */}
-        <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-100 z-10 px-6 py-0 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            {/* Hamburger button for mobile */}
-            <button 
-              onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-            </button>
-
+    <>
+      <DashboardShell
+        navItems={[
+          { name: 'Overview', icon: LayoutDashboard },
+          { name: 'Progress', icon: BookOpen },
+          { name: 'Daily Learning', icon: Eye },
+          { name: 'Fee Manager', icon: CreditCard },
+          { name: 'PTM & Support', icon: Calendar }
+        ]}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        roleName="Parent Dashboard"
+        roleColor="amber"
+        userName={parentName}
+        notifications={notifications}
+        onClearNotifs={() => setNotifications(prev => prev.map(n => ({ ...n, isNew: false })))}
+        onLogout={handleLogout}
+        toast={{ show: showToast, message: toastMessage }}
+        headerRight={
+          <div className="flex items-center gap-4">
             {/* Child Selector Dropdown */}
             <div className="relative">
-              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-0.5">Active Student Profile</label>
-              <div className="flex items-center bg-slate-50 border border-slate-100 hover:bg-slate-100 rounded-2xl px-4 py-2 cursor-pointer transition-colors shadow-sm relative pr-10">
+              <label className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Active Student</label>
+              <div className="flex items-center bg-slate-50 border border-slate-200/50 hover:bg-slate-100/50 rounded-xl px-3 py-1.5 cursor-pointer transition-colors shadow-sm relative pr-8">
                 <select
                   value={selectedStudentKey}
                   onChange={(e) => setSelectedStudentKey(e.target.value)}
-                  className="appearance-none bg-transparent outline-none pr-6 text-sm font-bold text-slate-800 cursor-pointer w-full"
+                  className="appearance-none bg-transparent outline-none pr-4 text-xs font-bold text-slate-800 cursor-pointer w-full text-slate-800"
                 >
                   <option value="rahul">Rahul Varma - Class 7</option>
                   <option value="aarav">Aarav Mehta - Class 10</option>
                 </select>
-                <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 pointer-events-none" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 pointer-events-none" />
               </div>
             </div>
           </div>
-
-          <div className="flex items-center space-x-4">
-            
-            {/* Notification Center */}
-            <div className="relative">
-              <button
-                onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
-                className="relative p-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-2xl border border-slate-100 transition-all cursor-pointer"
-              >
-                <Bell className="w-5 h-5" />
-                {notifications.some(n => n.isNew) && (
-                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
-                )}
-              </button>
-              
-              {showNotificationDropdown && (
-                <div className="absolute right-0 mt-3 w-80 bg-white rounded-3xl border border-slate-100 shadow-xl py-3 z-30 animate-slide-up">
-                  <div className="flex justify-between items-center px-4 pb-2 border-b border-slate-100">
-                    <span className="font-extrabold text-xs text-slate-700 uppercase">Alert Notifications</span>
-                    <button 
-                      onClick={() => setNotifications(prev => prev.map(n => ({ ...n, isNew: false })))}
-                      className="text-[10px] text-blue-600 font-bold hover:underline"
-                    >
-                      Clear Badge
-                    </button>
-                  </div>
-                  <div className="max-h-60 overflow-y-auto divide-y divide-slate-50">
-                    {notifications.map((notif) => (
-                      <div key={notif.id} className={`p-3 text-xs leading-relaxed transition-colors hover:bg-slate-50 ${notif.isNew ? 'bg-blue-50/20 font-medium' : ''}`}>
-                        <div className="text-slate-800">{notif.text}</div>
-                        <div className="text-[10px] text-slate-400 font-medium mt-1">{notif.time}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Quick Greeting */}
-            <div className="hidden sm:block text-right">
-              <div className="text-xs font-bold text-slate-800">Welcome, {parentName}!</div>
-              <div className="text-[10px] font-semibold text-slate-400">Viewing child progress summary</div>
-            </div>
-          </div>
-        </header>
-
-        {/* CONTAINER CONTENT */}
-        <main className="flex-1 p-6 overflow-y-auto max-w-7xl w-full mx-auto space-y-6">
-
+        }
+      >
+        <div key={activeTab} className="tab-content-enter h-full w-full">
           {/* ================================== OVERVIEW TAB ================================== */}
           {activeTab === 'Overview' && (
             <div className="space-y-6">
@@ -1749,8 +1629,8 @@ const ParentDashboard = () => {
           })()}
 
 
-        </main>
-      </div>
+        </div>
+      </DashboardShell>
 
       {/* ================================== MODALS SECTION ================================== */}
 
@@ -2066,15 +1946,7 @@ const ParentDashboard = () => {
         </div>
       )}
 
-      {/* Global Toast Alert banner */}
-      {showToast && (
-        <div className="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-2.5 border border-slate-800 z-50 animate-slide-up text-xs font-semibold">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
-    </div>
+    </>
   );
 };
 

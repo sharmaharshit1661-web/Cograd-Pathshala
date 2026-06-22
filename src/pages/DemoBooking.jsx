@@ -217,7 +217,7 @@ const DemoBooking = () => {
                         <div>
                           <label className="form-label mb-2"><MapPin className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />District</label>
                           <div className="grid grid-cols-2 gap-4">
-                            {['Meerut', 'Allahabad'].map((d) => (
+                            {['Delhi NCR', 'Mumbai', 'Bengaluru', 'Meerut', 'Allahabad', 'Other'].map((d) => (
                               <button key={d} type="button" onClick={() => setForm((p) => ({ ...p, district: d }))} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 cursor-pointer transition-all ${form.district === d ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300'}`}>
                                 <MapPin className={`w-5 h-5 ${form.district === d ? 'text-primary-500 animate-pin-bounce' : 'text-neutral-400'}`} />
                                 <span className="font-semibold text-sm">{d}</span>

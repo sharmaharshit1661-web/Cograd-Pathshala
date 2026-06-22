@@ -1,5 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DashboardShell from '../components/DashboardShell';
+import {
+  getStudents,
+  saveStudents,
+  getTeachers,
+  findSuggestedTeachers,
+  allotTutor,
+  resetSimulationState
+} from '../utils/mockDb';
 import { 
   LayoutDashboard, 
   Users, 
@@ -12,11 +21,7 @@ import {
   BarChart3, 
   Settings, 
   HelpCircle, 
-  LogOut, 
-  Bell, 
   Search, 
-  TrendingUp, 
-  Check, 
   X, 
   AlertCircle, 
   ChevronRight, 
@@ -27,7 +32,9 @@ import {
   FileText,
   Megaphone,
   Save,
-  Download
+  Download,
+  Clock,
+  User
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -35,10 +42,13 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [selectedMatchStudent, setSelectedMatchStudent] = useState(null);
+  const [showOverrideModal, setShowOverrideModal] = useState(false);
+  const [overrideTeacherSearch, setOverrideTeacherSearch] = useState('');
+
+
   
   // Notification center
-  const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([
     { id: 1, text: 'Aaryan Khanna submitted a new admission enquiry', time: '5m ago', isNew: true },
     { id: 2, text: 'Class 9-10 batch syllabus is 70% complete for this term', time: '1h ago', isNew: true },
@@ -68,6 +78,22 @@ const AdminDashboard = () => {
     { id: 5, name: 'Varun Sharma', email: 'varun.s@gmail.com', parentName: 'David Sharma', batch: 'Class 7', date: '2026-02-28', status: 'Active' },
     { id: 6, name: 'Sara Mehta', email: 'sara.m@gmail.com', parentName: 'Ali Mehta', batch: 'Class 2', date: '2026-03-12', status: 'Suspended' }
   ]);
+
+  const loadAdminData = () => {
+    const raw = getStudents();
+    const normalized = raw.map(s => ({
+      ...s,
+      batch: s.standard || 'Class 10',
+      date: s.joinDate || '2026-06-19',
+      status: s.status === 'active' ? 'Active' : s.status === 'matched' ? 'Active' : s.status === 'pending_test' ? 'Pending Test' : s.status === 'pending_match' ? 'Pending Match' : s.status
+    }));
+    setStudents(normalized);
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadAdminData();
+  }, []);
 
   // Teachers state
   const [teachers, setTeachers] = useState([
@@ -397,229 +423,204 @@ const AdminDashboard = () => {
   };
 
   // Sub-views implementations
-  const renderDashboard = () => (
-    <div className="space-y-6">
-      {/* 4 Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+  const renderDashboard = () => {
+    const pendingStudents = students.filter(s => s.status === 'pending_match');
+
+    return (
+      <div className="space-y-12 animate-fade-in text-left">
         
-        {/* Total Students */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group cursor-pointer">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-500 text-white flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-              <Users className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Students</p>
-              <h3 className="text-2xl font-black text-slate-800 mt-0.5">{students.length + 841}</h3>
-            </div>
-          </div>
-          <div className="flex items-center text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-            <TrendingUp className="w-3 h-3 mr-1" />
-            <span>12%</span>
-          </div>
-        </div>
-
-        {/* Verified Teachers */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group cursor-pointer">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 rounded-xl bg-purple-500 text-white flex items-center justify-center shadow-md shadow-purple-500/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-              <GraduationCap className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Verified Teachers</p>
-              <h3 className="text-2xl font-black text-slate-800 mt-0.5">{teachers.filter(t => t.status === 'Verified').length}</h3>
-            </div>
-          </div>
-          <div className="flex items-center text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-            <TrendingUp className="w-3 h-3 mr-1" />
-            <span>Active</span>
-          </div>
-        </div>
-
-        {/* Fee Collected */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group cursor-pointer">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-              <CreditCard className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fee Collected</p>
-              <h3 className="text-2xl font-black text-slate-800 mt-0.5">₹4,82,000</h3>
-            </div>
-          </div>
-          <div className="flex items-center text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-            <TrendingUp className="w-3 h-3 mr-1" />
-            <span>8%</span>
-          </div>
-        </div>
-
-        {/* Teachers Today */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group cursor-pointer">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-              <GraduationCap className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Teachers Today</p>
-              <h3 className="text-2xl font-black text-slate-800 mt-0.5">{teachers.length} <span className="text-xs font-bold text-slate-400">/ {teachers.length}</span></h3>
-            </div>
-          </div>
-          <div className="flex items-center text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-            <TrendingUp className="w-3 h-3 mr-1" />
-            <span>2%</span>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Row 1 Layout: Today's Home Tuitions & Pending Verifications */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Today's Home Tuitions Card */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-black text-slate-800 tracking-tight">Today's Home Tuitions</h3>
-            <button 
-              onClick={() => setActiveTab('Attendance')}
-              className="text-xs font-bold text-primary-500 hover:text-primary-600 transition-colors flex items-center cursor-pointer"
-            >
-              <span>View Attendance</span>
-              <ChevronRight className="w-4 h-4 ml-0.5" />
-            </button>
+        {/* Row 1: Primary Action Screen - Tutor Match Queue */}
+        <section className="space-y-6">
+          <div>
+            <h2 className="text-lg font-black text-slate-800 tracking-tight">Active Matching Queue</h2>
+            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Primary Admin Action: Match incoming students with local home tutors based on placement test scores</p>
           </div>
 
-          <div className="divide-y divide-slate-50">
+          {pendingStudents.length === 0 ? (
+            <div className="glow-card p-8 text-center max-w-xl">
+              <span className="text-3xl">🎉</span>
+              <h3 className="text-sm font-black text-slate-800 mt-3">All Student Matches Completed!</h3>
+              <p className="text-xs text-slate-400 mt-1">No students are currently waiting for tutor allotment.</p>
+              <p className="text-[9px] text-slate-400 font-semibold mt-1">Tip: Use the Simulation Controls at the bottom left to reset a student to "Pending Match" to test the matching flow!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {pendingStudents.map(student => {
+                const suggestions = findSuggestedTeachers(student);
+                const scores = student.test_score || { Mathematics: 0, Science: 0 };
+                
+                return (
+                  <div key={student.id} className="glow-card p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    
+                    {/* Left Column: Student Details & Scores */}
+                    <div className="lg:col-span-5 space-y-4">
+                      <div className="flex items-center space-x-3 text-left">
+                        <img src={student.avatar} alt={student.name} className="w-10 h-10 rounded-full object-cover border border-slate-150" />
+                        <div>
+                          <h3 className="text-xs font-black text-slate-800">{student.name}</h3>
+                          <p className="text-[10px] text-slate-400 font-semibold">{student.standard} | {student.city}, {student.state || 'Choose your State'}</p>
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-slate-50 rounded-2xl text-left">
+                        <span className="text-[8px] text-slate-400 font-black uppercase tracking-wider block mb-2">
+                          Diagnostic Test Scores (Total: {scores.totalMarksText || '0/35'} Marks)
+                        </span>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="bg-white p-2 rounded-xl border border-slate-100">
+                            <span className="text-[9px] text-slate-500 font-bold block">Mathematics</span>
+                            <span className="text-xs font-black text-blue-600 mt-0.5 block">{scores.mathMarksText || `0/16`}</span>
+                          </div>
+                          <div className="bg-white p-2 rounded-xl border border-slate-100">
+                            <span className="text-[9px] text-slate-500 font-bold block">Science</span>
+                            <span className="text-xs font-black text-blue-600 mt-0.5 block">{scores.scienceMarksText || `0/19`}</span>
+                          </div>
+                        </div>
+                        <span className="text-[9px] text-slate-400 font-semibold block mt-2">Subjects needed: {student.subjects.join(', ')}</span>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Suggested Matches */}
+                    <div className="lg:col-span-7 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[8px] text-slate-400 font-black uppercase tracking-wider">Suggested Local Tutors</span>
+                        <span className="text-[9px] text-slate-400 font-semibold">Location matches city: {student.city}</span>
+                      </div>
+
+                      {suggestions.length === 0 ? (
+                        <div className="p-4 bg-slate-50 rounded-2xl text-center border border-slate-100">
+                          <p className="text-xs text-slate-500 font-bold">No eligible teachers found in {student.city}.</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">Ensure tutors are registered in this city and have matching subject qualifications.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {suggestions.slice(0, 3).map(({ teacher, score, reasons }) => (
+                            <div key={teacher.id} className="p-3 bg-slate-50/50 border border-slate-100 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                              <div className="flex items-center space-x-3 text-left">
+                                <img src={teacher.avatar} alt={teacher.name} className="w-8 h-8 rounded-full object-cover" />
+                                <div>
+                                  <div className="flex items-center gap-1.5">
+                                    <h4 className="text-xs font-black text-slate-800">{teacher.name}</h4>
+                                    <span className="text-[8px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded font-black uppercase">Verified</span>
+                                  </div>
+                                  <p className="text-[9px] text-slate-400 font-bold mt-0.5">
+                                    {teacher.experience} Exp | {teacher.qualification}
+                                  </p>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {reasons.map((r, ri) => (
+                                      <span key={ri} className="bg-blue-50/70 text-blue-700 text-[8px] font-black px-1.5 py-0.5 rounded-full">{r}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                                <div className="text-right sm:mr-1">
+                                  <span className="text-[10px] text-slate-400 font-bold block">Compatibility</span>
+                                  <span className="text-xs font-black text-blue-600 block">{score}% Match</span>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    allotTutor(student.id, teacher.id);
+                                    triggerToast(`Proposed match: Allotted ${teacher.name} to ${student.name}. Pending teacher confirmation.`);
+                                    loadAdminData();
+                                  }}
+                                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[10px] rounded-xl shadow-sm transition-all cursor-pointer border-0"
+                                >
+                                  Allot Tutor
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* Row 2: Secondary Summary Strip - Overall Stats */}
+        <section className="space-y-4">
+          <div>
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Overall Platform Stats</h3>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { time: '09:00 AM - 10:00 AM', subject: 'Class 3 — Maths & English', teacher: 'Mr. Rohan Das', status: 'ONGOING', badgeColor: 'bg-emerald-50 text-emerald-600 border border-emerald-100' },
-              { time: '11:00 AM - 12:00 PM', subject: 'Class 7 — Science', teacher: 'Prof. Amit Verma', status: 'UPCOMING', badgeColor: 'bg-amber-50 text-amber-600 border border-amber-100' },
-              { time: '04:00 PM - 05:00 PM', subject: 'Class 9 — Mathematics', teacher: 'Dr. Satish Sharma', status: 'UPCOMING', badgeColor: 'bg-amber-50 text-amber-600 border border-amber-100' },
-              { time: '05:30 PM - 06:30 PM', subject: 'Class 5 — Hindi', teacher: 'Mrs. S. Iyer', status: 'UPCOMING', badgeColor: 'bg-amber-50 text-amber-600 border border-amber-100' }
-            ].map((c, i) => (
-              <div key={i} className="py-3.5 flex items-center justify-between gap-4">
-                <div className="flex items-center space-x-3.5 min-w-0">
-                  <div className="w-2 h-2 rounded-full bg-slate-300 flex-shrink-0" style={{ backgroundColor: c.status === 'ONGOING' ? '#10b981' : c.status === 'UPCOMING' ? '#f59e0b' : '#94a3b8' }}></div>
-                  <div className="min-w-0">
-                    <span className="text-xs font-extrabold text-slate-700 block sm:inline mr-2">{c.time}</span>
-                    <span className="text-xs font-black text-slate-800 truncate">{c.subject}</span>
-                    <span className="text-[10px] text-slate-400 font-bold block mt-0.5">Instructor: {c.teacher}</span>
+              { title: 'Total Students', value: students.length + 841, icon: Users, color: 'bg-blue-50 text-blue-600 border-blue-100/50' },
+              { title: 'Verified Tutors', value: teachers.filter(t => t.verification_status === 'Verified').length, icon: GraduationCap, color: 'bg-purple-50 text-purple-600 border-purple-100/50' },
+              { title: 'Active Matches', value: students.filter(s => s.status === 'active').length, icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600 border-emerald-100/50' },
+              { title: 'Pending Allotments', value: pendingStudents.length, icon: Clock, color: 'bg-amber-50 text-amber-600 border-amber-100/50' }
+            ].map((stat, i) => {
+              const Icon = stat.icon;
+              return (
+                <div key={i} className={`p-6 glow-card flex items-center space-x-4 transition-all duration-300 ${stat.color}`} style={{ '--glow-gradient': stat.title.includes('Students') ? 'linear-gradient(135deg, #3b82f6, #60a5fa)' : stat.title.includes('Tutors') ? 'linear-gradient(135deg, #7c3aed, #a78bfa)' : stat.title.includes('Active') ? 'linear-gradient(135deg, #10b981, #34d399)' : 'linear-gradient(135deg, #f59e0b, #fbbf24)' }}>
+                  <div className="p-2 rounded-xl bg-white shadow-sm relative z-20">
+                    <Icon className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wider relative z-20">{stat.title}</span>
+                    <span className="text-base font-black text-slate-800 block mt-0.5 relative z-20">{stat.value}</span>
                   </div>
                 </div>
-                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider flex-shrink-0 ${c.badgeColor}`}>
-                  {c.status}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        </div>
+        </section>
 
-        {/* Pending Teacher Verifications */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col justify-between">
-          <h3 className="text-lg font-black text-slate-800 tracking-tight">Pending Verifications</h3>
-          
-          <div className="space-y-3 mt-4">
-            {teachers.filter(t => t.status === 'Pending').length > 0 ? (
-              teachers.filter(t => t.status === 'Pending').map(t => (
-                <div key={t.id} className="p-3.5 bg-amber-50/50 border border-amber-100 rounded-2xl">
-                  <span className="font-extrabold text-xs text-slate-800 block">{t.name}</span>
-                  <p className="text-[11px] text-slate-500 font-medium mt-1">{t.subject} • Documents under review</p>
-                  <button
-                    onClick={() => setActiveTab('Teachers')}
-                    className="mt-2 text-[10px] font-bold text-amber-700 hover:text-amber-900 cursor-pointer"
-                  >
-                    Review documents →
-                  </button>
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-slate-400 text-center py-6">All teachers verified.</p>
-            )}
+        {/* Row 3: Management Tools (Separate Section) */}
+        <section className="glow-card p-8 space-y-6">
+          <div>
+            <h3 className="text-base font-black text-slate-800">Quick Platform Management</h3>
+            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Admin tools to override and manage rosters</p>
           </div>
-
-          <div className="space-y-3 mt-4 pt-4 border-t border-slate-50">
-            {[
-              { name: 'Student Attendance', val: '92%', progress: 92, color: 'bg-primary-500' },
-              { name: 'Fee Regularity', val: '78%', progress: 78, color: 'bg-amber-500' },
-              { name: 'Parent Feedback', val: '88%', progress: 88, color: 'bg-emerald-500' }
-            ].map((p, i) => (
-              <div key={i} className="space-y-1">
-                <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <span>{p.name}</span>
-                  <span className="text-slate-700 font-extrabold">{p.val}</span>
-                </div>
-                <div className="w-full h-1 bg-slate-50 rounded-full overflow-hidden">
-                  <div className={`h-full ${p.color} rounded-full transition-all duration-500`} style={{ width: `${p.progress}%` }}></div>
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <button
+              onClick={() => setActiveTab('Teachers')}
+              className="p-6 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-2xl text-left flex flex-col justify-between h-36 cursor-pointer transition-all duration-300 hover:shadow-md"
+            >
+              <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center">
+                <GraduationCap className="w-4 h-4" />
               </div>
-            ))}
+              <div>
+                <span className="text-xs font-black text-slate-700 block">Manage & Verify Teachers</span>
+                <span className="text-[9px] text-slate-400 mt-1 block">Verify teacher registrations and qualifications</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('Students')}
+              className="p-6 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-2xl text-left flex flex-col justify-between h-36 cursor-pointer transition-all duration-300 hover:shadow-md"
+            >
+              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center">
+                <Users className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-xs font-black text-slate-700 block">View All Students</span>
+                <span className="text-[9px] text-slate-400 mt-1 block">Roster list and active assignments tracker</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => navigate('/register/teacher')}
+              className="p-6 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-2xl text-left flex flex-col justify-between h-36 cursor-pointer transition-all duration-300 hover:shadow-md"
+            >
+              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center">
+                <User className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-xs font-black text-slate-700 block">Register New Teacher</span>
+                <span className="text-[9px] text-slate-400 mt-1 block">Create a verified teacher profile for matching</span>
+              </div>
+            </button>
           </div>
-        </div>
+        </section>
 
       </div>
-
-      {/* Row 2 Layout: Demo Requests & Fee Defaulters */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Demo Booking Requests */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-black text-slate-800 tracking-tight">Demo Booking Requests</h3>
-          </div>
-
-          <div className="space-y-3">
-            {enquiries.filter(e => e.type !== 'Enrolled').map((e) => (
-              <div key={e.id} className="p-3.5 bg-slate-50/50 hover:bg-slate-50 border border-slate-100/50 rounded-2xl transition-all flex flex-col space-y-1.5 relative">
-                <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-xs text-slate-800">{e.name}</span>
-                  <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${e.color}`}>
-                    {e.type}
-                  </span>
-                </div>
-                <p className="text-[11px] font-medium text-slate-500 leading-relaxed">{e.course}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Fee Defaulters List */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-          <h3 className="text-lg font-black text-slate-800 tracking-tight">Fee Defaulters</h3>
-
-          <div className="divide-y divide-slate-50">
-            {defaulters.filter(d => d.status === 'Pending' || d.status === 'Sent').map(d => (
-              <div key={d.id} className="py-3 flex items-center justify-between gap-4">
-                <div>
-                  <h4 className="text-xs font-black text-slate-800">{d.name}</h4>
-                  <p className="text-[10px] text-rose-500 font-bold mt-1.5">Overdue: {d.amount}</p>
-                </div>
-                <button
-                  onClick={() => d.status === 'Pending' && sendReminder(d.id, d.name)}
-                  className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all flex items-center space-x-1 cursor-pointer ${
-                    d.status === 'Pending'
-                      ? 'border border-slate-200 hover:border-primary-500 text-slate-600 hover:text-primary-600 bg-white hover:bg-primary-50/20'
-                      : 'bg-emerald-50 text-emerald-600 border border-emerald-100 cursor-default'
-                  }`}
-                >
-                  {d.status === 'Pending' ? (
-                    <span>Send Reminder</span>
-                  ) : (
-                    <>
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Sent</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            ))}
-            {defaulters.filter(d => d.status === 'Pending' || d.status === 'Sent').length === 0 && (
-              <p className="text-xs text-slate-400 py-6 text-center">No outstanding fee defaulters.</p>
-            )}
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-  );
+    );
+  };
 
   const renderStudents = () => {
     const filteredStudents = students.filter(s => {
@@ -1702,11 +1703,134 @@ const AdminDashboard = () => {
     </div>
   );
 
+  const renderMatchQueue = () => {
+    const pendingStudents = students.filter(s => s.status === 'pending_match');
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Tutor Allotment Match Queue</h2>
+          <p className="text-slate-500 text-xs mt-1">Review diagnostic placement test results and assign vetted home tutors based on compatibility rankings.</p>
+        </div>
+
+        {pendingStudents.length === 0 ? (
+          <div className="glow-card p-8 text-center max-w-xl mx-auto">
+            <span className="text-4xl">🎉</span>
+            <h3 className="text-lg font-black text-slate-800 mt-4">All Matches Completed!</h3>
+            <p className="text-xs text-slate-400 mt-2">No students are currently waiting for tutor matching in the queue.</p>
+            <p className="text-[10px] text-slate-400 font-semibold mt-1">Tip: Use the Simulation Controls at the bottom left to reset a student to "Pending Test" or "Pending Match" to re-simulate!</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {pendingStudents.map(student => {
+              const suggestions = findSuggestedTeachers(student);
+              const scores = student.test_score || { Mathematics: 0, Science: 0 };
+              
+              return (
+                <div key={student.id} className="glow-card p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  
+                  {/* Left Column: Student Details & Scores */}
+                  <div className="lg:col-span-5 space-y-4">
+                    <div className="flex items-center space-x-3 text-left">
+                      <img src={student.avatar} alt={student.name} className="w-11 h-11 rounded-full object-cover border border-slate-150" />
+                      <div>
+                        <h3 className="text-sm font-extrabold text-slate-800">{student.name}</h3>
+                        <p className="text-[10px] text-slate-400 font-semibold">{student.standard} | {student.city}</p>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 rounded-2xl text-left">
+                      <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block mb-2">
+                        Diagnostic Test Scores (Total: {scores.totalMarksText || '0/35'} Marks)
+                      </span>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-100/50">
+                          <span className="text-[10px] text-slate-500 font-semibold block">Mathematics</span>
+                          <span className="text-sm font-black text-blue-600 mt-1 block">{scores.mathMarksText || `0/16`}</span>
+                        </div>
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-100/50">
+                          <span className="text-[10px] text-slate-500 font-semibold block">Science</span>
+                          <span className="text-sm font-black text-blue-600 mt-1 block">{scores.scienceMarksText || `0/19`}</span>
+                        </div>
+                      </div>
+                      <span className="text-[9px] text-slate-400 font-medium block mt-2">Subjects needed: {student.subjects.join(', ')}</span>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Suggested Matches */}
+                  <div className="lg:col-span-7 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Top Tutor Recommendations</span>
+                      <button
+                        onClick={() => { setSelectedMatchStudent(student); setShowOverrideModal(true); }}
+                        className="text-blue-500 hover:text-blue-700 text-xs font-black flex items-center space-x-1 cursor-pointer transition-colors"
+                      >
+                        ⚙️ Manual Override
+                      </button>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {suggestions.slice(0, 2).map((sug) => {
+                        const t = sug.teacher;
+                        return (
+                          <div key={t.id} className="p-3.5 border border-slate-100 hover:border-slate-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50 hover:bg-white transition-all text-left">
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs font-black text-slate-800">{t.name}</span>
+                                <span className="bg-emerald-50 text-emerald-700 text-[9px] font-black px-1.5 py-0.5 rounded-lg border border-emerald-100">{sug.score}% Match</span>
+                              </div>
+                              <p className="text-[10px] text-slate-500 font-semibold mt-1">
+                                {t.experience} | {t.qualification}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                {sug.reasons.map((r, ri) => (
+                                  <span key={ri} className="bg-blue-50/70 text-blue-700 border border-blue-100/30 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full">{r}</span>
+                                ))}
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => {
+                                allotTutor(student.id, t.id);
+                                triggerToast(`Allotted ${t.name} to ${student.name}!`);
+                                loadAdminData();
+                              }}
+                              className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-sm cursor-pointer transition-all flex items-center justify-center gap-1 shrink-0 active:scale-95 text-center"
+                            >
+                              Confirm Match
+                            </button>
+                          </div>
+                        );
+                      })}
+                      {suggestions.length === 0 && (
+                        <div className="p-4 border border-dashed border-slate-200 rounded-2xl bg-slate-50/20 text-center">
+                          <p className="text-xs text-slate-400 font-semibold">No vetted home tutors in {student.city} qualified for this score-band/subject match.</p>
+                          <button
+                            onClick={() => { setSelectedMatchStudent(student); setShowOverrideModal(true); }}
+                            className="mt-2.5 px-4 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-[10px] rounded-xl transition-all cursor-pointer"
+                          >
+                            Allot Tutor Manually
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const getTabContent = () => {
     switch (activeTab) {
       case 'Dashboard': return renderDashboard();
       case 'Students': return renderStudents();
       case 'Teachers': return renderTeachers();
+      case 'Match Queue': return renderMatchQueue();
       case 'Attendance': return renderAttendance();
       case 'Tests & Results': return renderTestsAndResults();
       case 'Fee Management': return renderFeeManagement();
@@ -1718,17 +1842,87 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans relative overflow-hidden admin-page-enter">
-      
-      {/* Action Toast Alert */}
-      {showToast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3.5 rounded-2xl flex items-center space-x-2.5 shadow-2xl animate-slide-up border border-slate-800">
-          <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-          <span className="text-xs font-bold tracking-tight">{toastMessage}</span>
+    <>
+
+
+
+      {/* Manual Override Modal */}
+      {showOverrideModal && selectedMatchStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-lg w-full space-y-4 animate-scale-up text-left">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-50">
+              <h3 className="text-base font-black text-slate-800 tracking-tight">
+                Manual Tutor Allotment: {selectedMatchStudent.name}
+              </h3>
+              <button onClick={() => { setShowOverrideModal(false); setSelectedMatchStudent(null); }} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search teachers by name or subject..."
+                  value={overrideTeacherSearch}
+                  onChange={(e) => setOverrideTeacherSearch(e.target.value)}
+                  className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full"
+                />
+              </div>
+
+              <div className="max-h-64 overflow-y-auto space-y-2.5">
+                {getTeachers()
+                  .filter(t => t.verification_status === 'Verified' && (
+                    t.name.toLowerCase().includes(overrideTeacherSearch.toLowerCase()) ||
+                    t.subjects_taught.some(s => s.toLowerCase().includes(overrideTeacherSearch.toLowerCase()))
+                  ))
+                  .map(teacher => {
+                    const isWithinCapacity = teacher.current_student_count < teacher.max_student_capacity;
+                    return (
+                      <div key={teacher.id} className="p-3 border border-slate-100 rounded-2xl flex items-center justify-between gap-4 bg-slate-50/50 hover:bg-white transition-all">
+                        <div>
+                          <h4 className="text-xs font-black text-slate-800">{teacher.name}</h4>
+                          <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                            Subjects: {teacher.subjects_taught.join(', ')} | Qualified: {teacher.grade_levels_qualified.join(', ')}
+                          </p>
+                          <p className="text-[9px] text-slate-400 mt-1">
+                            City: {teacher.city} | Capacity: {teacher.current_student_count}/{teacher.max_student_capacity}
+                          </p>
+                        </div>
+                        <button
+                          disabled={!isWithinCapacity}
+                          onClick={() => {
+                            allotTutor(selectedMatchStudent.id, teacher.id);
+                            triggerToast(`Allotted ${teacher.name} to ${selectedMatchStudent.name}`);
+                            setShowOverrideModal(false);
+                            setSelectedMatchStudent(null);
+                            loadAdminData();
+                          }}
+                          className="px-3.5 py-1.5 bg-blue-600 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all hover:bg-blue-700 cursor-pointer"
+                        >
+                          Allot
+                        </button>
+                      </div>
+                    );
+                  })}
+                {getTeachers().filter(t => t.verification_status === 'Verified').length === 0 && (
+                  <p className="text-center text-xs text-slate-400 font-semibold py-4">No verified teachers available.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => { setShowOverrideModal(false); setSelectedMatchStudent(null); }}
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
-
-
 
       {/* Student Form Modal */}
       {showAddStudent && (
@@ -2148,168 +2342,80 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Mobile Sidebar Overlay */}
-      {mobileSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 z-30 md:hidden"
-          onClick={() => setMobileSidebarOpen(false)}
-        />
-      )}
-
-      {/* 1. LEFT SIDEBAR PANEL */}
-      <aside className={`fixed md:sticky top-0 h-screen w-64 bg-white border-r border-slate-100 flex flex-col z-40 transition-transform duration-300 ease-in-out shrink-0 shadow-[1px_0_0_0_#f1f5f9] ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        <div className="flex flex-col h-full overflow-hidden">
-          {/* Logo Brand area */}
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center shrink-0 bg-white">
-            <div>
-              <div className="text-lg font-black tracking-tight logo-shimmer leading-none">Cograd Pathshala</div>
-              <div className="text-[10px] font-semibold tracking-widest text-slate-400 uppercase mt-0.5">Admin Hub</div>
-            </div>
-          </div>
-
-          {/* Navigation Menu */}
-          <nav className="px-3 py-3 space-y-0.5 overflow-y-auto flex-grow scrollbar-thin">
-            {[
-              { name: 'Dashboard',      icon: LayoutDashboard },
-              { name: 'Students',       icon: Users },
-              { name: 'Teachers',       icon: GraduationCap },
-              { name: 'Attendance',     icon: UserCheck },
-              { name: 'Tests & Results', icon: CheckSquare },
-              { name: 'Fee Management', icon: CreditCard },
-              { name: 'Settings',       icon: Settings },
-            ].map(item => {
-              const IconComp = item.icon;
-              const isActive = activeTab === item.name;
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => { setActiveTab(item.name); setMobileSidebarOpen(false); }}
-                  className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`sidebar-nav-icon ${isActive ? 'active' : ''}`}>
-                      <IconComp className="w-[1.05rem] h-[1.05rem]" />
-                    </div>
-                    <span>{item.name}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Bottom items */}
-          <div className="px-3 pb-3 border-t border-slate-100 pt-3 space-y-0.5 shrink-0">
-            <button
-              onClick={() => setActiveTab('Help')}
-              className={`sidebar-nav-item ${activeTab === 'Help' ? 'active' : ''}`}
-            >
-              <div className="flex items-center space-x-3">
-                <div className={`sidebar-nav-icon ${activeTab === 'Help' ? 'active' : ''}`}><HelpCircle className="w-[1.05rem] h-[1.05rem]" /></div>
-                <span>Help Center</span>
-              </div>
-            </button>
-            <button onClick={handleLogout} className="sidebar-nav-item text-rose-500 hover:!text-rose-700 hover:!bg-rose-50">
-              <div className="flex items-center space-x-3">
-                <div className="sidebar-nav-icon !bg-rose-50 !text-rose-400"><LogOut className="w-[1.05rem] h-[1.05rem]" /></div>
-                <span>Logout</span>
-              </div>
-            </button>
-          </div>
+      <DashboardShell
+        navItems={[
+          { name: 'Dashboard', icon: LayoutDashboard },
+          { name: 'Students', icon: Users },
+          { name: 'Teachers', icon: GraduationCap },
+          { name: 'Match Queue', icon: Sliders },
+          { name: 'Attendance', icon: UserCheck },
+          { name: 'Tests & Results', icon: CheckSquare },
+          { name: 'Fee Management', icon: CreditCard },
+          { name: 'Settings', icon: Settings },
+          { name: 'Help', icon: HelpCircle }
+        ]}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        roleName="Admin Hub"
+        roleColor="violet"
+        userName="Admin"
+        notifications={notifications}
+        onClearNotifs={() => {
+          setNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
+          setToastMessage('All notifications read.');
+          setShowToast(true);
+        }}
+        onLogout={handleLogout}
+        toast={{ show: showToast, message: toastMessage }}
+      >
+        <div key={activeTab} className="tab-content-enter h-full w-full">
+          {getTabContent()}
         </div>
-      </aside>
+      </DashboardShell>
 
-      {/* 2. MAIN HUB CONTENT AREA */}
-      <div className="flex-grow flex flex-col min-w-0 h-screen overflow-hidden">
-        
-        {/* TOP HEADER BAR */}
-        <header className="h-16 bg-white/95 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-4 lg:px-8 z-20 shrink-0 sticky top-0">
-          <div className="flex items-center gap-3">
-            {/* Hamburger for mobile */}
-            <button
-              onClick={() => setMobileSidebarOpen(true)}
-              className="md:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-            </button>
-            <div>
-              <h1 className="text-[1.05rem] font-bold text-slate-900 tracking-tight leading-none">
-                {activeTab === 'Dashboard' ? 'Overview' : activeTab}
-              </h1>
-              <p className="text-[11px] text-slate-400 mt-0.5 font-medium hidden sm:block">
-                {activeTab === 'Dashboard' ? 'Home tuition platform overview' : `Manage ${activeTab.toLowerCase()}`}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Search */}
-            <div className="relative hidden md:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search…"
-                className="pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-52"
-              />
-            </div>
-
-            {/* Notifications */}
-            <div className="relative">
-              <button
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="relative w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-center transition-all cursor-pointer"
-              >
-                <Bell className="w-4.5 h-4.5 text-slate-600" />
-                {notifications.some(n => n.isNew) && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-[1.5px] border-white" />
-                )}
-              </button>
-
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 animate-fade-in overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                    <span className="text-sm font-bold text-slate-800">Notifications</span>
-                    {notifications.some(n => n.isNew) && (
-                      <button onClick={() => setNotifications(p => p.map(n => ({ ...n, isNew: false })))} className="text-xs font-semibold text-blue-600 hover:text-blue-800 cursor-pointer">
-                        Mark all read
-                      </button>
-                    )}
-                  </div>
-                  <div className="max-h-64 overflow-y-auto divide-y divide-slate-50">
-                    {notifications.map(n => (
-                      <div key={n.id} onClick={() => { setNotifications(p => p.map(x => x.id === n.id ? { ...x, isNew: false } : x)); setShowNotifications(false); }}
-                        className={`px-4 py-3 flex gap-3 cursor-pointer hover:bg-slate-50 transition-colors ${n.isNew ? 'bg-blue-50/40' : ''}`}>
-                        <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.isNew ? 'bg-blue-500' : 'bg-slate-300'}`} />
-                        <div>
-                          <p className={`text-xs leading-relaxed ${n.isNew ? 'font-semibold text-slate-800' : 'text-slate-500'}`}>{n.text}</p>
-                          <p className="text-[10.5px] text-slate-400 mt-0.5">{n.time}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Avatar */}
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                A
-              </div>
-              <span className="text-sm font-semibold text-slate-700 hidden lg:block">Admin</span>
-            </div>
-          </div>
-        </header>
-
-        {/* ACTIVE TAB CONTENT */}
-        <main className="flex-grow p-5 lg:p-7 overflow-y-auto max-w-[1400px] w-full mx-auto scrollbar-thin">
-          <div key={activeTab} className="tab-content-enter">
-            {getTabContent()}
-          </div>
-        </main>
-
+      {/* Simulation Control Panel */}
+      <div className="fixed bottom-4 left-4 z-40 bg-slate-900 text-white rounded-2xl p-4 shadow-2xl border border-slate-800 max-w-xs text-left">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-black uppercase tracking-wider text-blue-400">Simulation Controls</span>
+          <span className="text-[9px] bg-slate-800 px-2 py-0.5 rounded font-mono text-slate-300">Admin</span>
+        </div>
+        <div className="space-y-1.5">
+          <button
+            onClick={() => {
+              resetSimulationState('stu_rahul', 'pending_test');
+              triggerToast('Reset Rahul Sharma to "Pending Test".');
+              loadAdminData();
+            }}
+            className="w-full py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-[10px] font-bold transition-all cursor-pointer text-left"
+          >
+            🔄 Reset Rahul to "Pending Test"
+          </button>
+          <button
+            onClick={() => {
+              resetSimulationState('stu_rahul', 'pending_match');
+              const studentsList = getStudents();
+              const idx = studentsList.findIndex(s => s.id === 'stu_rahul');
+              if (idx !== -1) {
+                studentsList[idx].test_score = { 
+                  Mathematics: 88, 
+                  Science: 53,
+                  mathMarksText: '14/16',
+                  scienceMarksText: '10/19',
+                  totalMarksText: '24/35'
+                };
+                studentsList[idx].test_completed_at = new Date().toISOString();
+                saveStudents(studentsList);
+              }
+              triggerToast('Set Rahul to "Pending Match" (Scores: Math 14/16, Science 10/19 - Total: 24/35)');
+              loadAdminData();
+            }}
+            className="w-full py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-[10px] font-bold transition-all cursor-pointer text-left"
+          >
+            ⌛ Set Rahul to "Pending Match"
+          </button>
+        </div>
       </div>
-
-    </div>
+    </>
   );
 };
 

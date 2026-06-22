@@ -44,7 +44,7 @@ const TIMELINE = [
   { year: '2021', title: 'First Home Tuition', desc: 'Assigned our first verified home tutor in Uttar Pradesh.', icon: MapPin },
   { year: '2022', title: 'Shark Tank India', desc: 'Featured on Shark Tank India, securing investments and national credibility.', img: '/shark-tank.png' },
   { year: '2023', title: '500+ Assigned Tutors', desc: 'Vetted and assigned 500+ home tutors across major districts.', icon: Users },
-  { year: '2024', title: 'Pathshala Launch', desc: 'Launched home tuition platform in Meerut and Allahabad districts.', icon: GraduationCap },
+  { year: '2024', title: 'Pathshala Launch', desc: 'Launched home tuition platform across metro and tier-2/3 cities in India.', icon: GraduationCap },
 ];
 
 const VALUES = [

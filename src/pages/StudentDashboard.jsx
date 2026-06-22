@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DashboardShell from '../components/DashboardShell';
 import {
   LayoutDashboard,
   BookOpen,
   FileText,
-  LogOut,
-  Bell,
-  Search,
+  Mic,
+  Send,
   Download,
   Play,
   Flame,
@@ -18,38 +18,41 @@ import {
   ArrowRight,
   User,
   BookMarked,
-  Star,
   X,
   Camera,
   Edit3,
   Save,
+  UploadCloud,
+  MessageSquare,
+  Paperclip,
+  Users,
   CheckSquare,
-
-  Trophy,
   WifiOff,
   Wifi,
   Plus,
   RotateCcw,
-  HelpCircle
+  Zap,
+  ChevronRight,
+  Star,
+  Search,
+  Trophy,
+  HelpCircle,
 } from 'lucide-react';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Home');
-  const [profileSubTab, setProfileSubTab] = useState('profile');
   const [selectedProgressSubject, setSelectedProgressSubject] = useState('All');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-
+  const [showAiChatbot, setShowAiChatbot] = useState(false);
   
   // Notification states
   const [unreadNotifications, setUnreadNotifications] = useState([
-    { id: 1, text: 'New Maths notes uploaded by Priya Sharma', time: '10m ago', isNew: true },
-    { id: 2, text: 'Unit test results are available', time: '2h ago', isNew: true },
-    { id: 3, text: 'Home tuition session scheduled for tomorrow', time: '1d ago', isNew: false }
+    { id: 1, text: 'New Organic Chemistry notes uploaded', time: '10m ago', isNew: true },
+    { id: 2, text: 'Mock Test #8 results are live', time: '2h ago', isNew: true },
+    { id: 3, text: 'Priya Sharma scheduled a backup math class', time: '1d ago', isNew: false }
   ]);
-  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
 
   // Up Next live class timer state: set class start time 14 minutes and 32 seconds from now
   const [timeLeft, setTimeLeft] = useState(14 * 60 + 32);
@@ -85,21 +88,23 @@ const StudentDashboard = () => {
     name: 'Rahul Sharma',
     email: 'rahul.sharma@cograd.com',
     phone: '9876500112',
-    standard: 'Class 10 (CBSE)',
+    standard: 'Class 12 (JEE Main & Advanced)',
     avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80',
     studentId: 'CP-2026-STU88',
     parentName: 'Mr. Alok Sharma',
     parentPhone: '9876500999',
     district: 'Meerut',
     state: 'Uttar Pradesh',
-    medium: 'English & Hindi',
+    medium: 'English & Hinglish',
     joinDate: '12 April 2026',
-    tuitionSlot: 'Evening (04:00 PM - 05:00 PM)',
-    subjects: ['Mathematics', 'Science', 'English'],
+    tuitionSlot: 'Evening (04:00 PM - 07:00 PM)',
+    subjects: ['Mathematics', 'Physics', 'Chemistry'],
     address: 'House No. 42, Sector 4, Shastri Nagar, Meerut',
+    streak: 12,
+    rank: '#4',
     attendance: '91%',
     pendingHW: '1',
-    testsThisWeek: '1'
+    testsThisWeek: '2'
   });
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -115,18 +120,24 @@ const StudentDashboard = () => {
 
   // Syllabus Chapter checklist state
   const [syllabusChapters, setSyllabusChapters] = useState([
-    { id: 'm1', subject: 'Mathematics', name: 'Real Numbers', status: 'Completed' },
-    { id: 'm2', subject: 'Mathematics', name: 'Polynomials', status: 'Completed' },
-    { id: 'm3', subject: 'Mathematics', name: 'Triangles', status: 'In Progress' },
-    { id: 'm4', subject: 'Mathematics', name: 'Statistics', status: 'Not Started' },
-    { id: 's1', subject: 'Science', name: 'Light — Reflection', status: 'Completed' },
-    { id: 's2', subject: 'Science', name: 'Electricity', status: 'In Progress' },
-    { id: 's3', subject: 'Science', name: 'Life Processes', status: 'Not Started' },
-    { id: 'e1', subject: 'English', name: 'Grammar & Writing', status: 'Completed' },
-    { id: 'e2', subject: 'English', name: 'Literature — First Flight', status: 'In Progress' }
+    { id: 'm1', subject: 'Mathematics', name: 'Definite Integration', status: 'Completed' },
+    { id: 'm2', subject: 'Mathematics', name: 'Matrices & Determinants', status: 'Completed' },
+    { id: 'm3', subject: 'Mathematics', name: 'Vector Algebra', status: 'In Progress' },
+    { id: 'm4', subject: 'Mathematics', name: 'Probability & Distributions', status: 'Not Started' },
+    { id: 'p1', subject: 'Physics', name: 'Electrostatics', status: 'Completed' },
+    { id: 'p2', subject: 'Physics', name: 'Current Electricity', status: 'Completed' },
+    { id: 'p3', subject: 'Physics', name: 'Rotational Dynamics', status: 'In Progress' },
+    { id: 'p4', subject: 'Physics', name: 'Wave Optics', status: 'Not Started' },
+    { id: 'c1', subject: 'Chemistry', name: 'Organic Reaction Mechanisms', status: 'Completed' },
+    { id: 'c2', subject: 'Chemistry', name: 'Coordination Chemistry', status: 'Completed' },
+    { id: 'c3', subject: 'Chemistry', name: 'Chemical Kinetics', status: 'In Progress' },
+    { id: 'c4', subject: 'Chemistry', name: 'Biomolecules & Polymers', status: 'Not Started' }
   ]);
 
-
+  // AI Doubt Solver persona and uploader states
+  const [tutorPersona, setTutorPersona] = useState('chemistry'); // chemistry, mathematics, physics
+  const [isScanning, setIsScanning] = useState(false);
+  const [scannerProgress, setScannerProgress] = useState(0);
 
   // Reference dynamic state back to studentProfile for simple mapping
   const studentProfile = profileData;
@@ -136,7 +147,7 @@ const StudentDashboard = () => {
   const recentResults = [
     {
       id: 1,
-      title: 'Chemistry Part Syllabus Test (Class 10 CBSE)',
+      title: 'Chemistry Part Syllabus Test (JEE Level)',
       score: '88/100',
       percentage: 88,
       rank: '#4',
@@ -180,7 +191,53 @@ const StudentDashboard = () => {
     }
   ];
 
+  // Ask AI Doubt Solver state
+  const [aiQuestion, setAiQuestion] = useState('');
+  const [aiHistory, setAiHistory] = useState([
+    {
+      question: 'What is the Cannizzaro reaction mechanism?',
+      answer: 'The Cannizzaro reaction is a redox reaction in which two molecules of a non-enolizable aldehyde are reacted with a strong base (like NaOH) to yield a primary alcohol and a carboxylic acid salt. One aldehyde molecule is oxidized, while the other is reduced.\n\n**Mechanism:**\n1. Nucleophilic attack of OH⁻ on the carbonyl carbon of one aldehyde.\n2. Hydride shift from the tetrahedral intermediate to a second aldehyde molecule (rate-determining step).\n3. Proton transfer to yield the final alcohol and carboxylate salt products.',
+      timestamp: 'Yesterday'
+    }
+  ]);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [simulatedVoiceState, setSimulatedVoiceState] = useState('idle'); // idle, listening
 
+  // Ask Teacher Doubt state
+  const [doubtMode, setDoubtMode] = useState('ai'); // 'ai' or 'teacher'
+  const [selectedTeacherForDoubt, setSelectedTeacherForDoubt] = useState('Mr. Rajesh Kumar');
+  const [teacherDoubtText, setTeacherDoubtText] = useState('');
+  const [teacherDoubtAttachment, setTeacherDoubtAttachment] = useState(null);
+  const [isUploadingDoubtFile, setIsUploadingDoubtFile] = useState(false);
+  const [uploadDoubtProgress, setUploadDoubtProgress] = useState(0);
+  const [expandedTeacherDoubtId, setExpandedTeacherDoubtId] = useState(null);
+
+  const [teacherDoubts, setTeacherDoubts] = useState([
+    {
+      id: 1,
+      teacher: 'Mr. Rajesh Kumar',
+      subject: 'Chemistry',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
+      question: 'Why is phenol more acidic than ethanol?',
+      status: 'Resolved',
+      attachment: 'resonance_phenol.png',
+      answer: 'Phenol is more acidic because the phenoxide ion formed after losing a proton is stabilized by resonance (delocalization of the negative charge over the benzene ring). In contrast, the ethoxide ion from ethanol has no resonance stabilization, and the ethyl group exhibits an electron-donating +I effect which destabilizes the negative charge.',
+      timestamp: '2 days ago',
+      replyTime: 'Yesterday, 10:30 AM'
+    },
+    {
+      id: 2,
+      teacher: 'Dr. Priya Sharma',
+      subject: 'Mathematics',
+      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
+      question: 'How do we solve integration of sec^3(x) dx?',
+      status: 'Resolved',
+      attachment: 'calculus_exercise_5.pdf',
+      answer: 'We solve this using Integration by Parts. Let I = ∫ sec^3(x) dx = ∫ sec(x) * sec^2(x) dx. Let u = sec(x) and dv = sec^2(x) dx. Then du = sec(x)tan(x) dx and v = tan(x). Applying parts: I = sec(x)tan(x) - ∫ sec(x)tan^2(x) dx. Since tan^2(x) = sec^2(x) - 1, we get I = sec(x)tan(x) - ∫ sec^3(x) dx + ∫ sec(x) dx. Thus 2I = sec(x)tan(x) + ln|sec(x) + tan(x)| + C. Finally, I = 0.5 * [sec(x)tan(x) + ln|sec(x) + tan(x)|] + C.',
+      timestamp: '3 days ago',
+      replyTime: '2 days ago'
+    }
+  ]);
 
   // --- PREMIUM DASHBOARD FEATURES STATE ---
 
@@ -214,7 +271,29 @@ const StudentDashboard = () => {
     { timestamp: '14:40', note: 'Nucleophilic addition follows nucleophilic attack on carbon followed by protonation.' }
   ]);
 
-
+  // 5. Peer Learning & Study Groups State
+  const [studyGroups] = useState([
+    { id: 'g1', name: 'Organic Chem Warriors', subject: 'Chemistry', activePeers: 14, description: 'Solving advance mechanics & reaction roadmaps' },
+    { id: 'g2', name: 'Math Integration Ninjas', subject: 'Mathematics', activePeers: 8, description: 'Mastering definite integrations & double integrals' },
+    { id: 'g3', name: 'HC Verma Doubt Solvers', subject: 'Physics', activePeers: 22, description: 'Daily chapter problems discussions & notes share' }
+  ]);
+  const [activeGroupId, setActiveGroupId] = useState('g1');
+  const [groupChats, setGroupChats] = useState({
+    g1: [
+      { id: 1, sender: 'Aryan', text: "Hey guys, did you check Rajesh sir's newly uploaded organic notes?", time: '12:30 PM' },
+      { id: 2, sender: 'Divya', text: 'Yes! The Carbonyl reactions roadmap is extremely helpful.', time: '12:32 PM' },
+      { id: 3, sender: 'You', text: 'I am starting the worksheet questions now.', time: '12:35 PM' }
+    ],
+    g2: [
+      { id: 1, sender: 'Kunal', text: 'How do we solve integration of sec^3(x)? It seems tricky.', time: '11:00 AM' },
+      { id: 2, sender: 'Preeti', text: "Priya ma'am resolved it yesterday! Check history, she used integration by parts.", time: '11:05 AM' }
+    ],
+    g3: [
+      { id: 1, sender: 'Rohan', text: 'Who has solved chapter 15 Rotational Dynamics question 28?', time: 'Yesterday' },
+      { id: 2, sender: 'Simran', text: 'I have. The trick is to conserve angular momentum about the hinge point.', time: 'Yesterday' }
+    ]
+  });
+  const [newGroupMessage, setNewGroupMessage] = useState('');
 
   // 6. Smart Notes & Flashcards State
   const [flashcardDecks] = useState([
@@ -256,13 +335,160 @@ const StudentDashboard = () => {
 
   // 7. Achievements & Portfolio Tracker State
   const [earnedCertificates] = useState([
-    { id: 1, title: 'Board Prep Consistency Master', date: 'June 01, 2026', type: 'Streak Master', unlockedAt: '10 Day Streak' },
+    { id: 1, title: 'JEE Prep Consistency Master', date: 'June 01, 2026', type: 'Streak Master', unlockedAt: '10 Day Streak' },
     { id: 2, title: 'Chemistry Mock Test Gold Badge', date: 'June 10, 2026', type: 'Mock Champion', unlockedAt: 'Score > 85%' }
   ]);
+  const [studentXp, setStudentXp] = useState(4850);
+  const [unlockedRewards, setUnlockedRewards] = useState(['r1']); // rewardIds
+  const rewardsList = [
+    { id: 'r1', name: 'Virtual Student Hub Access', cost: 1000, desc: 'Unlocks advanced peer groups chats' },
+    { id: 'r2', name: '1-on-1 Personal Mentor Call', cost: 3000, desc: '30-minute private advice slot with Mr. Rajesh Kumar' },
+    { id: 'r3', name: 'Advanced JEE Practice Set PDF', cost: 1500, desc: 'Exclusively curated physical chem questions' }
+  ];
   const [downloadingCertId, setDownloadingCertId] = useState(null);
   const [certDownloadProgress, setCertDownloadProgress] = useState(0);
 
   // --- END PREMIUM FEATURES STATE ---
+
+
+  const handleAiSubmit = (e) => {
+    if (e) e.preventDefault();
+    if (!aiQuestion.trim()) return;
+
+    setIsAiLoading(true);
+    const questionText = aiQuestion;
+    setAiQuestion('');
+
+    setTimeout(() => {
+      let resolvedAnswer = '';
+      if (questionText.toLowerCase().includes('sn1') || questionText.toLowerCase().includes('sn2')) {
+        resolvedAnswer = `**SN1 vs SN2 Mechanisms:**\n\n- **SN1 (Substitution Nucleophilic Unimolecular):** Renders a 2-step process with a carbocation intermediate. Rate depends only on substrate concentration: Rate = k[R-X]. Favored by polar protic solvents and tertiary substrates.\n- **SN2 (Substitution Nucleophilic Bimolecular):** Renders a 1-step concerted process with transition state and inversion of configuration (Walden Inversion). Rate depends on both: Rate = k[R-X][Nu⁻]. Favored by polar aprotic solvents and primary substrates.`;
+      } else if (questionText.toLowerCase().includes('bohr') || questionText.toLowerCase().includes('orbit')) {
+        resolvedAnswer = `**Bohr's Orbit Radius Derivation:**\n\nFor a hydrogenic atom, the electrostatic force balances the centripetal force:\n$$\\frac{m v^2}{r} = \\frac{Z e^2}{4 \\pi \\epsilon_0 r^2}$$\n\nApplying Bohr's quantization condition ($mvr = nh/2\\pi$), we solve for $r_n$:\n$$r_n = \\frac{\\epsilon_0 n^2 h^2}{\\pi m Z e^2} = 0.529 \\frac{n^2}{Z} \\text{ Å}$$\n\nThis shows the radius is directly proportional to the square of the principal quantum number ($n^2$).`;
+      } else if (questionText.toLowerCase().includes('avogadro')) {
+        resolvedAnswer = `**Avogadro's Hypothesis:**\n\n"Equal volumes of all gases, at the same temperature and pressure, contain the same number of molecules."\n\n- **Formula:** $V \\propto n$ (where $n$ is the number of moles).\n- **At STP:** 1 mole of any ideal gas occupies exactly $22.4 \\text{ Liters}$ and contains $6.022 \\times 10^{23}$ particles.`;
+      } else {
+        resolvedAnswer = `**AI Resolution for:** "${questionText}"\n\nBased on your JEE Prep syllabus, here is the analytical breakdown:\n1. **Core Concept:** This question falls under physical chemistry / general principles.\n2. **Detailed Steps:** Follow the conservation laws. Apply standard molecular kinetics equations where pressure is held constant.\n3. **Exam Tip:** Keep track of units (e.g. converting liters to $m^3$ or Kelvin temperatures).`;
+      }
+
+      setAiHistory((prev) => [
+        { question: questionText, answer: resolvedAnswer, timestamp: 'Just Now' },
+        ...prev
+      ]);
+      setIsAiLoading(false);
+      triggerToast('AI Doubt Solver completed resolution!');
+    }, 1500);
+  };
+
+  // Voice Simulation
+  const simulateVoiceInput = () => {
+    setSimulatedVoiceState('listening');
+    triggerToast('Listening... Speak your academic doubt.');
+    setTimeout(() => {
+      setAiQuestion('Explain SN1 vs SN2 reaction kinetics in detail');
+      setSimulatedVoiceState('idle');
+      triggerToast('Speech parsed successfully!');
+    }, 2500);
+  };
+
+  // Image Scan Simulation
+  const triggerImageScan = () => {
+    setIsScanning(true);
+    setScannerProgress(0);
+    triggerToast("Scanning handwritten page... OCR parser active");
+    
+    let current = 0;
+    const interval = setInterval(() => {
+      current += 20;
+      setScannerProgress(current);
+      if (current >= 100) {
+        clearInterval(interval);
+        setTimeout(() => {
+          setIsScanning(false);
+          const parsedQuestion = tutorPersona === 'chemistry'
+            ? "Explain SN1 vs SN2 reaction kinetics in detail"
+            : tutorPersona === 'mathematics'
+              ? "Derive the radius formula for Bohr's orbit"
+              : "Explain Lenz's Law of Electromagnetic Induction";
+          setAiQuestion(parsedQuestion);
+          triggerToast("Handwritten page successfully parsed by AI!");
+        }, 400);
+      }
+    }, 200);
+  };
+
+  // Direct Teacher Doubt Helpers
+  const simulateTeacherDoubtUpload = () => {
+    setIsUploadingDoubtFile(true);
+    setUploadDoubtProgress(0);
+    triggerToast("Uploading attachment to teacher inbox...");
+    
+    let current = 0;
+    const interval = setInterval(() => {
+      current += 25;
+      setUploadDoubtProgress(current);
+      if (current >= 100) {
+        clearInterval(interval);
+        setTimeout(() => {
+          setIsUploadingDoubtFile(false);
+          setTeacherDoubtAttachment("doubt_worksheet_scan.png");
+          triggerToast("Worksheet attached successfully!");
+        }, 300);
+      }
+    }, 200);
+  };
+
+  const handleTeacherDoubtSubmit = (e) => {
+    e.preventDefault();
+    if (!teacherDoubtText.trim()) return;
+
+    const teacherObj = [
+      { name: 'Mr. Rajesh Kumar', subject: 'Chemistry', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80' },
+      { name: 'Dr. Priya Sharma', subject: 'Mathematics', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80' },
+      { name: 'Dr. Sarah Johnson', subject: 'Physics', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=80' }
+    ].find(t => t.name === selectedTeacherForDoubt);
+
+    const newDoubt = {
+      id: Date.now(),
+      teacher: teacherObj.name,
+      subject: teacherObj.subject,
+      avatar: teacherObj.avatar,
+      question: teacherDoubtText,
+      status: 'Pending Review',
+      attachment: teacherDoubtAttachment,
+      answer: null,
+      timestamp: 'Just now',
+      replyTime: null
+    };
+
+    setTeacherDoubts(prev => [newDoubt, ...prev]);
+    setTeacherDoubtText('');
+    setTeacherDoubtAttachment(null);
+    triggerToast(`Doubt submitted to ${teacherObj.name}!`);
+
+    // Simulate teacher resolving it in real-time
+    setTimeout(() => {
+      const responses = {
+        'Mr. Rajesh Kumar': 'This is a great question! For this mechanism, recall that the electrophilicity of the carbonyl carbon is the driving factor. I have annotated your image to show the nucleophilic attack of the hydride shift. Let\'s review this in our next class.',
+        'Dr. Priya Sharma': 'Remember that the limits of integration must be evaluated carefully after substituting the variable. In this case, since sec(x) is periodic, check the interval to ensure it does not cross any vertical asymptotes.',
+        'Dr. Sarah Johnson': 'For Young\'s Double Slit Experiment, the path difference Δx = d * sin(θ) ≈ d * y / D. The condition for constructive interference is d * y / D = n * λ. I have uploaded the derivation notes. Please check it.'
+      };
+
+      setTeacherDoubts(prev => prev.map(d => {
+        if (d.id === newDoubt.id) {
+          return {
+            ...d,
+            status: 'Resolved',
+            answer: responses[d.teacher] || 'I have reviewed your doubt. Let\'s discuss this in detail during our session.',
+            replyTime: 'Just now'
+          };
+        }
+        return d;
+      }));
+
+      triggerToast(`${teacherObj.name} resolved your doubt!`);
+    }, 12000);
+  };
 
 
   // --- PREMIUM DASHBOARD FEATURES HANDLERS ---
@@ -284,8 +510,6 @@ const StudentDashboard = () => {
     return () => clearInterval(playInterval);
   }, [videoPlaying, activeVideoLecture]);
 
-
-
   // 3. Goal Planner
   const handleAddGoal = (e) => {
     e.preventDefault();
@@ -298,6 +522,7 @@ const StudentDashboard = () => {
     setUserGoals(prev => [...prev, newGoal]);
     setNewGoalText('');
     triggerToast('Goal added to your daily planner!');
+    setStudentXp(prev => prev + 20); // award 20 XP
   };
 
   const handleToggleGoal = (id) => {
@@ -305,7 +530,8 @@ const StudentDashboard = () => {
       if (g.id === id) {
         const nextState = !g.completed;
         if (nextState) {
-          triggerToast('Goal completed! Keep going!');
+          triggerToast('Goal completed! +50 XP earned.');
+          setStudentXp(xp => xp + 50); // award 50 XP
         }
         return { ...g, completed: nextState };
       }
@@ -338,7 +564,47 @@ const StudentDashboard = () => {
 
     setSavedVideoNotes(prev => [newNote, ...prev]);
     setVideoNotes('');
-    triggerToast('Note saved with video timestamp!');
+    triggerToast('Note saved with video timestamp! +20 XP');
+    setStudentXp(prev => prev + 20);
+  };
+
+  // 5. Peer Chat
+  const handleSendGroupMessage = (e) => {
+    e.preventDefault();
+    if (!newGroupMessage.trim()) return;
+
+    const newMessage = {
+      id: Date.now(),
+      sender: 'You',
+      text: newGroupMessage.trim(),
+      time: 'Just now'
+    };
+
+    setGroupChats(prev => ({
+      ...prev,
+      [activeGroupId]: [...(prev[activeGroupId] || []), newMessage]
+    }));
+    setNewGroupMessage('');
+
+    // Simulated automated peer reply after 3 seconds
+    setTimeout(() => {
+      const automatedReplies = {
+        g1: { sender: 'Aryan', text: "Nice! Let's schedule a study session for that organic chemistry worksheet soon." },
+        g2: { sender: 'Kunal', text: "Thanks! That parts formula makes perfect sense now. I am working on the practice problems next." },
+        g3: { sender: 'Rohan', text: "Got it! Angular momentum conservation makes rotational dynamics much cleaner." }
+      };
+      const reply = automatedReplies[activeGroupId] || { sender: 'Aryan', text: 'Glad we are studying together!' };
+      const botMsg = {
+        id: Date.now() + 1,
+        sender: reply.sender,
+        text: reply.text,
+        time: 'Just now'
+      };
+      setGroupChats(prev => ({
+        ...prev,
+        [activeGroupId]: [...(prev[activeGroupId] || []), botMsg]
+      }));
+    }, 3000);
   };
 
   // 6. Flashcards
@@ -363,7 +629,8 @@ const StudentDashboard = () => {
   };
 
   const handleMarkMastered = () => {
-    triggerToast('Marked as Mastered!');
+    triggerToast('Marked as Mastered! +30 XP earned.');
+    setStudentXp(prev => prev + 30);
     setDeckProgress(prev => ({
       ...prev,
       [activeDeckId]: prev[activeDeckId] + 1
@@ -392,7 +659,19 @@ const StudentDashboard = () => {
     }, 200);
   };
 
+  // 8. Rewards store
+  const handleRedeemReward = (reward) => {
+    if (studentXp < reward.cost) {
+      triggerToast(`Insufficient XP! You need ${reward.cost - studentXp} more XP.`);
+      return;
+    }
 
+    setStudentXp(prev => prev - reward.cost);
+    setUnlockedRewards(prev => [...prev, reward.id]);
+    triggerToast(`Redeemed: ${reward.name}! Unlocked successfully.`);
+  };
+
+  // --- END PREMIUM FEATURES HANDLERS ---
 
   // Study Materials list with individual download progress states
 
@@ -439,49 +718,40 @@ const StudentDashboard = () => {
     { id: 103, subject: 'Physics', topic: 'Electrostatics & Gauss\'s Law application', teacher: 'Dr. Sarah Johnson', date: '5 days ago', duration: '95 mins', rating: 4.9 }
   ];
 
-  // Homework & Assessment States
-  const [worksheets, setWorksheets] = useState([
-    { id: 'w1', title: 'Mathematics Worksheet - Quadrilaterals & Circles', assignedBy: 'Ms. Priya Sharma', due: 'Tomorrow', status: 'Pending' },
-    { id: 'w2', title: 'Physics Practice Sheet - Spherical Mirrors & Lenses', assignedBy: 'Ms. Anjali Rao', due: '2 days ago', status: 'Submitted', file: 'Physics_Practice_Sheet_Rahul.pdf' },
-    { id: 'w3', title: 'Chemistry Homework - Carbon Compounds', assignedBy: 'Dr. Sanjay Verma', due: '4 days ago', status: 'Graded', score: '9/10', remarks: 'Excellent work on chemical structures!' }
-  ]);
-  const [selectedWorksheetId, setSelectedWorksheetId] = useState('w1');
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadLoading, setUploadLoading] = useState(false);
-
-  const handleUploadWorksheet = (e) => {
-    e.preventDefault();
-    if (!selectedFile) {
-      triggerToast('Please select a file to upload first.');
-      return;
-    }
-    setUploadLoading(true);
-    setTimeout(() => {
-      setWorksheets(prev => prev.map(w => {
-        if (w.id === selectedWorksheetId) {
-          return { ...w, status: 'Submitted', file: selectedFile.name };
-        }
-        return w;
-      }));
-      setUploadLoading(false);
-      setSelectedFile(null);
-      triggerToast('Worksheet uploaded successfully!');
-    }, 1500);
-  };
-
+  // Tab - Tests States
   const [activeTestState, setActiveTestState] = useState(null); // 'taking', 'submitted', null
+  const [testTimeRemaining, setTestTimeRemaining] = useState(180); // 3 mins demo timer
   const [testAnswers, setTestAnswers] = useState({ q1: '', q2: '', q3: '' });
   
   const handleStartTest = () => {
     setActiveTestState('taking');
+    setTestTimeRemaining(180);
     setTestAnswers({ q1: '', q2: '', q3: '' });
-    triggerToast('Informal self-check quiz started.');
+    triggerToast('Mock Test started. Standard timer running.');
   };
 
   const handleSubmitTest = () => {
     setActiveTestState('submitted');
-    triggerToast('Quiz completed successfully!');
+    triggerToast('Mock Test submitted successfully! Report generated.');
   };
+
+  useEffect(() => {
+    let tInterval;
+    if (activeTestState === 'taking') {
+      tInterval = setInterval(() => {
+        setTestTimeRemaining((prev) => {
+          if (prev <= 1) {
+            clearInterval(tInterval);
+            handleSubmitTest();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(tInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTestState]);
 
   // Mock Active Test details
   const mockTestQuestions = [
@@ -529,6 +799,7 @@ const StudentDashboard = () => {
     averageTestScore: 82,
     assignmentsSubmitted: 18,
     assignmentsPending: 1,
+    doubtSolvedCount: 34,
     studyHours: 142
   };
 
@@ -540,8 +811,8 @@ const StudentDashboard = () => {
 
   const achievementBadges = [
     { id: 1, title: 'Streak Master', desc: 'Maintained a study streak of 10+ days', icon: Flame, color: 'text-amber-500 bg-amber-50' },
-    { id: 2, title: 'Concept Master', desc: 'Scored 90%+ in a home test worksheet', icon: Sparkles, color: 'text-purple-500 bg-purple-50' },
-    { id: 3, title: 'Homework Champion', desc: 'Submitted all worksheets on time for 3 consecutive weeks', icon: Award, color: 'text-blue-500 bg-blue-50' },
+    { id: 2, title: 'Doubt Buster', desc: 'Resolved 30+ academic doubts using AI Solver', icon: Sparkles, color: 'text-purple-500 bg-purple-50' },
+    { id: 3, title: 'Top Scorer', desc: 'Ranked in the top 5 of JEE weekly mocks', icon: Award, color: 'text-blue-500 bg-blue-50' },
     { id: 4, title: 'Regular Attendee', desc: 'Maintained attendance above 90% for a month', icon: CheckCircle2, color: 'text-blue-500 bg-blue-50' }
   ];
 
@@ -565,285 +836,119 @@ const StudentDashboard = () => {
     setIsEditingProfile(false);
   };
 
+  const NAV_ITEMS = [
+    { name: 'Home',           icon: LayoutDashboard },
+    { name: 'My Classes',     icon: BookOpen },
+    { name: 'Study Material', icon: BookMarked },
+    { name: 'Tests',          icon: FileText },
+    { name: 'Study Groups',   icon: Users },
+    { name: 'Profile & Progress', icon: User },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-50 flex relative admin-page-enter">
-      
-      {/* Mobile sidebar overlay */}
-      {mobileSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 z-30 md:hidden"
-          onClick={() => setMobileSidebarOpen(false)}
-        />
+    <>
+      <DashboardShell
+      navItems={NAV_ITEMS}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      roleName="Student Dashboard"
+      roleColor="emerald"
+      userName={profileData.name}
+      userAvatar={profileData.avatar}
+      notifications={unreadNotifications}
+      onClearNotifs={() => setUnreadNotifications(p => p.map(n => ({ ...n, isNew: false })))}
+      onLogout={handleLogout}
+      toast={{ show: showToast, message: toastMessage, type: 'success' }}
+      headerRight={
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setIsOffline(!isOffline); triggerToast(!isOffline ? 'Offline Mode Enabled.' : 'Online Mode Enabled.'); }}
+            className={`p-2 rounded-xl border transition-all cursor-pointer ${isOffline ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
+            title={isOffline ? 'Switch Online' : 'Switch Offline'}
+          >
+            {isOffline ? <WifiOff className="w-4 h-4 animate-pulse" /> : <Wifi className="w-4 h-4" />}
+          </button>
+          <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-xl text-amber-700 text-xs font-bold">
+            <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+            <span>{profileData.streak}d</span>
+          </div>
+        </div>
+      }
+    >
+      {/* Offline banner */}
+      {isOffline && (
+        <div className="mb-4 bg-rose-500 text-white text-xs font-bold py-2.5 px-5 rounded-xl flex items-center gap-2">
+          <WifiOff className="w-4 h-4 animate-pulse shrink-0" />
+          Offline Mode — cached notes, planner and flashcards available. Live classes locked.
+        </div>
       )}
 
-      {/* 1. LEFT SIDEBAR */}
-      <aside className={`fixed md:sticky top-0 h-screen w-64 bg-white border-r border-slate-100/60 flex flex-col z-40 transition-transform duration-300 ease-in-out shrink-0 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        <div className="flex flex-col overflow-y-auto flex-grow">
-          {/* Logo Header */}
-          <div className="px-5 py-5 border-b border-slate-100/60 flex items-center justify-between">
-            <div>
-              <span className="logo-shimmer font-black text-lg leading-none tracking-tight">Cograd Pathshala</span>
-              <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-1">Student Hub</div>
-            </div>
-          </div>
-
-          {/* Navigation Items */}
-          <nav className="px-3 py-4 space-y-0.5">
-            {[
-              { name: 'Home', icon: LayoutDashboard },
-              { name: 'My Schedule', icon: BookOpen },
-              { name: 'Study Material', icon: BookMarked },
-              { name: 'Homework', icon: FileText },
-              { name: 'My Progress', icon: User }
-            ].map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.name;
-              return (
-                <button
-                  key={tab.name}
-                  onClick={() => { setActiveTab(tab.name); setMobileSidebarOpen(false); }}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-200 cursor-pointer group active:scale-[0.98] ${
-                    isActive
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 ${
-                    isActive ? 'bg-white/20' : 'bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-slate-600 group-hover:shadow-sm'
-                  }`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <span className={isActive ? 'font-bold' : ''}>{tab.label || tab.name}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Profile Block */}
-        <div className="p-3 border-t border-slate-100 bg-slate-50/50">
-          <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-slate-100 shadow-sm">
-            <button
-              onClick={() => { setActiveTab('My Progress'); setProfileSubTab('profile'); }}
-              className="flex items-center space-x-2.5 text-left flex-grow cursor-pointer hover:opacity-85 transition-opacity"
-            >
-              <img
-                src={profileData.avatar}
-                alt={profileData.name}
-                className="w-9 h-9 rounded-full object-cover border-2 border-blue-200"
-              />
-              <div className="text-left">
-                <div className="text-xs font-bold text-slate-800">{profileData.name}</div>
-                <div className="text-[10px] font-semibold text-slate-400">Class 10 Student</div>
-              </div>
-            </button>
-            <button
-              onClick={handleLogout}
-              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
-              title="Logout"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* 2. MAIN CONTENT AREA */}
-      <main className="flex-grow flex flex-col min-w-0">
-        
-        {/* Top Header Section */}
-        <header className="h-16 bg-white/95 backdrop-blur border-b border-slate-100 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-10">
-          <div className="flex items-center space-x-3">
-            {/* Hamburger */}
-            <button
-              onClick={() => setMobileSidebarOpen(true)}
-              className="md:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-            </button>
-            <h1 className="text-lg font-bold text-slate-800 tracking-tight">
-              {activeTab === 'Home' ? 'Student Workspace' : activeTab}
-            </h1>
-          </div>
-
-          {/* Action Row */}
-          <div className="flex items-center space-x-4">
-            {/* Offline Mode Toggle */}
-            <button
-              onClick={() => {
-                setIsOffline(!isOffline);
-                triggerToast(!isOffline ? 'Offline Mode Enabled. Using cached data.' : 'Online Mode Enabled. Syncing data...');
-              }}
-              className={`p-2.5 border rounded-2xl transition-all cursor-pointer relative group ${
-                isOffline
-                  ? 'bg-rose-50 border-rose-100 text-rose-600'
-                  : 'bg-slate-50 border-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-              title={isOffline ? "Switch Online" : "Switch Offline"}
-            >
-              {isOffline ? <WifiOff className="w-5 h-5 animate-pulse" /> : <Wifi className="w-5 h-5" />}
-            </button>
-
-            {/* Streak Badge */}
-            <div className="flex items-center space-x-1.5 bg-amber-50 border border-amber-100/50 px-3 py-1.5 rounded-2xl text-amber-700 text-xs font-bold hover:scale-105 transition-transform duration-200 cursor-default">
-              <Flame className="w-4 h-4 fill-amber-500 text-amber-500 animate-pulse" />
-              <span>{studentProfile.streak} Day Streak</span>
-            </div>
-
-            {/* Notification Center */}
-            <div className="relative">
-              <button
-                onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
-                className="p-2.5 bg-slate-50 border border-slate-100 text-slate-500 hover:text-slate-900 rounded-2xl hover:bg-slate-100 transition-all cursor-pointer relative group"
-              >
-                <Bell className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-                {unreadNotifications.some(n => n.isNew) && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
-                )}
-              </button>
-
-              {/* Notification Popover Dropdown */}
-              {showNotificationDropdown && (
-                <div className="absolute right-0 mt-3 w-80 bg-white border border-slate-100 rounded-3xl shadow-xl py-3 px-4 z-50 animate-slide-up">
-                  <div className="flex items-center justify-between border-b border-slate-50 pb-2.5 mb-2.5">
-                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Center Alerts</h4>
-                    <button
-                      onClick={() => {
-                        setUnreadNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
-                        triggerToast('All notifications marked as read.');
-                      }}
-                      className="text-[10px] text-blue-600 hover:underline font-bold"
-                    >
-                      Clear Badge
-                    </button>
-                  </div>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {unreadNotifications.map((noti) => (
-                      <div
-                        key={noti.id}
-                        className={`p-2.5 rounded-2xl text-xs transition-colors border ${
-                          noti.isNew ? 'bg-blue-50/50 border-blue-100/30' : 'bg-slate-50/50 border-slate-100'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start mb-0.5">
-                          <span className={`font-bold ${noti.isNew ? 'text-slate-800' : 'text-slate-600'}`}>{noti.text}</span>
-                          {noti.isNew && <span className="w-1.5 h-1.5 bg-blue-600 rounded-full shrink-0 mt-1"></span>}
-                        </div>
-                        <span className="text-[10px] text-slate-400">{noti.time}</span>
+      {/* ── TAB CONTENT ── */}
+      <div className="tab-content-enter">
+        {/* TAB 1: HOME (MY DASHBOARD) */}
+        {activeTab === 'Home' && (
+          <div className="space-y-6">
+            
+            {/* Row 1: Welcome & Up Next Live Timer */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Welcome Card */}
+              <div className="lg:col-span-7 bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-800 text-white rounded-2xl p-6 sm:p-8 flex flex-col justify-between shadow-lg shadow-blue-600/15 relative overflow-hidden group">
+                <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-700" />
+                <div>
+                  <h3 className="text-2xl sm:text-3xl font-black mb-2 tracking-tight">Hi Rahul 👋</h3>
+                  <p className="text-blue-100 text-sm max-w-md font-medium leading-relaxed">
+                    You're in high-focus JEE prep mode. Complete organic homework and attend today's live lecture.
+                  </p>
+                  {localStorage.getItem('cograd_parent_message_to_Rahul_Varma') && (
+                    <div className="mt-4 p-3 bg-white/15 backdrop-blur-md rounded-xl border border-white/10 text-xs text-white max-w-md">
+                      <div className="font-extrabold uppercase tracking-wider text-[9px] text-amber-300 flex items-center gap-1 mb-1">
+                        <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
+                        Message from Mrs. Sharma (Parent)
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Profile Avatar */}
-            <button
-              onClick={() => { setActiveTab('My Progress'); setProfileSubTab('profile'); }}
-              className="w-10 h-10 rounded-full border-2 border-slate-100 hover:border-blue-500 transition-colors cursor-pointer overflow-hidden shadow-sm"
-              title="View Profile Details"
-            >
-              <img
-                src={studentProfile.avatar}
-                alt="Rahul Sharma"
-                className="w-full h-full object-cover"
-              />
-            </button>
-          </div>
-        </header>
-
-        {isOffline && (
-          <div className="bg-rose-500 text-white text-xs font-bold py-2.5 px-6 flex items-center justify-center space-x-2 animate-slide-up z-10 shadow-md">
-            <WifiOff className="w-4 h-4 animate-pulse" />
-            <span>Offline Mode Enabled - Accessing cached notes, planner, and flashcards. Real-time class joining and teacher queries are locked.</span>
-          </div>
-        )}
-
-        {/* 3. TAB CONTENT ROUTER CONTAINER */}
-        <div className="p-6 sm:p-8 flex-grow overflow-y-auto max-w-7xl w-full mx-auto">
-          
-          {/* TAB 1: HOME (MY DASHBOARD) */}
-          {activeTab === 'Home' && (
-            <div className="space-y-6 tab-content-enter">
-              
-              {/* Row 1: Welcome & Up Next Live Timer */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Welcome Card */}
-                <div className="lg:col-span-7 bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-800 text-white rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-lg shadow-blue-600/15 relative overflow-hidden group">
-                  <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-700"></div>
-                  <div>
-                    <h3 className="text-2xl sm:text-3xl font-black mb-2 tracking-tight">Hi Rahul, 👋</h3>
-                    <p className="text-blue-100 text-xs max-w-md font-medium leading-relaxed">
-                      Welcome back! Your home tutor Priya Sharma will visit today at 4 PM. Complete your pending homework before the session.
-                    </p>
-                    {localStorage.getItem('cograd_parent_message_to_Rahul_Varma') && (
-                      <div className="mt-3 p-2.5 bg-white/15 backdrop-blur-md rounded-2xl border border-white/10 text-xs text-white max-w-md">
-                        <div className="font-extrabold uppercase tracking-wider text-[9px] text-amber-300 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
-                          <span>Message from Mrs. Sharma (Parent)</span>
-                        </div>
-                        <p className="mt-1 font-semibold italic text-slate-100">"{localStorage.getItem('cograd_parent_message_to_Rahul_Varma')}"</p>
-                      </div>
-                    )}
-                    
-
-                  </div>
-                  <div className="mt-6 flex flex-wrap items-center gap-3">
-                    <button
-                      onClick={() => setActiveTab('My Schedule')}
-                      className="bg-white text-blue-800 hover:bg-blue-50 font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm transition-all duration-300 cursor-pointer flex items-center space-x-1"
-                    >
-                      <span>View Schedule</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-xs text-blue-200 font-semibold bg-white/10 px-3.5 py-2 rounded-2xl">
-                      Class 10 • CBSE
-                    </span>
-                  </div>
-                </div>
-
-                {/* Up Next - Home Tuition Session */}
-                <div className="lg:col-span-5 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="inline-flex items-center space-x-1 bg-emerald-50 text-emerald-600 text-xs font-bold px-2.5 py-1 rounded-xl">
-                      <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                      <span>UP NEXT</span>
-                    </span>
-                    <span className="text-xs font-semibold text-slate-400">Home visit in</span>
-                  </div>
-
-                  <div>
-                    <h4 className="text-lg font-black text-slate-800 tracking-tight">Mathematics — Triangles</h4>
-                    <p className="text-slate-500 text-xs mt-1">Tutor: Priya Sharma • At your home</p>
-                  </div>
-
-                  <div className="my-5 py-3 px-4 bg-slate-50 rounded-2xl flex items-center justify-between">
-                    <div className="flex items-center space-x-2 text-slate-700">
-                      <Clock className="w-4 h-4 text-slate-500" />
-                      <span className="text-xs font-bold">Today at 4:00 PM</span>
+                      <p className="font-semibold italic text-slate-100">"{localStorage.getItem('cograd_parent_message_to_Rahul_Varma')}"</p>
                     </div>
-                    <span className="text-base font-black text-slate-800 tabular-nums">
-                      {timeLeft > 0 ? formatTime(timeLeft) : 'Starting soon!'}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center">
-                    <button
-                      onClick={() => {
-                        setReminderSet(!reminderSet);
-                        triggerToast(reminderSet ? 'Reminder cancelled' : 'Reminder set for your tuition session.');
-                      }}
-                      className={`w-full py-2.5 text-xs font-bold rounded-2xl border transition-all cursor-pointer ${
-                        reminderSet
-                          ? 'bg-blue-50 text-blue-700 border-blue-100'
-                          : 'bg-white text-slate-600 border-slate-100 hover:bg-slate-50'
-                      }`}
-                    >
-                      {reminderSet ? 'Reminder Set ✓' : 'Set Reminder'}
-                    </button>
-                  </div>
+                  )}
+                </div>
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <button onClick={() => isOffline ? triggerToast('Offline — cannot join live.') : setActiveTab('My Classes')} className="bg-white text-blue-800 hover:bg-blue-50 font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5">
+                    Join Live Room <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="text-xs text-blue-200 font-semibold bg-white/10 px-3.5 py-2 rounded-xl">Target: JEE Advanced 2026</span>
                 </div>
               </div>
+
+              {/* Up Next card */}
+              <div className="lg:col-span-5 bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 text-xs font-bold px-2.5 py-1 rounded-lg">
+                    <span className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                    UP NEXT LIVE
+                  </span>
+                  <span className="text-xs font-semibold text-slate-400">Starts in</span>
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-800 tracking-tight">Organic Chemistry: Carbonyl Compounds</h4>
+                  <p className="text-slate-400 text-xs mt-1">Instructor: Mr. Rajesh Kumar</p>
+                </div>
+                <div className="my-4 py-3 px-4 bg-slate-50 rounded-xl flex items-center justify-between border border-slate-100">
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <Clock className="w-4 h-4 text-slate-400" />
+                    <span className="text-xs font-bold">Countdown</span>
+                  </div>
+                  <span className="text-base font-black text-slate-800 tabular-nums">{timeLeft > 0 ? formatTime(timeLeft) : 'Live Now!'}</span>
+                </div>
+                <div className="flex gap-2.5">
+                  <button onClick={() => { setReminderSet(!reminderSet); triggerToast(reminderSet ? 'Reminder cancelled' : 'Reminder set!'); }} className={`flex-1 py-2.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${reminderSet ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-white text-slate-600 border-slate-100 hover:bg-slate-50'}`}>
+                    {reminderSet ? 'Reminder Set ✓' : 'Set Reminder'}
+                  </button>
+                  <button onClick={() => isOffline ? triggerToast('Offline.') : window.open('https://zoom.us', '_blank')} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
+                    <Play className="w-3 h-3 fill-current" /> Join Class
+                  </button>
+                </div>
+              </div>
+            </div>
+
+
 
 
 
@@ -873,7 +978,7 @@ const StudentDashboard = () => {
                           )}
                         </div>
                         <p className="text-xs text-slate-700 font-bold mt-1">Topic: {testObj.subject} — {testObj.topic} ({testObj.questionCount} Questions)</p>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Assigned by parent to check concept understanding. Complete before your next session!</p>
+                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Assigned by parent to check concept understanding. Earns +100 XP upon completion!</p>
                       </div>
                     </div>
 
@@ -901,11 +1006,12 @@ const StudentDashboard = () => {
               })()}
 
               {/* Row 2: Stats Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 {[
-                  { title: 'Attendance', val: studentProfile.attendance, desc: 'Home tuition sessions', icon: CheckCircle2, color: 'text-blue-600 bg-blue-50' },
-                  { title: 'Pending HW', val: studentProfile.pendingHW, desc: 'Due: Tomorrow', icon: AlertCircle, color: 'text-rose-600 bg-rose-50' },
-                  { title: 'This Week', val: studentProfile.testsThisWeek + ' test', desc: 'School assessment', icon: FileText, color: 'text-purple-600 bg-purple-50' }
+                  { title: 'Attendance', val: studentProfile.attendance, desc: 'Aim for 95%+', icon: CheckCircle2, color: 'text-blue-600 bg-blue-50' },
+                  { title: 'Batch Rank', val: studentProfile.rank, desc: 'Out of 120 Students', icon: Award, color: 'text-amber-600 bg-amber-50' },
+                  { title: 'Tests This Week', val: studentProfile.testsThisWeek, desc: 'Completed: 1', icon: FileText, color: 'text-purple-600 bg-purple-50' },
+                  { title: 'Pending HW', val: studentProfile.pendingHW, desc: 'Due: Tomorrow', icon: AlertCircle, color: 'text-rose-600 bg-rose-50' }
                 ].map((stat, idx) => {
                   const Icon = stat.icon;
                   return (
@@ -929,17 +1035,17 @@ const StudentDashboard = () => {
               {/* Row 3: My Batches & Recent Results */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
-                {/* My Home Tutors */}
+                {/* My Batches List */}
                 <div className="lg:col-span-7 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-black text-slate-800 tracking-tight">My Home Tutors</h3>
-                    <span className="text-xs font-semibold text-slate-400">Verified teachers</span>
+                    <h3 className="text-lg font-black text-slate-800 tracking-tight">My Batches</h3>
+                    <span className="text-xs font-semibold text-slate-400">Total Enrolled: 2</span>
                   </div>
 
                   <div className="space-y-4">
                     {[
-                      { id: 'b1', name: 'Priya Sharma', tutor: 'Mathematics & Science', syllabus: 68, rating: 'A-', code: 'MATH-SCI' },
-                      { id: 'b2', name: 'Neha Gupta', tutor: 'English', syllabus: 55, rating: 'A', code: 'ENG' }
+                      { id: 'b1', name: 'JEE Advanced Focus Batch', tutor: 'Mr. Rajesh Kumar (Chem) & Sarah J. (Phys)', syllabus: 68, rating: 'A-', code: 'JEE-CHEM-PHYS' },
+                      { id: 'b2', name: 'Class 12 Boards Core Syllabus', tutor: 'Dr. Priya Sharma (Maths)', syllabus: 88, rating: 'A+', code: 'C12-BOARD-MATH' }
                     ].map((batch) => (
                       <div
                         key={batch.id}
@@ -950,14 +1056,14 @@ const StudentDashboard = () => {
                             <span className="text-sm font-black text-slate-800">{batch.name}</span>
                             <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-bold">{batch.rating}</span>
                           </div>
-                          <p className="text-slate-400 text-xs font-medium">Subjects: {batch.tutor}</p>
+                          <p className="text-slate-400 text-xs font-medium">Tutor: {batch.tutor}</p>
                           
                           {/* Syllabus progress bar */}
                           <div className="flex items-center space-x-3 w-48 sm:w-56 mt-2">
                             <div className="h-1.5 bg-slate-200 rounded-full flex-grow">
                               <div className="h-full bg-blue-600 rounded-full" style={{ width: `${batch.syllabus}%` }}></div>
                             </div>
-                            <span className="text-[10px] text-slate-500 font-bold shrink-0">{batch.syllabus}% Syllabus covered</span>
+                            <span className="text-[10px] text-slate-500 font-bold shrink-0">{batch.syllabus}% Syllabus</span>
                           </div>
                         </div>
 
@@ -987,7 +1093,7 @@ const StudentDashboard = () => {
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-black text-slate-800 tracking-tight">Recent Results</h3>
-                      <button onClick={() => { setActiveTab('My Progress'); setProfileSubTab('progress'); }} className="text-xs text-blue-600 hover:underline font-bold">View Progress</button>
+                      <button onClick={() => setActiveTab('Profile & Progress')} className="text-xs text-blue-600 hover:underline font-bold">All Mocks</button>
                     </div>
 
                     <div className="space-y-3">
@@ -1018,6 +1124,206 @@ const StudentDashboard = () => {
                     </div>
                   </div>
 
+                  <div className="mt-4 bg-blue-50 border border-blue-100/30 rounded-2xl p-3.5 flex items-center space-x-3">
+                    <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shrink-0">
+                      <Award className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-bold text-blue-900">Leaderboard update is live</h5>
+                      <p className="text-[10px] text-emerald-700">You climbed 2 positions in Chemistry this week!</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 4: Ask Doubt to Your Teacher */}
+              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-50 pb-4 mb-4">
+                  <div className="flex items-center space-x-2.5">
+                    <div className="w-10 h-10 bg-indigo-500 rounded-2xl flex items-center justify-center shadow-md shadow-indigo-500/25">
+                      <MessageSquare className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-slate-800 tracking-tight">Ask Doubt to Your Teacher</h3>
+                      <p className="text-slate-400 text-xs font-medium">Select a home tutor below to send them your academic questions directly.</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-xl uppercase tracking-wider">Direct Connect</span>
+                </div>
+
+                {/* Teacher Selector */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-5">
+                  {[
+                    { name: 'Mr. Rajesh Kumar', subject: 'Chemistry', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80', status: 'Online' },
+                    { name: 'Dr. Priya Sharma', subject: 'Mathematics', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80', status: 'Online' },
+                    { name: 'Dr. Sarah Johnson', subject: 'Physics', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=80', status: 'Away' }
+                  ].map((t) => {
+                    const isSelected = selectedTeacherForDoubt === t.name;
+                    return (
+                      <button
+                        key={t.name}
+                        type="button"
+                        onClick={() => setSelectedTeacherForDoubt(t.name)}
+                        className={`p-3.5 rounded-2xl border text-left flex items-center space-x-3 transition-all cursor-pointer active:scale-98 ${
+                          isSelected
+                            ? 'border-indigo-500 bg-indigo-50/20 ring-2 ring-indigo-500/10 shadow-sm'
+                            : 'border-slate-100 hover:border-slate-200 bg-slate-50/20 hover:bg-slate-50/50'
+                        }`}
+                      >
+                        <div className="w-10 h-10 rounded-full overflow-hidden relative flex-shrink-0 border border-slate-100">
+                          <img src={t.avatar} alt={t.name} className="w-full h-full object-cover" />
+                          <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${t.status === 'Online' ? 'bg-green-500' : 'bg-amber-500'}`} />
+                        </div>
+                        <div className="min-w-0 flex-grow">
+                          <div className="text-xs font-black text-slate-800 truncate">{t.name}</div>
+                          <div className="text-[10px] text-slate-400 font-bold mt-0.5">{t.subject} • {t.status}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Form to submit doubt */}
+                <form onSubmit={handleTeacherDoubtSubmit} className="space-y-4">
+                  <div className="relative">
+                    <textarea
+                      value={teacherDoubtText}
+                      disabled={isOffline}
+                      onChange={(e) => setTeacherDoubtText(e.target.value)}
+                      placeholder={
+                        isOffline ? "You are offline. Please go online in the header to ask doubts to teachers." :
+                        selectedTeacherForDoubt === 'Mr. Rajesh Kumar' ? 'Ask Rajesh sir about organic mechanisms, isomerism, or inorganic complexes...' :
+                        selectedTeacherForDoubt === 'Dr. Priya Sharma' ? 'Ask Priya ma\'am about derivatives, integrations, matrices, or probability...' :
+                        'Ask Sarah ma\'am about electromagnetic waves, wave optics, or electrostatics...'
+                      }
+                      rows="3"
+                      className="w-full text-xs p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium resize-none disabled:opacity-50"
+                    />
+                    
+                    {/* Attachment and Send Row */}
+                    <div className="flex items-center justify-between mt-2.5 bg-slate-50/85 p-2 rounded-xl border border-slate-100">
+                      <div className="flex items-center space-x-2">
+                        {isUploadingDoubtFile ? (
+                          <div className="flex items-center space-x-2 text-[10px] font-bold text-indigo-600 px-2 py-1">
+                            <span className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></span>
+                            <span>Uploading {uploadDoubtProgress}%</span>
+                          </div>
+                        ) : teacherDoubtAttachment ? (
+                          <div className="flex items-center space-x-1.5 bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg text-[10px] font-bold">
+                            <Paperclip className="w-3 h-3" />
+                            <span className="truncate max-w-[150px]">{teacherDoubtAttachment}</span>
+                            <button
+                              type="button"
+                              onClick={() => setTeacherDoubtAttachment(null)}
+                              className="text-indigo-400 hover:text-indigo-600 ml-1 cursor-pointer"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={isOffline}
+                            onClick={simulateTeacherDoubtUpload}
+                            className="flex items-center space-x-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-800 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border border-dashed border-slate-200 disabled:opacity-50 disabled:pointer-events-none"
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>Attach Homework Scan</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isOffline || !teacherDoubtText.trim()}
+                        className="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-indigo-600/15 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                      >
+                        <Send className="w-3 h-3" />
+                        <span>Send to Teacher</span>
+                      </button>
+                    </div>
+                  </div>
+                </form>
+
+                {/* Teacher doubts list */}
+                <div className="mt-6 space-y-3.5 border-t border-slate-50 pt-5">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Doubts History with Tutors</h4>
+                  
+                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                    {teacherDoubts.map((doubt) => {
+                      const isExpanded = expandedTeacherDoubtId === doubt.id;
+                      return (
+                        <div
+                          key={doubt.id}
+                          className="border border-slate-100 bg-slate-50/20 rounded-2xl overflow-hidden hover:border-slate-200 transition-colors"
+                        >
+                          {/* Header Summary Row */}
+                          <div
+                            onClick={() => setExpandedTeacherDoubtId(isExpanded ? null : doubt.id)}
+                            className="p-4 flex items-center justify-between gap-4 cursor-pointer select-none hover:bg-slate-50/40 transition-colors"
+                          >
+                            <div className="flex items-center space-x-3 min-w-0">
+                              <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-slate-100">
+                                <img src={doubt.avatar} alt={doubt.teacher} className="w-full h-full object-cover" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-xs font-black text-slate-800 flex items-center space-x-2">
+                                  <span>{doubt.teacher}</span>
+                                  <span className="text-[9px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-lg">{doubt.subject}</span>
+                                </div>
+                                <div className="text-[10px] text-slate-600 font-semibold truncate mt-0.5 max-w-[200px] sm:max-w-xs">{doubt.question}</div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center space-x-3 shrink-0">
+                              <div className="text-right">
+                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg ${
+                                  doubt.status === 'Resolved'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : 'bg-amber-100 text-amber-800 animate-pulse'
+                                }`}>
+                                  {doubt.status}
+                                </span>
+                                <span className="text-[8px] text-slate-400 block mt-0.5">{doubt.timestamp}</span>
+                              </div>
+                              <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} />
+                            </div>
+                          </div>
+
+                          {/* Expanded Content Drawer */}
+                          {isExpanded && (
+                            <div className="px-4 pb-4 pt-1 border-t border-slate-50/50 bg-slate-50/30 text-xs text-slate-600 space-y-3">
+                              <div>
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Your Question</span>
+                                <p className="font-semibold text-slate-700">{doubt.question}</p>
+                                {doubt.attachment && (
+                                  <div className="inline-flex items-center space-x-1.5 bg-slate-100 border border-slate-200 text-slate-600 px-2 py-0.5 rounded-lg text-[9px] font-bold mt-1.5">
+                                    <Paperclip className="w-2.5 h-2.5" />
+                                    <span>{doubt.attachment}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="pt-2 border-t border-slate-100/50">
+                                <span className="text-[9px] font-black text-indigo-500 uppercase tracking-wider block mb-1">Teacher's Explanation</span>
+                                {doubt.status === 'Resolved' ? (
+                                  <div className="bg-indigo-50/40 border border-indigo-100/30 rounded-xl p-3 text-slate-700 leading-relaxed font-medium">
+                                    <p className="whitespace-pre-line">{doubt.answer}</p>
+                                    <span className="text-[8px] text-slate-400 block mt-2 text-right">Resolved: {doubt.replyTime}</span>
+                                  </div>
+                                ) : (
+                                  <p className="italic text-slate-400 font-semibold flex items-center space-x-1.5">
+                                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping"></span>
+                                    <span>Teacher is reviewing your sheet. Expected resolution shortly...</span>
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -1075,7 +1381,7 @@ const StudentDashboard = () => {
           )}
 
           {/* TAB 2: MY CLASSES */}
-          {activeTab === 'My Schedule' && (
+          {activeTab === 'My Classes' && (
             <div className="space-y-6 tab-content-enter">
               {/* Scheduled Classes */}
               <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
@@ -1391,19 +1697,21 @@ const StudentDashboard = () => {
           )}
 
           {/* TAB 4: TESTS */}
-          {activeTab === 'Homework' && (
+          {activeTab === 'Tests' && (
             <div className="space-y-6 tab-content-enter">
               {/* Test Simulator Card */}
               {activeTestState === 'taking' ? (
                 <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
                     <div>
-                      <span className="text-xs bg-blue-600 text-white font-bold px-2.5 py-1 rounded-xl">Informal Self-Check Quiz</span>
-                      <h3 className="text-lg font-black text-slate-800 mt-2">Active: Topic Quick Review</h3>
+                      <span className="text-xs bg-blue-600 text-white font-bold px-2.5 py-1 rounded-xl">JEE Mock Arena</span>
+                      <h3 className="text-lg font-black text-slate-800 mt-2">Active Test: Chemistry & Physics Mini Mock #1</h3>
                     </div>
-                    <div className="bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-2xl text-right">
-                      <span className="text-[10px] text-emerald-700 font-bold block uppercase tracking-wide">Self-Paced Mode</span>
-                      <span className="text-xs font-black text-emerald-800">No timers</span>
+                    <div className="bg-slate-50 border border-slate-100 px-4 py-2 rounded-2xl text-right">
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">Time Remaining</span>
+                      <span className="text-lg font-black text-red-500 tabular-nums">
+                        {Math.floor(testTimeRemaining / 60)}:{(testTimeRemaining % 60).toString().padStart(2, '0')}
+                      </span>
                     </div>
                   </div>
 
@@ -1436,37 +1744,43 @@ const StudentDashboard = () => {
 
                   <div className="mt-8 pt-5 border-t border-slate-100 flex items-center justify-end space-x-3">
                     <button
-                      onClick={() => setActiveTestState(null)}
+                      onClick={() => {
+                        if (confirm('Cancel test session? Responses will not be graded.')) {
+                          setActiveTestState(null);
+                        }
+                      }}
                       className="px-5 py-2.5 bg-white border border-slate-100 text-slate-500 font-bold text-xs rounded-xl cursor-pointer hover:bg-slate-50"
                     >
-                      Cancel Quiz
+                      Cancel Exam
                     </button>
                     <button
                       onClick={handleSubmitTest}
                       className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
                     >
-                      Submit Answers
+                      Submit Paper
                     </button>
                   </div>
                 </div>
               ) : activeTestState === 'submitted' ? (
                 <div className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm text-center max-w-lg mx-auto">
-                  <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-100">
+                  <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
-                  <h3 className="text-xl font-black text-slate-800">Quiz Completed!</h3>
-                  <p className="text-xs text-slate-500 mt-2">Excellent job! Here is your informal self-check breakdown:</p>
+                  <h3 className="text-xl font-black text-slate-800">Test Submitted Successfully!</h3>
+                  <p className="text-xs text-slate-500 mt-2">Your automated evaluation report has been finalized.</p>
 
-                  <div className="my-6 p-4 bg-slate-50 rounded-2xl grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
-                    <div className="p-2">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Q1: Cannizzaro Reaction</span>
-                      <span className="text-xs font-bold text-slate-700 block mt-1">Your answer: {testAnswers.q1 || 'Not answered'}</span>
-                      <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">Correct: Formaldehyde</span>
+                  <div className="my-6 p-4 bg-slate-50 rounded-2xl grid grid-cols-3 gap-2">
+                    <div className="text-center">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Correct</span>
+                      <span className="text-base font-black text-blue-600">2 / 3</span>
                     </div>
-                    <div className="p-2 border-l border-slate-200">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Q2: Concave mirror in water</span>
-                      <span className="text-xs font-bold text-slate-700 block mt-1">Your answer: {testAnswers.q2 || 'Not answered'}</span>
-                      <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">Correct: Remains Unchanged</span>
+                    <div className="text-center border-x border-slate-200">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Incorrect</span>
+                      <span className="text-base font-black text-red-500">1 / 3</span>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Total Score</span>
+                      <span className="text-base font-black text-slate-800">4 / 12</span>
                     </div>
                   </div>
 
@@ -1474,139 +1788,55 @@ const StudentDashboard = () => {
                     onClick={() => setActiveTestState(null)}
                     className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
                   >
-                    Back to Homework Center
+                    Back to Test Lobby
                   </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   
-                  {/* Left Column: Worksheets List & Upload Panel */}
-                  <div className="lg:col-span-2 space-y-6">
-                    {/* Pending Assignments List */}
-                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                      <h3 className="text-lg font-black text-slate-800 tracking-tight mb-4">Assigned Home Worksheets</h3>
-                      <div className="space-y-3">
-                        {worksheets.map((sheet) => (
-                          <div key={sheet.id} className="p-4 border border-slate-100 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 hover:bg-white transition-all">
-                            <div>
-                              <div className="flex items-center space-x-2.5">
-                                <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${
-                                  sheet.status === 'Graded' ? 'bg-emerald-50 text-emerald-800 border border-emerald-100' :
-                                  sheet.status === 'Submitted' ? 'bg-blue-50 text-blue-800 border border-blue-100' :
-                                  'bg-amber-50 text-amber-800 border border-amber-100'
-                                }`}>
-                                  {sheet.status}
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-bold">Assigned by: {sheet.assignedBy}</span>
-                              </div>
-                              <h4 className="text-xs font-black text-slate-800 mt-2">{sheet.title}</h4>
-                              <p className="text-[10px] text-slate-500 font-semibold mt-1">Due: {sheet.due}</p>
-                              {sheet.remarks && (
-                                <p className="text-[10px] text-emerald-600 font-bold mt-2 bg-emerald-50/50 p-2 rounded-lg border border-emerald-100/30">
-                                  Tutor Remarks: "{sheet.remarks}"
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex items-center space-x-2 shrink-0">
-                              {sheet.status === 'Pending' && (
-                                <button
-                                  onClick={() => {
-                                    setSelectedWorksheetId(sheet.id);
-                                    triggerToast(`Selected ${sheet.title} for upload`);
-                                  }}
-                                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer transition-colors"
-                                >
-                                  Submit Solution
-                                </button>
-                              )}
-                              {sheet.status === 'Graded' && (
-                                <span className="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-xl">
-                                  Score: {sheet.score}
-                                </span>
-                              )}
-                              {sheet.status === 'Submitted' && (
-                                <span className="text-[10px] font-semibold text-slate-400 italic">
-                                  Under Review
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                  {/* Left: Active Mock test */}
+                  <div className="lg:col-span-2 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                    <h3 className="text-lg font-black text-slate-800 tracking-tight mb-4">Active Assessment Papers</h3>
+                    
+                    <div className="p-5 border border-blue-100 bg-blue-50/10 rounded-2xl">
+                      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                        <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">JEE Mains Mini Mock</span>
+                        <span className="text-[10px] text-slate-400 font-bold">Duration: 180s (Demo Timer)</span>
                       </div>
-                    </div>
-
-                    {/* Upload Homework Scan Panel */}
-                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                      <h3 className="text-lg font-black text-slate-800 tracking-tight mb-2">Upload Completed Worksheet</h3>
-                      <p className="text-slate-400 text-xs font-semibold mb-5">Scan your notebook pages or export your worksheet as a PDF/Image to submit it to your tutor.</p>
+                      <h4 className="text-sm font-black text-slate-800">Chemistry & Physics Mini Mock #1</h4>
+                      <p className="text-xs text-slate-500 mt-1">Includes Alkyl halides, Bohr derivation model, and electrostatics calculation problems.</p>
                       
-                      <form onSubmit={handleUploadWorksheet} className="space-y-4">
-                        <div>
-                          <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Select Target Homework Worksheet</label>
-                          <select
-                            value={selectedWorksheetId}
-                            onChange={(e) => setSelectedWorksheetId(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-100 hover:bg-slate-100 rounded-xl px-4 py-3 text-xs font-bold text-slate-800 outline-none transition-colors"
-                          >
-                            {worksheets.filter(w => w.status === 'Pending').map(w => (
-                              <option key={w.id} value={w.id}>{w.title}</option>
-                            ))}
-                            {worksheets.filter(w => w.status === 'Pending').length === 0 && (
-                              <option value="">No pending worksheets to submit</option>
-                            )}
-                          </select>
-                        </div>
-
-                        <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center bg-slate-50/20 hover:bg-slate-50/50 hover:border-blue-400 transition-all cursor-pointer relative">
-                          <input
-                            type="file"
-                            onChange={(e) => setSelectedFile(e.target.files[0])}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          />
-                          <div className="space-y-2">
-                            <div className="text-2xl">📁</div>
-                            <h4 className="text-xs font-black text-slate-700">
-                              {selectedFile ? selectedFile.name : 'Click or Drag file here to upload'}
-                            </h4>
-                            <p className="text-[10px] text-slate-400 font-semibold">Supports PDF, PNG, JPG (Max 10MB)</p>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-end">
-                          <button
-                            type="submit"
-                            disabled={uploadLoading || !selectedFile || !selectedWorksheetId}
-                            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
-                          >
-                            <span>{uploadLoading ? 'Uploading...' : 'Submit to Tutor'}</span>
-                          </button>
-                        </div>
-                      </form>
+                      <div className="mt-5 flex items-center justify-end space-x-3">
+                        <button
+                          onClick={handleStartTest}
+                          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
+                        >
+                          Start Test Room
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Right Column: Informal Quiz Trigger */}
-                  <div className="space-y-6">
-                    {/* Start self-check quiz */}
-                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-3xl p-6 shadow-lg shadow-blue-600/10">
-                      <h3 className="text-base font-black tracking-tight">Informal Topic Self-Check</h3>
-                      <p className="text-white/80 text-xs font-medium leading-relaxed mt-2">
-                        Assess your understanding of recently covered concepts at your own pace. Timers are turned off.
-                      </p>
-                      <button
-                        onClick={handleStartTest}
-                        className="w-full mt-6 bg-white hover:bg-slate-50 text-blue-805 font-bold text-xs py-3.5 rounded-xl shadow-sm transition-all cursor-pointer text-center block"
-                      >
-                        Start Quick Quiz
-                      </button>
-                    </div>
-
-                    {/* Brief Guidance box */}
-                    <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-3">
-                      <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">💡 Tuitions Homework Policy</h3>
-                      <p className="text-[10px] text-slate-500 font-semibold leading-relaxed">
-                        Solutions are reviewed by your dedicated tutor within 24 hours of submission. Graded feedback and ratings will show up directly in this dashboard.
-                      </p>
+                  {/* Right: Previous results */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                    <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Past Test Performance</h3>
+                    <div className="space-y-3">
+                      {[
+                        { title: 'Weekly Mock Test #7', score: '92/100', rank: '#2', date: '28 May 2026' },
+                        { title: 'Physics Part Syllabus', score: '68/100', rank: '#24', date: '22 May 2026' },
+                        { title: 'Chemistry Mechanics MCQ', score: '80/100', rank: '#8', date: '15 May 2026' }
+                      ].map((mock, idx) => (
+                        <div key={idx} className="p-3 bg-slate-50/50 border border-slate-100 rounded-2xl flex justify-between items-center text-xs">
+                          <div>
+                            <span className="font-bold text-slate-700">{mock.title}</span>
+                            <span className="text-[10px] text-slate-400 block mt-0.5">Date: {mock.date}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-black text-slate-800">{mock.score}</span>
+                            <span className="text-[9px] text-blue-600 block font-bold">Rank: {mock.rank}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
@@ -1615,436 +1845,9 @@ const StudentDashboard = () => {
             </div>
           )}
 
-          {/* TAB 5: PROGRESS */}
-          {activeTab === 'My Progress' && profileSubTab === 'progress' && (
+          {/* TAB 5: PROFILE & PROGRESS */}
+          {activeTab === 'Profile & Progress' && (
             <div className="space-y-6 tab-content-enter">
-              {/* Sub-tab Switcher */}
-              <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit border border-slate-200/50 shadow-inner">
-                <button
-                  type="button"
-                  onClick={() => { setProfileSubTab('profile'); setIsEditingProfile(false); }}
-                  className={`px-5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                    profileSubTab === 'profile'
-                      ? 'bg-white text-blue-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  Profile Details
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setProfileSubTab('progress'); setIsEditingProfile(false); }}
-                  className={`px-5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                    profileSubTab === 'progress'
-                      ? 'bg-white text-blue-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  Academic Progress
-                </button>
-              </div>
-
-              {/* Stats KPI Block */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {[
-                  { label: 'Syllabus Covered', val: `${progressStats.syllabusCoverage}%`, color: 'text-blue-600 bg-blue-50' },
-                  { label: 'Average Test Score', val: `${progressStats.averageTestScore}%`, color: 'text-blue-600 bg-blue-50' },
-                  { label: 'Assigned Homework', val: progressStats.assignmentsSubmitted, color: 'text-indigo-600 bg-indigo-50' },
-                  { label: 'Total Study Hours', val: `${progressStats.studyHours}h`, color: 'text-amber-600 bg-amber-50' },
-                  { label: 'Streak Days', val: profileData.streak, color: 'text-rose-600 bg-rose-50' }
-                ].map((stat, idx) => (
-                  <div key={idx} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm text-center">
-                    <span className="text-[10px] text-slate-400 font-extrabold uppercase block leading-none mb-1.5">{stat.label}</span>
-                    <span className={`text-xl font-black rounded-lg px-2 py-0.5 inline-block ${stat.color}`}>{stat.val}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Progress details layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Left Column: Visual Analytics & Chapter Checklist */}
-                <div className="lg:col-span-8 space-y-6">
-                  {/* Visual Analytics Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Daily Study Tracker */}
-                    <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">Weekly Study Hours</h4>
-                          <span className="text-sm font-black text-slate-800">Total: 49 Hours</span>
-                        </div>
-                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">+12% vs last week</span>
-                      </div>
-                      {/* Bar chart flex container */}
-                      <div className="h-32 flex items-end justify-between px-2 pt-6">
-                        {[
-                          { day: 'Mon', hrs: 6, pct: '60%' },
-                          { day: 'Tue', hrs: 8, pct: '80%' },
-                          { day: 'Wed', hrs: 5, pct: '50%' },
-                          { day: 'Thu', hrs: 9, pct: '90%' },
-                          { day: 'Fri', hrs: 7, pct: '70%' },
-                          { day: 'Sat', hrs: 10, pct: '100%' },
-                          { day: 'Sun', hrs: 4, pct: '40%' }
-                        ].map((item, idx) => (
-                          <div key={idx} className="flex flex-col items-center flex-grow group">
-                            <div className="w-full px-1 relative flex justify-center">
-                              {/* Hover Tooltip */}
-                              <span className="absolute -top-7 scale-0 group-hover:scale-100 transition-all duration-200 bg-slate-900 text-white font-bold text-[9px] px-2 py-0.5 rounded shadow">
-                                {item.hrs} hrs
-                              </span>
-                              {/* Dynamic Bar */}
-                              <div
-                                style={{ height: item.pct }}
-                                className="w-5 bg-gradient-to-t from-blue-400 to-blue-500 hover:from-blue-600 hover:to-blue-600 rounded-t-lg transition-all duration-300 shadow-sm shadow-blue-400/20 cursor-pointer"
-                              ></div>
-                            </div>
-                            <span className="text-[10px] text-slate-400 font-bold mt-2">{item.day}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Test Score Progress Trend */}
-                    <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">Mock Test Scores Trend</h4>
-                          <span className="text-sm font-black text-slate-800">Average Tier: A (82%)</span>
-                        </div>
-                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Last 5 Weekly Mocks</span>
-                      </div>
-                      {/* Custom SVG line graph sparkline */}
-                      <div className="h-32 pt-4">
-                        <svg className="w-full h-full overflow-visible" viewBox="0 0 320 80">
-                          <defs>
-                            <linearGradient id="trendGrad" x1="0" y1="0" x2="1" y2="0">
-                              <stop offset="0%" stopColor="#3b82f6" />
-                              <stop offset="50%" stopColor="#8b5cf6" />
-                              <stop offset="100%" stopColor="#10b981" />
-                            </linearGradient>
-                          </defs>
-                          {/* Grid line guidelines */}
-                          <line x1="0" y1="15" x2="320" y2="15" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3" />
-                          <line x1="0" y1="45" x2="320" y2="45" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3" />
-                          <line x1="0" y1="75" x2="320" y2="75" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3" />
-                          
-                          {/* Smooth Curve sparkline path representing scores: 72, 76, 80, 85, 88 */}
-                          <path
-                            d="M 10 75 Q 80 65 150 50 T 250 35 T 310 20"
-                            fill="none"
-                            stroke="url(#trendGrad)"
-                            strokeWidth="3.5"
-                            strokeLinecap="round"
-                          />
-                          
-                          {/* Test score dots and labels */}
-                          <circle cx="10" cy="75" r="4.5" fill="#3b82f6" stroke="#fff" strokeWidth="2" />
-                          <text x="10" y="90" textAnchor="middle" className="text-[9px] fill-slate-400 font-bold">72%</text>
-
-                          <circle cx="90" cy="63" r="4.5" fill="#3b82f6" stroke="#fff" strokeWidth="2" />
-                          <text x="90" y="50" textAnchor="middle" className="text-[9px] fill-slate-500 font-black">76%</text>
-
-                          <circle cx="170" cy="48" r="4.5" fill="#8b5cf6" stroke="#fff" strokeWidth="2" />
-                          <text x="170" y="35" textAnchor="middle" className="text-[9px] fill-slate-500 font-black">80%</text>
-
-                          <circle cx="250" cy="35" r="4.5" fill="#10b981" stroke="#fff" strokeWidth="2" />
-                          <text x="250" y="22" textAnchor="middle" className="text-[9px] fill-slate-500 font-black">85%</text>
-
-                          <circle cx="310" cy="20" r="4.5" fill="#10b981" stroke="#fff" strokeWidth="2" />
-                          <text x="310" y="10" textAnchor="middle" className="text-[9px] fill-slate-500 font-black">88%</text>
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Subject-wise Performance & Focus Tracker Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Subject-wise Performance Card */}
-                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Subject-wise Performance</h3>
-                        <div className="space-y-4">
-                          {subjectBreakdown.map((sb) => (
-                            <div key={sb.subject} className="space-y-2 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                              <div className="flex justify-between items-center text-xs font-bold text-slate-700">
-                                <span>{sb.subject}</span>
-                                <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-black uppercase tracking-wider">{sb.grade}</span>
-                              </div>
-                              <div className="flex items-center space-x-3 mt-2">
-                                <div className="h-2.5 bg-slate-200 rounded-full flex-grow overflow-hidden">
-                                  <div className={`h-full rounded-full ${
-                                    sb.color === 'emerald' ? 'bg-blue-600' :
-                                    sb.color === 'blue' ? 'bg-blue-500' : 'bg-indigo-500'
-                                  }`} style={{ width: `${sb.rate}%` }}></div>
-                                </div>
-                                <span className="text-xs font-black text-slate-800 shrink-0">{sb.rate}%</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Focus & Strength Tracker */}
-                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Focus & Strength Tracker</h3>
-                        
-                        <div className="space-y-3">
-                          {/* Strength block */}
-                          <div className="bg-blue-50/40 border border-blue-100/50 p-3.5 rounded-2xl">
-                            <div className="flex items-center space-x-2 text-blue-800 mb-2">
-                              <CheckCircle2 className="w-4.5 h-4.5 text-blue-600" />
-                              <span className="text-xs font-black uppercase tracking-wider">Top Concept Strengths</span>
-                            </div>
-                            <ul className="text-xs text-blue-700 font-semibold space-y-1 pl-6 list-disc">
-                              <li>Organic reaction mechanisms</li>
-                              <li>Definite Integration derivations</li>
-                              <li>Electrostatics charge fields</li>
-                            </ul>
-                          </div>
-
-                          {/* Growth block */}
-                          <div className="bg-rose-50/40 border border-rose-100/50 p-3.5 rounded-2xl">
-                            <div className="flex items-center space-x-2 text-rose-800 mb-2">
-                              <AlertCircle className="w-4.5 h-4.5 text-rose-600" />
-                              <span className="text-xs font-black uppercase tracking-wider">Growth Focus Areas</span>
-                            </div>
-                            <ul className="text-xs text-rose-700 font-semibold space-y-1 pl-6 list-disc">
-                              <li>Rotational dynamics kinematics</li>
-                              <li>Chemical Kinetics rate calculations</li>
-                              <li>Vector algebra geometry vectors</li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Chapter Tracker & Leaderboard Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Interactive Chapter Checklist Tracker */}
-                  {/* Chapter Tracker */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-                    <div>
-                      <div className="flex flex-col gap-3 mb-4">
-                        <div>
-                          <h3 className="text-base font-black text-slate-800 tracking-tight">Syllabus Chapter Tracker</h3>
-                          <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Click status badges to cycle states</p>
-                        </div>
-                        
-                        {/* Filter pills */}
-                        <div className="flex bg-slate-100 p-1 rounded-xl w-full justify-between border border-slate-200/20">
-                          {['All', 'Mathematics', 'Physics', 'Chemistry'].map(subj => (
-                            <button
-                              key={subj}
-                              onClick={() => setSelectedProgressSubject(subj)}
-                              className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
-                                selectedProgressSubject === subj
-                                  ? 'bg-white text-blue-800 shadow-sm'
-                                  : 'text-slate-500 hover:text-slate-800'
-                              }`}
-                            >
-                              {subj === 'Mathematics' ? 'Maths' : subj}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
-                        {syllabusChapters
-                          .filter(ch => selectedProgressSubject === 'All' || ch.subject === selectedProgressSubject)
-                          .map(ch => (
-                            <div
-                              key={ch.id}
-                              className="p-3 border border-slate-100 hover:border-blue-100/50 hover:bg-blue-50/5 rounded-2xl flex items-center justify-between transition-all"
-                            >
-                              <div className="min-w-0 pr-3">
-                                <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                                  ch.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-800' :
-                                  ch.subject === 'Mathematics' ? 'bg-blue-50 text-blue-800' :
-                                  'bg-indigo-50 text-indigo-800'
-                                }`}>
-                                  {ch.subject}
-                                </span>
-                                <h4 className="text-xs font-bold text-slate-800 mt-1.5 truncate">{ch.name}</h4>
-                              </div>
-
-                              <button
-                                onClick={() => toggleChapterStatus(ch.id)}
-                                className={`px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-sm shrink-0 ${
-                                  ch.status === 'Completed' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
-                                  ch.status === 'In Progress' ? 'bg-amber-400 hover:bg-amber-500 text-white' :
-                                  'bg-slate-100 hover:bg-slate-200 text-slate-500'
-                                }`}
-                              >
-                                {ch.status}
-                              </button>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  </div>
-                  </div>
-                </div>
-
-                {/* Right Column: Planner, Stepper, Badges, XP Store */}
-                <div className="lg:col-span-4 space-y-6">
-                  {/* Daily Target Planner */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-50">
-                      <div>
-                        <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
-                          <CheckSquare className="w-5 h-5 text-blue-600" />
-                          <span>Daily Target Planner</span>
-                        </h3>
-                        <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Stay disciplined. Complete daily goals for XP!</p>
-                      </div>
-                    </div>
-
-                    {/* Progress Bar of Completed Goals */}
-                    {(() => {
-                      const completedCount = userGoals.filter(g => g.completed).length;
-                      const totalCount = userGoals.length;
-                      const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-                      return (
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-[10px] font-bold text-slate-400">
-                            <span>Daily Completion</span>
-                            <span>{completedCount} / {totalCount} ({percent}%)</span>
-                          </div>
-                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-600 rounded-full transition-all duration-500" style={{ width: `${percent}%` }}></div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Checklist items */}
-                    <div className="space-y-2.5 max-h-[160px] overflow-y-auto pr-1">
-                      {userGoals.map((g) => (
-                        <div
-                          key={g.id}
-                          onClick={() => handleToggleGoal(g.id)}
-                          className={`p-3 rounded-2xl border text-xs font-semibold cursor-pointer flex items-center space-x-3 transition-colors ${
-                            g.completed
-                              ? 'bg-blue-50/30 border-blue-100 text-slate-400 line-through'
-                              : 'bg-slate-50/50 border-slate-100 text-slate-700 hover:bg-slate-50 hover:border-slate-200'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={g.completed}
-                            onChange={() => {}} // handled by outer click
-                            className="w-4.5 h-4.5 text-blue-600 border-slate-300 rounded-lg focus:ring-0 cursor-pointer"
-                          />
-                          <span className="flex-grow select-none leading-snug">{g.text}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Input form */}
-                    <form onSubmit={handleAddGoal} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newGoalText}
-                        onChange={(e) => setNewGoalText(e.target.value)}
-                        placeholder="Add daily target..."
-                        className="flex-grow text-xs py-2 px-3 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-600/20 font-semibold"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!newGoalText.trim()}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs p-2.5 rounded-xl transition-all cursor-pointer shadow-md disabled:opacity-45"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </form>
-                  </div>
-
-                  {/* Milestone Badges */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
-                    <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Milestone Badges</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {achievementBadges.map((badge) => {
-                        const Icon = badge.icon;
-                        return (
-                          <div
-                            key={badge.id}
-                            className="p-3 border border-slate-50 hover:border-blue-100/30 rounded-2xl text-center flex flex-col items-center justify-center transition-all bg-slate-50/30 hover:bg-white"
-                          >
-                            <div className={`p-2 rounded-xl mb-1.5 ${badge.color}`}>
-                              <Icon className="w-4.5 h-4.5" />
-                            </div>
-                            <span className="text-[10px] font-black text-slate-800 truncate w-full">{badge.title}</span>
-                            <span className="text-[8px] text-slate-400 leading-tight mt-0.5 line-clamp-2">{badge.desc}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Academic Stepper timeline */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
-                    <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Academic Stepper</h3>
-                    <div className="space-y-4 relative pl-4 border-l-2 border-slate-100">
-                      {[
-                        { title: 'Core Syllabus Finish', time: 'Oct 15, 2026', desc: 'Focusing on school curriculum syllabus', active: true, done: true },
-                        { title: 'Full Mock Test Phase', time: 'Nov - Dec 2026', desc: 'Complete board-pattern practice tests', active: true, done: false },
-                        { title: 'Board Mock Exams Run', time: 'Jan 2027', desc: 'Complete school mock exams', active: false, done: false },
-                        { title: 'School Board Final Exams', time: 'May 2027', desc: 'Targeting 95%+ aggregate board score', active: false, done: false }
-                      ].map((step, idx) => (
-                        <div key={idx} className="relative text-xs">
-                          {/* Dot accent */}
-                          <div className={`absolute -left-6.5 top-0.5 w-3 h-3 rounded-full border-2 ${
-                            step.done ? 'bg-blue-600 border-blue-500' :
-                            step.active ? 'bg-white border-blue-500 animate-pulse' :
-                            'bg-white border-slate-200'
-                          }`} />
-                          <h5 className={`font-extrabold ${step.done || step.active ? 'text-slate-800' : 'text-slate-400'}`}>{step.title}</h5>
-                          <span className="text-[9px] text-slate-400 font-bold block mt-0.5">{step.time}</span>
-                          <p className="text-[10px] text-slate-500 mt-1 leading-normal font-semibold">{step.desc}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-
-
-
-          {/* TAB 7: DETAILED STUDENTS PROFILE */}
-          {activeTab === 'My Progress' && profileSubTab === 'profile' && (
-            <div className="space-y-6 tab-content-enter">
-              {/* Sub-tab Switcher */}
-              <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit border border-slate-200/50 shadow-inner">
-                <button
-                  type="button"
-                  onClick={() => { setProfileSubTab('profile'); setIsEditingProfile(false); }}
-                  className={`px-5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                    profileSubTab === 'profile'
-                      ? 'bg-white text-blue-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  Profile Details
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setProfileSubTab('progress'); setIsEditingProfile(false); }}
-                  className={`px-5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                    profileSubTab === 'progress'
-                      ? 'bg-white text-blue-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  Academic Progress
-                </button>
-              </div>
-              
               {/* Header registry card */}
               <div className="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
@@ -2074,7 +1877,7 @@ const StudentDashboard = () => {
                     <p className="text-xs text-slate-400 font-bold mt-1">Enrollment ID: <span className="text-slate-600 font-black">{profileData.studentId}</span></p>
                     
                     <div className="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
-                      <span className="text-[9px] bg-blue-50 border border-blue-100 text-blue-800 px-3 py-1 rounded-full font-black uppercase tracking-wider">CBSE Board Exam Target</span>
+                      <span className="text-[9px] bg-blue-50 border border-blue-100 text-blue-800 px-3 py-1 rounded-full font-black uppercase tracking-wider">JEE Main 2026 Target</span>
                       <span className="text-[9px] bg-slate-50 border border-slate-100 text-slate-600 px-3 py-1 rounded-full font-black uppercase tracking-wider">Join Date: {profileData.joinDate}</span>
                     </div>
                   </div>
@@ -2094,271 +1897,450 @@ const StudentDashboard = () => {
                 ) : null}
               </div>
 
-              {/* View / Edit container layout */}
+              {/* Stats KPI Block */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {[
+                  { label: 'Syllabus Covered', val: `${progressStats.syllabusCoverage}%`, color: 'text-blue-600 bg-blue-50' },
+                  { label: 'Average Test Score', val: `${progressStats.averageTestScore}%`, color: 'text-blue-600 bg-blue-50' },
+                  { label: 'Assigned Homework', val: progressStats.assignmentsSubmitted, color: 'text-indigo-600 bg-indigo-50' },
+                  { label: 'Doubts Asked', val: progressStats.doubtSolvedCount, color: 'text-purple-600 bg-purple-50' },
+                  { label: 'Total Study Hours', val: `${progressStats.studyHours}h`, color: 'text-amber-600 bg-amber-50' },
+                  { label: 'Streak Days', val: profileData.streak, color: 'text-rose-600 bg-rose-50' }
+                ].map((stat, idx) => (
+                  <div key={idx} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm text-center">
+                    <span className="text-[10px] text-slate-400 font-extrabold uppercase block leading-none mb-1.5">{stat.label}</span>
+                    <span className={`text-xl font-black rounded-lg px-2 py-0.5 inline-block ${stat.color}`}>{stat.val}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Progress details layout */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
-                {/* Form fields */}
-                <div className="lg:col-span-8 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                {/* Left Column: Profile Details & Visual Analytics */}
+                <div className="lg:col-span-8 space-y-6">
                   
-                  {!isEditingProfile ? (
-                    <div className="space-y-6">
-                      {/* Personal registry details */}
-                      <div>
-                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Academic Target Preferences</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50 p-4.5 rounded-2xl border border-slate-100">
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-extrabold block">Enrolled Program Target</span>
-                            <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.standard}</span>
+                  {/* Form fields */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                    {!isEditingProfile ? (
+                      <div className="space-y-6">
+                        {/* Academic target preferences */}
+                        <div>
+                          <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Academic Target Preferences</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50 p-4.5 rounded-2xl border border-slate-100">
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-extrabold block">Enrolled Program Target</span>
+                              <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.standard}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-extrabold block">Preferred Learning Subjects</span>
+                              <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.subjects.join(', ')}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-extrabold block">Medium of instruction</span>
+                              <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.medium}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-extrabold block">Tuition Location District</span>
+                              <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.district}, {profileData.state}</span>
+                            </div>
                           </div>
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-extrabold block">Preferred Learning Subjects</span>
-                            <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.subjects.join(', ')}</span>
+                        </div>
+
+                        {/* Tuition contact details */}
+                        <div>
+                          <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Student Contact Details</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50 p-4.5 rounded-2xl border border-slate-100">
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-extrabold block">Student Primary Email</span>
+                              <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.email}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-extrabold block">Student Phone Number</span>
+                              <span className="text-xs font-black text-slate-800 mt-1 block">+91 {profileData.phone}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-extrabold block">Parent / Guardian Name</span>
+                              <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.parentName}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-extrabold block">Parent Contact Phone</span>
+                              <span className="text-xs font-black text-slate-800 mt-1 block">+91 {profileData.parentPhone}</span>
+                            </div>
                           </div>
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-extrabold block">Medium of instruction</span>
-                            <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.medium}</span>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-extrabold block">Tuition Location District</span>
-                            <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.district}, {profileData.state}</span>
+                        </div>
+
+                        {/* Home address & preferred schedule slots */}
+                        <div>
+                          <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Home Tuition Address & Schedule Slots</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50 p-4.5 rounded-2xl border border-slate-100">
+                            <div className="md:col-span-2">
+                              <span className="text-[10px] text-slate-400 font-extrabold block">Tuition Delivery Address</span>
+                              <span className="text-xs font-semibold text-slate-700 mt-1 block leading-relaxed">{profileData.address}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-extrabold block">Preferred Daily Slot</span>
+                              <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.tuitionSlot}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
+                    ) : (
+                      <form onSubmit={handleSaveProfile} className="space-y-6">
+                        
+                        {/* Presets inline avatar selection when editing */}
+                        {showAvatarModal && (
+                          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/50 mb-4 animate-slide-up">
+                            <div className="flex justify-between items-center mb-3">
+                              <span className="text-xs font-black text-slate-700 uppercase tracking-wider">Select Student Avatar</span>
+                              <button type="button" onClick={() => setShowAvatarModal(false)} className="text-xs font-bold text-red-500">Close</button>
+                            </div>
+                            <div className="flex space-x-3.5">
+                              {presetAvatars.map((av, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => {
+                                    setEditProfileData(prev => ({ ...prev, avatar: av }));
+                                    setShowAvatarModal(false);
+                                    triggerToast("Selected avatar updated in edit draft!");
+                                  }}
+                                  className={`w-14 h-14 rounded-full overflow-hidden border-2 cursor-pointer transition-all hover:scale-105 active:scale-95 ${
+                                    editProfileData.avatar === av ? 'border-blue-500 ring-2 ring-emerald-500/20' : 'border-slate-100'
+                                  }`}
+                                >
+                                  <img src={av} alt="Student avatar candidate" className="w-full h-full object-cover" />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
-                      {/* Tuition contact details */}
-                      <div>
-                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Student Contact Details</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50 p-4.5 rounded-2xl border border-slate-100">
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-extrabold block">Student Primary Email</span>
-                            <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.email}</span>
+                        <div className="space-y-4">
+                          <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Update Personal & Registry Info</h4>
+                          
+                          {/* Name & Target Exam */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Student Full Name</label>
+                              <input
+                                type="text"
+                                required
+                                value={editProfileData.name}
+                                onChange={(e) => setEditProfileData(prev => ({ ...prev, name: e.target.value }))}
+                                className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Target exam class</label>
+                              <select
+                                value={editProfileData.standard}
+                                onChange={(e) => setEditProfileData(prev => ({ ...prev, standard: e.target.value }))}
+                                className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                              >
+                                <option value="Class 12 (JEE Main & Advanced)">Class 12 (JEE Main & Advanced)</option>
+                                <option value="Class 12 (NEET Target)">Class 12 (NEET Target)</option>
+                                <option value="Class 11 (JEE Core Foundation)">Class 11 (JEE Core Foundation)</option>
+                                <option value="Class 10 CBSE Boards Core">Class 10 CBSE Boards Core</option>
+                              </select>
+                            </div>
                           </div>
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-extrabold block">Student Phone Number</span>
-                            <span className="text-xs font-black text-slate-800 mt-1 block">+91 {profileData.phone}</span>
+
+                          {/* Contacts student */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Primary Email Address</label>
+                              <input
+                                type="email"
+                                required
+                                value={editProfileData.email}
+                                onChange={(e) => setEditProfileData(prev => ({ ...prev, email: e.target.value }))}
+                                className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Student Mobile Number</label>
+                              <input
+                                type="tel"
+                                required
+                                pattern="[6-9][0-9]{9}"
+                                maxLength="10"
+                                value={editProfileData.phone}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                  setEditProfileData(prev => ({ ...prev, phone: val }));
+                                }}
+                                className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-extrabold block">Parent / Guardian Name</span>
-                            <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.parentName}</span>
+
+                          {/* Parents Details */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Parent / Guardian Name</label>
+                              <input
+                                type="text"
+                                required
+                                value={editProfileData.parentName}
+                                onChange={(e) => setEditProfileData(prev => ({ ...prev, parentName: e.target.value }))}
+                                className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Parent Phone number</label>
+                              <input
+                                type="tel"
+                                required
+                                pattern="[6-9][0-9]{9}"
+                                maxLength="10"
+                                value={editProfileData.parentPhone}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                  setEditProfileData(prev => ({ ...prev, parentPhone: val }));
+                                }}
+                                className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                              />
+                            </div>
                           </div>
+
+                          {/* Timing Slots, Medium & Address */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Instruction Medium</label>
+                              <select
+                                value={editProfileData.medium}
+                                onChange={(e) => setEditProfileData(prev => ({ ...prev, medium: e.target.value }))}
+                                className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                              >
+                                <option value="English & Hinglish">English & Hinglish</option>
+                                <option value="Pure English medium">Pure English medium</option>
+                                <option value="Pure Hindi medium">Pure Hindi medium</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Home Tuition Schedule Slot</label>
+                              <select
+                                value={editProfileData.tuitionSlot}
+                                onChange={(e) => setEditProfileData(prev => ({ ...prev, tuitionSlot: e.target.value }))}
+                                className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                              >
+                                <option value="Morning (07:00 AM - 10:00 AM)">Morning (07:00 AM - 10:00 AM)</option>
+                                <option value="Afternoon (01:00 PM - 04:00 PM)">Afternoon (01:00 PM - 04:00 PM)</option>
+                                <option value="Evening (04:00 PM - 07:00 PM)">Evening (04:00 PM - 07:00 PM)</option>
+                              </select>
+                            </div>
+                          </div>
+
                           <div>
-                            <span className="text-[10px] text-slate-400 font-extrabold block">Parent Contact Phone</span>
-                            <span className="text-xs font-black text-slate-800 mt-1 block">+91 {profileData.parentPhone}</span>
+                            <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Home Tuition Address</label>
+                            <textarea
+                              required
+                              rows="3"
+                              value={editProfileData.address}
+                              onChange={(e) => setEditProfileData(prev => ({ ...prev, address: e.target.value }))}
+                              className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold resize-none"
+                            />
                           </div>
                         </div>
+
+                        {/* Form CTAs */}
+                        <div className="flex items-center justify-end space-x-3.5 pt-4 border-t border-slate-50">
+                          <button
+                            type="button"
+                            onClick={handleCancelProfileEdit}
+                            className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition-all cursor-pointer active:scale-95"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer hover:scale-[1.02] active:scale-95 flex items-center gap-1.5"
+                          >
+                            <Save className="w-4 h-4" />
+                            <span>Save Changes</span>
+                          </button>
+                        </div>
+
+                      </form>
+                    )}
+                  </div>
+
+                  {/* Visual Analytics Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Daily Study Tracker */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">Weekly Study Hours</h4>
+                          <span className="text-sm font-black text-slate-800">Total: 49 Hours</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">+12% vs last week</span>
                       </div>
-
-                      {/* Home address & preferred schedule slots */}
-                      <div>
-                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Home Tuition Address & Schedule Slots</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50 p-4.5 rounded-2xl border border-slate-100">
-                          <div className="md:col-span-2">
-                            <span className="text-[10px] text-slate-400 font-extrabold block">Tuition Delivery Address</span>
-                            <span className="text-xs font-semibold text-slate-700 mt-1 block leading-relaxed">{profileData.address}</span>
+                      <div className="h-32 flex items-end justify-between px-2 pt-6">
+                        {[
+                          { day: 'Mon', hrs: 6, pct: '60%' },
+                          { day: 'Tue', hrs: 8, pct: '80%' },
+                          { day: 'Wed', hrs: 5, pct: '50%' },
+                          { day: 'Thu', hrs: 9, pct: '90%' },
+                          { day: 'Fri', hrs: 7, pct: '70%' },
+                          { day: 'Sat', hrs: 10, pct: '100%' },
+                          { day: 'Sun', hrs: 4, pct: '40%' }
+                        ].map((item, idx) => (
+                          <div key={idx} className="flex flex-col items-center flex-grow group">
+                            <div className="w-full px-1 relative flex justify-center">
+                              <span className="absolute -top-7 scale-0 group-hover:scale-100 transition-all duration-200 bg-slate-900 text-white font-bold text-[9px] px-2 py-0.5 rounded shadow">
+                                {item.hrs} hrs
+                              </span>
+                              <div
+                                style={{ height: item.pct }}
+                                className="w-5 bg-gradient-to-t from-blue-400 to-blue-500 hover:from-blue-600 hover:to-blue-600 rounded-t-lg transition-all duration-300 shadow-sm shadow-blue-400/20 cursor-pointer"
+                              ></div>
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-bold mt-2">{item.day}</span>
                           </div>
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-extrabold block">Preferred Daily Slot</span>
-                            <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.tuitionSlot}</span>
-                          </div>
-                        </div>
+                        ))}
                       </div>
                     </div>
-                  ) : (
-                    <form onSubmit={handleSaveProfile} className="space-y-6">
-                      
-                      {/* Presets inline avatar selection when editing */}
-                      {showAvatarModal && (
-                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/50 mb-4 animate-slide-up">
-                          <div className="flex justify-between items-center mb-3">
-                            <span className="text-xs font-black text-slate-700 uppercase tracking-wider">Select Student Avatar</span>
-                            <button type="button" onClick={() => setShowAvatarModal(false)} className="text-xs font-bold text-red-500">Close</button>
-                          </div>
-                          <div className="flex space-x-3.5">
-                            {presetAvatars.map((av, idx) => (
-                              <button
-                                key={idx}
-                                type="button"
-                                onClick={() => {
-                                  setEditProfileData(prev => ({ ...prev, avatar: av }));
-                                  setShowAvatarModal(false);
-                                  triggerToast("Selected avatar updated in edit draft!");
-                                }}
-                                className={`w-14 h-14 rounded-full overflow-hidden border-2 cursor-pointer transition-all hover:scale-105 active:scale-95 ${
-                                  editProfileData.avatar === av ? 'border-blue-500 ring-2 ring-emerald-500/20' : 'border-slate-100'
-                                }`}
-                              >
-                                <img src={av} alt="Student avatar candidate" className="w-full h-full object-cover" />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
 
-                      <div className="space-y-4">
-                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Update Personal & Registry Info</h4>
-                        
-                        {/* Name & Target Exam */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Student Full Name</label>
-                            <input
-                              type="text"
-                              required
-                              value={editProfileData.name}
-                              onChange={(e) => setEditProfileData(prev => ({ ...prev, name: e.target.value }))}
-                              className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Target exam class</label>
-                            <select
-                              value={editProfileData.standard}
-                              onChange={(e) => setEditProfileData(prev => ({ ...prev, standard: e.target.value }))}
-                              className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
-                            >
-                              <option value="Class 1">Class 1</option>
-                              <option value="Class 2">Class 2</option>
-                              <option value="Class 3">Class 3</option>
-                              <option value="Class 4">Class 4</option>
-                              <option value="Class 5">Class 5</option>
-                              <option value="Class 6">Class 6</option>
-                              <option value="Class 7">Class 7</option>
-                              <option value="Class 8">Class 8</option>
-                              <option value="Class 9 (CBSE Board)">Class 9 (CBSE Board)</option>
-                              <option value="Class 10 (CBSE Board)">Class 10 (CBSE Board)</option>
-                              <option value="Class 11 (Science / Commerce / Arts)">Class 11 (Science / Commerce / Arts)</option>
-                              <option value="Class 12 (Board Prep)">Class 12 (Board Prep)</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        {/* Contacts student */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Primary Email Address</label>
-                            <input
-                              type="email"
-                              required
-                              value={editProfileData.email}
-                              onChange={(e) => setEditProfileData(prev => ({ ...prev, email: e.target.value }))}
-                              className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Student Mobile Number</label>
-                            <input
-                              type="tel"
-                              required
-                              pattern="[6-9][0-9]{9}"
-                              maxLength="10"
-                              value={editProfileData.phone}
-                              onChange={(e) => {
-                                const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                                setEditProfileData(prev => ({ ...prev, phone: val }));
-                              }}
-                              className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Parents Details */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Parent / Guardian Name</label>
-                            <input
-                              type="text"
-                              required
-                              value={editProfileData.parentName}
-                              onChange={(e) => setEditProfileData(prev => ({ ...prev, parentName: e.target.value }))}
-                              className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Parent Phone number</label>
-                            <input
-                              type="tel"
-                              required
-                              pattern="[6-9][0-9]{9}"
-                              maxLength="10"
-                              value={editProfileData.parentPhone}
-                              onChange={(e) => {
-                                const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                                setEditProfileData(prev => ({ ...prev, parentPhone: val }));
-                              }}
-                              className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Timing Slots, Medium & Address */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Instruction Medium</label>
-                            <select
-                              value={editProfileData.medium}
-                              onChange={(e) => setEditProfileData(prev => ({ ...prev, medium: e.target.value }))}
-                              className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
-                            >
-                              <option value="English & Hinglish">English & Hinglish</option>
-                              <option value="Pure English medium">Pure English medium</option>
-                              <option value="Pure Hindi medium">Pure Hindi medium</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Home Tuition Schedule Slot</label>
-                            <select
-                              value={editProfileData.tuitionSlot}
-                              onChange={(e) => setEditProfileData(prev => ({ ...prev, tuitionSlot: e.target.value }))}
-                              className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
-                            >
-                              <option value="Morning (07:00 AM - 10:00 AM)">Morning (07:00 AM - 10:00 AM)</option>
-                              <option value="Afternoon (01:00 PM - 04:00 PM)">Afternoon (01:00 PM - 04:00 PM)</option>
-                              <option value="Evening (04:00 PM - 07:00 PM)">Evening (04:00 PM - 07:00 PM)</option>
-                            </select>
-                          </div>
-                        </div>
-
+                    {/* Test Score Progress Trend */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
                         <div>
-                          <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Home Tuition Address</label>
-                          <textarea
-                            required
-                            rows="3"
-                            value={editProfileData.address}
-                            onChange={(e) => setEditProfileData(prev => ({ ...prev, address: e.target.value }))}
-                            className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold resize-none"
-                          />
+                          <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">Mock Test Scores Trend</h4>
+                          <span className="text-sm font-black text-slate-800">Average Tier: A (82%)</span>
                         </div>
+                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Last 5 Weekly Mocks</span>
                       </div>
+                      <div className="h-32 pt-4">
+                        <svg className="w-full h-full overflow-visible" viewBox="0 0 320 80">
+                          <defs>
+                            <linearGradient id="trendGrad" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="#3b82f6" />
+                              <stop offset="50%" stopColor="#8b5cf6" />
+                              <stop offset="100%" stopColor="#10b981" />
+                            </linearGradient>
+                          </defs>
+                          <line x1="0" y1="15" x2="320" y2="15" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3" />
+                          <line x1="0" y1="45" x2="320" y2="45" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3" />
+                          <line x1="0" y1="75" x2="320" y2="75" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3" />
+                          
+                          <path
+                            d="M 10 75 Q 80 65 150 50 T 250 35 T 310 20"
+                            fill="none"
+                            stroke="url(#trendGrad)"
+                            strokeWidth="3.5"
+                            strokeLinecap="round"
+                          />
+                          
+                          <circle cx="10" cy="75" r="4.5" fill="#3b82f6" stroke="#fff" strokeWidth="2" />
+                          <text x="10" y="90" textAnchor="middle" className="text-[9px] fill-slate-400 font-bold">72%</text>
 
-                      {/* Form CTAs */}
-                      <div className="flex items-center justify-end space-x-3.5 pt-4 border-t border-slate-50">
-                        <button
-                          type="button"
-                          onClick={handleCancelProfileEdit}
-                          className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition-all cursor-pointer active:scale-95"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer hover:scale-[1.02] active:scale-95 flex items-center gap-1.5"
-                        >
-                          <Save className="w-4 h-4" />
-                          <span>Save Changes</span>
-                        </button>
+                          <circle cx="90" cy="63" r="4.5" fill="#3b82f6" stroke="#fff" strokeWidth="2" />
+                          <text x="90" y="50" textAnchor="middle" className="text-[9px] fill-slate-500 font-black">76%</text>
+
+                          <circle cx="170" cy="48" r="4.5" fill="#8b5cf6" stroke="#fff" strokeWidth="2" />
+                          <text x="170" y="35" textAnchor="middle" className="text-[9px] fill-slate-500 font-black">80%</text>
+
+                          <circle cx="250" cy="35" r="4.5" fill="#10b981" stroke="#fff" strokeWidth="2" />
+                          <text x="250" y="22" textAnchor="middle" className="text-[9px] fill-slate-500 font-black">85%</text>
+
+                          <circle cx="310" cy="20" r="4.5" fill="#10b981" stroke="#fff" strokeWidth="2" />
+                          <text x="310" y="10" textAnchor="middle" className="text-[9px] fill-slate-500 font-black">88%</text>
+                        </svg>
                       </div>
+                    </div>
+                  </div>
 
-                    </form>
-                  )}
+                  {/* Subject-wise Performance Card */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                    <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Subject-wise Performance</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {subjectBreakdown.map((sb) => (
+                        <div key={sb.subject} className="space-y-2 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                          <div className="flex justify-between items-center text-xs font-bold text-slate-700">
+                            <span>{sb.subject}</span>
+                            <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-black uppercase tracking-wider">{sb.grade}</span>
+                          </div>
+                          <div className="flex items-center space-x-3 mt-2">
+                            <div className="h-2.5 bg-slate-200 rounded-full flex-grow overflow-hidden">
+                              <div className={`h-full rounded-full ${
+                                sb.color === 'emerald' ? 'bg-blue-600' :
+                                sb.color === 'blue' ? 'bg-blue-500' : 'bg-indigo-500'
+                              }`} style={{ width: `${sb.rate}%` }}></div>
+                            </div>
+                            <span className="text-xs font-black text-slate-800 shrink-0">{sb.rate}%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Interactive Chapter Checklist Tracker */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+                      <div>
+                        <h3 className="text-base font-black text-slate-800 tracking-tight">Interactive Syllabus Chapter Tracker</h3>
+                        <p className="text-slate-400 text-xs font-semibold mt-0.5">Click badges to cycle status and update coverage calculations live!</p>
+                      </div>
+                      
+                      <div className="flex bg-slate-100 p-1 rounded-xl shrink-0 border border-slate-200/20">
+                        {['All', 'Mathematics', 'Physics', 'Chemistry'].map(subj => (
+                          <button
+                            key={subj}
+                            onClick={() => setSelectedProgressSubject(subj)}
+                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                              selectedProgressSubject === subj
+                                ? 'bg-white text-blue-800 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            {subj === 'Mathematics' ? 'Maths' : subj}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[360px] overflow-y-auto pr-1">
+                      {syllabusChapters
+                        .filter(ch => selectedProgressSubject === 'All' || ch.subject === selectedProgressSubject)
+                        .map(ch => (
+                          <div
+                            key={ch.id}
+                            className="p-3.5 border border-slate-100 hover:border-blue-100/50 hover:bg-blue-50/5 rounded-2xl flex items-center justify-between transition-all"
+                          >
+                            <div className="min-w-0 pr-3">
+                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
+                                ch.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-800' :
+                                ch.subject === 'Mathematics' ? 'bg-blue-50 text-blue-800' :
+                                'bg-indigo-50 text-indigo-800'
+                              }`}>
+                                {ch.subject}
+                              </span>
+                              <h4 className="text-xs font-bold text-slate-800 mt-2 truncate">{ch.name}</h4>
+                            </div>
+
+                            <button
+                              onClick={() => toggleChapterStatus(ch.id)}
+                              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-sm ${
+                                ch.status === 'Completed' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
+                                ch.status === 'In Progress' ? 'bg-amber-400 hover:bg-amber-500 text-white' :
+                                'bg-slate-100 hover:bg-slate-200 text-slate-500'
+                              }`}
+                            >
+                              {ch.status}
+                            </button>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
                 </div>
 
-                {/* Right Panel: Tuition registry statistics */}
+                {/* Right Column: Tutors, Attendance, Goals, Leaderboard, Certificates */}
                 <div className="lg:col-span-4 space-y-6">
                   
-                  {/* Tuition provider metadata */}
+                  {/* Vetted Home Tutors Assigned */}
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
                     <h3 className="text-base font-black text-slate-800 tracking-tight">Vetted Home Tutors Assigned</h3>
-                    
                     <div className="space-y-3">
                       {[
                         { subject: 'Chemistry', teacher: 'Mr. Rajesh Kumar', qual: 'M.Sc, IIT Delhi alumnus', type: 'Assigned Home Tutor' },
@@ -2376,7 +2358,6 @@ const StudentDashboard = () => {
                   {/* Attendance block summary */}
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
                     <h3 className="text-base font-black text-slate-800 tracking-tight mb-3.5">Center Attendance Sheet</h3>
-                    
                     <div className="flex items-center justify-between p-3 bg-blue-50/30 border border-blue-100/50 rounded-2xl mb-4">
                       <div>
                         <span className="text-xs font-black text-blue-900 block">Attendance Rate</span>
@@ -2384,7 +2365,6 @@ const StudentDashboard = () => {
                       </div>
                       <span className="text-xl font-black text-blue-800 px-3 py-1 bg-white rounded-xl shadow-sm border border-blue-100/30">91%</span>
                     </div>
-
                     <div className="space-y-2 text-[10px] font-bold text-slate-500">
                       <div className="flex justify-between">
                         <span>Total classes scheduled</span>
@@ -2398,6 +2378,232 @@ const StudentDashboard = () => {
                         <span>Excused leaves logged</span>
                         <span className="text-slate-800 font-black">4 Days</span>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Daily Target Planner & Goal Setting */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-50">
+                      <div>
+                        <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+                          <CheckSquare className="w-5 h-5 text-blue-600" />
+                          <span>Daily Target Planner</span>
+                        </h3>
+                        <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Stay disciplined. Complete daily goals for XP!</p>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const completedCount = userGoals.filter(g => g.completed).length;
+                      const totalCount = userGoals.length;
+                      const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+                      return (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] font-bold text-slate-400">
+                            <span>Daily Completion</span>
+                            <span>{completedCount} / {totalCount} ({percent}%)</span>
+                          </div>
+                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-600 rounded-full transition-all duration-500" style={{ width: `${percent}%` }}></div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <div className="space-y-2.5 max-h-[160px] overflow-y-auto pr-1">
+                      {userGoals.map((g) => (
+                        <div
+                          key={g.id}
+                          onClick={() => handleToggleGoal(g.id)}
+                          className={`p-3 rounded-2xl border text-xs font-semibold cursor-pointer flex items-center space-x-3 transition-colors ${
+                            g.completed
+                              ? 'bg-blue-50/30 border-blue-100 text-slate-400 line-through'
+                              : 'bg-slate-50/50 border-slate-100 text-slate-700 hover:bg-slate-50 hover:border-slate-200'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={g.completed}
+                            onChange={() => {}} // handled by outer click
+                            className="w-4.5 h-4.5 text-blue-600 border-slate-355 rounded-lg focus:ring-0 cursor-pointer"
+                          />
+                          <span className="flex-grow select-none leading-snug">{g.text}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <form onSubmit={handleAddGoal} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newGoalText}
+                        onChange={(e) => setNewGoalText(e.target.value)}
+                        placeholder="Add a custom daily target..."
+                        className="flex-grow text-xs py-2 px-3 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-600/20 font-semibold"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newGoalText.trim()}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs p-2.5 rounded-xl transition-all cursor-pointer shadow-md disabled:opacity-45"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Focus & Strength Tracker */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
+                    <h3 className="text-base font-black text-slate-800 tracking-tight">Focus & Strength Tracker</h3>
+                    <div className="space-y-3">
+                      <div className="bg-blue-50/40 border border-blue-100/50 p-3.5 rounded-2xl">
+                        <div className="flex items-center space-x-2 text-blue-800 mb-2">
+                          <CheckCircle2 className="w-4.5 h-4.5 text-blue-600" />
+                          <span className="text-xs font-black uppercase tracking-wider">Top Concept Strengths</span>
+                        </div>
+                        <ul className="text-xs text-blue-700 font-semibold space-y-1 pl-6 list-disc">
+                          <li>Organic reaction mechanisms</li>
+                          <li>Definite Integration derivations</li>
+                          <li>Electrostatics charge fields</li>
+                        </ul>
+                      </div>
+
+                      <div className="bg-rose-50/40 border border-rose-100/50 p-3.5 rounded-2xl">
+                        <div className="flex items-center space-x-2 text-rose-800 mb-2">
+                          <AlertCircle className="w-4.5 h-4.5 text-rose-600" />
+                          <span className="text-xs font-black uppercase tracking-wider">Growth Focus Areas</span>
+                        </div>
+                        <ul className="text-xs text-rose-700 font-semibold space-y-1 pl-6 list-disc">
+                          <li>Rotational dynamics kinematics</li>
+                          <li>Chemical Kinetics rate calculations</li>
+                          <li>Vector algebra geometry vectors</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Leaderboard & XP Store */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-50">
+                      <div>
+                        <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+                          <Zap className="w-5 h-5 text-amber-500 fill-amber-500 animate-pulse" />
+                          <span>Leaderboard & XP Store</span>
+                        </h3>
+                        <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Trade your earned XP for premium JEE study items!</p>
+                      </div>
+                      <span className="text-xs font-black bg-amber-50 text-amber-700 px-3 py-1 rounded-full border border-amber-100 animate-pulse">
+                        {studentXp} XP Available
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Batch Leaderboard (Rank Coordinates)</span>
+                      {[
+                        { name: 'Priya Patel', xp: 5120, rank: 1, isMe: false },
+                        { name: 'Harsh Verma', xp: 4980, rank: 2, isMe: false },
+                        { name: 'Aman Kumar', xp: 4900, rank: 3, isMe: false },
+                        { name: 'Rahul Sharma (You)', xp: studentXp, rank: 4, isMe: true },
+                        { name: 'Neha Singh', xp: 4750, rank: 5, isMe: false }
+                      ]
+                        .sort((a, b) => b.xp - a.xp)
+                        .map((u, i) => (
+                          <div
+                            key={i}
+                            className={`p-2 rounded-xl text-xs font-semibold flex justify-between items-center transition-colors ${
+                              u.isMe
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'bg-slate-50 border border-slate-100 text-slate-700'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <span className={`w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center ${
+                                u.rank === 1 ? 'bg-amber-400 text-amber-900' :
+                                u.rank === 2 ? 'bg-slate-300 text-slate-905' :
+                                u.rank === 3 ? 'bg-amber-600 text-white' :
+                                'bg-slate-200 text-slate-800'
+                              }`}>
+                                {u.rank}
+                              </span>
+                              <span>{u.name}</span>
+                            </div>
+                            <span className="font-black">{u.xp} XP</span>
+                          </div>
+                        ))}
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-100 space-y-3">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">XP Redeem Shop</span>
+                      <div className="space-y-2">
+                        {rewardsList.map((reward) => {
+                          const isUnlocked = unlockedRewards.includes(reward.id);
+                          return (
+                            <div key={reward.id} className="p-3 bg-slate-50/50 border border-slate-150 rounded-2xl flex justify-between items-center gap-3">
+                              <div className="min-w-0 flex-grow">
+                                <h4 className="text-xs font-black text-slate-800 leading-tight">{reward.name}</h4>
+                                <p className="text-[9px] text-slate-550 font-semibold mt-0.5">{reward.desc}</p>
+                                <span className="text-[9px] text-amber-700 font-extrabold mt-1 block">Cost: {reward.cost} XP</span>
+                              </div>
+                              <button
+                                type="button"
+                                disabled={isUnlocked}
+                                onClick={() => handleRedeemReward(reward)}
+                                className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors shrink-0 ${
+                                  isUnlocked
+                                    ? 'bg-emerald-100 text-emerald-800 cursor-default font-extrabold'
+                                    : 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer active:scale-95'
+                                }`}
+                              >
+                                {isUnlocked ? 'Unlocked' : 'Redeem'}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Milestone Badges */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
+                    <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Milestone Badges</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {achievementBadges.map((badge) => {
+                        const Icon = badge.icon;
+                        return (
+                          <div
+                            key={badge.id}
+                            className="p-3 border border-slate-50 hover:border-blue-100/30 rounded-2xl text-center flex flex-col items-center justify-center transition-all bg-slate-50/30 hover:bg-white"
+                          >
+                            <div className={`p-2 rounded-xl mb-1.5 ${badge.color}`}>
+                              <Icon className="w-4.5 h-4.5" />
+                            </div>
+                            <span className="text-[10px] font-black text-slate-800 truncate w-full">{badge.title}</span>
+                            <span className="text-[8px] text-slate-400 leading-tight mt-0.5 line-clamp-2">{badge.desc}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Academic Stepper timeline */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
+                    <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Academic Stepper</h3>
+                    <div className="space-y-4 relative pl-4 border-l-2 border-slate-100">
+                      {[
+                        { title: 'Core Syllabus Finish', time: 'Oct 15, 2026', desc: 'Focusing on physical chem & mechanics', active: true, done: true },
+                        { title: 'Full Mock Test Phase', time: 'Nov - Dec 2026', desc: 'Complete 3-hour exam drills', active: true, done: false },
+                        { title: 'JEE Main Phase 1 Attempt', time: 'Jan 2027', desc: 'First official attempt run', active: false, done: false },
+                        { title: 'JEE Advanced Exam Finale', time: 'May 2027', desc: 'Targeting Top 500 AIR rank', active: false, done: false }
+                      ].map((step, idx) => (
+                        <div key={idx} className="relative text-xs">
+                          <div className={`absolute -left-6.5 top-0.5 w-3 h-3 rounded-full border-2 ${
+                            step.done ? 'bg-blue-600 border-blue-500' :
+                            step.active ? 'bg-white border-blue-500 animate-pulse' :
+                            'bg-white border-slate-200'
+                          }`} />
+                          <h5 className={`font-extrabold ${step.done || step.active ? 'text-slate-800' : 'text-slate-400'}`}>{step.title}</h5>
+                          <span className="text-[9px] text-slate-400 font-bold block mt-0.5">{step.time}</span>
+                          <p className="text-[10px] text-slate-550 mt-1 leading-normal font-semibold">{step.desc}</p>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
@@ -2448,14 +2654,144 @@ const StudentDashboard = () => {
                   </div>
 
                 </div>
-
               </div>
-
             </div>
           )}
 
-        </div>
-      </main>
+          {/* TAB: STUDY GROUPS */}
+          {activeTab === 'Study Groups' && (
+            <div className="space-y-6 tab-content-enter">
+              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col lg:flex-row gap-6 min-h-[580px]">
+                
+                {/* Left Panel: Available Rooms */}
+                <div className="w-full lg:w-1/3 space-y-4 lg:border-r lg:border-slate-150 lg:pr-6">
+                  <div>
+                    <h3 className="text-lg font-black text-slate-800 tracking-tight">Peer Study Hub</h3>
+                    <p className="text-slate-400 text-xs">Collaborate, share notes, and solve doubts with cohort peers.</p>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {studyGroups.map((group) => {
+                      const isSelected = activeGroupId === group.id;
+                      return (
+                        <button
+                          key={group.id}
+                          onClick={() => {
+                            setActiveGroupId(group.id);
+                            triggerToast(`Joined group chat: ${group.name}`);
+                          }}
+                          className={`w-full text-left p-4 rounded-2xl border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'border-blue-500 bg-blue-50/20 ring-2 ring-blue-500/10 shadow-sm'
+                              : 'border-slate-100 hover:border-slate-200 bg-slate-50/30'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
+                              group.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-800' :
+                              group.subject === 'Mathematics' ? 'bg-blue-50 text-blue-800' :
+                              'bg-indigo-50 text-indigo-800'
+                            }`}>
+                              {group.subject}
+                            </span>
+                            <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full">
+                              {group.activePeers} online
+                            </span>
+                          </div>
+                          <h4 className="text-xs font-black text-slate-800 mt-2.5">{group.name}</h4>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-relaxed">{group.description}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Right Panel: Discussion Panel & Messages */}
+                {(() => {
+                  const activeGroup = studyGroups.find(g => g.id === activeGroupId);
+                  const chats = groupChats[activeGroupId] || [];
+                  return (
+                    <div className="w-full lg:w-2/3 flex flex-col justify-between h-[450px] lg:h-auto">
+                      {/* Active Room Header */}
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-sm shadow-inner">
+                            {activeGroup?.name[0]}
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-black text-slate-800 leading-none">{activeGroup?.name}</h4>
+                            <span className="text-[10px] font-semibold text-slate-400 mt-1 block">Discussion room for JEE {activeGroup?.subject} topics</span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] bg-slate-100 text-slate-500 font-black px-2.5 py-1 rounded-xl uppercase shadow-sm">
+                          Direct Feed
+                        </span>
+                      </div>
+
+                      {/* Chat Messages Log */}
+                      {isOffline ? (
+                        <div className="flex-grow flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-150 p-6 text-center">
+                          <WifiOff className="w-10 h-10 text-rose-500 animate-pulse mb-3" />
+                          <h5 className="text-xs font-black text-slate-800">Peer Chat Unavailable Offline</h5>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-1 max-w-xs">
+                            Please switch your workspace back to online mode in the header to sync live chat rooms.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex-grow overflow-y-auto space-y-3 px-1.5 pb-4 max-h-[300px] lg:max-h-none shadow-inner bg-slate-50/20 p-4 rounded-2xl mb-4 border border-slate-100/50">
+                          {chats.map((chat) => {
+                            const isMe = chat.sender === 'You';
+                            return (
+                              <div
+                                key={chat.id}
+                                className={`flex flex-col max-w-[80%] ${isMe ? 'ml-auto items-end' : 'mr-auto items-start'}`}
+                              >
+                                <div className="flex items-center space-x-1.5 text-[9px] font-bold text-slate-400 mb-0.5">
+                                  <span>{chat.sender}</span>
+                                  <span>•</span>
+                                  <span>{chat.time}</span>
+                                </div>
+                                <div className={`p-3 rounded-2xl text-xs font-semibold leading-relaxed shadow-sm ${
+                                  isMe
+                                    ? 'bg-blue-600 text-white rounded-tr-none'
+                                    : 'bg-white border border-slate-150 text-slate-700 rounded-tl-none'
+                                }`}>
+                                  {chat.text}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Chat Input Bar */}
+                      <form onSubmit={handleSendGroupMessage} className="relative flex items-center border-t border-slate-100 pt-4">
+                        <input
+                          type="text"
+                          disabled={isOffline}
+                          value={newGroupMessage}
+                          onChange={(e) => setNewGroupMessage(e.target.value)}
+                          placeholder={isOffline ? "You are offline..." : `Type your message in ${activeGroup?.name}...`}
+                          className="w-full text-xs pl-4 pr-16 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-500 transition-all font-semibold disabled:opacity-50"
+                        />
+                        <button
+                          type="submit"
+                          disabled={isOffline || !newGroupMessage.trim()}
+                          className="absolute right-2.5 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-600/20 transition-all cursor-pointer disabled:opacity-40"
+                        >
+                          <Send className="w-4 h-4" />
+                        </button>
+                      </form>
+                    </div>
+                  );
+                })()}
+
+              </div>
+            </div>
+          )}
+
+
+
 
       {/* 4. DETAILS modal for Recent Results score breakdown */}
       {selectedResult && (
@@ -2820,7 +3156,7 @@ const StudentDashboard = () => {
                   type="button"
                   onClick={() => {
                     if (!parentTestAnswers.q1 || !parentTestAnswers.q2 || !parentTestAnswers.q3) {
-                      triggerToast('Please answer all questions before submitting.');
+                      alert('Please answer all questions before submitting.');
                       return;
                     }
                     let score = 0;
@@ -2833,7 +3169,8 @@ const StudentDashboard = () => {
                     
                     // Save result in localStorage
                     localStorage.setItem('cograd_assigned_tests_result_Rahul_Varma', `${score}/3`);
-                    triggerToast(`Test completed! Score: ${score}/3.`);
+                    triggerToast(`Test completed! Score: ${score}/3. +100 XP`);
+                    setStudentXp(prev => prev + 100);
                   }}
                   className="w-full btn-primary py-3 rounded-2xl text-xs font-bold shadow-md cursor-pointer"
                 >
@@ -2868,16 +3205,377 @@ const StudentDashboard = () => {
         </div>
       )}
 
-      {/* 5. GLOBAL FLOATING toast notifications */}
-      {showToast && (
-        <div className="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl z-50 text-xs font-semibold flex items-center space-x-2.5 animate-slide-up border border-slate-800">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
+      </div>{/* end tab-content-enter */}
+    </DashboardShell>
+
+    {/* Floating AI Chatbot Button & Overlay Drawer */}
+    <div className="fixed bottom-20 right-16 z-[9999] flex flex-col items-end">
+      {/* Chatbot Overlay Card */}
+      {showAiChatbot && (
+        <div className="mb-4 w-96 max-w-[calc(100vw-2rem)] h-[580px] bg-white border border-slate-150 rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-slide-up text-slate-800">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-750 text-white p-4.5 flex items-center justify-between shadow-md shrink-0">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-inner relative border border-white/15">
+                <Sparkles className="w-5.5 h-5.5 text-white animate-pulse" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
+              </div>
+              <div>
+                <h3 className="text-xs font-black leading-none">
+                  {doubtMode === 'ai' ? (
+                    tutorPersona === 'chemistry' ? 'Dr. Atoms (Chemistry Tutor)' :
+                    tutorPersona === 'mathematics' ? 'Prof. Vector (Math Tutor)' :
+                    'Dr. Volt (Physics Tutor)'
+                  ) : 'Direct Tutor Connect'}
+                </h3>
+                <p className="text-[9px] text-blue-150 font-bold mt-1">
+                  {doubtMode === 'ai' ? '24/7 AI Doubt Solver' : 'Direct Teacher Doubt Desk'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAiChatbot(false)}
+              className="p-1 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Mode Switcher */}
+          <div className="flex bg-slate-50 p-1.5 border-b border-slate-100 shrink-0">
+            <button
+              type="button"
+              onClick={() => setDoubtMode('ai')}
+              className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+                doubtMode === 'ai'
+                  ? 'bg-white text-blue-900 shadow-sm border border-slate-200/30'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Sparkles className="w-3 h-3 text-blue-600" />
+              <span>24/7 AI Tutor</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDoubtMode('teacher')}
+              className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+                doubtMode === 'teacher'
+                  ? 'bg-white text-indigo-900 shadow-sm border border-slate-200/30'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <MessageSquare className="w-3 h-3 text-indigo-500" />
+              <span>Ask Tutors</span>
+            </button>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-grow overflow-y-auto p-4 space-y-4 bg-slate-50/20">
+            {doubtMode === 'ai' ? (
+              <>
+                {/* Persona Switcher Dropdown */}
+                <div className="space-y-1">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Tutor Persona</span>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { id: 'chemistry', name: 'Dr. Atoms', color: 'emerald' },
+                      { id: 'mathematics', name: 'Prof. Vector', color: 'blue' },
+                      { id: 'physics', name: 'Dr. Volt', color: 'indigo' }
+                    ].map(persona => (
+                      <button
+                        key={persona.id}
+                        onClick={() => {
+                          setTutorPersona(persona.id);
+                          triggerToast(`Switched Tutor to ${persona.name}`);
+                        }}
+                        className={`py-1.5 px-2 rounded-xl border text-[10px] font-bold text-center transition-all cursor-pointer truncate ${
+                          tutorPersona === persona.id
+                            ? 'bg-blue-50/40 border-blue-500/30 text-blue-700 font-extrabold shadow-sm'
+                            : 'bg-white border-slate-100 hover:bg-slate-50 text-slate-500'
+                        }`}
+                      >
+                        {persona.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* OCR handwriting scanner */}
+                <div className="bg-white border border-slate-100 rounded-2xl p-3 text-center relative overflow-hidden transition-all group shadow-sm">
+                  {isScanning ? (
+                    <div className="space-y-2 relative z-10 py-1">
+                      <div className="absolute inset-x-0 top-0 h-0.5 bg-blue-600 shadow-md shadow-emerald-500 animate-bounce"></div>
+                      <UploadCloud className="w-6 h-6 text-blue-500 mx-auto animate-pulse" />
+                      <span className="text-[10px] font-black text-blue-800 block">AI OCR scanning notebook page...</span>
+                      <div className="max-w-xs mx-auto">
+                        <div className="h-1 bg-slate-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-blue-600 rounded-full transition-all" style={{ width: `${scannerProgress}%` }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={triggerImageScan}
+                      className="w-full text-center cursor-pointer flex items-center justify-center space-x-2 text-[10px] font-bold text-slate-500 hover:text-blue-600 transition-colors"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Scan handwriting or notebook page</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Suggestions list */}
+                <div className="space-y-1">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Suggested Questions</span>
+                  <div className="flex flex-wrap gap-1 max-h-[85px] overflow-y-auto pr-0.5">
+                    {tutorPersona === 'chemistry' ? (
+                      ['Explain SN1 vs SN2 kinetics', 'Cannizzaro reaction steps', 'Bohr hydrogen energy level'].map(pill => (
+                        <button
+                          key={pill}
+                          onClick={() => setAiQuestion(pill)}
+                          className="text-[9px] bg-white border border-slate-150 text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 px-2 py-0.5 rounded-lg font-semibold transition-all cursor-pointer"
+                        >
+                          {pill}
+                        </button>
+                      ))
+                    ) : tutorPersona === 'mathematics' ? (
+                      ['Derive definite integration formula', 'Derive vector dot product derivation', 'Matrix multiplication rules'].map(pill => (
+                        <button
+                          key={pill}
+                          onClick={() => setAiQuestion(pill)}
+                          className="text-[9px] bg-white border border-slate-150 text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 px-2 py-0.5 rounded-lg font-semibold transition-all cursor-pointer"
+                        >
+                          {pill}
+                        </button>
+                      ))
+                    ) : (
+                      ['Explain Lenz\'s Law induction basis', 'Derive Moment of Inertia for rod', 'State Coulomb\'s Law force'].map(pill => (
+                        <button
+                          key={pill}
+                          onClick={() => setAiQuestion(pill)}
+                          className="text-[9px] bg-white border border-slate-150 text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 px-2 py-0.5 rounded-lg font-semibold transition-all cursor-pointer"
+                        >
+                          {pill}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Chat logs */}
+                <div className="space-y-3 max-h-[220px] overflow-y-auto pr-0.5 border-t border-slate-100 pt-3">
+                  {isAiLoading && (
+                    <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl flex items-center space-x-2.5 animate-pulse">
+                      <span className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
+                      <span className="text-[10px] font-bold text-slate-500">AI Tutor is drafting steps...</span>
+                    </div>
+                  )}
+                  {aiHistory.map((item, idx) => (
+                    <div key={idx} className="p-3 border border-slate-100 bg-white rounded-2xl shadow-sm space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center space-x-1.5">
+                          <span className="w-4.5 h-4.5 bg-blue-100 text-blue-800 rounded-md text-[9px] font-black flex items-center justify-center shadow-inner">Q</span>
+                          <h4 className="text-[10px] font-extrabold text-slate-800">{item.question}</h4>
+                        </div>
+                        <span className="text-[8px] text-slate-400 font-bold">{item.timestamp}</span>
+                      </div>
+                      <p className="pl-6 text-[10px] text-slate-600 leading-normal font-semibold whitespace-pre-line border-l-2 border-blue-500/20">
+                        {item.answer}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="space-y-3.5">
+                {/* Teacher selector */}
+                <div className="space-y-1">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Select Teacher</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { name: 'Mr. Rajesh Kumar', subject: 'Chemistry', status: 'Online' },
+                      { name: 'Dr. Priya Sharma', subject: 'Maths', status: 'Online' },
+                      { name: 'Dr. Sarah Johnson', subject: 'Physics', status: 'Away' }
+                    ].map((t) => {
+                      const isSelected = selectedTeacherForDoubt === t.name;
+                      return (
+                        <button
+                          key={t.name}
+                          type="button"
+                          onClick={() => setSelectedTeacherForDoubt(t.name)}
+                          className={`p-2 rounded-xl border text-center transition-all cursor-pointer truncate ${
+                            isSelected
+                              ? 'border-indigo-500 bg-indigo-50/20 ring-2 ring-indigo-500/10 shadow-sm text-indigo-800 font-black'
+                              : 'border-slate-100 hover:border-slate-200 bg-white text-slate-600 text-[9px] font-bold'
+                          }`}
+                        >
+                          <div className="text-[9px] truncate leading-none">{t.name.split(' ')[1]}</div>
+                          <div className="text-[7px] text-slate-400 font-bold mt-1">{t.subject}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Submission form */}
+                <form onSubmit={handleTeacherDoubtSubmit} className="space-y-2">
+                  <textarea
+                    value={teacherDoubtText}
+                    disabled={isOffline}
+                    onChange={(e) => setTeacherDoubtText(e.target.value)}
+                    placeholder="Ask teacher a question..."
+                    rows="3"
+                    className="w-full text-[10px] p-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium resize-none disabled:opacity-50"
+                  />
+                  <div className="flex items-center justify-between bg-white p-1.5 rounded-xl border border-slate-150">
+                    <div>
+                      {isUploadingDoubtFile ? (
+                        <span className="text-[8px] font-bold text-indigo-600 animate-pulse">Uploading {uploadDoubtProgress}%</span>
+                      ) : teacherDoubtAttachment ? (
+                        <div className="flex items-center space-x-1 bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-lg text-[8px] font-bold">
+                          <span className="truncate max-w-[80px]">{teacherDoubtAttachment}</span>
+                          <button type="button" onClick={() => setTeacherDoubtAttachment(null)} className="text-indigo-400 hover:text-indigo-600"><X className="w-2 h-2" /></button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={isOffline}
+                          onClick={simulateTeacherDoubtUpload}
+                          className="flex items-center space-x-1 text-slate-500 hover:text-slate-800 text-[8px] font-bold transition-all cursor-pointer"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                          <span>Attach Homework Scan</span>
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isOffline || !teacherDoubtText.trim()}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-[9px] transition-all cursor-pointer disabled:opacity-40"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </form>
+
+                {/* Teacher doubts list */}
+                <div className="space-y-2 border-t border-slate-100 pt-3">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Doubts History</span>
+                  <div className="space-y-2 max-h-[160px] overflow-y-auto pr-0.5">
+                    {teacherDoubts.map((doubt) => {
+                      const isExpanded = expandedTeacherDoubtId === doubt.id;
+                      return (
+                        <div key={doubt.id} className="border border-slate-100 bg-white rounded-2xl overflow-hidden hover:border-slate-200 transition-colors">
+                          <div
+                            onClick={() => setExpandedTeacherDoubtId(isExpanded ? null : doubt.id)}
+                            className="p-2.5 flex items-center justify-between gap-2 cursor-pointer hover:bg-slate-50/50"
+                          >
+                            <div className="min-w-0">
+                              <div className="text-[10px] font-black text-slate-800 flex items-center space-x-1.5">
+                                <span>{doubt.teacher}</span>
+                                <span className="text-[7px] bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded">{doubt.subject}</span>
+                              </div>
+                              <div className="text-[8px] text-slate-500 truncate max-w-[150px] mt-0.5">{doubt.question}</div>
+                            </div>
+                            <div className="flex items-center space-x-1 shrink-0">
+                              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${doubt.status === 'Resolved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{doubt.status}</span>
+                              <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} />
+                            </div>
+                          </div>
+                          {isExpanded && (
+                            <div className="px-2.5 pb-2.5 pt-1 border-t border-slate-50 bg-slate-50/20 text-[9px] text-slate-655 space-y-2">
+                              <p className="font-semibold text-slate-700">{doubt.question}</p>
+                              {doubt.status === 'Resolved' ? (
+                                <div className="bg-indigo-50/40 border border-indigo-100/30 rounded-xl p-2 text-slate-700 leading-normal">
+                                  <p className="whitespace-pre-line">{doubt.answer}</p>
+                                </div>
+                              ) : (
+                                <p className="italic text-slate-450 font-semibold">Teacher is reviewing. Expected soon...</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Input Form at Footer (for AI Mode) */}
+          {doubtMode === 'ai' && (
+            <form onSubmit={handleAiSubmit} className="relative flex items-center p-3 border-t border-slate-150 bg-white shrink-0">
+              <input
+                type="text"
+                value={aiQuestion}
+                onChange={(e) => setAiQuestion(e.target.value)}
+                placeholder={`Ask ${tutorPersona === 'chemistry' ? 'Dr. Atoms' : tutorPersona === 'mathematics' ? 'Prof. Vector' : 'Dr. Volt'}...`}
+                className="w-full text-[10px] pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-150 rounded-2xl focus:outline-none focus:ring-1 focus:ring-blue-600/20 focus:border-blue-500 font-semibold"
+              />
+              <div className="absolute right-4.5 flex items-center space-x-1">
+                <button
+                  type="button"
+                  onClick={simulateVoiceInput}
+                  className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                    simulatedVoiceState === 'listening'
+                      ? 'bg-rose-50 border-rose-100 text-rose-600 animate-pulse'
+                      : 'bg-white border-slate-100 text-slate-450 hover:text-slate-600'
+                  }`}
+                  title="Simulate Speech"
+                >
+                  <Mic className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAiLoading || !aiQuestion.trim()}
+                  className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all cursor-pointer disabled:opacity-40"
+                >
+                  {isAiLoading ? (
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin block"></span>
+                  ) : (
+                    <Send className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       )}
 
+      {/* Chatbot Toggle Button */}
+      <button
+        type="button"
+        onClick={() => {
+          setShowAiChatbot(!showAiChatbot);
+          if (!showAiChatbot) triggerToast("Opening AI Doubt solver chatbot!");
+        }}
+        className={`w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-750 hover:from-blue-750 hover:to-indigo-700 text-white flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer relative group ${
+          showAiChatbot ? 'rotate-90' : ''
+        }`}
+        title="Ask AI Doubt Solver"
+      >
+        {showAiChatbot ? (
+          <X className="w-6 h-6" />
+        ) : (
+          <>
+            <Sparkles className="w-6 h-6 animate-pulse" />
+            {/* Notification badge */}
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center text-[7px] font-black text-white">
+              1
+            </span>
+            <span className="absolute right-16 scale-0 group-hover:scale-100 transition-all duration-200 bg-slate-900 text-white font-bold text-[9px] px-2 py-1 rounded shadow whitespace-nowrap">
+              Ask AI Solver!
+            </span>
+          </>
+        )}
+      </button>
     </div>
-  );
+  </>
+);
 };
 
 export default StudentDashboard;
+

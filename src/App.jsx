@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useSmoothScroll } from './hooks/useSmoothScroll';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import Navbar from './components/Navbar';
@@ -19,13 +20,11 @@ import AdminDashboard from './pages/AdminDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import ParentDashboard from './pages/ParentDashboard';
 
-// Scroll to Top behavior & Scroll Reveal setup on route change
+// Scroll Reveal on route change (Lenis handles scrollTo-top via useSmoothScroll)
 const ScrollToTop = () => {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-
     // Short timeout to ensure React has fully committed the new route DOM
     const timer = setTimeout(() => {
       const observer = new IntersectionObserver(
@@ -38,7 +37,7 @@ const ScrollToTop = () => {
         },
         {
           threshold: 0.05,
-          rootMargin: '0px 0px -50px 0px' // triggers slightly before entering the screen
+          rootMargin: '0px 0px -50px 0px',
         }
       );
 
@@ -61,13 +60,24 @@ const LayoutWrapper = ({ children }) => {
   const location = useLocation();
   const hideHeaderFooter = ['/login', '/register/student', '/register/teacher', '/teacher/dashboard', '/admin/dashboard', '/student/dashboard', '/parent/dashboard'].includes(location.pathname);
 
+  // Boot Lenis smooth scroll globally
+  useSmoothScroll();
+
   return (
-    <div className="flex flex-col min-h-screen">
-      {!hideHeaderFooter && <Navbar />}
-      <main className="flex-grow">
-        {children}
-      </main>
-      {!hideHeaderFooter && <Footer />}
+    <div className="liquid-glass-active min-h-[100dvh] relative overflow-x-hidden">
+      {/* Drifting Liquid Glass Background Orbs */}
+      <div className="orb orb-1 opacity-75" aria-hidden="true" />
+      <div className="orb orb-2 opacity-65" aria-hidden="true" />
+      <div className="orb orb-3 opacity-55" aria-hidden="true" />
+
+      {/* Content wrapper */}
+      <div className="relative z-10 flex flex-col min-h-[100dvh]">
+        {!hideHeaderFooter && <Navbar />}
+        <main className="flex-grow">
+          {children}
+        </main>
+        {!hideHeaderFooter && <Footer />}
+      </div>
     </div>
   );
 };

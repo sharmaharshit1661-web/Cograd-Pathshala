@@ -2,6 +2,21 @@
 
 @import "tailwindcss";
 
+/* Lenis smooth scroll — required resets */
+html.lenis, html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+
 /* ============================================================
    DESIGN TOKENS
    ============================================================ */
@@ -92,7 +107,7 @@
   *, *::before, *::after { box-sizing: border-box; }
 
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto; /* Lenis owns smooth scrolling */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -325,18 +340,20 @@
    SCROLL-REVEAL  (IntersectionObserver-driven)
    ============================================================ */
 .reveal-on-scroll {
-  opacity: 0;
-  transform: translateY(18px);
   transition: opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1),
               transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform, opacity;
 }
+.reveal-on-scroll:not(.is-visible) {
+  opacity: 0;
+  transform: translateY(18px);
+  pointer-events: none;
+}
 .reveal-on-scroll.tutor-card-reveal { transition-duration: 0.55s; }
-.reveal-on-scroll.slide-left  { transform: translateX(-28px) translateY(4px); }
-.reveal-on-scroll.slide-right { transform: translateX(28px)  translateY(4px); }
-.reveal-on-scroll.is-visible  {
+.reveal-on-scroll.slide-left:not(.is-visible)  { transform: translateX(-28px) translateY(4px); }
+.reveal-on-scroll.slide-right:not(.is-visible) { transform: translateX(28px)  translateY(4px); }
+.reveal-on-scroll.is-visible {
   opacity: 1;
-  transform: translate(0, 0) !important;
 }
 
 /* ============================================================
@@ -1107,4 +1124,825 @@
   color: #94a3b8;
   padding: 0.5rem 0.75rem 0.25rem;
   margin-top: 0.5rem;
+}
+
+/* ============================================================
+   AMBIENT FLOATING ORBS & PREMIUM EFFECTS (Inspired by Gewo.health)
+   ============================================================ */
+
+/* Floating Orbs */
+.orb {
+  position: absolute;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.75;
+  will-change: transform;
+}
+.orb-1 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.25), transparent 70%);
+  top: -150px;
+  right: -80px;
+  border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
+  animation: orbFloat1 25s ease-in-out infinite;
+}
+.orb-2 {
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.22), transparent 70%);
+  bottom: -80px;
+  left: -60px;
+  border-radius: 50% 50% 30% 70% / 50% 60% 30% 70%;
+  animation: orbFloat2 28s ease-in-out infinite;
+}
+.orb-3 {
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.18), transparent 70%);
+  top: 35%;
+  left: 35%;
+  border-radius: 30% 70% 70% 30% / 50% 50% 50% 50%;
+  animation: orbFloat3 32s ease-in-out infinite;
+}
+
+@keyframes orbFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  50%       { transform: translate(-50px, 30px) scale(1.1) rotate(180deg); }
+}
+@keyframes orbFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  50%       { transform: translate(40px, -25px) scale(1.06) rotate(-180deg); }
+}
+@keyframes orbFloat3 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50%       { transform: translate(-25px, 25px) rotate(120deg); }
+}
+
+/* Isolated Login Orbs to keep Hero Section untouched */
+.login-orb {
+  position: absolute;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.95;
+  will-change: transform;
+}
+.login-orb-1 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, rgba(96, 165, 250, 0.45) 50%, transparent 70%);
+  top: -120px;
+  right: -60px;
+  border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
+  animation: loginOrbFloat1 20s ease-in-out infinite;
+}
+.login-orb-2 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.75) 0%, rgba(167, 139, 250, 0.4) 50%, transparent 70%);
+  bottom: -60px;
+  left: -60px;
+  border-radius: 50% 50% 30% 70% / 50% 60% 30% 70%;
+  animation: loginOrbFloat2 24s ease-in-out infinite;
+}
+.login-orb-3 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.7) 0%, rgba(251, 191, 36, 0.35) 50%, transparent 70%);
+  top: 25%;
+  left: 25%;
+  border-radius: 30% 70% 70% 30% / 50% 50% 50% 50%;
+  animation: loginOrbFloat3 28s ease-in-out infinite;
+}
+
+.login-page-bg {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+}
+
+@keyframes loginOrbFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  50%       { transform: translate(-60px, 40px) scale(1.15) rotate(180deg); }
+}
+@keyframes loginOrbFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  50%       { transform: translate(50px, -30px) scale(1.08) rotate(-180deg); }
+}
+@keyframes loginOrbFloat3 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50%       { transform: translate(-30px, 30px) rotate(120deg); }
+}
+
+/* Floating Cards Staggered Animation */
+.float-1 { animation: cardFloat1 6s ease-in-out infinite; }
+.float-2 { animation: cardFloat2 7s ease-in-out infinite 0.5s; }
+.float-3 { animation: cardFloat3 8s ease-in-out infinite 1s; }
+
+@keyframes cardFloat1 {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+@keyframes cardFloat2 {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+}
+@keyframes cardFloat3 {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-12px); }
+}
+
+/* Glowing Border Hover Card (Pure CSS Gradient Mask Exclude) */
+.glow-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glow-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 1.25rem;
+  padding: 1.75px;
+  background: var(--glow-gradient, linear-gradient(135deg, #2563eb, #7c3aed));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+.glow-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  border-color: transparent;
+}
+.glow-card:hover::before {
+  opacity: 1;
+}
+
+/* Scroll Mouse Indicator */
+.hero-scroll-cue {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #64748b;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  transition: color 0.2s ease, opacity 0.3s ease;
+}
+.hero-scroll-cue:hover {
+  color: #1e293b;
+}
+.hero-scroll-mouse {
+  width: 24px;
+  height: 38px;
+  border: 2px solid #cbd5e1;
+  border-radius: 13px;
+  display: flex;
+  justify-content: center;
+  padding-top: 6px;
+  transition: border-color 0.2s ease;
+}
+.hero-scroll-cue:hover .hero-scroll-mouse {
+  border-color: #475569;
+}
+.hero-scroll-mouse span {
+  width: 4px;
+  height: 8px;
+  border-radius: 2px;
+  background: #2563eb;
+  animation: scrollWheel 1.6s ease-in-out infinite;
+}
+@keyframes scrollWheel {
+  0% { opacity: 0; transform: translateY(-4px); }
+  40% { opacity: 1; }
+  80%, 100% { opacity: 0; transform: translateY(8px); }
+}
+
+/* Reduced Motion Fallback */
+@media (prefers-reduced-motion: reduce) {
+  .orb, .float-1, .float-2, .float-3, .hero-scroll-mouse span, .badge-shimmer-sweep::after {
+    animation: none !important;
+  }
+  .orb {
+    display: none !important;
+  }
+}
+
+/* ============================================================
+   LIQUID GLASS THEME STYLES (Fluent / Glassmorphism)
+   ============================================================ */
+
+/* Main layout context for liquid glass */
+.liquid-glass-active {
+  background-color: #f1f5f9;
+  min-height: 100dvh;
+  position: relative;
+}
+
+/* Glass panel transformation on container layers (optimized to remove filters from static block layouts) */
+.liquid-glass-active section,
+.liquid-glass-active footer,
+.liquid-glass-active header,
+.liquid-glass-active .bg-white,
+.liquid-glass-active .bg-neutral-50,
+.liquid-glass-active .bg-slate-50,
+.liquid-glass-active .bg-slate-50\/60 {
+  background: rgba(255, 255, 255, 0.48) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Glass effect with blur filter ONLY on overlapping floating elements, sidebars, and cards */
+.liquid-glass-active nav,
+.liquid-glass-active aside,
+.liquid-glass-active .glow-card,
+.liquid-glass-active .role-card {
+  background: rgba(255, 255, 255, 0.42) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.04) !important;
+}
+
+/* Fix sidebar container backgrounds on dashboards */
+.liquid-glass-active aside {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Smooth hover adjustments for glassy cards */
+.liquid-glass-active .glow-card:hover,
+.liquid-glass-active .role-card:hover {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* ============================================================
+   SOFT UI / NEUMORPHIC SAAS DESIGN SYSTEM
+   ============================================================ */
+
+/* Calming Pastel & Soft UI Variables */
+:root {
+  --soft-shadow-dark: rgba(163, 177, 198, 0.22);
+  --soft-shadow-light: rgba(255, 255, 255, 0.85);
+  --soft-bg-light: #f1f5f9;
+  
+  /* Calming Pastel Palettes */
+  --pastel-blue-bg: #e0f2fe;
+  --pastel-blue-fg: #0369a1;
+  --pastel-emerald-bg: #dcfce7;
+  --pastel-emerald-fg: #15803d;
+  --pastel-violet-bg: #f3e8ff;
+  --pastel-violet-fg: #6d28d9;
+  --pastel-amber-bg: #fef9c3;
+  --pastel-amber-fg: #a16207;
+}
+
+/* Dot grid background pattern */
+.bg-dot-grid {
+  background-image: radial-gradient(#1e40af 1.5px, transparent 1.5px);
+  background-size: 16px 16px;
+}
+
+/* Soft UI Typography adjustments */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Sora', 'Inter', sans-serif !important;
+  color: #1e293b !important;
+}
+
+/* Soft UI Neumorphic Card */
+.soft-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 1.5rem !important;
+  box-shadow: 5px 5px 15px var(--soft-shadow-dark), 
+              -5px -5px 15px var(--soft-shadow-light), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.soft-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 8px 8px 24px var(--soft-shadow-dark), 
+              -8px -8px 24px var(--soft-shadow-light);
+}
+
+/* Override existing card classes for seamless theme application */
+.card, .glow-card, .stat-card-pro {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 5px 5px 15px var(--soft-shadow-dark), 
+              -5px -5px 15px var(--soft-shadow-light), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.card:hover, .glow-card:hover, .stat-card-pro:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 8px 8px 24px var(--soft-shadow-dark), 
+              -8px -8px 24px var(--soft-shadow-light) !important;
+}
+
+/* Soft UI Inset Form Fields */
+.soft-input, .form-input, 
+.liquid-glass-active input, 
+.liquid-glass-active select, 
+.liquid-glass-active textarea {
+  background: #f8fafc !important;
+  border: 1px solid rgba(203, 213, 225, 0.5) !important;
+  border-radius: 1rem !important;
+  box-shadow: inset 2px 2px 5px rgba(163, 177, 198, 0.15), 
+              inset -2px -2px 5px rgba(255, 255, 255, 0.8), 
+              0 1px 2px rgba(0, 0, 0, 0.02) !important;
+  padding: 0.75rem 1rem !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  color: #334155 !important;
+  transition: all 0.2s ease !important;
+  outline: none !important;
+}
+.soft-input:focus, .form-input:focus,
+.liquid-glass-active input:focus,
+.liquid-glass-active select:focus,
+.liquid-glass-active textarea:focus {
+  background: #ffffff !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15) !important;
+}
+
+/* Soft UI Neumorphic Buttons */
+.btn-primary, .btn-secondary {
+  border-radius: 1.5rem !important;
+  font-family: 'Sora', 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+  padding: 0.7rem 1.5rem !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 3px 3px 10px rgba(30, 64, 175, 0.25), 
+              -3px -3px 10px rgba(255, 255, 255, 0.9), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 5px 5px 15px rgba(30, 64, 175, 0.35), 
+              -5px -5px 15px rgba(255, 255, 255, 0.9) !important;
+}
+.btn-primary:active {
+  transform: translateY(0) !important;
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 3px 3px 10px rgba(124, 58, 237, 0.25), 
+              -3px -3px 10px rgba(255, 255, 255, 0.9), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 5px 5px 15px rgba(124, 58, 237, 0.35), 
+              -5px -5px 15px rgba(255, 255, 255, 0.9) !important;
+}
+
+.btn-ghost {
+  background: transparent !important;
+  color: #475569 !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 3px 3px 8px rgba(163, 177, 198, 0.1), 
+              -3px -3px 8px rgba(255, 255, 255, 0.8) !important;
+}
+.btn-ghost:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+/* Soft UI Table styling */
+.pro-table {
+  background: transparent !important;
+}
+.pro-table thead th {
+  background: rgba(241, 245, 249, 0.6) !important;
+  border-bottom: 2px solid rgba(226, 232, 240, 0.8) !important;
+  font-family: 'Sora', sans-serif !important;
+  font-weight: 700 !important;
+  color: #475569 !important;
+  text-transform: uppercase !important;
+  font-size: 0.6875rem !important;
+  letter-spacing: 0.05em !important;
+}
+.pro-table tbody tr {
+  border-bottom: 1px solid rgba(241, 245, 249, 0.8) !important;
+}
+.pro-table tbody td {
+  font-weight: 500 !important;
+  color: #334155 !important;
+}
+
+/* Soft UI Subtab navigation */
+.subtab-nav {
+  background: #e2e8f0 !important;
+  border-radius: 1.5rem !important;
+  padding: 0.3rem !important;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.05), 
+              inset -1px -1px 3px rgba(255, 255, 255, 0.8) !important;
+  border: none !important;
+}
+.subtab-item {
+  border-radius: 1.2rem !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  transition: all 0.2s ease !important;
+}
+.subtab-item.active {
+  background: #ffffff !important;
+  color: #1e3a8a !important;
+  box-shadow: 2px 2px 6px rgba(163, 177, 198, 0.25), 
+              -2px -2px 6px rgba(255, 255, 255, 0.9) !important;
+}
+
+/* ── NEUMORPHIC AUTO-UPGRADERS FOR THE DASHBOARD CONTAINER ── */
+
+/* Upgrade all standard card blocks to soft neumorphic cards */
+.dashboard-container .bg-white.border.border-slate-100,
+.dashboard-container .bg-white.border.border-slate-50,
+.dashboard-container .bg-white.rounded-3xl,
+.dashboard-container .bg-white.rounded-2xl,
+.dashboard-container .bg-white.rounded-xl {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  border-radius: 1.75rem !important;
+  box-shadow: 6px 6px 20px rgba(163, 177, 198, 0.22), -6px -6px 20px rgba(255, 255, 255, 0.85) !important;
+  transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+}
+
+.dashboard-container .bg-white.border.border-slate-100:hover,
+.dashboard-container .bg-white.border.border-slate-50:hover,
+.dashboard-container .bg-white.rounded-3xl:hover,
+.dashboard-container .bg-white.rounded-2xl:hover,
+.dashboard-container .bg-white.rounded-xl:hover {
+  transform: translateY(-2.5px) !important;
+  box-shadow: 8px 8px 24px rgba(163, 177, 198, 0.28), -8px -8px 24px rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Upgrade buttons to pill-shaped interactive elements */
+.dashboard-container button[class*="bg-blue-"],
+.dashboard-container button[class*="bg-primary-"],
+.dashboard-container button[class*="bg-indigo-"] {
+  background: #1e40af !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 14px rgba(30, 64, 175, 0.2) !important;
+  font-family: 'Sora', 'Inter', sans-serif !important;
+  font-weight: 700 !important;
+  transition: all 0.2s ease !important;
+}
+.dashboard-container button[class*="bg-blue-"]:hover,
+.dashboard-container button[class*="bg-primary-"]:hover,
+.dashboard-container button[class*="bg-indigo-"]:hover {
+  background: #1d4ed8 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(30, 64, 175, 0.3) !important;
+}
+
+.dashboard-container button[class*="bg-emerald-"] {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.2) !important;
+  font-family: 'Sora', 'Inter', sans-serif !important;
+  font-weight: 700 !important;
+  transition: all 0.2s ease !important;
+}
+.dashboard-container button[class*="bg-emerald-"]:hover {
+  background: #059669 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3) !important;
+}
+
+.dashboard-container button[class*="bg-amber-"],
+.dashboard-container button[class*="bg-orange-"] {
+  background: #7c3aed !important; /* Cograd accent violet preferred */
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.2) !important;
+  font-family: 'Sora', 'Inter', sans-serif !important;
+  font-weight: 700 !important;
+  transition: all 0.2s ease !important;
+}
+.dashboard-container button[class*="bg-amber-"]:hover,
+.dashboard-container button[class*="bg-orange-"]:hover {
+  background: #6d28d9 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3) !important;
+}
+
+/* Fix standard list tags inside dashboards */
+.dashboard-container select,
+.dashboard-container textarea,
+.dashboard-container input:not([type="checkbox"]) {
+  background: #ffffff !important;
+  border: 1px solid rgba(203, 213, 225, 0.5) !important;
+  border-radius: 1rem !important;
+  box-shadow: inset 1px 1px 3px rgba(163, 177, 198, 0.1), 0 1px 2px rgba(0, 0, 0, 0.01) !important;
+  transition: all 0.2s ease !important;
+}
+
+.dashboard-container select:focus,
+.dashboard-container textarea:focus,
+.dashboard-container input:not([type="checkbox"]):focus {
+  border-color: #1e40af !important;
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.12) !important;
+}
+
+/* Floating animation inside dashboards */
+.tab-content-enter {
+  animation: dashboardEntrance 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes dashboardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============================================================
+   BORDER BEAM BUTTON EFFECT
+   ============================================================ */
+
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes border-beam-rotate {
+  to {
+    --angle: 360deg;
+  }
+}
+
+/* Blue Beams */
+.btn-border-beam-blue,
+.btn-primary,
+.dashboard-container button[class*="bg-blue-"],
+.dashboard-container button[class*="bg-primary-"],
+.dashboard-container button[class*="bg-indigo-"] {
+  border: 1.5px solid transparent !important;
+  background: 
+    linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%) padding-box,
+    conic-gradient(from var(--angle), transparent 50%, #60a5fa 75%, #1e40af 100%) border-box !important;
+  animation: border-beam-rotate 4s linear infinite !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 14px rgba(30, 64, 175, 0.2) !important;
+}
+
+.btn-primary:hover,
+.dashboard-container button[class*="bg-blue-"]:hover,
+.dashboard-container button[class*="bg-primary-"]:hover,
+.dashboard-container button[class*="bg-indigo-"]:hover {
+  background: 
+    linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) padding-box,
+    conic-gradient(from var(--angle), transparent 50%, #93c5fd 75%, #1d4ed8 100%) border-box !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 6px 20px rgba(30, 64, 175, 0.3) !important;
+}
+
+/* Purple Beams */
+.btn-border-beam-purple,
+.btn-secondary,
+.dashboard-container button[class*="bg-amber-"],
+.dashboard-container button[class*="bg-orange-"] {
+  border: 1.5px solid transparent !important;
+  background: 
+    linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) padding-box,
+    conic-gradient(from var(--angle), transparent 50%, #c084fc 75%, #7c3aed 100%) border-box !important;
+  animation: border-beam-rotate 4s linear infinite !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.2) !important;
+}
+
+.btn-secondary:hover,
+.dashboard-container button[class*="bg-amber-"]:hover,
+.dashboard-container button[class*="bg-orange-"]:hover {
+  background: 
+    linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%) padding-box,
+    conic-gradient(from var(--angle), transparent 50%, #d8b4fe 75%, #6d28d9 100%) border-box !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3) !important;
+}
+
+/* Emerald Beams */
+.btn-border-beam-emerald,
+.dashboard-container button[class*="bg-emerald-"] {
+  border: 1.5px solid transparent !important;
+  background: 
+    linear-gradient(135deg, #10b981 0%, #059669 100%) padding-box,
+    conic-gradient(from var(--angle), transparent 50%, #34d399 75%, #10b981 100%) border-box !important;
+  animation: border-beam-rotate 4s linear infinite !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.2) !important;
+}
+
+.dashboard-container button[class*="bg-emerald-"]:hover {
+  background: 
+    linear-gradient(135deg, #059669 0%, #047857 100%) padding-box,
+    conic-gradient(from var(--angle), transparent 50%, #a7f3d0 75%, #059669 100%) border-box !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3) !important;
+}
+
+/* ============================================================
+   LOGIN PAGE PREMIUM STYLES
+   ============================================================ */
+
+/* Animated gradient orbs */
+.login-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  pointer-events: none;
+  animation: loginOrbFloat 12s ease-in-out infinite;
+}
+.login-orb-1 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 70%);
+  top: -200px; left: -100px;
+  animation-delay: 0s;
+}
+.login-orb-2 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%);
+  bottom: -150px; right: -80px;
+  animation-delay: -4s;
+}
+.login-orb-3 {
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%);
+  top: 40%; left: 40%;
+  animation-delay: -8s;
+}
+@keyframes loginOrbFloat {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%      { transform: translate(30px,-40px) scale(1.05); }
+  66%      { transform: translate(-20px, 20px) scale(0.97); }
+}
+
+/* Subtle grid overlay */
+.login-grid-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Gradient hero text */
+.login-gradient-text {
+  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #34d399 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Quote card on left panel */
+.login-quote-card {
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+}
+
+/* Glassmorphism login card */
+.login-card {
+  background: rgba(255,255,255,0.07);
+  backdrop-filter: blur(32px) saturate(1.6);
+  -webkit-backdrop-filter: blur(32px) saturate(1.6);
+  border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 1.75rem;
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.4),
+    0 0 0 0.5px rgba(255,255,255,0.05) inset,
+    0 1px 0 rgba(255,255,255,0.12) inset;
+  overflow: hidden;
+}
+
+/* Role tab buttons */
+.login-role-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.65rem 0.25rem 0.6rem;
+  border-radius: 0.875rem;
+  border: 1px solid transparent;
+  background: rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.login-role-tab:hover:not(.login-role-tab-active) {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.1);
+}
+.login-role-tab-active {
+  border-color: rgba(255,255,255,0.2) !important;
+}
+
+/* Demo banner */
+.login-demo-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0.875rem;
+  padding: 0.75rem 1rem;
+}
+
+/* Input wrapper */
+.login-input-wrapper {
+  position: relative;
+  border-radius: 0.875rem;
+  border: 1.5px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.06);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.login-input-wrapper.login-input-focused {
+  border-color: rgba(99,102,241,0.6);
+  background: rgba(255,255,255,0.09);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+}
+.login-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0.8rem 1rem;
+  font-size: 0.875rem;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  border-radius: 0.875rem;
+}
+.login-input::placeholder { color: rgba(255,255,255,0.25); }
+.login-input:-webkit-autofill,
+.login-input:-webkit-autofill:hover,
+.login-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px rgba(30, 27, 75, 0.95) inset !important;
+  -webkit-text-fill-color: #fff !important;
+  caret-color: #fff;
+  border-radius: 0.875rem;
+}
+
+/* Shine sweep on primary button */
+.login-btn-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%);
+  background-size: 200% 100%;
+  background-position: -100% center;
+  border-radius: inherit;
+  transition: background-position 0.5s ease;
+  pointer-events: none;
+}
+button:hover .login-btn-shine {
+  background-position: 200% center;
 }

@@ -1,24 +1,27 @@
 import { useState, useEffect, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DashboardShell from '../components/DashboardShell';
+import {
+  getStudents,
+  saveStudents,
+  getAssignments,
+  updateAssignmentStatus,
+  resetSimulationState
+} from '../utils/mockDb';
 import { 
   LayoutDashboard, 
   BookOpen, 
-  UserCheck, 
   UploadCloud, 
   CheckSquare, 
   Clock, 
   Mail, 
   Search, 
-  Bell, 
   User, 
   CheckCircle2, 
   X, 
-  ChevronRight, 
-  GraduationCap, 
   Sparkles, 
   Send, 
   CornerUpLeft, 
-  LogOut,
   Calendar,
   AlertCircle,
   Plus,
@@ -53,21 +56,16 @@ const TeacherDashboard = () => {
 
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [greeting] = useState(() => {
-    const hr = new Date().getHours();
-    if (hr < 12) return 'Good Morning';
-    if (hr < 17) return 'Good Afternoon';
-    return 'Good Evening';
-  });
-  
+  const triggerToast = (msg) => {
+    setToastMessage(msg);
+    setShowToast(true);
+  };
   // Notification center states
   const [unreadNotifications, setUnreadNotifications] = useState([
     { id: 1, text: 'Rahul Varma submitted Assignment #3', time: '10m ago', isNew: true },
     { id: 2, text: 'Sanya Singh submitted Homework worksheet', time: '1h ago', isNew: true },
     { id: 3, text: 'New class session scheduled for Batch Alpha-24', time: '2h ago', isNew: true }
   ]);
-  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
-
   // 1. Teacher Profile States
   const [teacherProfile, setTeacherProfile] = useState({
     name: 'Priya Sharma',
@@ -94,15 +92,69 @@ const TeacherDashboard = () => {
   const [editProfileData, setEditProfileData] = useState({ ...teacherProfile });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
+  const [pendingAssignments, setPendingAssignments] = useState([]);
+  const [students, setStudents] = useState([]);
+  
+  const loadTeacherData = () => {
+    const allAssignments = getAssignments();
+    const allStudents = getStudents();
+    
+    const proposed = allAssignments.filter(a => a.teacher_id === 1 && a.status === 'proposed');
+    const proposedWithDetails = proposed.map(a => {
+      const student = allStudents.find(s => s.id === a.student_id);
+      return {
+        assignment: a,
+        student: student
+      };
+    }).filter(x => x.student !== undefined);
+    
+    setPendingAssignments(proposedWithDetails);
+
+    const activeAsgs = allAssignments.filter(a => a.teacher_id === 1 && a.status === 'active');
+    const matchedStudents = activeAsgs.map(a => {
+      const student = allStudents.find(s => s.id === a.student_id);
+      return student;
+    }).filter(s => s !== undefined).map(s => ({
+      id: s.id,
+      name: s.name,
+      batchId: 'class-9-10',
+      attendanceRate: 100,
+      avgGrade: s.test_score ? (
+        s.test_score.Mathematics !== undefined && s.test_score.Science !== undefined
+          ? Math.round((s.test_score.Mathematics + s.test_score.Science) / 2)
+          : s.test_score.Mathematics !== undefined ? s.test_score.Mathematics : (s.test_score.Science || 90)
+      ) : 90,
+      status: 'Active'
+    }));
+
+    const baseStudents = [
+      { id: 101, name: 'Rahul Varma', batchId: 'class-9-10', attendanceRate: 94, avgGrade: 88, status: 'Active' },
+      { id: 102, name: 'Sanya Singh', batchId: 'class-6-8', attendanceRate: 98, avgGrade: 95, status: 'Active' },
+      { id: 103, name: 'Arjun Mehta', batchId: 'class-9-10', attendanceRate: 85, avgGrade: 76, status: 'Needs Attention' },
+      { id: 104, name: 'Vikram R.', batchId: 'class-1-5', attendanceRate: 92, avgGrade: 82, status: 'Active' },
+      { id: 105, name: 'Neha Gupta', batchId: 'class-6-8', attendanceRate: 96, avgGrade: 91, status: 'Active' },
+      { id: 106, name: 'Amit Shah', batchId: 'class-1-5', attendanceRate: 89, avgGrade: 80, status: 'Active' }
+    ];
+
+    setStudents([...matchedStudents, ...baseStudents]);
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadTeacherData();
+    const handleStorage = () => {
+      loadTeacherData();
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadTeacherData();
+  }, [activeTab]);
+
   // 2. Shared Data States
-  const [students, setStudents] = useState([
-    { id: 1, name: 'Rahul Varma', batchId: 'class-9-10', attendanceRate: 94, avgGrade: 88, status: 'Active' },
-    { id: 2, name: 'Sanya Singh', batchId: 'class-6-8', attendanceRate: 98, avgGrade: 95, status: 'Active' },
-    { id: 3, name: 'Arjun Mehta', batchId: 'class-9-10', attendanceRate: 85, avgGrade: 76, status: 'Needs Attention' },
-    { id: 4, name: 'Vikram R.', batchId: 'class-1-5', attendanceRate: 92, avgGrade: 82, status: 'Active' },
-    { id: 5, name: 'Neha Gupta', batchId: 'class-6-8', attendanceRate: 96, avgGrade: 91, status: 'Active' },
-    { id: 6, name: 'Amit Shah', batchId: 'class-1-5', attendanceRate: 89, avgGrade: 80, status: 'Active' }
-  ]);
 
   const [batches, setBatches] = useState([
     { id: 'class-9-10', title: 'Class 9 Mathematics', badge: 'C9', badgeColor: 'bg-blue-500', cap: '1:1', progress: 65 },
@@ -607,167 +659,207 @@ const TeacherDashboard = () => {
   // SUB-PAGES RENDERING
   // ----------------------------------------------------
 
-  // 1. Dashboard View
-  const renderDashboard = () => (
-    <div className="space-y-8 animate-fade-in">
-      {/* Overview stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shadow-inner">
-            <GraduationCap className="w-6 h-6" />
-          </div>
+  const renderDashboard = () => {
+    // Filter active student list
+    const displayStudents = students.slice(0, 4);
+
+    return (
+      <div className="space-y-10 animate-fade-in text-left">
+        
+        {/* Header Block with Hello & Verification Status (Priority 4) */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glow-card p-8">
           <div>
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Students Enrolled</div>
-            <div className="text-xl font-black text-slate-800 mt-1">85 Active</div>
+            <h2 className="text-xl font-black text-slate-800">Hello, Priya Sharma 👋</h2>
+            <p className="text-xs text-slate-500 mt-1">Here is your home tutoring overview for today.</p>
           </div>
-        </div>
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 shadow-inner">
-            <UserCheck className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Attendance</div>
-            <div className="text-xl font-black text-slate-800 mt-1">91.4% Rate</div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-xl border border-emerald-100 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+              Verified Mentor
+            </span>
+            <span className="text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl border border-blue-100">
+              Math & Science
+            </span>
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500 shadow-inner">
-            <DollarSign className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Monthly Revenue</div>
-            <div className="text-xl font-black text-slate-800 mt-1">₹45,200</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Schedule cards */}
-      <section className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-black text-slate-900 tracking-tight">Today's Teaching Schedule</h2>
-          <button onClick={() => { setActiveTab('Schedule & Attendance'); setSubTabs(p => ({ ...p, schedules: 'timetable' })); }} className="text-blue-500 hover:text-blue-700 text-xs font-extrabold flex items-center space-x-1 transition-colors cursor-pointer">
-            <span>View full calendar</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col justify-between h-36">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" /> 09:00 AM - 10:30 AM
-                </span>
-                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+        {/* Row 1: Active Roster (Priority 1) & Pending Confirmation Requests (Priority 2) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left: Assigned Students (Priority 1) */}
+          <div className={`${pendingAssignments.length > 0 ? 'lg:col-span-7' : 'lg:col-span-12'} glow-card p-8 space-y-6`}>
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-base font-black text-slate-800">My Assigned Students</h3>
+                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Active home tuitions roster</p>
               </div>
-              <h3 className="text-base font-extrabold text-slate-800 leading-snug">Class 9 - Mathematics: Triangles</h3>
-            </div>
-            <div className="text-xs text-slate-500 font-semibold bg-slate-50 py-1.5 px-3 rounded-lg w-max">Batch: Mathematics Advanced</div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 border-2 border-blue-500 shadow-md flex flex-col justify-between h-36 ring-4 ring-blue-50">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-black text-blue-500 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" /> 11:00 AM - 12:00 PM (NOW)
-                </span>
-                <span className="bg-blue-500 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full animate-pulse">ONGOING</span>
-              </div>
-              <h3 className="text-base font-extrabold text-slate-800 leading-snug">Class 7 — Science (Home Visit)</h3>
-            </div>
-            <div className="flex items-center justify-between mt-2">
-              <div className="text-xs text-blue-600 bg-blue-50 py-1.5 px-3 rounded-lg font-bold">Student: Sanya Singh</div>
               <button 
-                onClick={() => { setActiveTab('My Students'); setSubTabs(p => ({ ...p, classroom: 'daily_reports' })); }} 
-                className="bg-blue-500 text-white font-bold text-xs py-2 px-3 rounded-lg hover:bg-blue-600 transition-all cursor-pointer flex items-center gap-1 shadow-sm"
+                onClick={() => setActiveTab('My Students')} 
+                className="text-xs font-bold text-blue-600 hover:underline border-0 bg-transparent cursor-pointer"
               >
-                <FileSpreadsheet className="w-3.5 h-3.5" /> <span>Daily Report</span>
+                View Roster ({students.length})
               </button>
             </div>
-          </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col justify-between h-36">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" /> 02:00 PM - 03:30 PM
-                </span>
-              </div>
-              <h3 className="text-base font-extrabold text-slate-800 leading-snug">Grade 10 - Geometry Fundamentals</h3>
-            </div>
-            <div className="text-xs text-slate-500 font-semibold bg-slate-50 py-1.5 px-3 rounded-lg w-max">Batch: Class 1-5 Primary</div>
-          </div>
-        </div>
-      </section>
-
-      {/* Grid columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Left column */}
-        <div className="lg:col-span-7 space-y-8">
-          <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-base font-black text-slate-900">Recent Parent Reviews</h3>
-              <button onClick={() => { setActiveTab('Profile & Reviews'); setSubTabs(p => ({ ...p, profile: 'reviews' })); }} className="text-blue-500 hover:text-blue-700 text-xs font-bold cursor-pointer">View Reviews</button>
-            </div>
-            <div className="space-y-4 divide-y divide-slate-50">
-              {reviewsList.slice(0, 2).map(review => (
-                <div key={review.id} className="pt-3 first:pt-0">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-extrabold text-slate-800">{review.reviewer}</span>
-                    <span className="text-amber-500">{'★'.repeat(review.rating)}</span>
+            <div className={`grid grid-cols-1 ${pendingAssignments.length > 0 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-6`}>
+              {displayStudents.map(student => (
+                <div key={student.id} className="p-4 bg-slate-50/50 border border-slate-100/50 rounded-2xl flex flex-col justify-between hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-9 h-9 rounded-full bg-blue-50 border border-blue-150 flex items-center justify-center font-extrabold text-blue-600 text-xs uppercase">
+                      {student.name.split(' ').map(n=>n[0]).join('')}
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-800">{student.name}</h4>
+                      <p className="text-[9px] text-slate-400 font-bold mt-0.5">{student.batchId === 'class-9-10' ? 'Class 9-10' : student.batchId === 'class-6-8' ? 'Class 6-8' : 'Class 1-5'}</p>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-600 mt-1.5 italic">"{review.text}"</p>
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[9px] font-bold bg-white px-2 py-0.5 rounded-lg border border-slate-100 text-slate-500">
+                      Grade: {student.avgGrade}%
+                    </span>
+                    <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg ${
+                      student.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                    }`}>
+                      {student.status}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
-          </section>
+          </div>
 
-          <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
-            <h3 className="text-base font-black text-slate-900">Upload Study Material</h3>
-            <div className="flex items-center space-x-3">
-              <input
-                type="text"
-                placeholder="Add notes or worksheet for your student"
-                className="flex-grow py-2.5 px-4 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              />
-              <button 
-                onClick={() => { setActiveTab('Study Materials'); setSubTabs(p => ({ ...p, content: 'content_manager' })); }}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm transition-all cursor-pointer shrink-0 flex items-center gap-1"
-              >
-                <UploadCloud className="w-3.5 h-3.5" />
-                Upload
-              </button>
+          {/* Right: Pending Assignments (Priority 2) */}
+          {pendingAssignments.length > 0 && (
+            <div className="lg:col-span-5 bg-gradient-to-br from-blue-600 to-indigo-750 text-white rounded-3xl p-8 shadow-lg shadow-blue-600/10 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm">📢</span>
+                    <h3 className="text-xs font-black uppercase tracking-wider">New Allotment Request</h3>
+                  </div>
+                  <span className="text-[8px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-lg">Confirm Fit</span>
+                </div>
+                
+                <div className="space-y-4">
+                  {pendingAssignments.map(({ assignment, student }) => {
+                    const scores = student.test_score || { Mathematics: 0, Science: 0 };
+                    return (
+                      <div key={assignment.id} className="p-3.5 bg-white/10 rounded-2xl border border-white/5 space-y-3">
+                        <div>
+                          <h4 className="text-xs font-black">{student.name}</h4>
+                          <p className="text-[9px] text-white/80 mt-0.5">{student.standard} | Needs: {student.subjects.join(', ')}</p>
+                          <div className="flex gap-3 mt-2">
+                            <span className="text-[8px] font-extrabold bg-white/20 px-2 py-0.5 rounded-md">Math: {scores.mathMarksText || `${scores.Mathematics}%`}</span>
+                            <span className="text-[8px] font-extrabold bg-white/20 px-2 py-0.5 rounded-md">Science: {scores.scienceMarksText || `${scores.Science}%`}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              updateAssignmentStatus(student.id, 1, false);
+                              triggerToast('Flagged slot conflict to Cograd support.');
+                              loadTeacherData();
+                            }}
+                            className="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-[10px] rounded-xl shadow-sm transition-all cursor-pointer border-0"
+                          >
+                            Flag Conflict
+                          </button>
+                          <button
+                            onClick={() => {
+                              updateAssignmentStatus(student.id, 1, true);
+                              triggerToast(`Assigned ${student.name} to your roster!`);
+                              loadTeacherData();
+                            }}
+                            className="flex-1 py-2 bg-white hover:bg-slate-50 text-indigo-900 font-extrabold text-[10px] rounded-xl shadow-md transition-all cursor-pointer border-0"
+                          >
+                            Confirm Availability
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-          </section>
+          )}
         </div>
 
-        {/* Right column */}
-        <div className="lg:col-span-5 space-y-8">
-
-
-          <section className="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-3xl p-6 text-white space-y-4 shadow-xl relative overflow-hidden">
-            <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
-              <Calendar className="w-36 h-36 text-white" />
+        {/* Row 2: Schedule & Availability Settings (Priority 3) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Today's Schedule */}
+          <div className="lg:col-span-7 glow-card p-8 space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-base font-black text-slate-800">Today's Schedule</h3>
+                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">3 upcoming sessions today</p>
+              </div>
+              <button 
+                onClick={() => setActiveTab('Schedule & Attendance')} 
+                className="text-xs font-bold text-blue-600 hover:underline border-0 bg-transparent cursor-pointer"
+              >
+                Full Timetable
+              </button>
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                { time: '09:00 AM - 10:30 AM', title: 'Class 9 Math (Triangles)', type: 'Completed' },
+                { time: '11:00 AM - 12:00 PM', title: 'Class 7 Science (Home visit)', type: 'Ongoing' },
+                { time: '02:00 PM - 03:30 PM', title: 'Grade 10 Geometry', type: 'Upcoming' }
+              ].map((sc, i) => (
+                <div key={i} className={`p-3 rounded-2xl border flex flex-col justify-between h-24 text-left ${
+                  sc.type === 'Ongoing'
+                    ? 'border-blue-500 bg-blue-50/20'
+                    : sc.type === 'Completed'
+                      ? 'border-slate-100 bg-slate-50/30 opacity-70'
+                      : 'border-slate-150 bg-white'
+                }`}>
+                  <div>
+                    <span className="text-[8px] text-slate-400 font-extrabold uppercase block">{sc.time}</span>
+                    <h4 className="text-xs font-black text-slate-700 mt-1 line-clamp-2 leading-tight">{sc.title}</h4>
+                  </div>
+                  <div className="flex justify-end mt-2">
+                    <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg ${
+                      sc.type === 'Ongoing'
+                        ? 'bg-blue-600 text-white animate-pulse'
+                        : sc.type === 'Completed'
+                          ? 'bg-emerald-50 text-emerald-600'
+                          : 'bg-slate-100 text-slate-500'
+                    }`}>{sc.type}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Availability Settings Quick-View */}
+          <div className="lg:col-span-5 glow-card p-8 flex flex-col justify-between">
             <div>
-              <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">This Month's Sessions</span>
-              <h3 className="text-2xl font-black mt-1">{earningsStats.completedSessions || 24} completed</h3>
-              <p className="text-[10px] text-slate-400 mt-1">Home visits logged with daily reports sent to parents</p>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-base font-black text-slate-800">Availability & Slots</h3>
+                <span className="text-[9px] text-slate-400 font-bold">Manage tuition capacity</span>
+              </div>
+              <div className="bg-slate-50 p-4 rounded-2xl flex items-center justify-between">
+                <div>
+                  <span className="text-[9px] text-slate-400 font-bold block">Capacity Status</span>
+                  <span className="text-xs font-black text-slate-700 mt-0.5">{students.length} / 5 Students Assigned</span>
+                </div>
+                <div className="w-20 bg-slate-200 h-2 rounded-full overflow-hidden">
+                  <div className="bg-blue-600 h-full transition-all duration-300" style={{ width: `${(students.length / 5) * 100}%` }} />
+                </div>
+              </div>
             </div>
             <button 
-              onClick={() => { setActiveTab('My Students'); setSubTabs(p => ({ ...p, classroom: 'daily_reports' })); }}
-              className="w-full bg-white hover:bg-slate-100 text-slate-900 font-black text-xs py-3 rounded-xl transition-all cursor-pointer text-center"
+              onClick={() => { setActiveTab('Schedule & Attendance'); setSubTabs(p => ({ ...p, schedules: 'availabilities' })); }}
+              className="w-full mt-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold py-2.5 rounded-xl text-xs transition-colors"
             >
-              Submit Daily Report
+              Edit Weekly Availability Slots
             </button>
-          </section>
+          </div>
         </div>
 
       </div>
-    </div>
-  );
+    );
+  };
 
   // 2. Content & Resources
   const renderContentResources = () => {
@@ -2942,8 +3034,7 @@ const TeacherDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans relative overflow-hidden">
-      
+    <>
       {/* Confetti Animation Layer */}
       {gradingConfetti.length > 0 && (
         <div className="fixed inset-0 z-50 pointer-events-none overflow-hidden">
@@ -2965,224 +3056,92 @@ const TeacherDashboard = () => {
         </div>
       )}
 
-      {/* 1. LEFT SIDEBAR PANEL */}
-      <aside className="w-64 bg-white border-r border-slate-100 flex flex-col justify-between h-screen sticky top-0 z-30 shrink-0 shadow-sm">
-        <div className="flex flex-col h-full overflow-hidden">
-          {/* Logo Brand area */}
-          <div className="p-6 border-b border-slate-50 flex items-center shrink-0">
-            <div>
-              <div className="text-2xl font-black tracking-tight logo-shimmer">Cograd Pathshala</div>
-              <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase mt-1">Teacher Hub</div>
-            </div>
-          </div>
-
-          {/* Navigation Menu (Scrollable) */}
-          <nav className="p-4 space-y-1 overflow-y-auto flex-grow scrollbar-thin">
-            {[
-              { name: 'My Dashboard', icon: LayoutDashboard },
-              { name: 'My Students', icon: Users },
-              { name: 'Study Materials', icon: BookOpen },
-              { name: 'Homework', icon: CheckSquare },
-              { name: 'Schedule & Attendance', icon: Calendar },
-
-              { name: 'Profile & Reviews', icon: User }
-            ].map(item => {
-              const IconComp = item.icon;
-              const isActive = activeTab === item.name;
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => setActiveTab(item.name)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-[13px] font-bold transition-all duration-300 cursor-pointer group relative active:scale-[0.98] ${
-                    isActive 
-                      ? 'bg-slate-100/55 border border-slate-200/20 text-slate-900 shadow-sm' 
-                      : 'text-slate-500 border border-transparent hover:text-slate-900 hover:bg-slate-50/80'
-                  }`}
-                >
-                  {/* Left Accent indicator line */}
-                  {isActive && (
-                    <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-r-full animate-fade-in" />
-                  )}
-                  
-                  <div className="flex items-center space-x-3.5">
-                    {/* Icon Container with glowing effect */}
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                      isActive 
-                        ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25 scale-[1.03]' 
-                        : 'bg-slate-50 text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600 group-hover:scale-[1.03]'
-                    }`}>
-                      <IconComp className={`w-4.5 h-4.5 transition-transform duration-300 ${
-                        isActive ? '' : 'group-hover:rotate-6'
-                      }`} />
-                    </div>
-                    
-                    <span className={`transition-colors duration-200 ${isActive ? 'font-extrabold text-slate-900' : 'font-medium'}`}>
-                      {item.name}
-                    </span>
-                  </div>
-
-                  {item.badge ? (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider bg-red-500 text-white shadow-sm">
-                      {item.badge}
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Aligned Profile Section (Fixed bottom) */}
-          <div className="p-4 border-t border-slate-100 bg-slate-50/60 shrink-0 flex items-center justify-between">
-            <button 
-              onClick={() => { setActiveTab('Profile & Reviews'); setSubTabs(p => ({ ...p, profile: 'public_profile' })); }}
-              className="flex items-center space-x-3 min-w-0 hover:opacity-80 transition-opacity text-left cursor-pointer group"
-            >
-              <img 
-                src={teacherProfile.avatar} 
-                alt={teacherProfile.name} 
-                className="w-10 h-10 rounded-full border-2 object-cover shadow-sm flex-shrink-0 border-slate-200"
-              />
-              <div className="min-w-0">
-                <h4 className="text-xs font-extrabold text-slate-800 leading-none truncate group-hover:text-blue-600 transition-colors">{teacherProfile.name}</h4>
-                <p className="text-[10px] text-slate-400 font-bold mt-1.5 truncate">Math Faculty</p>
-              </div>
-            </button>
-            <button
-              onClick={handleLogout}
-              className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-xl transition-colors cursor-pointer group flex-shrink-0"
-              title="Log Out Account"
-            >
-              <LogOut className="w-4.5 h-4.5 group-hover:translate-x-0.5 transition-transform" />
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* 2. MAIN HUB CONTENT AREA */}
-      <div className="flex-grow flex flex-col min-w-0 h-screen overflow-hidden">
-        
-        {/* TOP HEADER BAR */}
-        <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-8 z-20 shrink-0 sticky top-0 shadow-sm">
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl lg:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-              <span>{greeting},</span> 
-              <span className="color-blend-blue">{teacherProfile.name}</span>
-            </h1>
-            <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse hidden sm:inline" />
-          </div>
-
-          <div className="flex items-center space-x-6">
+      <DashboardShell
+        navItems={[
+          { name: 'My Dashboard', icon: LayoutDashboard },
+          { name: 'My Students', icon: Users },
+          { name: 'Study Materials', icon: BookOpen },
+          { name: 'Homework', icon: CheckSquare },
+          { name: 'Schedule & Attendance', icon: Calendar },
+          { name: 'Profile & Reviews', icon: User }
+        ]}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        roleName="Teacher Hub"
+        roleColor="blue"
+        userName={teacherProfile.name}
+        notifications={unreadNotifications}
+        onClearNotifs={() => {
+          setUnreadNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
+          setToastMessage('All notifications read.');
+          setShowToast(true);
+        }}
+        onLogout={handleLogout}
+        toast={{ show: showToast, message: toastMessage }}
+        headerRight={
+          <div className="flex items-center gap-4">
             {/* Search Input Box */}
             <div className="relative max-w-xs hidden md:block">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search students, batches..."
+                placeholder="Search students..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-60"
+                className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl text-xs font-semibold placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-48 focus:w-60 text-slate-800"
               />
             </div>
-
-            {/* Notification Center */}
-            <div className="relative">
-              <button 
-                onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
-                className="relative p-2.5 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-100 hover:border-slate-200 transition-all cursor-pointer group"
-              >
-                <Bell className="w-5 h-5 text-slate-500 group-hover:scale-105 transition-transform" />
-                {unreadNotifications.some(n => n.isNew) && (
-                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border border-white rounded-full animate-bounce"></span>
-                )}
-              </button>
-
-              {/* Notification Dropdown Menu */}
-              {showNotificationDropdown && (
-                <div className="absolute right-0 mt-2.5 w-80 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 p-4 space-y-3 animate-fade-in text-slate-800">
-                  <div className="flex items-center justify-between border-b border-slate-50 pb-2.5">
-                    <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Notifications</h3>
-                    {unreadNotifications.some(n => n.isNew) && (
-                      <button 
-                        onClick={() => {
-                          setUnreadNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
-                          setToastMessage('All notifications read.');
-                          setShowToast(true);
-                        }}
-                        className="text-[10px] font-black text-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
-                      >
-                        Mark all as read
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="divide-y divide-slate-50 max-h-60 overflow-y-auto pr-1">
-                    {unreadNotifications.length > 0 ? (
-                      unreadNotifications.map(notif => (
-                        <div 
-                          key={notif.id} 
-                          onClick={() => {
-                            setUnreadNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isNew: false } : n));
-                            setShowNotificationDropdown(false);
-                            setToastMessage(`Notification: "${notif.text}"`);
-                            setShowToast(true);
-                          }}
-                          className="py-3 px-1.5 flex flex-col space-y-1 cursor-pointer transition-colors hover:bg-slate-50/80 rounded-lg text-left"
-                        >
-                          <div className="flex items-start justify-between gap-1.5">
-                            <span className={`text-[11px] leading-relaxed ${notif.isNew ? 'font-extrabold text-slate-800' : 'text-slate-500 font-medium'}`}>
-                              {notif.text}
-                            </span>
-                            {notif.isNew && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1 flex-shrink-0"></span>
-                            )}
-                          </div>
-                          <span className="text-[9px] font-bold text-slate-400">{notif.time}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="py-6 text-center text-xs font-bold text-slate-400">No notifications yet.</div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* User Badge Icon */}
-            <div className="flex items-center space-x-2.5 border-l border-slate-100 pl-6">
-              <button 
-                onClick={() => { setActiveTab('Profile & Reviews'); setSubTabs(p => ({ ...p, profile: 'public_profile' })); }}
-                className="w-9 h-9 rounded-full overflow-hidden border border-slate-200 hover:border-blue-500 hover:ring-2 hover:ring-blue-500/20 transition-all cursor-pointer"
-              >
-                <img src={teacherProfile.avatar} alt="User" className="w-full h-full object-cover" />
-              </button>
-            </div>
           </div>
-        </header>
+        }
+      >
+        <div key={activeTab} className="tab-content-enter h-full w-full">
+          {getActiveTabContent()}
+        </div>
+      </DashboardShell>
 
-        {/* ACTIVE TAB CONTENT */}
-        <main className="flex-grow p-6 lg:p-8 overflow-y-auto max-w-[1400px] w-full mx-auto space-y-8 scrollbar-thin">
-          <div key={activeTab} className="tab-content-enter h-full w-full">
-            {getActiveTabContent()}
-          </div>
-        </main>
-
-      </div>
-
-      {/* ALIVE FLOATING NOTIFICATION TOAST */}
-      {showToast && (
-        <div className="fixed bottom-6 right-6 z-50 animate-slide-up flex items-center bg-slate-900 text-white px-5 py-4 rounded-2xl shadow-2xl space-x-3.5 border border-slate-800 max-w-sm">
-          <AlertCircle className="w-5.5 h-5.5 text-indigo-400 flex-shrink-0" />
-          <p className="text-xs font-semibold leading-relaxed pr-2">{toastMessage}</p>
-          <button 
-            onClick={() => setShowToast(false)}
-            className="text-slate-400 hover:text-white transition-colors cursor-pointer flex-shrink-0"
+      {/* Simulation Control Panel */}
+      <div className="fixed bottom-4 left-4 z-40 bg-slate-900/95 backdrop-blur-md text-white rounded-2xl p-4 shadow-2xl border border-slate-800 max-w-xs text-left">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-black uppercase tracking-wider text-blue-400">Simulation Controls</span>
+          <span className="text-[9px] bg-slate-800 px-2 py-0.5 rounded font-mono text-slate-300">Teacher</span>
+        </div>
+        <div className="space-y-1.5">
+          <button
+            onClick={() => {
+              resetSimulationState('stu_rahul', 'pending_test');
+              triggerToast('Reset Rahul Sharma to "Pending Test".');
+              loadTeacherData();
+            }}
+            className="w-full py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-[10px] font-bold transition-all cursor-pointer text-left"
           >
-            <X className="w-4 h-4" />
+            🔄 Reset Rahul to "Pending Test"
+          </button>
+          <button
+            onClick={() => {
+              resetSimulationState('stu_rahul', 'pending_match');
+              const studentsList = getStudents();
+              const idx = studentsList.findIndex(s => s.id === 'stu_rahul');
+              if (idx !== -1) {
+                studentsList[idx].test_score = { 
+                  Mathematics: 88, 
+                  Science: 53,
+                  mathMarksText: '14/16',
+                  scienceMarksText: '10/19',
+                  totalMarksText: '24/35'
+                };
+                studentsList[idx].test_completed_at = new Date().toISOString();
+                saveStudents(studentsList);
+              }
+              triggerToast('Set Rahul to "Pending Match" (Scores: Math 14/16, Science 10/19 - Total: 24/35)');
+              loadTeacherData();
+            }}
+            className="w-full py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-[10px] font-bold transition-all cursor-pointer text-left"
+          >
+            ⌛ Set Rahul to "Pending Match"
           </button>
         </div>
-      )}
-
-    </div>
+      </div>
+    </>
   );
 };
 
