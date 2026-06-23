@@ -1,16 +1,70 @@
-# React + Vite
+# Cograd Pathshala
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This repository is split into two main sections:
+- **`frontend/`**: The frontend React app powered by Vite and Tailwind CSS.
+- **`backend/`**: The backend services powered by Node.js, Express, and CORS.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Directory Structure
 
-## React Compiler
+```
+cograd-pathshala/
+├── frontend/               # React client application
+│   ├── src/
+│   ├── public/
+│   ├── index.html
+│   ├── package.json
+│   └── ...
+├── backend/                # Express API application
+│   ├── src/
+│   │   └── server.js
+│   ├── package.json
+│   ├── .gitignore
+│   └── .env.example
+├── .gitignore              # Global workspace gitignore
+└── README.md               # Root workspace documentation
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Setup & Running Guide
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 1. Frontend
+
+To install and run the React frontend:
+
+```bash
+# Navigate to the frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Run in development mode
+npm run dev
+
+# Build for production
+npm run build
+```
+
+### 2. Backend
+
+To install and run the Express backend:
+
+```bash
+# Navigate to the backend directory
+cd backend
+
+# Create .env from the template
+cp .env.example .env
+
+# Install dependencies
+npm install
+
+# Run in development mode (re-starts on save using nodemon)
+npm run dev
+
+# Run in production mode
+npm run start
+```
