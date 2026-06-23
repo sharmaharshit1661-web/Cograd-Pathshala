@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   MapPin, Users, GraduationCap, Award,
   TrendingUp, ShieldCheck, Star, ArrowRight, Zap,
-  Play, Heart, Sparkles, ClipboardCheck, UserCheck, Search,
+  Heart, Sparkles, ClipboardCheck, UserCheck, Search,
 } from 'lucide-react';
 
 

@@ -133,25 +133,15 @@ const WHY_CHOOSE_US = [
 
 const Student = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialLocation = searchParams.get('location') || 'All';
-  const initialArea = searchParams.get('area') || '';
+  const selectedCity = searchParams.get('location') || 'All';
+  const areaQuery = searchParams.get('area') || '';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('All');
-  const [selectedCity, setSelectedCity] = useState(initialLocation);
-  const [areaQuery, setAreaQuery] = useState(initialArea);
 
   const [bookingTutor, setBookingTutor] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const containerRef = useRef(null);
-
-  // Sync state if search params change (e.g. searching again from home)
-  useEffect(() => {
-    const loc = searchParams.get('location') || 'All';
-    const ar = searchParams.get('area') || '';
-    setSelectedCity(loc);
-    setAreaQuery(ar);
-  }, [searchParams]);
 
   const filteredTutors = TUTORS_DATA.filter(tutor => {
     const matchesSearch = tutor.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -238,7 +228,6 @@ const Student = () => {
                 <button
                   key={city}
                   onClick={() => {
-                    setSelectedCity(city);
                     if (city === 'All') {
                       searchParams.delete('location');
                     } else {
@@ -263,7 +252,6 @@ const Student = () => {
                 <span>Area filter: <strong>"{areaQuery}"</strong></span>
                 <button 
                   onClick={() => { 
-                    setAreaQuery(''); 
                     searchParams.delete('area'); 
                     setSearchParams(searchParams); 
                   }} 
