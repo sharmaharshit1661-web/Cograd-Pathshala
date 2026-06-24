@@ -100,7 +100,7 @@ const Navbar = () => {
   }, [modalOpen]);
 
   const logout = () => {
-    ['cograd_logged_in', 'cograd_role', 'cograd_teacher_name'].forEach(
+    ['cograd_logged_in', 'cograd_role', 'cograd_teacher_name', 'cograd_token'].forEach(
       (k) => localStorage.removeItem(k),
     );
     setIsLoggedIn(false);

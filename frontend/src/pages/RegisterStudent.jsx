@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { getStudents, saveStudents } from '../utils/mockDb';
 import { getDiagnosticQuestions } from '../utils/mockDb';
+import { api } from '../utils/api';
+
 
 const STATES_AND_CITIES = {
   'Delhi': ['Delhi', 'Dwarka', 'Rohini', 'Connaught Place'],
@@ -80,12 +82,6 @@ const RegisterStudent = () => {
       alert('Passwords do not match.');
       return;
     }
-    // Check if email already registered
-    const studentsList = getStudents();
-    if (studentsList.some(s => s.email.toLowerCase() === form.email.toLowerCase())) {
-      alert('This email address is already registered.');
-      return;
-    }
     setStep(2);
   };
 
@@ -95,7 +91,7 @@ const RegisterStudent = () => {
     setPlacementAnswers({});
   };
 
-  const handleTestSubmit = () => {
+  const handleTestSubmit = async () => {
     const questions = getDiagnosticQuestions(form.standard);
     let mathScore = 0;
     let scienceScore = 0;
@@ -124,40 +120,40 @@ const RegisterStudent = () => {
 
     setTestResult(scores);
 
-    // Save student record to database
-    const studentsList = getStudents();
-    const newStudent = {
-      id: `stu_${Date.now()}`,
-      name: form.name,
-      email: form.email,
-      phone: form.phone,
-      standard: form.standard,
-      subjects: form.subjects,
-      test_score: scores,
-      test_completed_at: new Date().toISOString(),
-      assigned_teacher_id: null,
-      status: 'pending_match',
-      state: form.state,
-      city: form.city,
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
-      parentName: `Mr./Mrs. ${form.name.split(' ').pop()}`,
-      parentPhone: form.phone,
-      address: `House No. 101, Near Main Chowk, ${form.city}, ${form.state}`,
-      attendance: '100%',
-      joinDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
-      tuitionSlot: 'Evening (05:00 PM - 06:30 PM)'
-    };
+    try {
+      // Save student record to database via API
+      const registrationData = {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+        role: 'student',
+        standard: form.standard,
+        subjects: form.subjects,
+        test_score: scores,
+        test_completed_at: new Date().toISOString(),
+        assigned_teacher_id: null,
+        status: 'pending_match',
+        state: form.state,
+        city: form.city,
+        parentName: `Mr./Mrs. ${form.name.split(' ').pop()}`,
+        parentPhone: form.phone,
+        address: `House No. 101, Near Main Chowk, ${form.city}, ${form.state}`,
+      };
 
-    studentsList.push(newStudent);
-    saveStudents(studentsList);
+      const data = await api.post('/auth/register', registrationData);
 
-    // Set logged in user details for instant dashboard access
-    localStorage.setItem('cograd_logged_in', 'true');
-    localStorage.setItem('cograd_role', 'student');
-    localStorage.setItem('cograd_logged_in_email', form.email);
-    localStorage.setItem('cograd_student_name', form.name);
+      // Set logged in user details for instant dashboard access
+      localStorage.setItem('cograd_token', data.token);
+      localStorage.setItem('cograd_logged_in', 'true');
+      localStorage.setItem('cograd_role', 'student');
+      localStorage.setItem('cograd_logged_in_email', form.email);
+      localStorage.setItem('cograd_student_name', form.name);
 
-    setStep(4);
+      setStep(4);
+    } catch (error) {
+      alert(error.message || 'Registration failed. Please try again.');
+    }
   };
 
   const questions = getDiagnosticQuestions(form.standard);

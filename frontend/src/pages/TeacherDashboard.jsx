@@ -6,7 +6,8 @@ import {
   saveStudents,
   getAssignments,
   updateAssignmentStatus,
-  resetSimulationState
+  resetSimulationState,
+  syncWithBackend
 } from '../utils/mockDb';
 import { 
   LayoutDashboard, 
@@ -141,7 +142,7 @@ const TeacherDashboard = () => {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadTeacherData();
+    syncWithBackend().then(() => loadTeacherData());
     const handleStorage = () => {
       loadTeacherData();
     };

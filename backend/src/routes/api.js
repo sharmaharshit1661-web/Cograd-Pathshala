@@ -1,0 +1,444 @@
+import express from 'express';
+import User from '../models/User.js';
+import Assignment from '../models/Assignment.js';
+import { protect } from '../middleware/auth.js';
+
+const router = express.Router();
+
+// ==========================================
+// STUDENT ROUTES
+// ==========================================
+
+// @desc    Get all students
+// @route   GET /api/students
+// @access  Private
+router.get('/students', protect, async (req, res) => {
+  try {
+    const students = await User.find({ role: 'student' });
+    res.json(students);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Get student by custom ID
+// @route   GET /api/students/:id
+// @access  Private
+router.get('/students/:id', protect, async (req, res) => {
+  try {
+    const student = await User.findOne({ id: req.params.id, role: 'student' });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+    res.json(student);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Create a student (admin action)
+// @route   POST /api/students
+// @access  Private
+router.post('/students', protect, async (req, res) => {
+  try {
+    const studentData = {
+      ...req.body,
+      id: req.body.id || `stu_${Date.now()}`,
+      role: 'student',
+      status: req.body.status || 'Active',
+      joinDate: req.body.joinDate || new Date().toISOString().split('T')[0],
+    };
+
+    // If password not provided (e.g. admin creation), set default
+    if (!studentData.password) {
+      studentData.password = 'password';
+    }
+
+    const student = await User.create(studentData);
+    res.status(201).json(student);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Update a student
+// @route   PUT /api/students/:id
+// @access  Private
+router.put('/students/:id', protect, async (req, res) => {
+  try {
+    const student = await User.findOne({ id: req.params.id, role: 'student' });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    // Update fields
+    Object.keys(req.body).forEach((key) => {
+      student[key] = req.body[key];
+    });
+
+    const updatedStudent = await student.save();
+    res.json(updatedStudent);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Delete a student
+// @route   DELETE /api/students/:id
+// @access  Private
+router.delete('/students/:id', protect, async (req, res) => {
+  try {
+    const student = await User.findOneAndDelete({ id: req.params.id, role: 'student' });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+    // Also delete any assignments for this student
+    await Assignment.deleteMany({ student_id: req.params.id });
+    res.json({ message: 'Student removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ==========================================
+// TEACHER ROUTES
+// ==========================================
+
+// @desc    Get all teachers
+// @route   GET /api/teachers
+// @access  Private
+router.get('/teachers', protect, async (req, res) => {
+  try {
+    const teachers = await User.find({ role: 'teacher' });
+    res.json(teachers);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Get teacher by custom ID
+// @route   GET /api/teachers/:id
+// @access  Private
+router.get('/teachers/:id', protect, async (req, res) => {
+  try {
+    const teacher = await User.findOne({ id: req.params.id, role: 'teacher' });
+    if (!teacher) {
+      return res.status(404).json({ message: 'Teacher not found' });
+    }
+    res.json(teacher);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Create a teacher
+// @route   POST /api/teachers
+// @access  Private
+router.post('/teachers', protect, async (req, res) => {
+  try {
+    const teacherData = {
+      ...req.body,
+      id: req.body.id || `teacher_${Date.now()}`,
+      role: 'teacher',
+    };
+
+    if (!teacherData.password) {
+      teacherData.password = 'password';
+    }
+
+    const teacher = await User.create(teacherData);
+    res.status(201).json(teacher);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Update a teacher
+// @route   PUT /api/teachers/:id
+// @access  Private
+router.put('/teachers/:id', protect, async (req, res) => {
+  try {
+    const teacher = await User.findOne({ id: req.params.id, role: 'teacher' });
+    if (!teacher) {
+      return res.status(404).json({ message: 'Teacher not found' });
+    }
+
+    Object.keys(req.body).forEach((key) => {
+      teacher[key] = req.body[key];
+    });
+
+    const updatedTeacher = await teacher.save();
+    res.json(updatedTeacher);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Delete a teacher
+// @route   DELETE /api/teachers/:id
+// @access  Private
+router.delete('/teachers/:id', protect, async (req, res) => {
+  try {
+    const teacher = await User.findOneAndDelete({ id: req.params.id, role: 'teacher' });
+    if (!teacher) {
+      return res.status(404).json({ message: 'Teacher not found' });
+    }
+    // Also delete any assignments for this teacher
+    await Assignment.deleteMany({ teacher_id: req.params.id });
+    res.json({ message: 'Teacher removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ==========================================
+// ASSIGNMENT ROUTES
+// ==========================================
+
+// @desc    Get all assignments
+// @route   GET /api/assignments
+// @access  Private
+router.get('/assignments', protect, async (req, res) => {
+  try {
+    const assignments = await Assignment.find();
+    res.json(assignments);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Allot tutor (Admin Action)
+// @route   POST /api/assignments/allot
+// @access  Private
+router.post('/assignments/allot', protect, async (req, res) => {
+  const { studentId, teacherId } = req.body;
+
+  try {
+    const student = await User.findOne({ id: studentId, role: 'student' });
+    const teacher = await User.findOne({ id: teacherId, role: 'teacher' });
+
+    if (!student || !teacher) {
+      return res.status(404).json({ message: 'Student or Teacher not found' });
+    }
+
+    // Update Student
+    student.assigned_teacher_id = teacherId;
+    student.status = 'matched'; // Assigned but pending teacher confirmation
+    await student.save();
+
+    // Create Assignment
+    const newAssignment = await Assignment.create({
+      id: `asg_${studentId}_${Date.now()}`,
+      student_id: studentId,
+      teacher_id: teacherId,
+      assigned_by: req.user.id,
+      status: 'proposed',
+    });
+
+    res.status(201).json(newAssignment);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Confirm/Reject tutor availability (Teacher Action)
+// @route   PUT /api/assignments/status
+// @access  Private
+router.put('/assignments/status', protect, async (req, res) => {
+  const { studentId, teacherId, accept } = req.body;
+
+  try {
+    const assignment = await Assignment.findOne({
+      student_id: studentId,
+      teacher_id: teacherId,
+      status: 'proposed',
+    });
+    const student = await User.findOne({ id: studentId, role: 'student' });
+    const teacher = await User.findOne({ id: teacherId, role: 'teacher' });
+
+    if (!assignment || !student || !teacher) {
+      return res.status(404).json({ message: 'Proposed assignment or users not found' });
+    }
+
+    if (accept) {
+      assignment.status = 'active';
+      student.status = 'active';
+      teacher.current_student_count = (teacher.current_student_count || 0) + 1;
+    } else {
+      assignment.status = 'ended';
+      student.status = 'pending_match';
+      student.assigned_teacher_id = null;
+    }
+
+    await assignment.save();
+    await student.save();
+    await teacher.save();
+
+    res.json({ message: 'Assignment status updated successfully', assignment });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// ==========================================
+// SUGGESTED MATCH ROUTE
+// ==========================================
+
+// @desc    Find suggested teachers for a student
+// @route   GET /api/teachers/suggested/:studentId
+// @access  Private
+router.get('/teachers/suggested/:studentId', protect, async (req, res) => {
+  try {
+    const student = await User.findOne({ id: req.params.studentId, role: 'student' });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    const teachers = await User.find({ role: 'teacher' });
+    const studentGrade = student.standard ? student.standard.split(' ')[0] : 'Class 10';
+
+    // Filter teachers
+    const eligibleTeachers = teachers.filter((t) => {
+      // 1. Verification Check
+      if (t.verification_status !== 'Verified') return false;
+
+      // 2. Capacity Check
+      if ((t.current_student_count || 0) >= (t.max_student_capacity || 5)) return false;
+
+      // 3. City Match (case-insensitive)
+      if (!t.city || !student.city || t.city.toLowerCase() !== student.city.toLowerCase()) return false;
+
+      // 4. Subject Match
+      const hasSubjectMatch = student.subjects.some((sub) =>
+        t.subjects_taught.some((ts) => ts.toLowerCase() === sub.toLowerCase())
+      );
+      if (!hasSubjectMatch) return false;
+
+      // 5. Grade level Qualification Match
+      const isGradeQualified = t.grade_levels_qualified.some(
+        (g) => g.toLowerCase() === studentGrade.toLowerCase()
+      );
+      if (!isGradeQualified) return false;
+
+      return true;
+    });
+
+    // Score & Rank Eligible Teachers
+    const rankedTeachers = eligibleTeachers.map((t) => {
+      let score = 0;
+      const reasons = [];
+
+      // Calculate average student score
+      let totalScoreSum = 0;
+      let scoreCount = 0;
+      if (student.test_score) {
+        Object.keys(student.test_score).forEach((sub) => {
+          if (typeof student.test_score[sub] === 'number') {
+            totalScoreSum += student.test_score[sub];
+            scoreCount++;
+          }
+        });
+      }
+      const avgStudentScore = scoreCount > 0 ? totalScoreSum / scoreCount : 50;
+
+      // Score-band match (max 10 points)
+      if (avgStudentScore < 60) {
+        if (t.teaching_style === 'beginner') {
+          score += 10;
+          reasons.push('Strong with beginner-level support');
+        } else if (t.teaching_style === 'intermediate') {
+          score += 5;
+          reasons.push('Intermediate support fit');
+        }
+      } else if (avgStudentScore >= 80) {
+        if (t.teaching_style === 'advanced') {
+          score += 10;
+          reasons.push('Ideal for advanced material');
+        } else if (t.teaching_style === 'intermediate') {
+          score += 5;
+          reasons.push('Solid foundations support');
+        }
+      } else {
+        if (t.teaching_style === 'intermediate') {
+          score += 10;
+          reasons.push('Strong general foundations focus');
+        } else {
+          score += 5;
+          reasons.push('General capability fit');
+        }
+      }
+
+      // Load balancing match (max 10 points)
+      const openSlots = (t.max_student_capacity || 5) - (t.current_student_count || 0);
+      const availabilityScore = openSlots * 2;
+      score += availabilityScore;
+      reasons.push(`High availability (${openSlots} slots open)`);
+
+      // Match percentage (max 100%)
+      const compatibilityPercent = Math.min(100, Math.round((score / 20) * 100));
+
+      return {
+        teacher: t,
+        score: compatibilityPercent,
+        reasons: reasons,
+      };
+    });
+
+    // Sort by score descending
+    rankedTeachers.sort((a, b) => b.score - a.score);
+
+    res.json(rankedTeachers);
+  } catch (error) {
+    res.status(550).json({ message: error.message });
+  }
+});
+
+// ==========================================
+// SIMULATION RESET ROUTE
+// ==========================================
+
+// @desc    Reset simulation state for a student
+// @route   POST /api/students/reset
+// @access  Private
+router.post('/students/reset', protect, async (req, res) => {
+  const { studentId, targetStatus } = req.body;
+  const statusToSet = targetStatus || 'pending_test';
+
+  try {
+    const student = await User.findOne({ id: studentId, role: 'student' });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    const currentTeacherId = student.assigned_teacher_id;
+
+    // Reset student fields
+    student.assigned_teacher_id = null;
+    student.status = statusToSet;
+
+    if (statusToSet === 'pending_test') {
+      student.test_score = null;
+      student.test_completed_at = null;
+    }
+
+    await student.save();
+
+    // If teacher had this student active, decrement count
+    if (currentTeacherId) {
+      const teacher = await User.findOne({ id: currentTeacherId, role: 'teacher' });
+      if (teacher) {
+        teacher.current_student_count = Math.max(0, (teacher.current_student_count || 0) - 1);
+        await teacher.save();
+      }
+    }
+
+    // Delete or end assignments for this student
+    await Assignment.deleteMany({ student_id: studentId });
+
+    res.json({ message: 'Simulation state reset successfully', student });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+export default router;

@@ -820,6 +820,7 @@ const StudentDashboard = () => {
     localStorage.removeItem('cograd_logged_in');
     localStorage.removeItem('cograd_role');
     localStorage.removeItem('cograd_student_name');
+    localStorage.removeItem('cograd_token');
     triggerToast('Logged out successfully. Redirecting...');
     setTimeout(() => navigate('/login'), 900);
   };

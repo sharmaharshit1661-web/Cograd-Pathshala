@@ -1,214 +1,118 @@
 // Centralized Mock Database Utility for Cograd Pathshala
-// Persisted in localStorage
+// Synced with Local MongoDB Backend
+import { api } from './api';
 
 const STUDENTS_KEY = 'cograd_students';
 const TEACHERS_KEY = 'cograd_teachers';
 const ASSIGNMENTS_KEY = 'cograd_assignments';
 const ADMIN_USERS_KEY = 'cograd_admin_users';
 
-const DEFAULT_STUDENTS = [
-  {
-    id: 'stu_rahul',
-    name: 'Rahul Sharma',
-    email: 'student@cograd.com',
-    standard: 'Class 10 (CBSE)',
-    subjects: ['Mathematics', 'Science'],
-    test_score: null, // format: { Mathematics: null, Science: null }
-    test_completed_at: null,
-    assigned_teacher_id: null,
-    status: 'pending_test', // pending_test, pending_match, matched, active
-    city: 'Meerut',
-    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80',
-    parentName: 'Mr. Alok Sharma',
-    parentPhone: '9876500999',
-    address: 'House No. 42, Sector 4, Shastri Nagar, Meerut',
-    attendance: '91%',
-    joinDate: '12 April 2026',
-    tuitionSlot: 'Evening (04:00 PM - 05:00 PM)'
-  },
-  {
-    id: 'stu_arjun',
-    name: 'Arjun Mehta',
-    email: 'arjun@cograd.com',
-    standard: 'Class 9',
-    subjects: ['Mathematics'],
-    test_score: { Mathematics: 75 },
-    test_completed_at: '2026-06-10T14:30:00',
-    assigned_teacher_id: 1,
-    status: 'active',
-    city: 'Delhi',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
-    parentName: 'Sanjay Mehta',
-    parentPhone: '9876500333',
-    address: 'Sector 15, Dwarka, Delhi'
-  }
-];
+// Initialize cache from localStorage
+let cachedStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || '[]');
+let cachedTeachers = JSON.parse(localStorage.getItem(TEACHERS_KEY) || '[]');
+let cachedAssignments = JSON.parse(localStorage.getItem(ASSIGNMENTS_KEY) || '[]');
 
-const DEFAULT_TEACHERS = [
-  {
-    id: 1,
-    name: 'Priya Sharma',
-    email: 'priya@cograd.com',
-    subjects_taught: ['Mathematics', 'Science'],
-    grade_levels_qualified: ['Class 10', 'Class 9', 'Class 7', 'Class 3'],
-    verification_status: 'Verified',
-    current_student_count: 1,
-    max_student_capacity: 5,
-    city: 'Meerut',
-    teaching_style: 'beginner', // beginner, intermediate, advanced
-    hourly_rate: '₹600/hr',
-    rating: 4.9,
-    experience: '6+ Years',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
-    bio: 'Passionate educator dedicated to simplifying maths and science concepts for school students.',
-    qualification: 'M.Sc. in Mathematics, B.Ed.',
-    travelRange: '5 km radius'
-  },
-  {
-    id: 2,
-    name: 'Mr. Rajesh Kumar',
-    email: 'rajesh@cograd.com',
-    subjects_taught: ['Science', 'Chemistry'],
-    grade_levels_qualified: ['Class 10', 'Class 9', 'Class 8'],
-    verification_status: 'Verified',
-    current_student_count: 2,
-    max_student_capacity: 5,
-    city: 'Meerut',
-    teaching_style: 'advanced',
-    hourly_rate: '₹650/hr',
-    rating: 4.7,
-    experience: '9+ Years',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
-    bio: 'Chemistry enthusiast who designs creative visual aids and fun home-based experiments.',
-    qualification: 'M.Sc. Chemistry, IIT Delhi'
-  },
-  {
-    id: 3,
-    name: 'Ms. Neha Gupta',
-    email: 'neha@cograd.com',
-    subjects_taught: ['English'],
-    grade_levels_qualified: ['Class 7', 'Class 6'],
-    verification_status: 'Verified',
-    current_student_count: 1,
-    max_student_capacity: 5,
-    city: 'Delhi',
-    teaching_style: 'beginner',
-    hourly_rate: '₹500/hr',
-    rating: 4.7,
-    experience: '6+ Years',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80',
-    bio: 'Focuses on communication skills and board-level academic writing.',
-    qualification: 'MA English Literature'
-  },
-  {
-    id: 4,
-    name: 'Dr. Satish Sharma',
-    email: 'satish@cograd.com',
-    subjects_taught: ['Mathematics'],
-    grade_levels_qualified: ['Class 9', 'Class 10'],
-    verification_status: 'Verified',
-    current_student_count: 4,
-    max_student_capacity: 5,
-    city: 'Meerut',
-    teaching_style: 'advanced',
-    hourly_rate: '₹700/hr',
-    rating: 4.9,
-    experience: '12+ Years',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80',
-    bio: 'PhD in Algebra, dedicated to advanced problem solving.',
-    qualification: 'PhD Mathematics'
+// Synchronize with Express Backend
+export const syncWithBackend = async () => {
+  if (!localStorage.getItem('cograd_token')) {
+    return; // Don't sync if not logged in
   }
-];
+  try {
+    const students = await api.get('/students');
+    const teachers = await api.get('/teachers');
+    const assignments = await api.get('/assignments');
 
-const DEFAULT_ASSIGNMENTS = [
-  {
-    id: 'asg_arjun',
-    student_id: 'stu_arjun',
-    teacher_id: 1,
-    assigned_by: 'admin_1',
-    assigned_at: '2026-06-10T14:40:00',
-    status: 'active' // proposed, confirmed, active, ended
-  }
-];
+    cachedStudents = students;
+    cachedTeachers = teachers;
+    cachedAssignments = assignments;
 
-const DEFAULT_ADMINS = [
-  { id: 'admin_1', name: 'Cograd Admin Staff', role: 'Superadmin' }
-];
+    localStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
+    localStorage.setItem(TEACHERS_KEY, JSON.stringify(teachers));
+    localStorage.setItem(ASSIGNMENTS_KEY, JSON.stringify(assignments));
 
-export const initializeDb = () => {
-  if (!localStorage.getItem(STUDENTS_KEY)) {
-    localStorage.setItem(STUDENTS_KEY, JSON.stringify(DEFAULT_STUDENTS));
-  }
-  if (!localStorage.getItem(TEACHERS_KEY)) {
-    localStorage.setItem(TEACHERS_KEY, JSON.stringify(DEFAULT_TEACHERS));
-  }
-  if (!localStorage.getItem(ASSIGNMENTS_KEY)) {
-    localStorage.setItem(ASSIGNMENTS_KEY, JSON.stringify(DEFAULT_ASSIGNMENTS));
-  }
-  if (!localStorage.getItem(ADMIN_USERS_KEY)) {
-    localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(DEFAULT_ADMINS));
+    // Dispatch storage event to trigger reactive reload in React components
+    window.dispatchEvent(new Event('storage'));
+  } catch (error) {
+    console.error('Failed to sync with backend:', error.message);
   }
 };
 
-// CRUD Operations
+// Start background synchronization on import
+if (localStorage.getItem('cograd_token')) {
+  syncWithBackend();
+}
+
+// CRUD Operations (synchronous read from cache)
 export const getStudents = () => {
-  initializeDb();
-  return JSON.parse(localStorage.getItem(STUDENTS_KEY));
+  cachedStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || '[]');
+  return cachedStudents;
 };
 
-export const saveStudents = (students) => {
+export const saveStudents = async (students) => {
   localStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
+  cachedStudents = students;
+  
+  // Find if student was updated and update backend
+  try {
+    for (const student of students) {
+      await api.put(`/students/${student.id}`, student);
+    }
+    syncWithBackend();
+  } catch (error) {
+    console.error('Failed to save student updates to backend:', error.message);
+  }
 };
 
 export const getTeachers = () => {
-  initializeDb();
-  return JSON.parse(localStorage.getItem(TEACHERS_KEY));
+  cachedTeachers = JSON.parse(localStorage.getItem(TEACHERS_KEY) || '[]');
+  return cachedTeachers;
 };
 
-export const saveTeachers = (teachers) => {
+export const saveTeachers = async (teachers) => {
   localStorage.setItem(TEACHERS_KEY, JSON.stringify(teachers));
+  cachedTeachers = teachers;
+  
+  try {
+    for (const teacher of teachers) {
+      await api.put(`/teachers/${teacher.id}`, teacher);
+    }
+    syncWithBackend();
+  } catch (error) {
+    console.error('Failed to save teacher updates to backend:', error.message);
+  }
 };
 
 export const getAssignments = () => {
-  initializeDb();
-  return JSON.parse(localStorage.getItem(ASSIGNMENTS_KEY));
+  cachedAssignments = JSON.parse(localStorage.getItem(ASSIGNMENTS_KEY) || '[]');
+  return cachedAssignments;
 };
 
-export const saveAssignments = (assignments) => {
+export const saveAssignments = async (assignments) => {
   localStorage.setItem(ASSIGNMENTS_KEY, JSON.stringify(assignments));
+  cachedAssignments = assignments;
 };
 
 export const getAdminUsers = () => {
-  initializeDb();
-  return JSON.parse(localStorage.getItem(ADMIN_USERS_KEY));
+  return JSON.parse(localStorage.getItem(ADMIN_USERS_KEY) || '[]');
 };
 
 // Matching Algorithm
 export const findSuggestedTeachers = (student) => {
   const teachers = getTeachers();
-  
-  // Clean student grade level for matching (e.g. 'Class 10 (CBSE)' -> 'Class 10')
-  const studentGrade = student.standard.split(' ')[0]; 
+  const studentGrade = student.standard ? student.standard.split(' ')[0] : 'Class 10'; 
 
   // Filter teachers
   const eligibleTeachers = teachers.filter(t => {
-    // 1. Verification Check
     if (t.verification_status !== 'Verified') return false;
-
-    // 2. Capacity Check
     if (t.current_student_count >= t.max_student_capacity) return false;
+    if (t.city && student.city && t.city.toLowerCase() !== student.city.toLowerCase()) return false;
 
-    // 3. City Match (strictly match city for local in-home tutor)
-    if (t.city.toLowerCase() !== student.city.toLowerCase()) return false;
-
-    // 4. Subject Match
     const hasSubjectMatch = student.subjects.some(sub => 
-      t.subjects_taught.some(ts => ts.toLowerCase() === sub.toLowerCase())
+      t.subjects_taught && t.subjects_taught.some(ts => ts.toLowerCase() === sub.toLowerCase())
     );
     if (!hasSubjectMatch) return false;
 
-    // 5. Grade level Qualification Match
-    const isGradeQualified = t.grade_levels_qualified.some(g => g.toLowerCase() === studentGrade.toLowerCase());
+    const isGradeQualified = t.grade_levels_qualified && t.grade_levels_qualified.some(g => g.toLowerCase() === studentGrade.toLowerCase());
     if (!isGradeQualified) return false;
 
     return true;
@@ -219,12 +123,11 @@ export const findSuggestedTeachers = (student) => {
     let score = 0;
     const reasons = [];
 
-    // Calculate average student score
     let totalScoreSum = 0;
     let scoreCount = 0;
     if (student.test_score) {
       Object.keys(student.test_score).forEach(sub => {
-        if (student.test_score[sub] !== null) {
+        if (typeof student.test_score[sub] === 'number') {
           totalScoreSum += student.test_score[sub];
           scoreCount++;
         }
@@ -232,7 +135,6 @@ export const findSuggestedTeachers = (student) => {
     }
     const avgStudentScore = scoreCount > 0 ? (totalScoreSum / scoreCount) : 50;
 
-    // Score-band match (max 10 points)
     if (avgStudentScore < 60) {
       if (t.teaching_style === 'beginner') {
         score += 10;
@@ -259,12 +161,10 @@ export const findSuggestedTeachers = (student) => {
       }
     }
 
-    // Load balancing match (max 10 points: 0 students = 10pts, 4 students = 2pts)
     const availabilityScore = (t.max_student_capacity - t.current_student_count) * 2;
     score += availabilityScore;
     reasons.push(`High availability (${t.max_student_capacity - t.current_student_count} slots open)`);
 
-    // Match percentage (max 100%)
     const compatibilityPercent = Math.min(100, Math.round((score / 20) * 100));
 
     return {
@@ -274,109 +174,41 @@ export const findSuggestedTeachers = (student) => {
     };
   });
 
-  // Sort by score descending
   return rankedTeachers.sort((a, b) => b.score - a.score);
 };
 
 // Allot tutor (Admin Action)
-export const allotTutor = (studentId, teacherId, adminId = 'admin_1') => {
-  const students = getStudents();
-  const teachers = getTeachers();
-  const assignments = getAssignments();
-
-  const studentIdx = students.findIndex(s => s.id === studentId);
-  const teacherIdx = teachers.findIndex(t => t.id === teacherId);
-
-  if (studentIdx === -1 || teacherIdx === -1) return false;
-
-  // Update Student
-  students[studentIdx].assigned_teacher_id = teacherId;
-  students[studentIdx].status = 'matched'; // Assigned but pending teacher confirmation
-
-  // Create Assignment
-  const newAssignment = {
-    id: `asg_${studentId}_${Date.now()}`,
-    student_id: studentId,
-    teacher_id: teacherId,
-    assigned_by: adminId,
-    assigned_at: new Date().toISOString(),
-    status: 'proposed'
-  };
-
-  // Add assignment and save
-  assignments.push(newAssignment);
-  saveAssignments(assignments);
-  saveStudents(students);
-  return true;
+export const allotTutor = async (studentId, teacherId, adminId = 'admin_1') => {
+  try {
+    await api.post('/assignments/allot', { studentId, teacherId });
+    await syncWithBackend();
+    return true;
+  } catch (error) {
+    console.error('Failed to allot tutor:', error.message);
+    return false;
+  }
 };
 
 // Confirm/Reject tutor availability (Teacher Action)
-export const updateAssignmentStatus = (studentId, teacherId, accept) => {
-  const assignments = getAssignments();
-  const students = getStudents();
-  const teachers = getTeachers();
-
-  const asgIdx = assignments.findIndex(a => a.student_id === studentId && a.teacher_id === teacherId && a.status === 'proposed');
-  const stuIdx = students.findIndex(s => s.id === studentId);
-  const teaIdx = teachers.findIndex(t => t.id === teacherId);
-
-  if (asgIdx === -1 || stuIdx === -1 || teaIdx === -1) return false;
-
-  if (accept) {
-    assignments[asgIdx].status = 'active';
-    students[stuIdx].status = 'active';
-    teachers[teaIdx].current_student_count += 1;
-  } else {
-    // Flag conflict / reject
-    assignments[asgIdx].status = 'ended';
-    students[stuIdx].status = 'pending_match';
-    students[stuIdx].assigned_teacher_id = null;
+export const updateAssignmentStatus = async (studentId, teacherId, accept) => {
+  try {
+    await api.put('/assignments/status', { studentId, teacherId, accept });
+    await syncWithBackend();
+    return true;
+  } catch (error) {
+    console.error('Failed to update assignment status:', error.message);
+    return false;
   }
-
-  saveAssignments(assignments);
-  saveStudents(students);
-  saveTeachers(teachers);
-  return true;
 };
 
 // Reset Simulation State
-export const resetSimulationState = (studentId = 'stu_rahul', targetStatus = 'pending_test') => {
-  const students = getStudents();
-  const teachers = getTeachers();
-  const assignments = getAssignments();
-
-  const stuIdx = students.findIndex(s => s.id === studentId);
-  if (stuIdx === -1) return;
-
-  const currentTeacherId = students[stuIdx].assigned_teacher_id;
-
-  // Clear assigned teacher
-  students[stuIdx].assigned_teacher_id = null;
-  students[stuIdx].status = targetStatus;
-
-  if (targetStatus === 'pending_test') {
-    students[stuIdx].test_score = null;
-    students[stuIdx].test_completed_at = null;
+export const resetSimulationState = async (studentId = 'stu_rahul', targetStatus = 'pending_test') => {
+  try {
+    await api.post('/students/reset', { studentId, targetStatus });
+    await syncWithBackend();
+  } catch (error) {
+    console.error('Failed to reset simulation state:', error.message);
   }
-
-  // Remove proposed or active assignments for this student
-  const filteredAssignments = assignments.filter(a => {
-    if (a.student_id === studentId) {
-      if (a.status === 'active' && currentTeacherId) {
-        // Decrease teacher count
-        const teaIdx = teachers.findIndex(t => t.id === currentTeacherId);
-        if (teaIdx !== -1) {
-          teachers[teaIdx].current_student_count = Math.max(0, teachers[teaIdx].current_student_count - 1);
-        }
-      }
-      return false;
-    }
-    return true;
-  });
-
-  saveStudents(students);
-  saveTeachers(teachers);
-  saveAssignments(filteredAssignments);
 };
 
 export const getDiagnosticQuestions = (standard) => {

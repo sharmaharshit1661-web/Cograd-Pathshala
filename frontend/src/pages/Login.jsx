@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { api } from '../utils/api';
+
 import {
   Mail,
   Lock,
@@ -85,18 +87,26 @@ const Login = () => {
 
   const activeRole = ROLES.find((r) => r.id === role);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      const data = await api.post('/auth/login', { email, password, role });
+      localStorage.setItem('cograd_token', data.token);
       localStorage.setItem('cograd_logged_in', 'true');
-      localStorage.setItem('cograd_role', role);
-      if (role === 'teacher') localStorage.setItem('cograd_teacher_name', 'Priya Sharma');
-      if (role === 'student') localStorage.setItem('cograd_student_name', 'Rahul Sharma');
-      if (role === 'parent') localStorage.setItem('cograd_parent_name', 'Mrs. Sharma');
-      navigate(DASHBOARD_MAP[role] || '/');
-    }, 1000);
+      localStorage.setItem('cograd_role', data.user.role);
+      localStorage.setItem('cograd_logged_in_email', data.user.email);
+      
+      if (data.user.role === 'teacher') localStorage.setItem('cograd_teacher_name', data.user.name);
+      if (data.user.role === 'student') localStorage.setItem('cograd_student_name', data.user.name);
+      if (data.user.role === 'parent') localStorage.setItem('cograd_parent_name', data.user.name);
+      
+      navigate(DASHBOARD_MAP[data.user.role] || '/');
+    } catch (error) {
+      alert(error.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

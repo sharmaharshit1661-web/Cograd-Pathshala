@@ -7,8 +7,11 @@ import {
   getTeachers,
   findSuggestedTeachers,
   allotTutor,
-  resetSimulationState
+  resetSimulationState,
+  syncWithBackend
 } from '../utils/mockDb';
+import { api } from '../utils/api';
+
 import { 
   LayoutDashboard, 
   Users, 
@@ -88,11 +91,24 @@ const AdminDashboard = () => {
       status: s.status === 'active' ? 'Active' : s.status === 'matched' ? 'Active' : s.status === 'pending_test' ? 'Pending Test' : s.status === 'pending_match' ? 'Pending Match' : s.status
     }));
     setStudents(normalized);
+
+    const rawTeachers = getTeachers();
+    const normalizedTeachers = rawTeachers.map(t => ({
+      ...t,
+      subject: t.subjects_taught ? t.subjects_taught[0] : 'General',
+      rate: t.hourly_rate || '₹500/hr',
+      batches: t.grade_levels_qualified || ['Class 9'],
+      status: t.verification_status || 'Pending'
+    }));
+    setTeachers(normalizedTeachers);
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadAdminData();
+    const init = async () => {
+      await syncWithBackend();
+      loadAdminData();
+    };
+    init();
   }, []);
 
   // Teachers state
@@ -249,41 +265,78 @@ const AdminDashboard = () => {
 
 
   // Student actions
-  const handleAddStudentSubmit = (e) => {
+  const handleAddStudentSubmit = async (e) => {
     e.preventDefault();
     if (!newStudent.name || !newStudent.email) {
       triggerToast('Please fill out student name and email!');
       return;
     }
-    const id = students.length + 1;
+    const id = `stu_${Date.now()}`;
     const newEntry = {
-      ...newStudent,
+      name: newStudent.name,
+      email: newStudent.email,
+      parentName: newStudent.parentName || 'TBD',
+      standard: newStudent.batch || 'Class 9',
+      subjects: ['Mathematics'],
+      city: 'Meerut',
+      state: 'Uttar Pradesh',
       id,
-      date: new Date().toISOString().split('T')[0]
+      status: 'Active',
+      joinDate: new Date().toISOString().split('T')[0]
     };
-    setStudents(prev => [newEntry, ...prev]);
 
-    setShowAddStudent(false);
-    setNewStudent({ name: '', email: '', parentName: '', batch: 'Class 9', status: 'Active' });
-    triggerToast(`Student ${newEntry.name} enrolled successfully!`);
-  };
-
-  const handleDeleteStudent = (id, name) => {
-    if (window.confirm(`Are you sure you want to remove ${name}?`)) {
-      setStudents(prev => prev.filter(s => s.id !== id));
-      triggerToast(`Student ${name} removed from registry.`);
+    try {
+      await api.post('/students', newEntry);
+      await syncWithBackend();
+      loadAdminData();
+      setShowAddStudent(false);
+      setNewStudent({ name: '', email: '', parentName: '', batch: 'Class 9', status: 'Active' });
+      triggerToast(`Student ${newEntry.name} enrolled successfully!`);
+    } catch (err) {
+      triggerToast(err.message || 'Failed to add student');
     }
   };
 
-  const toggleStudentStatus = (id, name) => {
-    setStudents(prev => prev.map(s => s.id === id ? { ...s, status: s.status === 'Active' ? 'Suspended' : 'Active' } : s));
-    triggerToast(`Status toggled for ${name}.`);
+  const handleDeleteStudent = async (id, name) => {
+    if (window.confirm(`Are you sure you want to remove ${name}?`)) {
+      try {
+        await api.delete(`/students/${id}`);
+        await syncWithBackend();
+        loadAdminData();
+        triggerToast(`Student ${name} removed from registry.`);
+      } catch (err) {
+        triggerToast(err.message || 'Failed to delete student');
+      }
+    }
+  };
+
+  const toggleStudentStatus = async (id, name) => {
+    const student = students.find(s => s.id === id);
+    if (!student) return;
+    const newStatus = student.status === 'Active' ? 'Suspended' : 'Active';
+    try {
+      await api.put(`/students/${id}`, { status: newStatus });
+      await syncWithBackend();
+      loadAdminData();
+      triggerToast(`Status toggled for ${name}.`);
+    } catch (err) {
+      triggerToast(err.message || 'Failed to toggle status');
+    }
   };
 
   // Teacher actions
-  const toggleTeacherVerification = (id, name) => {
-    setTeachers(prev => prev.map(t => t.id === id ? { ...t, status: t.status === 'Verified' ? 'Pending' : 'Verified' } : t));
-    triggerToast(`Verification toggled for ${name}.`);
+  const toggleTeacherVerification = async (id, name) => {
+    const teacher = teachers.find(t => t.id === id);
+    if (!teacher) return;
+    const newStatus = teacher.status === 'Verified' ? 'Pending' : 'Verified';
+    try {
+      await api.put(`/teachers/${id}`, { verification_status: newStatus });
+      await syncWithBackend();
+      loadAdminData();
+      triggerToast(`Verification toggled for ${name}.`);
+    } catch (err) {
+      triggerToast(err.message || 'Failed to update teacher status');
+    }
   };
 
 

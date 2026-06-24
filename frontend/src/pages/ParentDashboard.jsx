@@ -251,6 +251,7 @@ const ParentDashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem('cograd_logged_in');
     localStorage.removeItem('cograd_role');
+    localStorage.removeItem('cograd_token');
     triggerToast('Logged out successfully');
     setTimeout(() => {
       navigate('/login');

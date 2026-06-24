@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { api } from '../utils/api';
+
 import {
   User, Mail, Phone, Lock, Eye, EyeOff, CheckCircle, ArrowLeft, GraduationCap, BookOpen, Calendar, X,
 } from 'lucide-react';
@@ -22,11 +24,31 @@ const RegisterTeacher = () => {
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
   const toggleSubject = (s) => setSubjects((p) => p.includes(s) ? p.filter((x) => x !== s) : [...p, s]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.password !== form.confirmPassword) { alert('Passwords do not match.'); return; }
     if (subjects.length === 0) { alert('Please select at least one subject.'); return; }
-    setShowSuccess(true);
+    
+    try {
+      const registrationData = {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+        role: 'teacher',
+        qualifications: form.qualifications,
+        experience: form.experience,
+        bio: form.bio,
+        subjects_taught: subjects,
+        grade_levels_qualified: ['Class 9', 'Class 10', 'Class 8', 'Class 7'],
+        city: 'Meerut', // default city for tutor verification
+      };
+
+      await api.post('/auth/register', registrationData);
+      setShowSuccess(true);
+    } catch (error) {
+      alert(error.message || 'Registration failed. Please try again.');
+    }
   };
 
   return (
