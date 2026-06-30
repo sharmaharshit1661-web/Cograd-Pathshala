@@ -1,24 +1,34 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { useSmoothScroll } from './hooks/useSmoothScroll';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
-// Pages
-import Home from './pages/Home';
-import Student from './pages/Student';
-import Teacher from './pages/Teacher';
-import DemoBooking from './pages/DemoBooking';
-import About from './pages/About';
-import Contact from './pages/Contact';
-import Login from './pages/Login';
-import RegisterStudent from './pages/RegisterStudent';
-import RegisterTeacher from './pages/RegisterTeacher';
-import TeacherDashboard from './pages/TeacherDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import StudentDashboard from './pages/StudentDashboard';
-import ParentDashboard from './pages/ParentDashboard';
+// Pages loaded dynamically using Code Splitting (React.lazy)
+const Home = lazy(() => import('./pages/Home'));
+const Student = lazy(() => import('./pages/Student'));
+const Teacher = lazy(() => import('./pages/Teacher'));
+const DemoBooking = lazy(() => import('./pages/DemoBooking'));
+const About = lazy(() => import('./pages/About'));
+const Contact = lazy(() => import('./pages/Contact'));
+const Login = lazy(() => import('./pages/Login'));
+const RegisterStudent = lazy(() => import('./pages/RegisterStudent'));
+const RegisterTeacher = lazy(() => import('./pages/RegisterTeacher'));
+const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
+const ParentDashboard = lazy(() => import('./pages/ParentDashboard'));
+
+// Premium loading spinner fallback for dynamic routes
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[60vh] w-full">
+    <div className="relative w-12 h-12">
+      <div className="absolute inset-0 border-4 border-indigo-500/20 rounded-full"></div>
+      <div className="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  </div>
+);
 
 // Scroll Reveal on route change (Lenis handles scrollTo-top via useSmoothScroll)
 const ScrollToTop = () => {
@@ -87,21 +97,23 @@ function App() {
     <Router>
       <ScrollToTop />
       <LayoutWrapper>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/student" element={<Student />} />
-          <Route path="/teacher" element={<Teacher />} />
-          <Route path="/demo-booking" element={<DemoBooking />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register/student" element={<RegisterStudent />} />
-          <Route path="/register/teacher" element={<RegisterTeacher />} />
-          <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/student/dashboard" element={<StudentDashboard />} />
-          <Route path="/parent/dashboard" element={<ParentDashboard />} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/student" element={<Student />} />
+            <Route path="/teacher" element={<Teacher />} />
+            <Route path="/demo-booking" element={<DemoBooking />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register/student" element={<RegisterStudent />} />
+            <Route path="/register/teacher" element={<RegisterTeacher />} />
+            <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/student/dashboard" element={<StudentDashboard />} />
+            <Route path="/parent/dashboard" element={<ParentDashboard />} />
+          </Routes>
+        </Suspense>
       </LayoutWrapper>
       <Analytics />
     </Router>
