@@ -7,7 +7,6 @@ import {
   getTeachers,
   findSuggestedTeachers,
   allotTutor,
-  resetSimulationState,
   syncWithBackend
 } from '../utils/mockDb';
 import { api } from '../utils/api';
@@ -677,7 +676,6 @@ const AdminDashboard = () => {
               <span className="text-3xl">🎉</span>
               <h3 className="text-sm font-black text-slate-800 mt-3">All Student Matches Completed!</h3>
               <p className="text-xs text-slate-400 mt-1">No students are currently waiting for tutor allotment.</p>
-              <p className="text-[9px] text-slate-400 font-semibold mt-1">Tip: Use the Simulation Controls at the bottom left to reset a student to "Pending Match" to test the matching flow!</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -1965,7 +1963,6 @@ const AdminDashboard = () => {
             <span className="text-4xl">🎉</span>
             <h3 className="text-lg font-black text-slate-800 mt-4">All Matches Completed!</h3>
             <p className="text-xs text-slate-400 mt-2">No students are currently waiting for tutor matching in the queue.</p>
-            <p className="text-[10px] text-slate-400 font-semibold mt-1">Tip: Use the Simulation Controls at the bottom left to reset a student to "Pending Test" or "Pending Match" to re-simulate!</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -2925,49 +2922,6 @@ const AdminDashboard = () => {
           {getTabContent()}
         </div>
       </DashboardShell>
-
-      {/* Simulation Control Panel */}
-      <div className="fixed bottom-4 left-4 z-40 bg-slate-900 text-white rounded-2xl p-4 shadow-2xl border border-slate-800 max-w-xs text-left">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-black uppercase tracking-wider text-blue-400">Simulation Controls</span>
-          <span className="text-[9px] bg-slate-800 px-2 py-0.5 rounded font-mono text-slate-300">Admin</span>
-        </div>
-        <div className="space-y-1.5">
-          <button
-            onClick={() => {
-              resetSimulationState('stu_rahul', 'pending_test');
-              triggerToast('Reset Rahul Sharma to "Pending Test".');
-              loadAdminData();
-            }}
-            className="w-full py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-[10px] font-bold transition-all cursor-pointer text-left"
-          >
-            🔄 Reset Rahul to "Pending Test"
-          </button>
-          <button
-            onClick={() => {
-              resetSimulationState('stu_rahul', 'pending_match');
-              const studentsList = getStudents();
-              const idx = studentsList.findIndex(s => s.id === 'stu_rahul');
-              if (idx !== -1) {
-                studentsList[idx].test_score = { 
-                  Mathematics: 88, 
-                  Science: 53,
-                  mathMarksText: '14/16',
-                  scienceMarksText: '10/19',
-                  totalMarksText: '24/35'
-                };
-                studentsList[idx].test_completed_at = new Date().toISOString();
-                saveStudents(studentsList);
-              }
-              triggerToast('Set Rahul to "Pending Match" (Scores: Math 14/16, Science 10/19 - Total: 24/35)');
-              loadAdminData();
-            }}
-            className="w-full py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-[10px] font-bold transition-all cursor-pointer text-left"
-          >
-            ⌛ Set Rahul to "Pending Match"
-          </button>
-        </div>
-      </div>
     </>
   );
 };
