@@ -22,6 +22,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api', apiRoutes);
 
+// Root Route
+app.get('/', (req, res) => {
+  res.send('<h1>Cograd Pathshala Backend API is running successfully</h1><p>Visit the health status check at <a href="/api/health">/api/health</a></p>');
+});
+
 // Healthcheck Route
 app.get('/api/health', (req, res) => {
   res.json({
