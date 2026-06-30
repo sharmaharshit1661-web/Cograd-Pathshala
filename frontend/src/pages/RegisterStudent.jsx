@@ -210,7 +210,7 @@ const RegisterStudent = () => {
         </div>
 
         {/* Step Cards */}
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-md p-6 sm:p-8">
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-md p-6 sm:p-8 no-glass">
           
           {/* STEP 1: Account credentials */}
           {step === 1 && (

@@ -264,14 +264,14 @@ const Navbar = () => {
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-neutral-900/60 role-modal-backdrop"
+            className="absolute inset-0 bg-neutral-900/60 backdrop-blur-md role-modal-backdrop"
             onClick={() => setModalOpen(false)}
           />
 
           {/* Panel */}
           <div
             ref={modalRef}
-            className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-2xl border border-neutral-100 p-7 animate-slide-up"
+            className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-2xl border border-neutral-100 p-7 animate-slide-up no-glass"
           >
             <button
               onClick={() => setModalOpen(false)}

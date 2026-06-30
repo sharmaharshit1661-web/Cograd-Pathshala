@@ -62,7 +62,7 @@ const RegisterTeacher = () => {
           <p className="text-neutral-500 text-sm">Start your teaching journey and make a meaningful impact</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-8">
+        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-8 no-glass">
           <form onSubmit={handleSubmit} className="space-y-8">
 
             {/* Basic Info */}
@@ -157,7 +157,7 @@ const RegisterTeacher = () => {
       {/* Success Modal */}
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center border border-neutral-100 animate-slide-up relative">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center border border-neutral-100 animate-slide-up relative no-glass">
             <button onClick={() => { setShowSuccess(false); navigate('/login'); }} className="absolute top-4 right-4 p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg cursor-pointer">
               <X className="w-4.5 h-4.5" />
             </button>

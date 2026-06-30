@@ -118,7 +118,7 @@ export default function Login() {
           <p className="text-sm text-neutral-500 mt-1">Sign in to your account</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden" style={{ boxShadow: '0 4px 24px rgba(15,23,42,0.06), 0 1px 4px rgba(15,23,42,0.04)' }}>
+        <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden no-glass" style={{ boxShadow: '0 4px 24px rgba(15,23,42,0.06), 0 1px 4px rgba(15,23,42,0.04)' }}>
 
           {/* ── Segmented role control ── */}
           <div className="p-3 border-b border-neutral-100">
