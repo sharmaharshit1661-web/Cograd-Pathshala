@@ -1,10 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle, MapPin, Calendar, Clock, User, Phone, X, BookOpen, ArrowRight, GraduationCap } from 'lucide-react';
+import { api } from '../utils/api';
 
 const CLASSES = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
 const SUBJECTS = ['Mathematics', 'Science', 'English', 'Hindi', 'Social Studies', 'Computer Basics'];
 const TIME_SLOTS = ['9:00 AM', '10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+const INDIAN_CITIES = [
+  'Adoni', 'Agartala', 'Agra', 'Ahmedabad', 'Ahmednagar', 'Aizawl', 'Ajmer', 'Akola', 'Alappuzha', 'Aligarh', 'Allahabad', 'Alwar', 'Ambala', 'Ambattur', 'Ambikapur', 'Amravati', 'Amreli', 'Amritsar', 'Amroha', 'Anand', 'Anantapur', 'Arrah', 'Asansol', 'Aurangabad', 'Avadi', 'Azamgarh', 'Badlapur', 'Bagar', 'Bagaha', 'Bahadurgarh', 'Baharampur', 'Bahraich', 'Balasore', 'Ballia', 'Bally', 'Balurghat', 'Banda', 'Bangalore', 'Banganapalle', 'Banswara', 'Barakpur', 'Barasat', 'Baraut', 'Bardhaman', 'Bareilly', 'Barmer', 'Barnala', 'Barrackpore', 'Baruni', 'Basirhat', 'Basti', 'Batala', 'Bathinda', 'Beawar', 'Begusarai', 'Belgaum', 'Bellary', 'Bengaluru', 'Bettiah', 'Betul', 'Bhadravati', 'Bhadreswar', 'Bhagalpur', 'Bhagirathi', 'Bhalesa', 'Bharatpur', 'Bharuch', 'Bhatpara', 'Bhavnagar', 'Bhawanipatna', 'Bhel', 'Bhilai', 'Bhilwara', 'Bhimavaram', 'Bhind', 'Bhiwandi', 'Bhiwani', 'Bhopal', 'Bhubaneswar', 'Bhuj', 'Bhusawal', 'Bidar', 'Bihar Sharif', 'Bijapur', 'Bikaner', 'Bilaspur', 'Bobbili', 'Bokaro Steel City', 'Bongaigaon', 'Bongaon', 'Bulandshahr', 'Bundi', 'Burdwan', 'Burhanpur', 'Buxar', 'Calcutta', 'Calicut', 'Central Delhi', 'Chandausi', 'Chandigarh', 'Chandrapur', 'Chapra', 'Chennai', 'Chhattarpur', 'Chhindwara', 'Chidambaram', 'Chikkamagaluru', 'Chitradurga', 'Chittoor', 'Churu', 'Coimbatore', 'Cooch Behar', 'Cuddalore', 'Cuttack', 'Dabgram', 'Dabra', 'Daltonganj', 'Daman', 'Darbhanga', 'Darjeeling', 'Davangere', 'Deesa', 'Dehradun', 'Dehri', 'Delhi', 'Delhi NCR', 'Deoria', 'Dewas', 'Dhanbad', 'Dhar', 'Dharamshala', 'Dharmavaram', 'Dharwad', 'Dhule', 'Dibrugarh', 'Dimapur', 'Dindigul', 'Dispur', 'Diu', 'Dombivli', 'Dumdum', 'Durg', 'Durgapur', 'Dwarka', 'East Delhi', 'Eluru', 'English Bazar', 'Erode', 'Etah', 'Etawah', 'Faridabad', 'Farrukhabad', 'Fatehpur', 'Firozabad', 'Firozpur', 'Gadag-Betageri', 'Gandhidham', 'Gandhinagar', 'Gangtok', 'Gaya', 'Ghaziabad', 'Ghazipur', 'Giridih', 'Goa', 'Godhra', 'Gokal Pur', 'Gonda', 'Gondia', 'Gorakhpur', 'Greater Noida', 'Gudivada', 'Gulbarga', 'Guna', 'Guntur', 'Gurgaon', 'Gurugram', 'Guwahati', 'Gwalior', 'Haldia', 'Haldwani', 'Hansi', 'Hapur', 'Hardoi', 'Haridwar', 'Hassan', 'Hathras', 'Hazaribagh', 'Himatnagar', 'Hindupur', 'Hinganghat', 'Hisar', 'Hoshangabad', 'Hoshiarpur', 'Hospet', 'Howrah', 'Hubli', 'Hubli-Dharwad', 'Hugli-Chinsurah', 'Hyderabad', 'Ichalkaranji', 'Imphal', 'Indore', 'Irinjalakuda', 'Itanagar', 'Jabalpur', 'Jagdalpur', 'Jagdevpur', 'Jaipur', 'Jalandhar', 'Jalgaon', 'Jalna', 'Jalpaiguri', 'Jamalpur', 'Jammu', 'Jamnagar', 'Jamshedpur', 'Jaunpur', 'Jehanabad', 'Jhansi', 'Jhunjhunu', 'Jind', 'Jodhpur', 'Jorhat', 'Junagadh', 'Kadapa', 'Kaithal', 'Kakinada', 'Kalaburagi', 'Kalyan', 'Kalyan-Dombivli', 'Kalyani', 'Kamarhati', 'Kancheepuram', 'Kanchrapara', 'Kandla', 'Kannur', 'Kanpur', 'Kanyakumari', 'Kapadvanj', 'Kapurthala', 'Karaikal', 'Karaikudi', 'Karawal Nagar', 'Karimnagar', 'Karnal', 'Karur', 'Karwar', 'Kashipur', 'Katihar', 'Katni', 'Kavali', 'Kavaratti', 'Kayamkulam', 'Kendrapara', 'Khammam', 'Khandwa', 'Kharagpur', 'Kharar', 'Khargone', 'Kheda', 'Kishangarh', 'Kochi', 'Kohima', 'Kolar', 'Kolhapur', 'Kolkata', 'Kollam', 'Koppal', 'Korba', 'Kota', 'Kothagudem', 'Kottayam', 'Kovvur', 'Kozhikode', 'Krishnanagar', 'Kullu', 'Kumbakonam', 'Kurnool', 'Kurukshetra', 'Lakhimpur', 'Lalitpur', 'Latur', 'Lonavala', 'Loni', 'Lucknow', 'Ludhiana', 'Machilipatnam', 'Madanapalle', 'Madhavpur', 'Madhyamgram', 'Madurai', 'Mahad', 'Mahbubnagar', 'Mahesana', 'Mahestala', 'Mahoba', 'Mainpuri', 'Malappuram', 'Malegaon', 'Malerkotla', 'Mandi', 'Mandla', 'Mandsaur', 'Mandya', 'Mangalore', 'Mangaluru', 'Mango', 'Mapusa', 'Margao', 'Mathura', 'Maunath Bhanjan', 'Mavelikkara', 'Mayiladuthurai', 'Medinipur', 'Meerut', 'Mehsana', 'Mewat', 'Mirzapur', 'Mirzapur-cum-Vindhyachal', 'Moga', 'Mohali', 'Moradabad', 'Morena', 'Motiari', 'Motihari', 'Mount Abu', 'Mughalsarai', 'Mumbai', 'Munger', 'Murwara', 'Mussoorie', 'Muzaffarnagar', 'Muzaffarpur', 'Mysore', 'Mysuru', 'Nabadwip', 'Nadiad', 'Nagaon', 'Nagapattinam', 'Nagaur', 'Nagercoil', 'Nagpur', 'Nahan', 'Nainital', 'Nanded', 'Nanded-Waghala', 'Nandyal', 'Nangloi Jat', 'Naraura', 'Narayangaon', 'Narnaul', 'Narsinghpur', 'Nashik', 'Navi Mumbai', 'Navsari', 'Neemuch', 'Nellore', 'New Delhi', 'Neyveli', 'Nizamabad', 'Noida', 'North Delhi', 'Ongole', 'Orai', 'Osmanabad', 'Ooty', 'Palakkad', 'Palanpur', 'Pali', 'Palghar', 'Pallavaram', 'Palwal', 'Panaji', 'Panchkula', 'Pandharpur', 'Panipat', 'Panvel', 'Paradip', 'Paramakudi', 'Parbhani', 'Patan', 'Pathankot', 'Patiala', 'Patna', 'Pithoragarh', 'Pimpri-Chinchwad', 'Ponda', 'Ponnur', 'Port Blair', 'Porbandar', 'Proddatur', 'Puducherry', 'Pujali', 'Pune', 'Puri', 'Purnia', 'Purulia', 'Pushkar', 'Raichur', 'Raiganj', 'Raigarh', 'Raipur', 'Rajahmundry', 'Rajkot', 'Rajnandgaon', 'Rajouri', 'Ramachandrapuram', 'Ramagundam', 'Ramanathapuram', 'Rampur', 'Ranchi', 'Raniganj', 'Ratlam', 'Ratnagiri', 'Raurkela', 'Ravel', 'Rewa', 'Rewari', 'Rishikesh', 'Rohtak', 'Roorkee', 'Rourkela', 'Rudrapur', 'Sagar', 'Saharanpur', 'Saharsa', 'Salem', 'Samastipur', 'Sambalpur', 'Sambhal', 'Sangli', 'Sangli-Miraj-Kupwad', 'Sangrur', 'Satara', 'Satna', 'Secunderabad', 'Sehore', 'Seoni', 'Serampore', 'Shahjahanpur', 'Shamli', 'Shikohabad', 'Shillong', 'Shimla', 'Shivamogga', 'Shivpuri', 'Sholapur', 'Shrirampur', 'Siddipet', 'Sikar', 'Silchar', 'Siliguri', 'Silvassa', 'Simla', 'Singrauli', 'Sinnar', 'Siras', 'Sirsa', 'Sitamarhi', 'Sitapur', 'Sivakasi', 'Siwan', 'Solan', 'Solapur', 'Sonepat', 'Sonipat', 'South Delhi', 'Sreekaryam', 'Srikakulam', 'Srinagar', 'Sujangarh', 'Sultan Pur', 'Surat', 'Surendranagar Dudhrej', 'Suryapet', 'Tadepalligudem', 'Tadpatri', 'Tambaram', 'Tarn Taran', 'Tezpur', 'Thane', 'Thanjavur', 'Thiruvananthapuram', 'Thoothukudi', 'Thrissur', 'Tinsukia', 'Tiptur', 'Tiruchirappalli', 'Tiruelveli', 'Tirupati', 'Tirupattur', 'Tiruppur', 'Tirur', 'Tiruvannamalai', 'Tohana', 'Tonk', 'Trichur', 'Trichy', 'Trimbak', 'Tumkur', 'Tumakuru', 'Tuni', 'Tuticorin', 'Udaipur', 'Udhampur', 'Ujjain', 'Ulhasnagar', 'Uluberia', 'Unnao', 'Uttarpara Kotrung', 'Vadodara', 'Valsad', 'Vanchiyoor', 'Vapi', 'Varanasi', 'Vasai-Virar', 'Vasco da Gama', 'Vellore', 'Veraval', 'Vidisha', 'Vijayawada', 'Viluppuram', 'Virar', 'Virudhunagar', 'Visakhapatnam', 'Vizianagaram', 'Vrindavan', 'Vyara', 'Wadhwan', 'Wani', 'Warangal', 'Wardha', 'Washim', 'Wayanad', 'West Delhi', 'Yamunanagar', 'Yavatmal', 'Yelahanka', 'Zirakpur'
+];
 
 const CONFETTI = Array.from({ length: 30 }).map((_, i) => ({
   id: i, left: Math.random() * 100,
@@ -24,6 +29,34 @@ const DemoBooking = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [refCode, setRefCode] = useState('');
 
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+
+  const [citySearch, setCitySearch] = useState(form.district || '');
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+
+  const filteredCities = INDIAN_CITIES.filter((c) =>
+    c.toLowerCase().includes(citySearch.toLowerCase())
+  ).slice(0, 8);
+
+  useEffect(() => {
+    if (step === 2 && form.district) {
+      const fetchSlots = async () => {
+        setLoadingSlots(true);
+        try {
+          const res = await api.get(`/teachers/available-slots?district=${encodeURIComponent(form.district)}`);
+          setAvailableSlots(res);
+        } catch (error) {
+          console.error('Failed to fetch available slots:', error);
+        } finally {
+          setLoadingSlots(false);
+        }
+      };
+      fetchSlots();
+    }
+  }, [step, form.district]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === 'parentPhone') {
@@ -40,14 +73,25 @@ const DemoBooking = () => {
       if (!form.studentName.trim()) { alert('Please enter student name.'); return false; }
       if (!/^[6789]\d{9}$/.test(form.parentPhone)) { alert('Enter a valid 10-digit mobile number.'); return false; }
       if (!form.studentClass) { alert('Please select a class.'); return false; }
+      if (!form.district) { alert('Please select your district.'); return false; }
     }
     if (s === 2) {
       if (selectedSubjects.length === 0) { alert('Select at least one subject.'); return false; }
-      if (!form.preferredDate || !form.preferredTime) { alert('Fill preferred date and time.'); return false; }
-      if (selectedDays.length === 0) { alert('Select at least one preferred day.'); return false; }
+      if (!form.preferredDate) { alert('Please select a preferred date.'); return false; }
+      if (selectedSlot) {
+        const dateObj = new Date(form.preferredDate);
+        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dateDay = daysOfWeek[dateObj.getDay()];
+        if (dateDay.toLowerCase() !== selectedSlot.day.toLowerCase()) {
+          alert(`The selected date is a ${dateDay}, but the slot chosen is for ${selectedSlot.day}. Please select a date that falls on a ${selectedSlot.day}.`);
+          return false;
+        }
+      } else {
+        if (!form.preferredTime) { alert('Fill preferred time.'); return false; }
+        if (selectedDays.length === 0) { alert('Select at least one preferred day.'); return false; }
+      }
     }
     if (s === 3) {
-      if (!form.district) { alert('Select a district.'); return false; }
       if (!form.villageArea.trim()) { alert('Enter your village or area.'); return false; }
     }
     return true;
@@ -59,17 +103,37 @@ const DemoBooking = () => {
   };
   const goPrev = () => { setDir('prev'); setStep((p) => p - 1); };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateStep(3)) { triggerShake(); return; }
-    setRefCode('DEMO-' + Math.floor(100000 + Math.random() * 900000));
-    setShowSuccess(true);
+    try {
+      const response = await api.post('/demo-bookings', {
+        studentName: form.studentName,
+        parentPhone: form.parentPhone,
+        studentClass: form.studentClass,
+        subjects: selectedSubjects,
+        preferredDate: form.preferredDate,
+        preferredTime: selectedSlot ? selectedSlot.time : form.preferredTime,
+        preferredDays: selectedSlot ? [selectedSlot.day] : selectedDays,
+        district: form.district,
+        villageArea: form.villageArea,
+        landmark: form.landmark,
+        assigned_teacher_id: selectedSlot ? selectedSlot.teacherId : null
+      });
+      setRefCode(response.id);
+      setShowSuccess(true);
+    } catch (error) {
+      alert('Failed to book demo class: ' + error.message);
+    }
   };
 
   const closeModal = () => {
     setShowSuccess(false);
     setStep(1); setForm({ studentName: '', parentPhone: '', studentClass: '', preferredDate: '', preferredTime: '', district: '', villageArea: '', landmark: '' });
     setSelectedSubjects([]); setSelectedDays([]);
+    setSelectedSlot(null);
+    setCitySearch('');
+    setShowCityDropdown(false);
   };
 
   const getMinDate = () => {
@@ -160,6 +224,50 @@ const DemoBooking = () => {
                             ))}
                           </div>
                         </div>
+                        <div className="relative">
+                          <label className="form-label mb-2"><MapPin className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Search and Select Your District / City</label>
+                          <input
+                            type="text"
+                            placeholder="Type to search (e.g. Pune, Noida, Meerut)..."
+                            value={citySearch}
+                            onChange={(e) => {
+                              setCitySearch(e.target.value);
+                              setShowCityDropdown(true);
+                              setForm(p => ({ ...p, district: e.target.value }));
+                            }}
+                            onFocus={() => setShowCityDropdown(true)}
+                            onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
+                            className="form-input"
+                          />
+                          {showCityDropdown && (
+                            <div className="absolute z-50 left-0 right-0 mt-1 max-h-52 overflow-y-auto bg-white border border-neutral-200 rounded-xl shadow-lg divide-y divide-neutral-50">
+                              {filteredCities.length === 0 ? (
+                                <div className="p-3 text-xs text-neutral-400 italic">No matching cities found. Using "{citySearch}"</div>
+                              ) : (
+                                filteredCities.map((city) => (
+                                  <button
+                                    key={city}
+                                    type="button"
+                                    onMouseDown={() => {
+                                      setForm(p => ({ ...p, district: city }));
+                                      setCitySearch(city);
+                                      setShowCityDropdown(false);
+                                      setSelectedSlot(null);
+                                    }}
+                                    className="w-full text-left px-4 py-2.5 text-xs font-semibold text-neutral-700 hover:bg-primary-50 hover:text-primary-700 transition-colors cursor-pointer"
+                                  >
+                                    {city}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
+                          {form.district && (
+                            <p className="text-[10px] text-primary-600 font-extrabold mt-1.5">
+                              Selected Location: {form.district}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -179,34 +287,87 @@ const DemoBooking = () => {
                             })}
                           </div>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div className="space-y-4">
                           <div>
                             <label className="form-label"><Calendar className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Preferred Date</label>
                             <input type="date" name="preferredDate" required min={getMinDate()} value={form.preferredDate} onChange={handleChange} className="form-input cursor-pointer" />
                           </div>
-                          <div>
-                            <label className="form-label mb-2"><Clock className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Preferred Time</label>
-                            <div className="grid grid-cols-4 gap-1.5">
-                              {TIME_SLOTS.map((t) => (
-                                <button key={t} type="button" onClick={() => setForm((p) => ({ ...p, preferredTime: t }))} className={`py-2 text-[10.5px] font-medium rounded-lg border cursor-pointer transition-all text-center ${form.preferredTime === t ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'}`}>
-                                  {t}
-                                </button>
-                              ))}
+
+                          {loadingSlots ? (
+                            <div className="text-xs text-neutral-400 font-semibold italic animate-pulse">Loading tutor availability in {form.district}...</div>
+                          ) : availableSlots.length > 0 ? (
+                            <div>
+                              <label className="form-label mb-2"><Clock className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Available Tutor Slots in {form.district}</label>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {availableSlots.map((slot) => {
+                                  const isSel = selectedSlot?.slot === slot.slot && selectedSlot?.teacherId === slot.teacherId;
+                                  return (
+                                    <button
+                                      key={`${slot.teacherId}-${slot.slot}`}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedSlot(slot);
+                                        setForm(p => ({ ...p, preferredTime: slot.time }));
+                                        setSelectedDays([slot.day]);
+                                      }}
+                                      className={`p-3 text-left rounded-xl border cursor-pointer transition-all ${
+                                        isSel
+                                          ? 'bg-primary-50 border-primary-500 text-primary-900 shadow-sm ring-1 ring-primary-500'
+                                          : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'
+                                      }`}
+                                    >
+                                      <div className="font-bold text-xs">{slot.slot}</div>
+                                      <div className="text-[10px] text-neutral-400 font-medium mt-0.5">Tutor: {slot.teacherName}</div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSlot(null);
+                                  setForm(p => ({ ...p, preferredTime: '' }));
+                                  setSelectedDays([]);
+                                }}
+                                className="mt-2 text-xs text-blue-500 hover:underline font-bold cursor-pointer"
+                              >
+                                Clear selection / Request custom slot
+                              </button>
                             </div>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="form-label mb-2"><Calendar className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Preferred Days</label>
-                          <div className="flex flex-wrap gap-2">
-                            {DAYS.map((d) => {
-                              const sel = selectedDays.includes(d);
-                              return (
-                                <button key={d} type="button" onClick={() => setSelectedDays((p) => sel ? p.filter((x) => x !== d) : [...p, d])} className={`px-3.5 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-all ${sel ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'}`}>
-                                  {d.slice(0, 3)}
-                                </button>
-                              );
-                            })}
-                          </div>
+                          ) : (
+                            <div className="text-xs text-neutral-400 font-semibold italic">No direct teacher slots listed for {form.district}. Please choose a custom slot.</div>
+                          )}
+
+                          {(!selectedSlot || availableSlots.length === 0) && (
+                            <div className="space-y-4 pt-3 border-t border-neutral-100">
+                              <p className="text-[11px] text-neutral-400 font-semibold italic">Choose a custom day and time slot if no teacher slots fit your schedule:</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div>
+                                  <label className="form-label mb-2"><Clock className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Preferred Time</label>
+                                  <div className="grid grid-cols-4 gap-1.5">
+                                    {TIME_SLOTS.map((t) => (
+                                      <button key={t} type="button" onClick={() => setForm((p) => ({ ...p, preferredTime: t }))} className={`py-2 text-[10.5px] font-medium rounded-lg border cursor-pointer transition-all text-center ${form.preferredTime === t ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'}`}>
+                                        {t}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="form-label mb-2"><Calendar className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Preferred Days</label>
+                                  <div className="flex flex-wrap gap-2">
+                                    {DAYS.map((d) => {
+                                      const sel = selectedDays.includes(d);
+                                      return (
+                                        <button key={d} type="button" onClick={() => setSelectedDays((p) => sel ? p.filter((x) => x !== d) : [...p, d])} className={`px-3.5 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-all ${sel ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'}`}>
+                                          {d.slice(0, 3)}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -214,17 +375,6 @@ const DemoBooking = () => {
                     {/* Step 3 */}
                     {step === 3 && (
                       <div className="space-y-5">
-                        <div>
-                          <label className="form-label mb-2"><MapPin className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />District</label>
-                          <div className="grid grid-cols-2 gap-4">
-                            {['Delhi NCR', 'Mumbai', 'Bengaluru', 'Meerut', 'Allahabad', 'Other'].map((d) => (
-                              <button key={d} type="button" onClick={() => setForm((p) => ({ ...p, district: d }))} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 cursor-pointer transition-all ${form.district === d ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300'}`}>
-                                <MapPin className={`w-5 h-5 ${form.district === d ? 'text-primary-500 animate-pin-bounce' : 'text-neutral-400'}`} />
-                                <span className="font-semibold text-sm">{d}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                           <div>
                             <label className="form-label"><MapPin className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Village / Area</label>
@@ -235,6 +385,23 @@ const DemoBooking = () => {
                             <input type="text" name="landmark" value={form.landmark} onChange={handleChange} className="form-input" placeholder="Near school, temple…" />
                           </div>
                         </div>
+
+                        {form.villageArea && (
+                          <div className="mt-4 space-y-1">
+                            <span className="text-[10px] text-neutral-400 font-extrabold uppercase tracking-wider block">Address Preview Map</span>
+                            <div className="relative rounded-xl overflow-hidden border border-neutral-200 shadow-sm bg-white p-1">
+                              <iframe
+                                title="Google Map Preview"
+                                width="100%"
+                                height="180"
+                                style={{ border: 0, borderRadius: '8px' }}
+                                src={`https://maps.google.com/maps?q=${encodeURIComponent(`${form.villageArea}, ${form.landmark ? form.landmark + ', ' : ''}${form.district}`)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+                                allowFullScreen
+                                loading="lazy"
+                              ></iframe>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 

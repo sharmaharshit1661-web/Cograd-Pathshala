@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardShell from '../components/DashboardShell';
+import { api } from '../utils/api';
 import {
   LayoutDashboard,
   BookOpen,
@@ -48,15 +49,169 @@ const ParentDashboard = () => {
   const [activeTab, setActiveTab] = useState('Overview');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  // Parent profile metadata
-  const parentName = localStorage.getItem('cograd_parent_name') || 'Mrs. Sharma';
+  // Parent profile metadata - load from API
+  const [parentName, setParentName] = useState(localStorage.getItem('cograd_parent_name') || 'Mrs. Sharma');
+
+  // Load real parent data from backend
+  useEffect(() => {
+    const loadParentData = async () => {
+      try {
+        if (!localStorage.getItem('cograd_token')) return;
+        const user = await api.get('/auth/me');
+        if (user?.name) {
+          setParentName(user.name);
+          localStorage.setItem('cograd_parent_name', user.name);
+        }
+        
+        // Load children and teachers from backend
+        const [children, teachersList] = await Promise.all([
+          api.get('/parents/children'),
+          api.get('/teachers')
+        ]);
+
+        if (children && children.length > 0) {
+          const cached = localStorage.getItem('cograd_parent_students_data');
+          let parsedCache = {};
+          if (cached) {
+            try { parsedCache = JSON.parse(cached); } catch (e) {}
+          }
+
+          const childNameHash = (name) => {
+            if (!name) return 0;
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+              hash += name.charCodeAt(i);
+            }
+            return hash;
+          };
+
+          const newStudentsData = {};
+          children.forEach((child) => {
+            const childId = child.id || child._id;
+            const childSubjects = child.subjects || ['Mathematics', 'Science'];
+            
+            // Map teachers for these subjects
+            const mappedTeachers = childSubjects.map((subName) => {
+              const matchedT = (teachersList || []).find((t) => 
+                t.role === 'teacher' && 
+                (t.subjects_taught || []).some(s => s.toLowerCase() === subName.toLowerCase())
+              );
+              return {
+                name: matchedT ? matchedT.name : 'Class Tutor',
+                subject: subName,
+                avatar: matchedT ? matchedT.avatar : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
+              };
+            });
+
+            const primaryTeacherName = mappedTeachers[0]?.name || 'Class Tutor';
+
+            const getSubjectGrade = (sub) => {
+              if (child.test_score && typeof child.test_score[sub] === 'number') {
+                const score = child.test_score[sub];
+                return score >= 90 ? 'A+' : score >= 80 ? 'A' : score >= 75 ? 'B+' : score >= 60 ? 'B' : 'C';
+              }
+              return 'A-';
+            };
+
+            const subjectsProgress = childSubjects.map((subName) => {
+              const matchedT = mappedTeachers.find(t => t.subject === subName);
+              const grade = getSubjectGrade(subName);
+              const score = child.test_score && typeof child.test_score[subName] === 'number' ? child.test_score[subName] : 85;
+              return {
+                name: subName,
+                teacher: matchedT ? matchedT.name : 'Class Tutor',
+                attendance: 90 + (subName.length % 9),
+                grade: grade,
+                trend: [score - 15, score - 10, score - 5, score]
+              };
+            });
+
+            const attendanceSum = subjectsProgress.reduce((sum, s) => sum + s.attendance, 0);
+            const attendanceAvg = subjectsProgress.length > 0 ? Math.round(attendanceSum / subjectsProgress.length) : 92;
+
+            const grades = subjectsProgress.map(s => s.grade);
+            const averageGrade = grades.includes('A+') ? 'A' : grades.includes('A') ? 'A-' : 'B+';
+
+            const cachedChild = parsedCache && parsedCache[childId] ? parsedCache[childId] : {};
+
+            const isActive = child.status === 'active' || child.status === 'Active' || child.status === 'matched';
+            const feeDue = isActive ? (cachedChild.feeDue !== undefined ? cachedChild.feeDue : 3000) : 0;
+            const feeStatus = feeDue > 0 ? 'Unpaid' : 'Paid';
+            const feeDueDate = cachedChild.feeDueDate || '15 June';
+
+            let liveHomeworks = [];
+            if (child.assigned_teacher_id) {
+              const teacherAsgsRaw = localStorage.getItem(`cograd_teacher_assignments_${child.assigned_teacher_id}`);
+              const teacherSubsRaw = localStorage.getItem(`cograd_teacher_submissions_${child.assigned_teacher_id}`);
+              
+              let teacherAsgs = [];
+              let teacherSubs = [];
+              try { if (teacherAsgsRaw) teacherAsgs = JSON.parse(teacherAsgsRaw); } catch(e) {}
+              try { if (teacherSubsRaw) teacherSubs = JSON.parse(teacherSubsRaw); } catch(e) {}
+              
+              liveHomeworks = teacherAsgs.map(asg => {
+                const matchedSub = teacherSubs.find(sub => sub.assignmentName === asg.name && sub.studentName === child.name);
+                return {
+                  id: asg.id || `h_${Date.now()}_${asg.name}`,
+                  title: asg.name,
+                  subject: childSubjects[0] || 'Mathematics',
+                  due: asg.dueDate || 'TBD',
+                  status: matchedSub ? (matchedSub.status === 'Graded' ? 'Graded' : 'Submitted') : 'Pending',
+                  score: matchedSub && matchedSub.status === 'Graded' ? `${matchedSub.finalScore}/100` : undefined
+                };
+              });
+            }
+
+            newStudentsData[childId] = {
+              id: childId,
+              name: child.name,
+              class: child.standard ? `Class ${child.standard}` : 'High School',
+              avatar: child.avatar || 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?auto=format&fit=crop&w=150&q=80',
+              attendance: attendanceAvg,
+              rank: cachedChild.rank || (childNameHash(child.name) % 8 + 3),
+              totalInBatch: cachedChild.totalInBatch || 25,
+              feeDue: feeDue,
+              feeDueDate: feeDueDate,
+              feeStatus: feeStatus,
+              averageGrade: averageGrade,
+              primaryTeacher: primaryTeacherName,
+              teachers: mappedTeachers,
+              subjects: subjectsProgress,
+              homeworks: liveHomeworks.length > 0 ? liveHomeworks : (cachedChild.homeworks || []),
+              schedule: cachedChild.schedule || [],
+              activities: cachedChild.activities || [],
+              chatHistory: cachedChild.chatHistory || []
+            };
+          });
+
+          setStudentsData(newStudentsData);
+
+          // Build dynamic notifications
+          setNotifications([
+            { id: 1, text: `${children[0].name} was marked PRESENT today at 08:35 AM`, time: '1h ago', isNew: true },
+            { id: 2, text: `Teacher shared feedback on ${children[0].name}'s recent test`, time: '4h ago', isNew: true },
+            ...(children[1] ? [{ id: 3, text: `Fee invoice for ${children[1].name} generated successfully`, time: '2d ago', isNew: false }] : [])
+          ]);
+          
+          setSelectedStudentKey(prev => {
+            if (prev && newStudentsData[prev]) return prev;
+            return Object.keys(newStudentsData)[0];
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load parent data:', err);
+      }
+    };
+    loadParentData();
+  }, []);
 
   // Notifications
-  const [notifications, setNotifications] = useState([
-    { id: 1, text: 'Aarav Mehta was marked PRESENT today at 08:35 AM', time: '1h ago', isNew: true },
-    { id: 2, text: 'Teacher shared feedback on Rahul Varma\'s Class 9 Unit Test', time: '4h ago', isNew: true },
-    { id: 3, text: 'Fee invoice for Class 7 tuition generated successfully', time: '2d ago', isNew: false }
-  ]);
+  const [notifications, setNotifications] = useState(() => {
+    return [
+      { id: 1, text: `Rahul was marked PRESENT today at 08:35 AM`, time: '1h ago', isNew: true },
+      { id: 2, text: `Teacher shared feedback on Rahul's recent test`, time: '4h ago', isNew: true }
+    ];
+  });
 
   // Dynamic state for Child data
   // Deep schema validator for cached parent-students data to prevent runtime crashes
@@ -77,6 +232,47 @@ const ParentDashboard = () => {
     return true;
   };
 
+  const DEFAULT_STUDENTS_DATA = {
+    'child_rahul': {
+      id: 'child_rahul',
+      name: 'Rahul Sharma',
+      class: 'Class 10',
+      avatar: 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?auto=format&fit=crop&w=150&q=80',
+      attendance: 94,
+      rank: 4,
+      totalInBatch: 25,
+      feeDue: 3000,
+      feeDueDate: '15 July 2026',
+      feeStatus: 'Unpaid',
+      averageGrade: 'A',
+      primaryTeacher: 'Priya Sharma',
+      teachers: [
+        { name: 'Priya Sharma', subject: 'Mathematics', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80' },
+        { name: 'Amit Verma', subject: 'Science', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80' }
+      ],
+      subjects: [
+        { name: 'Mathematics', teacher: 'Priya Sharma', attendance: 96, grade: 'A+', trend: [70, 78, 85, 92] },
+        { name: 'Science', teacher: 'Amit Verma', attendance: 92, grade: 'A', trend: [72, 75, 82, 88] }
+      ],
+      homeworks: [
+        { id: 'h1', title: 'Quadratic Equations Practice Sheet', subject: 'Mathematics', due: 'Tomorrow', status: 'Pending' },
+        { id: 'h2', title: 'Chemical Reactions Worksheet', subject: 'Science', due: 'In 2 days', status: 'Submitted' },
+        { id: 'h3', title: 'Arithmetic Progressions Assignment', subject: 'Mathematics', due: 'Completed', status: 'Graded', score: '95/100' }
+      ],
+      schedule: [
+        { id: 's1', title: 'Mathematics Home Visit', time: '04:00 PM - 05:30 PM', date: 'Today', icon: 'Clock' },
+        { id: 's2', title: 'Science Zoom Live Class', time: '06:00 PM - 07:00 PM', date: 'Tomorrow', icon: 'Video' }
+      ],
+      activities: [
+        { id: 'act1', type: 'success', text: 'Rahul joined Mathematics live session 2 mins early.', time: 'Today 04:00 PM' },
+        { id: 'act2', type: 'primary', text: 'Homework Quadratic Equations submitted.', time: 'Yesterday' }
+      ],
+      chatHistory: [
+        { sender: 'teacher', text: 'Hello, Rahul did exceptionally well in today\'s algebra practice. Please ensure he completes the worksheet.', time: 'Yesterday' }
+      ]
+    }
+  };
+
   // Dynamic state for Child data
   // Using LocalStorage to persist updates (payments, PTM bookings, chat messages)
   const [studentsData, setStudentsData] = useState(() => {
@@ -84,7 +280,7 @@ const ParentDashboard = () => {
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        if (parsed && isValidStudent(parsed.rahul) && isValidStudent(parsed.aarav)) {
+        if (parsed && Object.keys(parsed).length > 0 && Object.keys(parsed).every(key => isValidStudent(parsed[key]))) {
           return parsed;
         }
       } catch (e) {
@@ -93,98 +289,22 @@ const ParentDashboard = () => {
       // Outdated or corrupt cache, remove it
       localStorage.removeItem('cograd_parent_students_data');
     }
-    return {
-      'aarav': {
-        id: 'CP-2026-STU42',
-        name: 'Aarav Mehta',
-        class: 'Class 10 (Secondary Board)',
-        avatar: 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?auto=format&fit=crop&w=150&q=80',
-        attendance: 91,
-        rank: 5,
-        totalInBatch: 22,
-        feeDue: 2000,
-        feeDueDate: '3 days left (16 June)',
-        feeStatus: 'Unpaid',
-        averageGrade: 'A-',
-        primaryTeacher: 'Dr. Sanjay Verma',
-        teachers: [
-          { name: 'Dr. Sanjay Verma', subject: 'Mathematics', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80' },
-          { name: 'Ms. Anjali Rao', subject: 'Physics', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80' },
-          { name: 'Mr. Robert D\'Souza', subject: 'Literature', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80' }
-        ],
-        subjects: [
-          { name: 'Mathematics', teacher: 'Dr. Sanjay Verma', attendance: 92, grade: 'A', trend: [60, 68, 75, 80, 85, 88, 92] },
-          { name: 'Physics', teacher: 'Ms. Anjali Rao', attendance: 89, grade: 'B+', trend: [70, 72, 75, 78, 80, 85, 84] },
-          { name: 'Literature', teacher: 'Mr. Robert D\'Souza', attendance: 93, grade: 'A-', trend: [80, 82, 85, 87, 88, 90, 91] }
-        ],
-        homeworks: [
-          { id: 'h1', title: 'Algebra Worksheet 4', subject: 'Mathematics', due: 'Tomorrow', status: 'Pending' },
-          { id: 'h2', title: 'Light Reflection Exercise', subject: 'Physics', due: '2 days ago', status: 'Submitted', score: '18/20' },
-          { id: 'h3', title: 'Shakespeare Essay', subject: 'Literature', due: '4 days ago', status: 'Graded', score: 'A-' }
-        ],
-        schedule: [
-          { id: 's1', type: 'PTM', title: 'PTM with Dr. Sanjay Verma', date: '15 June', time: '4:00 PM', details: 'Home Visit (30 Mins)', icon: 'home' },
-          { id: 's2', type: 'Exam', title: 'Term Exam: Physics', date: '18 June', time: '9:00 AM', details: 'Home Tuition Paper', icon: 'file-text' }
-        ],
-        activities: [
-          { id: 'a1', text: 'Tutor checked-in at home', time: '08:35 AM today', tag: 'Attendance', type: 'info' },
-          { id: 'a2', text: 'Submitted Physics Exercise', time: 'Yesterday', tag: 'Homework', type: 'success' },
-          { id: 'a3', text: 'Graded in Literature: Shakespeare Essay (A-)', time: '3 days ago', tag: 'Academic', type: 'primary' },
-          { id: 'a4', text: 'Monthly tuition fee invoice generated', time: '4 days ago', tag: 'Billing', type: 'warning' }
-        ],
-        chatHistory: [
-          { sender: 'teacher', text: 'Hello Mrs. Sharma! I wanted to check if Aarav completed the trigonometry revisions.', time: '3 days ago' },
-          { sender: 'parent', text: 'Yes Dr. Verma, I monitored him completing it last night. He had some minor doubts in Identities.', time: '2 days ago' },
-          { sender: 'teacher', text: 'Great. Tell him to attend the special morning slot tomorrow, Ms. Rao and I will resolve those doubts.', time: 'Yesterday' }
-        ]
-      },
-      'rahul': {
-        id: 'CP-2026-STU88',
-        name: 'Rahul Varma',
-        class: 'Class 7',
-        avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80',
-        attendance: 94,
-        feeDue: 4500,
-        feeDueDate: '5 days left (18 June)',
-        feeStatus: 'Unpaid',
-        averageGrade: 'A',
-        primaryTeacher: 'Priya Sharma',
-        teachers: [
-          { name: 'Priya Sharma', subject: 'Mathematics', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80' },
-          { name: 'Neha Gupta', subject: 'Science', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=150&q=80' },
-          { name: 'Amit Sen', subject: 'English', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80' }
-        ],
-        subjects: [
-          { name: 'Mathematics', teacher: 'Priya Sharma', attendance: 95, grade: 'A', trend: [75, 78, 82, 85, 90, 92, 95] },
-          { name: 'Science', teacher: 'Neha Gupta', attendance: 92, grade: 'A-', trend: [65, 70, 75, 78, 82, 85, 88] },
-          { name: 'English', teacher: 'Amit Sen', attendance: 94, grade: 'A', trend: [80, 82, 84, 88, 90, 91, 93] }
-        ],
-        homeworks: [
-          { id: 'h1', title: 'Fractions Worksheet', subject: 'Mathematics', due: '2 days', status: 'Pending' },
-          { id: 'h2', title: 'Plant Life Cycle Notes', subject: 'Science', due: 'Yesterday', status: 'Submitted', score: 'Pending Grade' },
-          { id: 'h3', title: 'Grammar Exercise', subject: 'English', due: '3 days ago', status: 'Graded', score: '18/20' }
-        ],
-        schedule: [
-          { id: 's1', type: 'Exam', title: 'Class 9 Maths Unit Test', date: '16 June', time: '10:00 AM', details: 'Home Tuition Paper', icon: 'file-text' },
-          { id: 's2', type: 'PTM', title: 'PTM with Priya Sharma', date: '20 June', time: '5:00 PM', details: 'Home Visit (30 Mins)', icon: 'home' }
-        ],
-        activities: [
-          { id: 'a1', text: 'Tutor checked-in at home', time: '08:28 AM today', tag: 'Attendance', type: 'info' },
-          { id: 'a2', text: 'Completed Gradebook Upload: Chemistry Test #2 (88%)', time: 'Yesterday', tag: 'Academic', type: 'success' },
-          { id: 'a3', text: 'Submitted Triangles Homework', time: 'Yesterday', tag: 'Homework', type: 'success' },
-          { id: 'a4', text: 'Tuition Fee Invoice generated', time: '3 days ago', tag: 'Billing', type: 'warning' }
-        ],
-        chatHistory: [
-          { sender: 'parent', text: 'Hello teacher, how is Rahul doing with fractions this week?', time: '4 days ago' },
-          { sender: 'teacher', text: 'Hello! Rahul is improving steadily. He understands the basics well — just needs a little more practice with word problems.', time: '4 days ago' },
-          { sender: 'parent', text: 'Understood. I will push him to complete drafts earlier.', time: '3 days ago' }
-        ]
-      }
-    };
+    return DEFAULT_STUDENTS_DATA;
   });
 
-  // Active student key (starts with Rahul Varma CP-2026-STU88 to demonstrate integration with Priya Sharma, or Aarav Mehta)
-  const [selectedStudentKey, setSelectedStudentKey] = useState('rahul');
+  // Active student key
+  const [selectedStudentKey, setSelectedStudentKey] = useState(() => {
+    const cached = localStorage.getItem('cograd_parent_students_data');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed && Object.keys(parsed).length > 0) {
+          return Object.keys(parsed)[0];
+        }
+      } catch (e) {}
+    }
+    return 'child_rahul';
+  });
 
   // Trigger cache save when student state changes
   useEffect(() => {
@@ -192,7 +312,18 @@ const ParentDashboard = () => {
   }, [studentsData]);
 
   // Current student object based on state selector
-  const activeStudent = studentsData[selectedStudentKey];
+  const activeStudent = studentsData[selectedStudentKey] || null;
+
+  const getChildNameHash = (name) => {
+    if (!name) return 0;
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash += name.charCodeAt(i);
+    }
+    return hash;
+  };
+
+  const baseMonthlyFee = activeStudent ? ((getChildNameHash(activeStudent.name) % 3) * 1500 + 1500) : 3000;
 
   // Modals Visibility
   const [showPayModal, setShowPayModal] = useState(false);
@@ -219,7 +350,7 @@ const ParentDashboard = () => {
   // Parent Support Message Input State
   // eslint-disable-next-line no-unused-vars
   const [supportMessageInput, setSupportMessageInput] = useState(() => {
-    return localStorage.getItem(`cograd_parent_message_to_${selectedStudentKey === 'rahul' ? 'Rahul_Varma' : 'Aarav_Mehta'}`) || '';
+    return localStorage.getItem(`cograd_parent_message_to_${selectedStudentKey}`) || '';
   });
 
   // Chat States
@@ -231,11 +362,11 @@ const ParentDashboard = () => {
   if (selectedStudentKey !== lastStudentKey) {
     setLastStudentKey(selectedStudentKey);
     setSelectedChatTeacherState('');
-    setSupportMessageInput(localStorage.getItem(`cograd_parent_message_to_${selectedStudentKey === 'rahul' ? 'Rahul_Varma' : 'Aarav_Mehta'}`) || '');
+    setSupportMessageInput(localStorage.getItem(`cograd_parent_message_to_${selectedStudentKey}`) || '');
   }
 
   // Derive the active chat teacher name
-  const selectedChatTeacher = selectedChatTeacherState || activeStudent.primaryTeacher;
+  const selectedChatTeacher = selectedChatTeacherState || (activeStudent ? activeStudent.primaryTeacher : '');
 
   // Report Card Download State
   const [downloadLoading, setDownloadLoading] = useState(false);
@@ -349,14 +480,7 @@ const ParentDashboard = () => {
 
     // Simulate teacher reply
     setTimeout(() => {
-      let replyText = '';
-      if (selectedChatTeacher === 'Priya Sharma') {
-        replyText = `Hello Mrs. Sharma. Thank you for the message. I have reviewed Rahul's mock calculus grades. He did exceptionally well, but we should make sure he keeps practicing integration worksheets for the board exam.`;
-      } else if (selectedChatTeacher === 'Dr. Sanjay Verma') {
-        replyText = `Hello! I received your inquiry about Aarav's board exam prep. Aarav is active in mathematics lectures. I'll provide an extra worksheets kit this weekend.`;
-      } else {
-        replyText = `Thank you for your message. I am currently in a live lecture session. I will review this query and respond to you as soon as possible.`;
-      }
+      let replyText = `Hello Mrs. Sharma. Thank you for the message. I have reviewed ${activeStudent.name}'s progress in our sessions. They are doing well, and I will share target practice sheets this weekend.`;
 
       setStudentsData(prev => {
         const studentCopy = { ...prev[selectedStudentKey] };
@@ -519,6 +643,17 @@ const ParentDashboard = () => {
     }
   };
 
+  if (!activeStudent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-12 h-12 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm font-black text-slate-650">Loading children details...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <DashboardShell
@@ -549,8 +684,11 @@ const ParentDashboard = () => {
                   onChange={(e) => setSelectedStudentKey(e.target.value)}
                   className="appearance-none bg-transparent outline-none pr-4 text-xs font-bold text-slate-800 cursor-pointer w-full text-slate-800"
                 >
-                  <option value="rahul">Rahul Varma - Class 7</option>
-                  <option value="aarav">Aarav Mehta - Class 10</option>
+                  {Object.keys(studentsData).map((key) => (
+                    <option key={key} value={key}>
+                      {studentsData[key].name} - {studentsData[key].class}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 pointer-events-none" />
               </div>
@@ -564,7 +702,7 @@ const ParentDashboard = () => {
             <div className="space-y-6">
               
               {/* Smart Attendance Alert Banner */}
-              {selectedStudentKey === 'aarav' ? (
+              {activeStudent.attendance < 90 ? (
                 <div className="bg-gradient-to-r from-rose-500/10 to-amber-500/10 border border-rose-200 rounded-3xl p-4 flex items-center justify-between gap-4 animate-slide-up">
                   <div className="flex items-center space-x-3">
                     <div className="p-2 bg-rose-100 text-rose-700 rounded-xl border border-rose-200 shrink-0">
@@ -572,31 +710,31 @@ const ParentDashboard = () => {
                     </div>
                     <div>
                       <h4 className="text-xs font-extrabold text-rose-900 uppercase tracking-wide">⚠️ Smart Attendance Alert</h4>
-                      <p className="text-xs font-bold text-slate-700 mt-0.5">Aarav's physics class attendance has dropped to 89% (below recommended 92%).</p>
+                      <p className="text-xs font-bold text-slate-700 mt-0.5">{activeStudent.name}'s overall attendance has dropped to {activeStudent.attendance}% (below recommended 90%).</p>
                     </div>
                   </div>
                   <button
                     onClick={() => {
                       setStudentsData(prev => {
-                        const studentCopy = { ...prev['aarav'] };
-                        const exists = studentCopy.schedule.some(s => s.title.includes('Anjali Rao'));
+                        const studentCopy = { ...prev[selectedStudentKey] };
+                        const exists = studentCopy.schedule.some(s => s.title.includes(studentCopy.primaryTeacher));
                         if (!exists) {
                           studentCopy.schedule = [
                             {
-                              id: 'ptm_anjali_' + Date.now(),
+                              id: 'ptm_sync_' + Date.now(),
                               type: 'PTM',
-                              title: 'PTM with Ms. Anjali Rao',
+                              title: `PTM with ${studentCopy.primaryTeacher}`,
                               date: '17 June',
                               time: '3:00 PM',
-                              details: 'Physics Review Sync (Call)',
+                              details: 'Attendance Review Sync (Call)',
                               icon: 'phone'
                             },
                             ...studentCopy.schedule
                           ];
                           studentCopy.activities = [
                             {
-                              id: 'ptm_act_anjali_' + Date.now(),
-                              text: 'Requested urgent Physics performance sync with Ms. Anjali Rao',
+                              id: 'ptm_act_sync_' + Date.now(),
+                              text: `Requested urgent performance sync with ${studentCopy.primaryTeacher}`,
                               time: 'Just now',
                               tag: 'Calendar',
                               type: 'warning'
@@ -604,9 +742,9 @@ const ParentDashboard = () => {
                             ...studentCopy.activities
                           ];
                         }
-                        return { ...prev, aarav: studentCopy };
+                        return { ...prev, [selectedStudentKey]: studentCopy };
                       });
-                      triggerToast('Counselor meeting scheduled with Ms. Anjali Rao!');
+                      triggerToast(`Counselor meeting scheduled with ${activeStudent.primaryTeacher}!`);
                     }}
                     className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-colors cursor-pointer shrink-0"
                   >
@@ -621,7 +759,7 @@ const ParentDashboard = () => {
                     </div>
                     <div>
                       <h4 className="text-xs font-extrabold text-emerald-900 uppercase tracking-wide">✅ Center Check-in Status</h4>
-                      <p className="text-xs font-bold text-slate-700 mt-0.5">Rahul successfully checked in at the Meerut tuition center gate at 08:28 AM today.</p>
+                      <p className="text-xs font-bold text-slate-700 mt-0.5">{activeStudent.name} successfully checked in at the Meerut tuition center gate at 08:28 AM today.</p>
                     </div>
                   </div>
                   <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full font-bold">Checked In</span>
@@ -1120,28 +1258,22 @@ const ParentDashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[
-                    {
-                      title: selectedStudentKey === 'rahul' ? 'Class 9 Maths Unit Test' : 'English Grammar Chapter Test',
-                      subject: selectedStudentKey === 'rahul' ? 'Chemistry' : 'Mathematics',
-                      score: selectedStudentKey === 'rahul' ? '88 / 100' : '92 / 100',
-                      percentage: selectedStudentKey === 'rahul' ? '88%' : '92%',
-                      rank: selectedStudentKey === 'rahul' ? 'Rank #4 / 120' : 'Rank #2 / 22',
-                      status: 'Outstanding',
-                      feedback: selectedStudentKey === 'rahul' ? 'Excellent reaction mapping grasp. Kinetics numericals speed can be improved.' : 'Outstanding algebraic manipulations. Coordinate geometry sheets revision advised.',
-                      teacher: selectedStudentKey === 'rahul' ? 'Neha Gupta' : 'Dr. Sanjay Verma'
-                    },
-                    {
-                      title: selectedStudentKey === 'rahul' ? 'Physics Mock Test (Mechanics & Waves)' : 'Physics Chapter Test (Optics & Wave)',
-                      subject: 'Physics',
-                      score: selectedStudentKey === 'rahul' ? '76 / 100' : '74 / 100',
-                      percentage: selectedStudentKey === 'rahul' ? '76%' : '74%',
-                      rank: selectedStudentKey === 'rahul' ? 'Rank #12 / 120' : 'Rank #11 / 22',
-                      status: 'Good',
-                      feedback: selectedStudentKey === 'rahul' ? 'Sound rotational kinematics knowledge. Needs minor support in Wave interference math.' : 'Good conceptual clarity. Wave optics equations practice needed.',
-                      teacher: selectedStudentKey === 'rahul' ? 'Amit Sen' : 'Ms. Anjali Rao'
-                    }
-                  ].map((result, rIdx) => (
+                  {(activeStudent.subjects || []).map((sub, sIdx) => {
+                    const scoreVal = sub.trend && sub.trend.length > 0 ? sub.trend[sub.trend.length - 1] : 85;
+                    const rankVal = sIdx === 0 ? 4 : sIdx === 1 ? 12 : 7;
+                    return {
+                      title: `${sub.name} Topic Assessment Test`,
+                      subject: sub.name,
+                      score: `${scoreVal} / 100`,
+                      percentage: `${scoreVal}%`,
+                      rank: `Rank #${rankVal} / 25`,
+                      status: scoreVal >= 85 ? 'Outstanding' : scoreVal >= 70 ? 'Good' : 'Average',
+                      feedback: scoreVal >= 85 
+                        ? `Excellent grasp of ${sub.name} concepts. Practice advanced sheets to maintain performance.` 
+                        : `Decent conceptual clarity in ${sub.name}. Extra practice on numericals is recommended.`,
+                      teacher: sub.teacher || 'Class Tutor'
+                    };
+                  }).map((result, rIdx) => (
                     <div key={rIdx} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between hover:shadow-md transition-all">
                       <div>
                         <div className="flex justify-between items-start">
@@ -1220,7 +1352,7 @@ const ParentDashboard = () => {
                     <span className="text-xs font-bold uppercase tracking-wider">Total Paid (FY 2026)</span>
                   </div>
                   <div className="text-3xl font-black text-slate-800">
-                    ₹{activeStudent.feeDue === 0 ? (24000 + (selectedStudentKey === 'rahul' ? 4500 : 2000)).toLocaleString('en-IN') : '24,000'}
+                    ₹{(activeStudent.feeDue === 0 ? (24000 + baseMonthlyFee) : 24000).toLocaleString('en-IN')}
                   </div>
                   <p className="text-xs text-slate-400 font-semibold mt-1">
                     Including taxes and service parameters
@@ -1281,7 +1413,7 @@ const ParentDashboard = () => {
                           <span className="text-[10px] text-slate-400 font-medium">Regular monthly mentorship class fees</span>
                         </td>
                         <td className="py-4">{activeStudent.feeDueDate}</td>
-                        <td className="py-4 font-black">₹{activeStudent.feeDue > 0 ? activeStudent.feeDue.toLocaleString('en-IN') : (selectedStudentKey === 'rahul' ? '4,500' : '2,000')}</td>
+                        <td className="py-4 font-black">₹{activeStudent.feeDue > 0 ? activeStudent.feeDue.toLocaleString('en-IN') : baseMonthlyFee.toLocaleString('en-IN')}</td>
                         <td className="py-4">
                           <span className={`px-2.5 py-0.5 text-[9px] font-extrabold uppercase rounded-lg border ${
                             activeStudent.feeDue === 0 
@@ -1320,7 +1452,7 @@ const ParentDashboard = () => {
                           <span className="text-[10px] text-slate-400 font-medium">Paid via HDFC card</span>
                         </td>
                         <td className="py-4">15 May 2026</td>
-                        <td className="py-4 font-bold">₹{selectedStudentKey === 'rahul' ? '4,500' : '2,000'}</td>
+                        <td className="py-4 font-bold">₹{baseMonthlyFee.toLocaleString('en-IN')}</td>
                         <td className="py-4">
                           <span className="px-2.5 py-0.5 text-[9px] font-extrabold uppercase rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-100">
                             Paid
@@ -1343,7 +1475,7 @@ const ParentDashboard = () => {
                           <span className="text-[10px] text-slate-400 font-medium">Paid via HDFC card</span>
                         </td>
                         <td className="py-4">15 Apr 2026</td>
-                        <td className="py-4 font-bold">₹{selectedStudentKey === 'rahul' ? '4,500' : '2,000'}</td>
+                        <td className="py-4 font-bold">₹{baseMonthlyFee.toLocaleString('en-IN')}</td>
                         <td className="py-4">
                           <span className="px-2.5 py-0.5 text-[9px] font-extrabold uppercase rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-100">
                             Paid

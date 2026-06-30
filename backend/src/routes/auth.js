@@ -7,7 +7,7 @@ const router = express.Router();
 
 // Generate JWT token
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+  return jwt.sign({ id }, process.env.JWT_SECRET || 'cograd_pathshala_fallback_secret_key', {
     expiresIn: '30d',
   });
 };
@@ -37,14 +37,29 @@ router.post('/register', async (req, res) => {
       customId = `admin_${Date.now()}`;
     }
 
+    let finalPassword = password;
+    let tempPassword = null;
+    if (role === 'teacher') {
+      if (!finalPassword) {
+        const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$';
+        let generatedPassword = '';
+        for (let i = 0; i < 10; i++) {
+          generatedPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        finalPassword = generatedPassword;
+        tempPassword = generatedPassword;
+      }
+    }
+
     // Build the user data object
     const userData = {
       id: customId,
       name,
       email,
-      password,
+      password: finalPassword,
       phone,
       role,
+      tempPassword,
       ...extraFields,
     };
 
@@ -99,12 +114,35 @@ router.post('/login', async (req, res) => {
   try {
     const user = await User.findOne({ email });
 
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Check if currently locked out
+    if (user.lock_until && user.lock_until > Date.now()) {
+      const remainingMinutes = Math.ceil((user.lock_until - Date.now()) / 60000);
+      return res.status(401).json({
+        message: `Account is temporarily locked due to too many failed attempts. Try again in ${remainingMinutes} minute(s).`
+      });
+    }
+
     // Validate user, password and role
-    if (user && (await user.matchPassword(password))) {
+    const isMatch = await user.matchPassword(password);
+
+    if (isMatch) {
       // Check if roles match. We can be lax or strict, let's match the requested role.
       if (role && user.role !== role) {
         return res.status(401).json({ message: `Access denied. You are registered as a ${user.role}.` });
       }
+
+      if (user.role === 'teacher' && user.verification_status !== 'Verified') {
+        return res.status(401).json({ message: 'Your teacher application is pending admin review. You will receive your login credentials via email once approved.' });
+      }
+
+      // Reset login attempts on successful login
+      user.login_attempts = 0;
+      user.lock_until = null;
+      await user.save();
 
       res.json({
         token: generateToken(user.id),
@@ -117,7 +155,19 @@ router.post('/login', async (req, res) => {
         },
       });
     } else {
-      res.status(401).json({ message: 'Invalid email or password' });
+      user.login_attempts = (user.login_attempts || 0) + 1;
+      let responseMessage = 'Invalid email or password';
+
+      if (user.login_attempts >= 4) {
+        user.lock_until = Date.now() + 15 * 60 * 1000; // 15 minutes lockout
+        responseMessage = 'Account is temporarily locked due to too many failed attempts. Try again in 15 minutes.';
+      } else {
+        const attemptsLeft = 4 - user.login_attempts;
+        responseMessage = `Invalid email or password. ${attemptsLeft} attempts remaining before temporary lockout.`;
+      }
+
+      await user.save();
+      res.status(401).json({ message: responseMessage });
     }
   } catch (error) {
     console.error(error);

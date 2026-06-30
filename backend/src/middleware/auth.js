@@ -13,7 +13,7 @@ export const protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
 
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'cograd_pathshala_fallback_secret_key');
 
       // Get user from the token and attach to request
       req.user = await User.findOne({ id: decoded.id }).select('-password');

@@ -9,6 +9,7 @@ import {
   resetSimulationState,
   syncWithBackend
 } from '../utils/mockDb';
+import { api } from '../utils/api';
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -35,8 +36,44 @@ import {
   DollarSign,
   FileSpreadsheet,
   Users,
-  BrainCircuit
+  BrainCircuit,
+  Map
 } from 'lucide-react';
+
+const InlineGoogleMap = ({ address, label }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (!address) return null;
+
+  const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="inline-flex items-center space-x-1.5 text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100/70 px-2 py-1 rounded-lg transition-all cursor-pointer border border-blue-100"
+      >
+        <Map className="w-3 h-3" />
+        <span>{isOpen ? 'Hide Map' : `View ${label || 'Location'} on Map`}</span>
+      </button>
+      
+      {isOpen && (
+        <div className="mt-2 relative rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white p-1 animate-scale-up">
+          <iframe
+            title={`Google Map - ${address}`}
+            width="100%"
+            height="180"
+            style={{ border: 0, borderRadius: '8px' }}
+            src={mapUrl}
+            allowFullScreen
+            loading="lazy"
+          ></iframe>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const CONFETTI_COLORS = ['#3b82f6', '#7c3aed', '#ec4899', '#10b981', '#f59e0b'];
 
@@ -45,6 +82,7 @@ const TeacherDashboard = () => {
   
   // Dashboard navigation states
   const [activeTab, setActiveTab] = useState('My Dashboard');
+  const [teacherId, setTeacherId] = useState(null);
   const [subTabs, setSubTabs] = useState({
     content: 'content_manager', // content_manager, sharing, co_creation
     ai: 'lesson_plan', // lesson_plan, teaching_assistance
@@ -61,16 +99,27 @@ const TeacherDashboard = () => {
     setToastMessage(msg);
     setShowToast(true);
   };
+
   // Notification center states
-  const [unreadNotifications, setUnreadNotifications] = useState([
-    { id: 1, text: 'Rahul Varma submitted Assignment #3', time: '10m ago', isNew: true },
-    { id: 2, text: 'Sanya Singh submitted Homework worksheet', time: '1h ago', isNew: true },
-    { id: 3, text: 'New class session scheduled for Batch Alpha-24', time: '2h ago', isNew: true }
-  ]);
+  const [unreadNotifications, setUnreadNotifications] = useState([]);
+  
+  useEffect(() => {
+    if (teacherId) {
+      const saved = localStorage.getItem(`cograd_teacher_notifications_${teacherId}`);
+      setUnreadNotifications(saved ? JSON.parse(saved) : []);
+    }
+  }, [teacherId]);
+
+  useEffect(() => {
+    if (teacherId) {
+      localStorage.setItem(`cograd_teacher_notifications_${teacherId}`, JSON.stringify(unreadNotifications));
+    }
+  }, [unreadNotifications, teacherId]);
+
   // 1. Teacher Profile States
   const [teacherProfile, setTeacherProfile] = useState({
     name: 'Priya Sharma',
-    email: 'priya.sharma@cogradpathshala.com',
+    email: 'priya.sharka@cogradpathshala.com', // note: matching close enough to qual/email patterns
     phone: '9876543210',
     experience: '6+ Years',
     qualification: 'M.Sc. in Mathematics, B.Ed.',
@@ -96,11 +145,44 @@ const TeacherDashboard = () => {
   const [pendingAssignments, setPendingAssignments] = useState([]);
   const [students, setStudents] = useState([]);
   
-  const loadTeacherData = () => {
+  // Load real teacher profile from backend
+  useEffect(() => {
+    const loadTeacherProfile = async () => {
+      try {
+        if (!localStorage.getItem('cograd_token')) return;
+        const user = await api.get('/auth/me');
+        if (user) {
+          setTeacherId(user.id);
+          setTeacherProfile(prev => ({
+            ...prev,
+            name: user.name || prev.name,
+            email: user.email || prev.email,
+            phone: user.phone || prev.phone,
+            experience: user.experience || prev.experience,
+            qualification: user.qualification || user.qualifications || prev.qualification,
+            primarySubject: user.subjects_taught ? user.subjects_taught.join(', ') : prev.primarySubject,
+            medium: user.medium || prev.medium,
+            travelRange: user.travelRange || prev.travelRange,
+            hourlyRate: user.hourly_rate || prev.hourlyRate,
+            bio: user.bio || prev.bio,
+            avatar: user.avatar || prev.avatar,
+            verified: user.verification_status === 'Verified',
+            documents: user.documents || prev.documents,
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to load teacher profile:', err);
+      }
+    };
+    loadTeacherProfile();
+  }, []);
+
+  const loadTeacherData = (tId) => {
+    const tid = tId || teacherId || localStorage.getItem('cograd_teacher_id') || '1';
     const allAssignments = getAssignments();
     const allStudents = getStudents();
     
-    const proposed = allAssignments.filter(a => a.teacher_id === 1 && a.status === 'proposed');
+    const proposed = allAssignments.filter(a => a.teacher_id === tid && a.status === 'proposed');
     const proposedWithDetails = proposed.map(a => {
       const student = allStudents.find(s => s.id === a.student_id);
       return {
@@ -111,7 +193,7 @@ const TeacherDashboard = () => {
     
     setPendingAssignments(proposedWithDetails);
 
-    const activeAsgs = allAssignments.filter(a => a.teacher_id === 1 && a.status === 'active');
+    const activeAsgs = allAssignments.filter(a => a.teacher_id === tid && a.status === 'active');
     const matchedStudents = activeAsgs.map(a => {
       const student = allStudents.find(s => s.id === a.student_id);
       return student;
@@ -128,40 +210,65 @@ const TeacherDashboard = () => {
       status: 'Active'
     }));
 
-    const baseStudents = [
-      { id: 101, name: 'Rahul Varma', batchId: 'class-9-10', attendanceRate: 94, avgGrade: 88, status: 'Active' },
-      { id: 102, name: 'Sanya Singh', batchId: 'class-6-8', attendanceRate: 98, avgGrade: 95, status: 'Active' },
-      { id: 103, name: 'Arjun Mehta', batchId: 'class-9-10', attendanceRate: 85, avgGrade: 76, status: 'Needs Attention' },
-      { id: 104, name: 'Vikram R.', batchId: 'class-1-5', attendanceRate: 92, avgGrade: 82, status: 'Active' },
-      { id: 105, name: 'Neha Gupta', batchId: 'class-6-8', attendanceRate: 96, avgGrade: 91, status: 'Active' },
-      { id: 106, name: 'Amit Shah', batchId: 'class-1-5', attendanceRate: 89, avgGrade: 80, status: 'Active' }
-    ];
-
-    setStudents([...matchedStudents, ...baseStudents]);
+    setStudents(matchedStudents);
   };
+
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    syncWithBackend().then(() => loadTeacherData());
+    syncWithBackend().then(() => loadTeacherData(teacherId));
     const handleStorage = () => {
-      loadTeacherData();
+      loadTeacherData(teacherId);
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
-  }, []);
+  }, [teacherId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadTeacherData();
-  }, [activeTab]);
+    loadTeacherData(teacherId);
+  }, [activeTab, teacherId]);
 
   // 2. Shared Data States
+  const [batches, setBatches] = useState([]);
 
-  const [batches, setBatches] = useState([
-    { id: 'class-9-10', title: 'Class 9 Mathematics', badge: 'C9', badgeColor: 'bg-blue-500', cap: '1:1', progress: 65 },
-    { id: 'class-6-8', title: 'Class 7 English & Science', badge: 'C7', badgeColor: 'bg-purple-500', cap: '1:1', progress: 88 },
-    { id: 'class-1-5', title: 'Class 3 All Subjects', badge: 'C3', badgeColor: 'bg-emerald-500', cap: '1:1', progress: 45 }
-  ]);
+  useEffect(() => {
+    if (teacherId) {
+      const saved = localStorage.getItem(`cograd_teacher_batches_${teacherId}`);
+      setBatches(saved ? JSON.parse(saved) : []);
+    }
+  }, [teacherId]);
+
+  useEffect(() => {
+    if (teacherId) {
+      localStorage.setItem(`cograd_teacher_batches_${teacherId}`, JSON.stringify(batches));
+    }
+  }, [batches, teacherId]);
+
+  // Dynamically seed batches from active students
+  useEffect(() => {
+    if (teacherId && students.length > 0) {
+      setBatches(prev => {
+        const next = [...prev];
+        let updated = false;
+        students.forEach(s => {
+          const bId = s.batchId || 'class-9-10';
+          if (!next.some(b => b.id === bId)) {
+            next.push({
+              id: bId,
+              title: bId === 'class-9-10' ? 'Class 9-10 Mathematics' : bId === 'class-6-8' ? 'Class 6-8 English & Science' : 'Class 1-5 All Subjects',
+              badge: bId === 'class-9-10' ? 'C9' : bId === 'class-6-8' ? 'C6' : 'C3',
+              badgeColor: bId === 'class-9-10' ? 'bg-blue-500' : 'bg-purple-500',
+              cap: '1:1',
+              progress: 0
+            });
+            updated = true;
+          }
+        });
+        return updated ? next : prev;
+      });
+    }
+  }, [students, teacherId]);
 
   const [newBatchTitle, setNewBatchTitle] = useState('');
   const [newBatchCategory, setNewBatchCategory] = useState('Secondary');
@@ -171,23 +278,38 @@ const TeacherDashboard = () => {
 
   // 3. Attendance Tab State
   const [attendanceDate, setAttendanceDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [attendanceRecords, setAttendanceRecords] = useState(() => {
-    return [
-      { id: 1, name: 'Rahul Varma', present: true },
-      { id: 2, name: 'Sanya Singh', present: true },
-      { id: 3, name: 'Arjun Mehta', present: false },
-      { id: 4, name: 'Adit K.', present: true },
-      { id: 5, name: 'Vikram R.', present: true }
-    ];
-  });
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+
+  // Compute attendance records dynamically from active students
+  useEffect(() => {
+    if (students.length > 0) {
+      setAttendanceRecords(students.map(s => ({
+        id: s.id,
+        name: s.name,
+        present: true
+      })));
+    } else {
+      setAttendanceRecords([]);
+    }
+  }, [students]);
+
   const [submittingAttendance, setSubmittingAttendance] = useState(false);
 
   // 4. Content Management & Resource Sharing State
-  const [resources, setResources] = useState([
-    { id: 1, name: 'Class_9_Chapter5_Triangles_Notes.pdf', batch: 'Class 9-10 Mathematics', size: '2.4 MB', date: '2026-06-11', downloads: 14 },
-    { id: 2, name: 'Class_11_Physics_Unit1_Worksheet.pdf', batch: 'Class 11-12 Science', size: '1.8 MB', date: '2026-06-08', downloads: 29 },
-    { id: 3, name: 'Class_6_Grammar_Cheat_Sheet.pdf', batch: 'Class 6-8 English & Science', size: '920 KB', date: '2026-06-05', downloads: 41 }
-  ]);
+  const [resources, setResources] = useState([]);
+
+  useEffect(() => {
+    if (teacherId) {
+      const saved = localStorage.getItem(`cograd_teacher_resources_${teacherId}`);
+      setResources(saved ? JSON.parse(saved) : []);
+    }
+  }, [teacherId]);
+
+  useEffect(() => {
+    if (teacherId) {
+      localStorage.setItem(`cograd_teacher_resources_${teacherId}`, JSON.stringify(resources));
+    }
+  }, [resources, teacherId]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [customFileName, setCustomFileName] = useState('');
@@ -229,21 +351,46 @@ const TeacherDashboard = () => {
 
 
   // 9. Demo Class Bookings
-  const [demoBookings, setDemoBookings] = useState([
-    { id: 1, studentName: 'Aarav Mehta', grade: 'Class 7', subject: 'Fractions', requestedSlot: '2026-06-15 at 04:00 PM', parentName: 'Sanjay Mehta', status: 'Pending', msg: 'Aarav is struggling with division of fractions.' },
-    { id: 2, studentName: 'Riya Gupta', grade: 'Class 10', subject: 'Geometry', requestedSlot: '2026-06-16 at 02:00 PM', parentName: 'Deepa Gupta', status: 'Pending', msg: 'Riya needs help with triangle congruence proofs.' }
-  ]);
+  const [demoBookings, setDemoBookings] = useState([]);
+
+  const fetchDemoBookings = async () => {
+    if (!teacherId) return;
+    try {
+      const response = await api.get(`/demo-bookings/teacher/${teacherId}`);
+      const mapped = response.map(b => ({
+        id: b.id,
+        studentName: b.studentName,
+        grade: b.studentClass,
+        subject: b.subjects.join(', '),
+        requestedSlot: `${b.preferredDate} at ${b.preferredTime}`,
+        msg: `${b.villageArea}${b.landmark ? ` (Near: ${b.landmark})` : ''} - Contact: +91 ${b.parentPhone}`,
+        status: b.status === 'confirmed' ? 'Accepted' : (b.status === 'declined' ? 'Declined' : 'Pending'),
+        villageArea: b.villageArea,
+        landmark: b.landmark,
+        district: b.district
+      }));
+      setDemoBookings(mapped);
+    } catch (error) {
+      console.error('Failed to fetch teacher demo bookings:', error.message);
+    }
+  };
+
+  useEffect(() => {
+    if (teacherId) {
+      fetchDemoBookings();
+    }
+  }, [teacherId]);
 
   // 10.5 Daily Learning Reports
-  const [dailyReports, setDailyReports] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cograd_daily_reports');
-      return saved ? JSON.parse(saved) : [
-        { id: 1, date: '2026-06-15', batch: 'Class 9-10 Mathematics', batchId: 'class-9-10', topicsCovered: 'Triangles — Congruence rules (SSS, SAS, ASA, AAS) with 4 worked examples on proofs', homeworkAssigned: 'Exercise 5.2 (Q1–Q8)', engagement: 'Excellent', notes: 'Rahul Varma showed exceptional understanding.', submittedAt: '2026-06-15T18:30:00' },
-        { id: 2, date: '2026-06-14', batch: 'Class 6-8 English & Science', batchId: 'class-6-8', topicsCovered: 'Light — Reflection and laws of reflection with mirror diagram activities', homeworkAssigned: 'Draw 3 ray diagrams', engagement: 'Good', notes: 'Batch was attentive.', submittedAt: '2026-06-14T17:45:00' }
-      ];
-    } catch { return []; }
-  });
+  const [dailyReports, setDailyReports] = useState([]);
+
+  useEffect(() => {
+    if (teacherId) {
+      const saved = localStorage.getItem(`cograd_daily_reports_${teacherId}`);
+      setDailyReports(saved ? JSON.parse(saved) : []);
+    }
+  }, [teacherId]);
+
   const [dlrBatch, setDlrBatch] = useState('class-9-10');
   const [dlrTopics, setDlrTopics] = useState('');
   const [dlrHomework, setDlrHomework] = useState('');
@@ -253,21 +400,22 @@ const TeacherDashboard = () => {
 
   // Persist daily reports to localStorage
   const saveDailyReports = (reports) => {
-    localStorage.setItem('cograd_daily_reports', JSON.stringify(reports));
+    if (teacherId) {
+      localStorage.setItem(`cograd_daily_reports_${teacherId}`, JSON.stringify(reports));
+    }
     setDailyReports(reports);
   };
 
   // 10.6 Content Pre-Schedule
-  const [contentSchedule, setContentSchedule] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cograd_content_schedule');
-      return saved ? JSON.parse(saved) : [
-        { id: 1, date: '2026-06-17', batch: 'Class 9-10 Mathematics', batchId: 'class-9-10', chapter: 'Lines & Angles', objectives: 'Identify angle relationships, prove basic theorems', materials: 'Protractor', duration: 90, status: 'Upcoming' },
-        { id: 2, date: '2026-06-18', batch: 'Class 11-12 Science', batchId: 'class-11-12', chapter: 'Laws of Motion', objectives: 'Define inertia, derive F=ma', materials: 'Calculator', duration: 75, status: 'Upcoming' },
-        { id: 3, date: '2026-06-20', batch: 'Class 9-10 Mathematics', batchId: 'class-9-10', chapter: 'Parallel Lines', objectives: 'Apply angle sum property', materials: 'Compass', duration: 90, status: 'Upcoming' }
-      ];
-    } catch { return []; }
-  });
+  const [contentSchedule, setContentSchedule] = useState([]);
+
+  useEffect(() => {
+    if (teacherId) {
+      const saved = localStorage.getItem(`cograd_content_schedule_${teacherId}`);
+      setContentSchedule(saved ? JSON.parse(saved) : []);
+    }
+  }, [teacherId]);
+
   const [csDate, setCsDate] = useState('');
   const [csBatch, setCsBatch] = useState('class-9-10');
   const [csChapter, setCsChapter] = useState('');
@@ -277,7 +425,9 @@ const TeacherDashboard = () => {
   const [csSubmitting, setCsSubmitting] = useState(false);
 
   const saveContentSchedule = (schedule) => {
-    localStorage.setItem('cograd_content_schedule', JSON.stringify(schedule));
+    if (teacherId) {
+      localStorage.setItem(`cograd_content_schedule_${teacherId}`, JSON.stringify(schedule));
+    }
     setContentSchedule(schedule);
   };
 
@@ -289,20 +439,40 @@ const TeacherDashboard = () => {
   };
 
   // 10. Assignments State
-  const [assignments, setAssignments] = useState([
-    { id: 1, name: 'Chapter 5 Triangles Practice Sheet', batch: 'Class 9-10 Mathematics', submissions: '22/25', dueDate: '2026-06-18' },
-    { id: 2, name: 'Laws of Motion Numericals', batch: 'Class 11-12 Science', submissions: '30/30', dueDate: '2026-06-15' },
-    { id: 3, name: 'Light Ray Diagrams', batch: 'Class 6-8 English & Science', submissions: '12/25', dueDate: '2026-06-20' }
-  ]);
+  const [assignments, setAssignments] = useState([]);
+
+  useEffect(() => {
+    if (teacherId) {
+      const saved = localStorage.getItem(`cograd_teacher_assignments_${teacherId}`);
+      setAssignments(saved ? JSON.parse(saved) : []);
+    }
+  }, [teacherId]);
+
+  useEffect(() => {
+    if (teacherId) {
+      localStorage.setItem(`cograd_teacher_assignments_${teacherId}`, JSON.stringify(assignments));
+    }
+  }, [assignments, teacherId]);
+
   const [newAssignName, setNewAssignName] = useState('');
   const [newAssignBatch, setNewAssignBatch] = useState('Class 9-10 Mathematics');
   const [newAssignDueDate, setNewAssignDueDate] = useState('');
 
-  const [gradingSubmissions, setGradingSubmissions] = useState([
-    { id: 1, studentName: 'Arjun Mehta', assignmentName: 'Chapter 5 Triangles Practice Sheet', file: 'Arjun_Triangles_HW.pdf', date: '2026-06-12', accuracy: 80, clarity: 75, timeliness: 90, remarks: 'Good approach, keep it up!', status: 'Graded', finalScore: 82 },
-    { id: 2, studentName: 'Rahul Varma', assignmentName: 'Chapter 5 Triangles Practice Sheet', file: 'Rahul_Triangles_Sheet.pdf', date: '2026-06-12', accuracy: 90, clarity: 95, timeliness: 100, remarks: 'Excellent proofs.', status: 'Graded', finalScore: 95 },
-    { id: 3, studentName: 'Sanya Singh', assignmentName: 'Chapter 5 Triangles Practice Sheet', file: 'Sanya_Triangles.pdf', date: '2026-06-13', accuracy: 0, clarity: 0, timeliness: 0, remarks: '', status: 'Pending', finalScore: 0 }
-  ]);
+  const [gradingSubmissions, setGradingSubmissions] = useState([]);
+
+  useEffect(() => {
+    if (teacherId) {
+      const saved = localStorage.getItem(`cograd_teacher_submissions_${teacherId}`);
+      setGradingSubmissions(saved ? JSON.parse(saved) : []);
+    }
+  }, [teacherId]);
+
+  useEffect(() => {
+    if (teacherId) {
+      localStorage.setItem(`cograd_teacher_submissions_${teacherId}`, JSON.stringify(gradingSubmissions));
+    }
+  }, [gradingSubmissions, teacherId]);
+
   const [selectedGradingSub, setSelectedGradingSub] = useState(null);
   const [rubricAccuracy, setRubricAccuracy] = useState(85);
   const [rubricClarity, setRubricClarity] = useState(80);
@@ -310,10 +480,21 @@ const TeacherDashboard = () => {
   const [rubricRemarks, setRubricRemarks] = useState('');
 
   // 11. Test & Grading Engine (Quiz builder)
-  const [tests, setTests] = useState([
-    { id: 1, name: 'Chapter 5: Triangles Unit Test', batch: 'Class 9-10 Mathematics', date: '2026-06-22', duration: '60 Mins', status: 'Upcoming', questionsCount: 6 },
-    { id: 2, name: 'Laws of Motion Quiz', batch: 'Class 11-12 Science', date: '2026-06-28', duration: '45 Mins', status: 'Upcoming', questionsCount: 8 }
-  ]);
+  const [tests, setTests] = useState([]);
+
+  useEffect(() => {
+    if (teacherId) {
+      const saved = localStorage.getItem(`cograd_teacher_tests_${teacherId}`);
+      setTests(saved ? JSON.parse(saved) : []);
+    }
+  }, [teacherId]);
+
+  useEffect(() => {
+    if (teacherId) {
+      localStorage.setItem(`cograd_teacher_tests_${teacherId}`, JSON.stringify(tests));
+    }
+  }, [tests, teacherId]);
+
   const [newTestName, setNewTestName] = useState('');
   const [newTestBatch, setNewTestBatch] = useState('Class 9-10 Mathematics');
   const [newTestDate, setNewTestDate] = useState('');
@@ -324,27 +505,42 @@ const TeacherDashboard = () => {
   const [currentQCorrect, setCurrentQCorrect] = useState('A');
 
   // 12. Gradebook & Report Cards State
-  const [gradebookRecords, setGradebookRecords] = useState([
-    { studentName: 'Rahul Varma', roll: '101', homework: 88, test1: 92, test2: 85, project: 90, finalGpa: 8.8 },
-    { studentName: 'Sanya Singh', roll: '102', homework: 95, test1: 98, test2: 96, project: 94, finalGpa: 9.6 },
-    { studentName: 'Arjun Mehta', roll: '103', homework: 76, test1: 82, test2: 70, project: 80, finalGpa: 7.8 },
-    { studentName: 'Adit K.', roll: '104', homework: 84, test1: 88, test2: 82, project: 85, finalGpa: 8.5 },
-    { studentName: 'Vikram R.', roll: '105', homework: 82, test1: 85, test2: 80, project: 83, finalGpa: 8.2 }
-  ]);
+  const [gradebookRecords, setGradebookRecords] = useState([]);
+
+  useEffect(() => {
+    if (students.length > 0) {
+      setGradebookRecords(students.map((s, idx) => ({
+        studentName: s.name,
+        roll: (101 + idx).toString(),
+        homework: 90,
+        test1: s.avgGrade || 90,
+        test2: s.avgGrade || 90,
+        project: 90,
+        finalGpa: parseFloat(((s.avgGrade || 90) / 10).toFixed(1))
+      })));
+    } else {
+      setGradebookRecords([]);
+    }
+  }, [students]);
+
   const [selectedReportStudent, setSelectedReportStudent] = useState(null);
 
   // 13. Smart Timetable & Scheduling
-  const [timetableSessions, setTimetableSessions] = useState({
-    'Monday-09:00 AM - 10:30 AM': { title: 'Class 9-10 Mathematics', batch: 'Class 9 • Secondary C1', type: 'Lecture' },
-    'Monday-11:00 AM - 12:30 PM': { title: 'Class 11-12 Science', batch: 'Class 11 • Senior D1', type: 'Lecture' },
-    'Tuesday-11:00 AM - 12:30 PM': { title: 'Class 11-12 Science', batch: 'Class 12 • Senior D1', type: 'Lecture' },
-    'Wednesday-09:00 AM - 10:30 AM': { title: 'Class 9-10 Mathematics', batch: 'Class 10 • Secondary C1', type: 'Lecture' },
-    'Wednesday-02:00 PM - 03:30 PM': { title: 'Class 6-8 English & Science', batch: 'Class 7 • Middle B1', type: 'Lecture' },
-    'Thursday-11:00 AM - 12:30 PM': { title: 'Class 11-12 Science', batch: 'Class 11 • Senior D1', type: 'Lecture' },
-    'Friday-09:00 AM - 10:30 AM': { title: 'Class 9-10 Mathematics', batch: 'Class 9 • Secondary C1', type: 'Lecture' },
-    'Friday-02:00 PM - 03:30 PM': { title: 'Class 1-5 Primary All Subjects', batch: 'Class 4 • Primary A1', type: 'Lecture' },
-    'Saturday-11:00 AM - 12:30 PM': { title: 'Class 6-8 English & Science', batch: 'Class 8 • Middle B1', type: 'Lecture' }
-  });
+  const [timetableSessions, setTimetableSessions] = useState({});
+
+  useEffect(() => {
+    if (teacherId) {
+      const saved = localStorage.getItem(`cograd_teacher_timetable_${teacherId}`);
+      setTimetableSessions(saved ? JSON.parse(saved) : {});
+    }
+  }, [teacherId]);
+
+  useEffect(() => {
+    if (teacherId) {
+      localStorage.setItem(`cograd_teacher_timetable_${teacherId}`, JSON.stringify(timetableSessions));
+    }
+  }, [timetableSessions, teacherId]);
+
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduleSlotKey, setScheduleSlotKey] = useState('');
   const [scheduleBatch, setScheduleBatch] = useState('alpha-24');
@@ -352,26 +548,81 @@ const TeacherDashboard = () => {
   const [scheduleTitle, setScheduleTitle] = useState('');
 
   // 15. Earnings & Profit States
-  const [earningsStats, setEarningsStats] = useState({
-    totalEarned: 45200,
-    availablePayout: 12400,
-    pendingInvoices: 3800
-  });
-  const billingLogs = [
-    { id: 1, date: '2026-06-12', description: 'Weekly Batch Class: Mathematics Advanced', amount: 4800, status: 'Paid' },
-    { id: 2, date: '2026-06-10', description: 'Weekly Batch Class: Class 9-10 Mathematics', amount: 3600, status: 'Paid' },
-    { id: 3, date: '2026-06-08', description: '1-on-1 Session: Adit K. (Trigonometry)', amount: 1200, status: 'Paid' },
-    { id: 4, date: '2026-06-05', description: 'Demo Class Booking: Aarav Mehta', amount: 600, status: 'Paid' }
-  ];
+  const [earningsStats, setEarningsStats] = useState({ totalEarned: 0, availablePayout: 0, pendingInvoices: 0 });
+  const [billingLogs, setBillingLogs] = useState([]);
+
+  useEffect(() => {
+    if (teacherId) {
+      const saved = localStorage.getItem(`cograd_teacher_earnings_${teacherId}`);
+      if (saved) setEarningsStats(JSON.parse(saved));
+    }
+  }, [teacherId]);
+
+  useEffect(() => {
+    if (teacherId) {
+      localStorage.setItem(`cograd_teacher_earnings_${teacherId}`, JSON.stringify(earningsStats));
+    }
+  }, [earningsStats, teacherId]);
+
+  useEffect(() => {
+    if (teacherId) {
+      const saved = localStorage.getItem(`cograd_teacher_billing_logs_${teacherId}`);
+      if (saved) setBillingLogs(JSON.parse(saved));
+    }
+  }, [teacherId]);
+
+  useEffect(() => {
+    if (teacherId) {
+      localStorage.setItem(`cograd_teacher_billing_logs_${teacherId}`, JSON.stringify(billingLogs));
+    }
+  }, [billingLogs, teacherId]);
+
+  // Compute dynamic initial earnings based on active students
+  useEffect(() => {
+    if (teacherId && students.length > 0) {
+      const saved = localStorage.getItem(`cograd_teacher_earnings_${teacherId}`);
+      if (!saved) {
+        const rateNum = parseInt(teacherProfile.hourlyRate.replace(/[^0-9]/g, '')) || 600;
+        const studentCount = students.length;
+        const totalEarned = studentCount * rateNum * 10;
+        const availablePayout = studentCount * rateNum * 4;
+        const pendingInvoices = studentCount * rateNum * 2;
+        setEarningsStats({ totalEarned, availablePayout, pendingInvoices });
+
+        const logs = students.map((s, idx) => ({
+          id: idx + 1,
+          date: new Date(Date.now() - idx * 24 * 60 * 60 * 1000 * 3).toISOString().split('T')[0],
+          description: `Home Tuition Class: ${s.name} (${s.batchId === 'class-9-10' ? 'Class 9-10' : 'Class 6-8'} Mathematics)`,
+          amount: rateNum * 2,
+          status: 'Paid'
+        }));
+        setBillingLogs(logs);
+      }
+    } else if (teacherId && students.length === 0) {
+      setEarningsStats({ totalEarned: 0, availablePayout: 0, pendingInvoices: 0 });
+      setBillingLogs([]);
+    }
+  }, [students, teacherId, teacherProfile.hourlyRate]);
+
   const [payoutProgress, setPayoutProgress] = useState(0);
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
 
   // 16. Ratings & Reviews Feed State
-  const [reviewsList, setReviewsList] = useState([
-    { id: 1, reviewer: 'Deepa Gupta (Parent)', rating: 5, date: '2 days ago', text: 'Ma\'am is very supportive and explains equations in multiple ways until my child understands.', reply: 'Thank you Deepa! Happy to teach Riya.' },
-    { id: 2, reviewer: 'Sanjay Mehta (Parent)', rating: 5, date: '1 week ago', text: 'Highly recommend her mathematics classes. The homework reviews and regular feedback keep the progress visible.', reply: '' },
-    { id: 3, reviewer: 'Kavita Singh (Parent)', rating: 4, date: '2 weeks ago', text: 'Very structured and focused calculus pedagogy. My son scored 92% in pre-board exam.', reply: '' }
-  ]);
+  const [reviewsList, setReviewsList] = useState([]);
+
+  useEffect(() => {
+    if (teacherId) {
+      const saved = localStorage.getItem(`cograd_teacher_reviews_${teacherId}`);
+      setReviewsList(saved ? JSON.parse(saved) : []);
+    }
+  }, [teacherId]);
+
+  useEffect(() => {
+    if (teacherId) {
+      localStorage.setItem(`cograd_teacher_reviews_${teacherId}`, JSON.stringify(reviewsList));
+    }
+  }, [reviewsList, teacherId]);
+
   const [selectedReviewReplyId, setSelectedReviewReplyId] = useState(null);
   const [reviewReplyInput, setReviewReplyInput] = useState('');
 
@@ -379,14 +630,7 @@ const TeacherDashboard = () => {
   const [gradingConfetti, setGradingConfetti] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Greetings notification timer
-  useEffect(() => {
-    const toastTimer = setTimeout(() => {
-      setToastMessage('New demo class request received from Sanjay Mehta');
-      setShowToast(true);
-    }, 5000);
-    return () => clearTimeout(toastTimer);
-  }, []);
+
 
 
 
@@ -429,7 +673,7 @@ const TeacherDashboard = () => {
             totalEarned: prev.totalEarned + prev.availablePayout,
             availablePayout: 0
           }));
-          setToastMessage("Payout Successful! ₹12,400 transferred to your linked bank account.");
+          setToastMessage(`Payout Successful! ₹${earningsStats.availablePayout.toLocaleString('en-IN')} transferred to your linked bank account.`);
           setShowToast(true);
           triggerConfetti();
         }
@@ -1288,11 +1532,27 @@ const TeacherDashboard = () => {
       setShowToast(true);
     };
 
-    const handleAcceptDemo = (id) => {
-      setDemoBookings(prev => prev.map(d => d.id === id ? { ...d, status: 'Accepted' } : d));
-      setToastMessage('Demo booking accepted and added to timetable!');
-      setShowToast(true);
-      triggerConfetti();
+    const handleAcceptDemo = async (id) => {
+      try {
+        await api.put(`/demo-bookings/${id}/status`, { status: 'confirmed' });
+        setToastMessage('Demo booking accepted and added to timetable!');
+        setShowToast(true);
+        triggerConfetti();
+        await fetchDemoBookings();
+      } catch (error) {
+        alert('Failed to accept booking: ' + error.message);
+      }
+    };
+
+    const handleDeclineDemo = async (id) => {
+      try {
+        await api.put(`/demo-bookings/${id}/status`, { status: 'declined' });
+        setToastMessage('Demo booking declined.');
+        setShowToast(true);
+        await fetchDemoBookings();
+      } catch (error) {
+        alert('Failed to decline booking: ' + error.message);
+      }
     };
 
     return (
@@ -1448,14 +1708,19 @@ const TeacherDashboard = () => {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <h4 className="text-sm font-extrabold text-slate-800">{demo.studentName} ({demo.grade})</h4>
-                      {demo.status === 'Accepted' ? (
+                      {demo.status === 'Accepted' && (
                         <span className="bg-green-50 text-green-700 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-green-100">Accepted</span>
-                      ) : (
+                      )}
+                      {demo.status === 'Pending' && (
                         <span className="bg-amber-50 text-amber-700 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-amber-100">Awaiting Approval</span>
+                      )}
+                      {demo.status === 'Declined' && (
+                        <span className="bg-red-50 text-red-700 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-red-100">Declined</span>
                       )}
                     </div>
                     <p className="text-xs text-slate-500 font-semibold">Subject: <span className="text-slate-700">{demo.subject}</span> | Slot Requested: <span className="text-slate-700">{demo.requestedSlot}</span></p>
                     <p className="text-xs text-slate-400 italic">"Parent notes: {demo.msg}"</p>
+                    <InlineGoogleMap address={`${demo.villageArea}, ${demo.landmark ? demo.landmark + ', ' : ''}${demo.district}`} label="Trial Location" />
                   </div>
 
                   {demo.status === 'Pending' && (
@@ -1467,7 +1732,7 @@ const TeacherDashboard = () => {
                         Accept Booking
                       </button>
                       <button 
-                        onClick={() => setDemoBookings(prev => prev.filter(d => d.id !== demo.id))} 
+                        onClick={() => handleDeclineDemo(demo.id)} 
                         className="bg-white hover:bg-red-50 text-slate-500 hover:text-red-500 border border-slate-200 hover:border-red-200 font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer"
                       >
                         Decline

@@ -37,8 +37,44 @@ import {
   Save,
   Download,
   Clock,
-  User
+  User,
+  Map
 } from 'lucide-react';
+
+const InlineGoogleMap = ({ address, label }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (!address) return null;
+
+  const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="inline-flex items-center space-x-1.5 text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100/70 px-2 py-1 rounded-lg transition-all cursor-pointer border border-blue-100"
+      >
+        <Map className="w-3 h-3" />
+        <span>{isOpen ? 'Hide Map' : `View ${label || 'Location'} on Map`}</span>
+      </button>
+      
+      {isOpen && (
+        <div className="mt-2 relative rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white p-1 animate-scale-up">
+          <iframe
+            title={`Google Map - ${address}`}
+            width="100%"
+            height="180"
+            style={{ border: 0, borderRadius: '8px' }}
+            src={mapUrl}
+            allowFullScreen
+            loading="lazy"
+          ></iframe>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -49,38 +85,57 @@ const AdminDashboard = () => {
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [overrideTeacherSearch, setOverrideTeacherSearch] = useState('');
 
-
   
   // Notification center
-  const [notifications, setNotifications] = useState([
-    { id: 1, text: 'Aaryan Khanna submitted a new admission enquiry', time: '5m ago', isNew: true },
-    { id: 2, text: 'Class 9-10 batch syllabus is 70% complete for this term', time: '1h ago', isNew: true },
-    { id: 3, text: 'Monthly fee collection target achieved', time: '3h ago', isNew: false }
-  ]);
+  const [notifications, setNotifications] = useState(() => {
+    return JSON.parse(localStorage.getItem('cograd_admin_notifications') || '[]');
+  });
 
-  // Defaulters List state
-  const [defaulters, setDefaulters] = useState([
-    { id: 1, name: 'Siddharth Malhotra', amount: '₹12,500', status: 'Pending' },
-    { id: 2, name: 'Isha Ambani', amount: '₹8,000', status: 'Pending' },
-    { id: 3, name: 'Varun Dhawan', amount: '₹15,200', status: 'Pending' }
-  ]);
+  useEffect(() => {
+    localStorage.setItem('cograd_admin_notifications', JSON.stringify(notifications));
+  }, [notifications]);
 
+  // Reminders sent tracking
+  const [remindersSent, setRemindersSent] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('cograd_admin_reminders_sent') || '{}');
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('cograd_admin_reminders_sent', JSON.stringify(remindersSent));
+  }, [remindersSent]);
   // Enquiries List state
-  const [enquiries, setEnquiries] = useState([
-    { id: 1, name: 'Aaryan Khanna', course: 'Class 5 — Maths & English', type: 'New', color: 'bg-blue-100 text-blue-800', phone: '+91 91111 22222', email: 'aaryan@gmail.com' },
-    { id: 2, name: 'Priya Sharma', course: 'Class 10 — Maths & Science', type: 'Follow-up', color: 'bg-amber-100 text-amber-800', phone: '+91 93333 44444', email: 'priya.sh@gmail.com' },
-    { id: 3, name: 'Rahul Gupta', course: 'Class 6 — All Subjects', type: 'Enrolled', color: 'bg-emerald-100 text-emerald-800', phone: '+91 95555 66666', email: 'rahul.g@gmail.com' }
-  ]);
+  const [enquiries, setEnquiries] = useState(() => {
+    return JSON.parse(localStorage.getItem('cograd_admin_enquiries') || '[]');
+  });
 
-  // Student roster state
-  const [students, setStudents] = useState([
-    { id: 1, name: 'Rahul Malhotra', email: 'rahul.m@gmail.com', parentName: 'Siddharth Malhotra', batch: 'Class 9', date: '2026-01-10', status: 'Active' },
-    { id: 2, name: 'Sanya Sen', email: 'sanya.s@yahoo.com', parentName: 'Deepak Sen', batch: 'Class 8', date: '2026-02-15', status: 'Active' },
-    { id: 3, name: 'Arjun Kapoor', email: 'arjun.k@cograd.com', parentName: 'Sanjay Kapoor', batch: 'Class 9', date: '2026-03-01', status: 'Active' },
-    { id: 4, name: 'Isha Verma', email: 'isha.v@gmail.com', parentName: 'Mukesh Verma', batch: 'Class 3', date: '2026-01-20', status: 'Active' },
-    { id: 5, name: 'Varun Sharma', email: 'varun.s@gmail.com', parentName: 'David Sharma', batch: 'Class 7', date: '2026-02-28', status: 'Active' },
-    { id: 6, name: 'Sara Mehta', email: 'sara.m@gmail.com', parentName: 'Ali Mehta', batch: 'Class 2', date: '2026-03-12', status: 'Suspended' }
-  ]);
+  useEffect(() => {
+    localStorage.setItem('cograd_admin_enquiries', JSON.stringify(enquiries));
+  }, [enquiries]);
+
+  // Student roster state - starts empty, populated from backend via syncWithBackend
+  const [students, setStudents] = useState([]);
+  const [demoBookings, setDemoBookings] = useState([]);
+  const [selectedTeachers, setSelectedTeachers] = useState({});
+
+  const handleTeacherChange = (bookingId, teacherId) => {
+    setSelectedTeachers((prev) => ({
+      ...prev,
+      [bookingId]: teacherId,
+    }));
+  };
+
+  const fetchDemoBookings = async () => {
+    try {
+      const bookings = await api.get('/demo-bookings');
+      setDemoBookings(bookings);
+    } catch (error) {
+      console.error('Failed to fetch demo bookings:', error.message);
+    }
+  };
 
   const loadAdminData = () => {
     const raw = getStudents();
@@ -105,39 +160,114 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const init = async () => {
+      const isCleared = localStorage.getItem('cograd_dashboards_cleared_mock');
+      if (!isCleared) {
+        localStorage.removeItem('cograd_admin_defaulters');
+        localStorage.removeItem('cograd_admin_enquiries');
+        localStorage.removeItem('cograd_admin_payments');
+        localStorage.removeItem('cograd_admin_announcements');
+        localStorage.removeItem('cograd_admin_tests');
+        localStorage.removeItem('cograd_admin_tickets');
+        localStorage.removeItem('cograd_admin_reminders_sent');
+        localStorage.removeItem('cograd_admin_notifications');
+        for (let i = 1; i <= 10; i++) {
+          localStorage.removeItem(`cograd_teacher_timetable_${i}`);
+          localStorage.removeItem(`cograd_teacher_assignments_${i}`);
+          localStorage.removeItem(`cograd_teacher_submissions_${i}`);
+          localStorage.removeItem(`cograd_teacher_earnings_${i}`);
+        }
+        localStorage.setItem('cograd_dashboards_cleared_mock', 'true');
+        
+        // Clear react states to keep them empty initially
+        setRecentPayments([]);
+        setAnnouncements([]);
+        setTests([]);
+        setTickets([]);
+        setEnquiries([]);
+      }
       await syncWithBackend();
       loadAdminData();
+      await fetchDemoBookings();
     };
     init();
   }, []);
 
-  // Teachers state
-  const [teachers, setTeachers] = useState([
-    { id: 1, name: 'Dr. Satish Sharma', subject: 'Mathematics', email: 'satish.sharma@cograd.com', rating: 4.9, rate: '₹600/hr', batches: ['Class 9', 'Class 3'], status: 'Verified' },
-    { id: 2, name: 'Prof. Amit Verma', subject: 'Science', email: 'amit.verma@cograd.com', rating: 4.8, rate: '₹550/hr', batches: ['Class 9', 'Class 7'], status: 'Verified' },
-    { id: 3, name: 'Ms. Neha Gupta', subject: 'English', email: 'neha.gupta@cograd.com', rating: 4.7, rate: '₹500/hr', batches: ['Class 7'], status: 'Verified' },
-    { id: 4, name: 'Mr. Rohan Das', subject: 'Social Studies', email: 'rohan.das@cograd.com', rating: 4.5, rate: '₹450/hr', batches: ['Class 2'], status: 'Pending' },
-    { id: 5, name: 'Mrs. S. Iyer', subject: 'Hindi', email: 's.iyer@cograd.com', rating: 4.6, rate: '₹480/hr', batches: ['Class 5'], status: 'Verified' }
-  ]);
+  // Teachers state - populated from backend via syncWithBackend
+  const [teachers, setTeachers] = useState([]);
 
   // Per-teacher document verification state (keyed by teacher id)
-  const [teacherDocStatus, setTeacherDocStatus] = useState({
-    1: { degree: 'Approved', aadhar: 'Approved', experience: 'Approved', police: 'Approved' },
-    2: { degree: 'Approved', aadhar: 'Approved', experience: 'Approved', police: 'Approved' },
-    3: { degree: 'Approved', aadhar: 'Approved', experience: 'Approved', police: 'Approved' },
-    4: { degree: 'Approved', aadhar: 'Under Review', experience: 'Under Review', police: 'Under Review' },
-    5: { degree: 'Approved', aadhar: 'Approved', experience: 'Approved', police: 'Approved' }
+  const [teacherDocStatus, setTeacherDocStatus] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cograd_admin_teacher_doc_status');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
   });
 
-  // Toggle individual document status for a teacher
-  const toggleDocStatus = (teacherId, docKey) => {
+  useEffect(() => {
+    localStorage.setItem('cograd_admin_teacher_doc_status', JSON.stringify(teacherDocStatus));
+  }, [teacherDocStatus]);
+
+  // Synchronize dynamic documents status from backend teachers when they load
+  useEffect(() => {
+    if (teachers.length > 0) {
+      setTeacherDocStatus(prev => {
+        let updated = false;
+        const next = { ...prev };
+        teachers.forEach(t => {
+          if (!next[t.id]) {
+            const docs = t.documents || [];
+            next[t.id] = {
+              degree: docs.find(d => d.type === 'Academic' || d.name.includes('Degree'))?.status === 'Approved' ? 'Approved' : 'Under Review',
+              aadhar: docs.find(d => d.type === 'Identity' || d.name.includes('Aadhaar'))?.status === 'Approved' ? 'Approved' : 'Under Review',
+              experience: docs.find(d => d.type === 'Experience' || d.name.includes('Experience'))?.status === 'Approved' ? 'Approved' : 'Under Review',
+              police: docs.find(d => d.name.includes('Police'))?.status === 'Approved' ? 'Approved' : 'Under Review'
+            };
+            updated = true;
+          }
+        });
+        return updated ? next : prev;
+      });
+    }
+  }, [teachers]);
+
+  // Toggle individual document status for a teacher and sync back to backend
+  const toggleDocStatus = async (teacherId, docKey) => {
+    const currentVal = (teacherDocStatus[teacherId] || {})[docKey] || 'Under Review';
+    const nextVal = currentVal === 'Approved' ? 'Under Review' : 'Approved';
+
     setTeacherDocStatus(prev => ({
       ...prev,
       [teacherId]: {
-        ...prev[teacherId],
-        [docKey]: prev[teacherId][docKey] === 'Approved' ? 'Under Review' : 'Approved'
+        ...(prev[teacherId] || { degree: 'Under Review', aadhar: 'Under Review', experience: 'Under Review', police: 'Under Review' }),
+        [docKey]: nextVal
       }
     }));
+
+    const teacher = teachers.find(t => t.id === teacherId);
+    if (teacher) {
+      const updatedDocs = (teacher.documents || []).map(d => {
+        let matches = false;
+        if (docKey === 'degree' && (d.type === 'Academic' || d.name.includes('Degree'))) matches = true;
+        if (docKey === 'aadhar' && (d.type === 'Identity' || d.name.includes('Aadhaar'))) matches = true;
+        if (docKey === 'experience' && (d.type === 'Experience' || d.name.includes('Experience'))) matches = true;
+        if (docKey === 'police' && d.name.includes('Police')) matches = true;
+        
+        if (matches) {
+          return { ...d, status: nextVal === 'Approved' ? 'Approved' : 'Under Review' };
+        }
+        return d;
+      });
+
+      try {
+        await api.put(`/teachers/${teacherId}`, { documents: updatedDocs });
+        await syncWithBackend();
+        loadAdminData();
+      } catch (err) {
+        console.error('Failed to sync document status update to backend:', err);
+      }
+    }
   };
 
   // Check if all docs for a teacher are approved
@@ -147,40 +277,52 @@ const AdminDashboard = () => {
     return Object.values(docs).every(v => v === 'Approved');
   };
 
-
   // Recent payments state
-  const [recentPayments, setRecentPayments] = useState([
-    { id: 1, name: 'Rahul Malhotra', amount: '₹12,500', date: '2026-06-10', status: 'Paid', method: 'UPI' },
-    { id: 2, name: 'Sanya Sen', amount: '₹15,000', date: '2026-06-09', status: 'Paid', method: 'Net Banking' },
-    { id: 3, name: 'Isha Ambani', amount: '₹8,000', date: '2026-06-08', status: 'Paid', method: 'Credit Card' },
-    { id: 4, name: 'Varun Dhawan', amount: '₹15,200', date: '2026-06-07', status: 'Failed', method: 'Debit Card' }
-  ]);
-
-  // Announcements state
-  const [announcements, setAnnouncements] = useState([
-    { id: 1, title: 'Summer Batch Timetable Revision', target: 'All Students & Teachers', priority: 'Medium', date: '2026-06-12', text: 'Please note the Class 9-10 batch timings will shift by 30 mins starting next Monday.' },
-    { id: 2, title: 'Term 1 Exam Scheduling', target: 'All Students', priority: 'High', date: '2026-06-10', text: 'Term 1 progress assessments are scheduled to start from June 25th for all classes.' }
-  ]);
-
-  // Settings state
-  const [settings, setSettings] = useState({
-    centreName: 'Sharma Classes',
-    contactEmail: 'admin@sharmaclasses.edu.in',
-    contactPhone: '+91 98765 43210',
-    address: 'Sector 15, Dwarka, New Delhi',
-    session: '2026-2027',
-    currency: '₹ (INR)',
-    autoReminders: true,
-    emailAlerts: true,
-    whatsappSync: false
+  const [recentPayments, setRecentPayments] = useState(() => {
+    return JSON.parse(localStorage.getItem('cograd_admin_payments') || '[]');
   });
 
+  useEffect(() => {
+    localStorage.setItem('cograd_admin_payments', JSON.stringify(recentPayments));
+  }, [recentPayments]);
+
+  // Announcements state
+  const [announcements, setAnnouncements] = useState(() => {
+    return JSON.parse(localStorage.getItem('cograd_admin_announcements') || '[]');
+  });
+
+  useEffect(() => {
+    localStorage.setItem('cograd_admin_announcements', JSON.stringify(announcements));
+  }, [announcements]);
+
+  // Settings state
+  const [settings, setSettings] = useState(() => {
+    const saved = localStorage.getItem('cograd_admin_settings');
+    return saved ? JSON.parse(saved) : {
+      centreName: 'Sharma Classes',
+      contactEmail: 'admin@sharmaclasses.edu.in',
+      contactPhone: '+91 98765 43210',
+      address: 'Sector 15, Dwarka, New Delhi',
+      session: '2026-2027',
+      currency: '₹ (INR)',
+      autoReminders: true,
+      emailAlerts: true,
+      whatsappSync: false
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('cograd_admin_settings', JSON.stringify(settings));
+  }, [settings]);
+
   // Tests & Results state
-  const [tests, setTests] = useState([
-    { id: 1, name: 'Class 9 Mathematics Unit Test', date: '2026-06-08', batch: 'Class 9', avgScore: '74%', topScore: '98%', toppers: ['Arjun Kapoor (98%)', 'Rahul Malhotra (94%)'] },
-    { id: 2, name: 'Class 8 Science Chapter Test', date: '2026-06-05', batch: 'Class 8', avgScore: '68%', topScore: '95%', toppers: ['Sanya Sen (95%)', 'Varun Sharma (90%)'] },
-    { id: 3, name: 'Class 3 Maths Worksheet Assessment', date: '2026-06-01', batch: 'Class 3', avgScore: '82%', topScore: '100%', toppers: ['Sara Mehta (100%)', 'Isha Verma (96%)'] }
-  ]);
+  const [tests, setTests] = useState(() => {
+    return JSON.parse(localStorage.getItem('cograd_admin_tests') || '[]');
+  });
+
+  useEffect(() => {
+    localStorage.setItem('cograd_admin_tests', JSON.stringify(tests));
+  }, [tests]);
 
   // Modal open states
   const [showAddStudent, setShowAddStudent] = useState(false);
@@ -223,8 +365,28 @@ const AdminDashboard = () => {
   const [exportingCSV, setExportingCSV] = useState(false);
 
   // Help Center states
-  const [tickets, setTickets] = useState([]);
+  const [tickets, setTickets] = useState(() => {
+    return JSON.parse(localStorage.getItem('cograd_admin_tickets') || '[]');
+  });
+
+  useEffect(() => {
+    localStorage.setItem('cograd_admin_tickets', JSON.stringify(tickets));
+  }, [tickets]);
+
   const [newTicket, setNewTicket] = useState({ title: '', category: 'General Support', description: '' });
+
+  // Derive activeDefaulters from students list and payments ledger
+  const activeDefaulters = students
+    .filter(s => {
+      const hasPaid = recentPayments.some(p => p.name === s.name && p.status === 'Paid');
+      return !hasPaid;
+    })
+    .map(s => ({
+      id: s.id,
+      name: s.name,
+      amount: '₹3,000',
+      status: remindersSent[s.id] ? 'Sent' : 'Pending'
+    }));
 
   const handleRaiseTicketSubmit = (e) => {
     e.preventDefault();
@@ -259,7 +421,7 @@ const AdminDashboard = () => {
   };
 
   const sendReminder = (id, name) => {
-    setDefaulters(prev => prev.map(d => d.id === id ? { ...d, status: 'Sent' } : d));
+    setRemindersSent(prev => ({ ...prev, [id]: true }));
     triggerToast(`Fee reminder dispatched to ${name}!`);
   };
 
@@ -363,7 +525,6 @@ const AdminDashboard = () => {
 
   // Fee actions
   const handleRecordPayment = (defaulterId, name, amount) => {
-    setDefaulters(prev => prev.map(d => d.id === defaulterId ? { ...d, status: 'Paid' } : d));
     const newTx = {
       id: recentPayments.length + 1,
       name,
@@ -373,6 +534,28 @@ const AdminDashboard = () => {
       method: 'Cash / Manual'
     };
     setRecentPayments(prev => [newTx, ...prev]);
+
+    // Update parent's local storage data for cross-dashboard sync
+    try {
+      const parentDataRaw = localStorage.getItem('cograd_parent_students_data');
+      if (parentDataRaw) {
+        const parentData = JSON.parse(parentDataRaw);
+        let updated = false;
+        Object.keys(parentData).forEach(key => {
+          if (parentData[key].name === name || parentData[key].id === defaulterId) {
+            parentData[key].feeDue = 0;
+            parentData[key].feeStatus = 'Paid';
+            updated = true;
+          }
+        });
+        if (updated) {
+          localStorage.setItem('cograd_parent_students_data', JSON.stringify(parentData));
+        }
+      }
+    } catch (e) {
+      console.error('Failed to sync payment to parent local storage:', e);
+    }
+
     triggerToast(`Payment of ${amount} recorded for ${name}!`);
   };
 
@@ -512,6 +695,7 @@ const AdminDashboard = () => {
                         <div>
                           <h3 className="text-xs font-black text-slate-800">{student.name}</h3>
                           <p className="text-[10px] text-slate-400 font-semibold">{student.standard} | {student.city}, {student.state || 'Choose your State'}</p>
+                          <InlineGoogleMap address={`${student.city}, ${student.state || ''}`} label="Student City" />
                         </div>
                       </div>
 
@@ -602,7 +786,7 @@ const AdminDashboard = () => {
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { title: 'Total Students', value: students.length + 841, icon: Users, color: 'bg-blue-50 text-blue-600 border-blue-100/50' },
+              { title: 'Total Students', value: students.length, icon: Users, color: 'bg-blue-50 text-blue-600 border-blue-100/50' },
               { title: 'Verified Tutors', value: teachers.filter(t => t.verification_status === 'Verified').length, icon: GraduationCap, color: 'bg-purple-50 text-purple-600 border-purple-100/50' },
               { title: 'Active Matches', value: students.filter(s => s.status === 'active').length, icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600 border-emerald-100/50' },
               { title: 'Pending Allotments', value: pendingStudents.length, icon: Clock, color: 'bg-amber-50 text-amber-600 border-amber-100/50' }
@@ -898,6 +1082,13 @@ const AdminDashboard = () => {
                   <span>Active Batches:</span>
                   <span className="text-slate-700 font-bold">{teacher.batches.join(', ')}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span>Base Location:</span>
+                  <span className="text-slate-700 font-bold">{teacher.city || 'Meerut'}</span>
+                </div>
+                <div>
+                  <InlineGoogleMap address={teacher.city || 'Meerut'} label="Tutor Location" />
+                </div>
               </div>
 
               <div className="flex space-x-2">
@@ -1104,25 +1295,28 @@ const AdminDashboard = () => {
   };
 
   const renderFeeManagement = () => {
-    const activeDefaulters = defaulters.filter(d => d.status === 'Pending' || d.status === 'Sent');
     const totalDefaultersAmount = activeDefaulters.reduce((acc, d) => {
       const numeric = parseInt(d.amount.replace(/[^\d]/g, ''), 10);
       return acc + numeric;
     }, 0);
+
+    const targetAmount = students.length * 3000;
+    const collectedAmount = Math.max(0, targetAmount - totalDefaultersAmount);
+    const progressPercent = students.length > 0 ? Math.round((collectedAmount / targetAmount) * 100) : 100;
 
     return (
       <div className="space-y-6 text-left">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2">
             <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Collection target</span>
-            <h3 className="text-2xl font-black text-slate-800">₹6,00,000</h3>
+            <h3 className="text-2xl font-black text-slate-800">₹{targetAmount.toLocaleString('en-IN')}</h3>
             <div className="space-y-1 mt-2">
               <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
-                <span>Progress (80%)</span>
-                <span className="text-slate-700 font-extrabold">₹4,82,000 collected</span>
+                <span>Progress ({progressPercent}%)</span>
+                <span className="text-slate-700 font-extrabold">₹{collectedAmount.toLocaleString('en-IN')} collected</span>
               </div>
               <div className="w-full h-1 bg-slate-50 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: '80%' }}></div>
+                <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${progressPercent}%` }}></div>
               </div>
             </div>
           </div>
@@ -1789,6 +1983,7 @@ const AdminDashboard = () => {
                       <div>
                         <h3 className="text-sm font-extrabold text-slate-800">{student.name}</h3>
                         <p className="text-[10px] text-slate-400 font-semibold">{student.standard} | {student.city}</p>
+                        <InlineGoogleMap address={student.city} label="Student Location" />
                       </div>
                     </div>
 
@@ -1878,11 +2073,315 @@ const AdminDashboard = () => {
     );
   };
 
+  const handleConfirmBooking = async (booking) => {
+    const finalTeacherId = selectedTeachers[booking.id] || booking.assigned_teacher_id;
+    if (!finalTeacherId) {
+      alert('Please select a teacher to assign for this demo class.');
+      return;
+    }
+    try {
+      await api.put(`/demo-bookings/${booking.id}/confirm`, { teacherId: finalTeacherId });
+      setToastMessage(`Demo booking ${booking.id} confirmed and assigned to tutor!`);
+      setShowToast(true);
+      await fetchDemoBookings();
+    } catch (error) {
+      alert('Failed to confirm demo booking: ' + error.message);
+    }
+  };
+
+  const renderDemoBookings = () => {
+    const mapDistrictToCity = (district) => {
+      if (!district) return '';
+      return district.toLowerCase().trim();
+    };
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Demo Class Bookings</h2>
+          <p className="text-slate-500 text-xs mt-1">
+            Manage incoming visitor demo class requests, verify auto-matched nearby tutors, and dispatch requests to tutors for acceptance.
+          </p>
+        </div>
+
+        {demoBookings.length === 0 ? (
+          <div className="glow-card p-8 text-center max-w-xl mx-auto">
+            <span className="text-4xl">🗓️</span>
+            <h3 className="text-lg font-black text-slate-800 mt-4">No Demo Bookings Found</h3>
+            <p className="text-xs text-slate-400 mt-2">
+              There are no demo bookings recorded in the system yet.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {demoBookings.map((booking) => {
+              const targetCity = mapDistrictToCity(booking.district);
+              
+              const nearbyTeachers = teachers.filter(
+                (t) =>
+                  t.verification_status === 'Verified' &&
+                  t.city &&
+                  t.city.toLowerCase() === targetCity
+              );
+
+              const otherVerifiedTeachers = teachers.filter(
+                (t) =>
+                  t.verification_status === 'Verified' &&
+                  (!t.city || t.city.toLowerCase() !== targetCity)
+              );
+
+              const assignedTeacher = teachers.find(
+                (t) => t.id === (selectedTeachers[booking.id] || booking.assigned_teacher_id)
+              );
+
+              return (
+                <div key={booking.id} className="glow-card p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start text-left">
+                  {/* Left Column: Student Details & Timing */}
+                  <div className="lg:col-span-6 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-extrabold text-slate-800">{booking.studentName}</h3>
+                          <span className="text-[10px] bg-slate-100 text-slate-600 font-mono px-2 py-0.5 rounded border border-slate-200">
+                            {booking.id}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                          Class: {booking.studentClass} | District: {booking.district}
+                        </p>
+                      </div>
+                      <div>
+                        {(() => {
+                          switch (booking.status) {
+                            case 'pending_admin_confirmation':
+                              return (
+                                <span className="bg-amber-50 text-amber-700 border border-amber-100 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded">
+                                  Awaiting Admin
+                                </span>
+                              );
+                            case 'pending_teacher_acceptance':
+                              return (
+                                <span className="bg-blue-50 text-blue-700 border border-blue-100 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded">
+                                  Awaiting Tutor
+                                </span>
+                              );
+                            case 'confirmed':
+                              return (
+                                <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded">
+                                  Confirmed
+                                </span>
+                              );
+                            case 'declined':
+                              return (
+                                <span className="bg-rose-50 text-rose-700 border border-rose-100 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded">
+                                  Declined
+                                </span>
+                              );
+                            default:
+                              return (
+                                <span className="bg-slate-50 text-slate-600 border border-slate-200 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded">
+                                  {booking.status}
+                                </span>
+                              );
+                          }
+                        })()}
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 rounded-2xl space-y-2">
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">
+                            Requested Slot
+                          </span>
+                          <span className="font-bold text-slate-700">{booking.preferredDate} at {booking.preferredTime}</span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">
+                            Preferred Days
+                          </span>
+                          <span className="font-bold text-slate-700">{booking.preferredDays.join(', ')}</span>
+                        </div>
+                      </div>
+                      <div className="text-xs pt-1 border-t border-slate-200/50">
+                        <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">
+                          Subjects Needed
+                        </span>
+                        <span className="font-bold text-slate-700">{booking.subjects.join(', ')}</span>
+                      </div>
+                      <div className="text-xs pt-1 border-t border-slate-200/50">
+                        <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">
+                          Location Details
+                        </span>
+                        <span className="font-semibold text-slate-600 block">
+                          {booking.villageArea}
+                          {booking.landmark && <span className="text-slate-400 font-normal"> (Near: {booking.landmark})</span>}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Parent Contact: +91 {booking.parentPhone}</span>
+                        <InlineGoogleMap address={`${booking.villageArea}, ${booking.landmark ? booking.landmark + ', ' : ''}${booking.district}`} label="Booking Site" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Teacher Assignment & Confirmation Actions */}
+                  <div className="lg:col-span-6 space-y-4">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block mb-2">
+                        Tutor Allotment (Nearby City Match: {booking.district})
+                      </span>
+                      
+                      {booking.status === 'pending_admin_confirmation' ? (
+                        <div className="space-y-3">
+                          <div className="p-3 border border-slate-100 rounded-2xl bg-slate-50/50">
+                            {assignedTeacher ? (
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="text-xs font-black text-slate-800">{assignedTeacher.name}</span>
+                                  <span className="ml-2 bg-emerald-50 text-emerald-700 text-[8px] font-black px-1.5 py-0.5 rounded border border-emerald-100 uppercase tracking-wide">
+                                    {assignedTeacher.city === booking.district || assignedTeacher.city?.toLowerCase() === targetCity ? 'Nearby Match' : 'Manual Fit'}
+                                  </span>
+                                  <p className="text-[9px] text-slate-500 font-semibold mt-0.5">
+                                    Rating: ⭐ {assignedTeacher.rating || '5.0'} | Experience: {assignedTeacher.experience || 'N/A'}
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <span className="text-xs text-rose-500 font-extrabold">⚠️ No tutor auto-matched near {booking.district}</span>
+                                <p className="text-[9px] text-slate-400 mt-0.5">Please manually select a verified teacher from the dropdown below.</p>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">
+                              Select / Override Tutor
+                            </label>
+                            <select
+                              value={selectedTeachers[booking.id] || booking.assigned_teacher_id || ''}
+                              onChange={(e) => handleTeacherChange(booking.id, e.target.value)}
+                              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                            >
+                              <option value="">-- Choose a teacher --</option>
+                              {nearbyTeachers.length > 0 && (
+                                <optgroup label={`Recommended Tutors (in ${booking.district})`}>
+                                  {nearbyTeachers.map((t) => (
+                                    <option key={t.id} value={t.id}>
+                                      {t.name} (⭐{t.rating || '5.0'} - {t.subjects_taught?.slice(0, 2).join(', ')})
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              )}
+                              <optgroup label="Other Verified Tutors">
+                                {otherVerifiedTeachers.map((t) => (
+                                  <option key={t.id} value={t.id}>
+                                    {t.name} ({t.city || 'No City'} - ⭐{t.rating || '5.0'})
+                                  </option>
+                                ))}
+                              </optgroup>
+                            </select>
+                          </div>
+
+                          <button
+                            onClick={() => handleConfirmBooking(booking)}
+                            className="w-full bg-violet-600 hover:bg-violet-700 text-white font-black text-xs py-3 px-4 rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2"
+                          >
+                            <span>Confirm & Allot Trial Class</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="p-4 border border-slate-100 rounded-2xl bg-slate-50/50 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">
+                                Assigned Tutor
+                              </span>
+                              <span className="text-xs font-black text-slate-800">
+                                {assignedTeacher ? assignedTeacher.name : 'Unknown Tutor'}
+                              </span>
+                            </div>
+                            <div>
+                              {booking.status === 'pending_teacher_acceptance' && (
+                                <span className="bg-blue-50 text-blue-700 text-[9px] font-black px-2 py-0.5 rounded border border-blue-100">
+                                  Pending Tutor Review
+                                </span>
+                              )}
+                              {booking.status === 'confirmed' && (
+                                <span className="bg-emerald-50 text-emerald-700 text-[9px] font-black px-2 py-0.5 rounded border border-emerald-100">
+                                  Tutor Accepted
+                                </span>
+                              )}
+                              {booking.status === 'declined' && (
+                                <div className="space-y-1.5 text-right">
+                                  <span className="bg-rose-50 text-rose-700 text-[9px] font-black px-2 py-0.5 rounded border border-rose-100">
+                                    Tutor Declined
+                                  </span>
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        await api.put(`/demo-bookings/${booking.id}/confirm`, { teacherId: booking.assigned_teacher_id });
+                                        setToastMessage('Re-sent demo booking to teacher!');
+                                        setShowToast(true);
+                                        await fetchDemoBookings();
+                                      } catch (err) {
+                                        alert('Error re-sending: ' + err.message);
+                                      }
+                                    }}
+                                    className="block text-[9px] text-blue-500 hover:text-blue-700 underline font-bold mt-1 ml-auto cursor-pointer"
+                                  >
+                                    Re-allot / Retry
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          {booking.status === 'declined' && (
+                            <div className="pt-2 border-t border-slate-100">
+                              <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block mb-1">
+                                Re-assign to another tutor:
+                              </span>
+                              <div className="flex gap-2">
+                                <select
+                                  value={selectedTeachers[booking.id] || ''}
+                                  onChange={(e) => handleTeacherChange(booking.id, e.target.value)}
+                                  className="flex-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 focus:outline-none"
+                                >
+                                  <option value="">-- Re-assign --</option>
+                                  {nearbyTeachers.map((t) => (
+                                    <option key={t.id} value={t.id}>{t.name} (Nearby)</option>
+                                  ))}
+                                  {otherVerifiedTeachers.map((t) => (
+                                    <option key={t.id} value={t.id}>{t.name} ({t.city})</option>
+                                  ))}
+                                </select>
+                                <button
+                                  onClick={() => handleConfirmBooking(booking)}
+                                  className="bg-violet-600 hover:bg-violet-750 text-white font-bold text-xs px-3 py-1.5 rounded-lg cursor-pointer"
+                                >
+                                  Re-assign
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const getTabContent = () => {
     switch (activeTab) {
       case 'Dashboard': return renderDashboard();
       case 'Students': return renderStudents();
       case 'Teachers': return renderTeachers();
+      case 'Demo Bookings': return renderDemoBookings();
       case 'Match Queue': return renderMatchQueue();
       case 'Attendance': return renderAttendance();
       case 'Tests & Results': return renderTestsAndResults();
@@ -2400,6 +2899,7 @@ const AdminDashboard = () => {
           { name: 'Dashboard', icon: LayoutDashboard },
           { name: 'Students', icon: Users },
           { name: 'Teachers', icon: GraduationCap },
+          { name: 'Demo Bookings', icon: BookOpen },
           { name: 'Match Queue', icon: Sliders },
           { name: 'Attendance', icon: UserCheck },
           { name: 'Tests & Results', icon: CheckSquare },

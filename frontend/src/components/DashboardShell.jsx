@@ -23,12 +23,98 @@ import {
   X,
 } from 'lucide-react';
 
+const THEME_MAP = {
+  emerald: {
+    outerBg: 'bg-[#EBF7EE]',
+    brandText: 'text-[#047857]',
+    brandSub: 'text-[#065f46]',
+    activeNavText: 'text-[#047857]',
+    activeNavBg: 'bg-[#EBF7EE]',
+    hoverNav: 'text-slate-500 hover:text-[#047857] hover:bg-[#EBF7EE]/50',
+    mobileMenuText: 'text-[#047857]',
+    mobileMenuBg: 'bg-emerald-50',
+    mobileMenuBorder: 'border-emerald-100',
+    avatarBg: 'bg-[#047857]',
+    avatarShadow: 'shadow-emerald-600/10',
+    headerTitleText: 'text-[#065f46]',
+    ctaBtn: 'bg-[#059669] hover:bg-[#047857] text-white shadow-[0_6px_20px_rgba(16,185,129,0.25)] btn-border-beam-emerald',
+    cardGradient: 'from-[#047857] to-[#10b981] shadow-emerald-600/10',
+    cardSub: 'text-emerald-200',
+    cardText: 'text-emerald-50/90',
+    notifText: 'text-[#047857]',
+    sidebarShadow: 'md:shadow-[0_25px_60px_rgba(4,120,87,0.08)]',
+    backdropBg: 'bg-emerald-950/30',
+  },
+  violet: {
+    outerBg: 'bg-[#F5F3FF]',
+    brandText: 'text-[#6d28d9]',
+    brandSub: 'text-[#5b21b6]',
+    activeNavText: 'text-[#6d28d9]',
+    activeNavBg: 'bg-[#F5F3FF]',
+    hoverNav: 'text-slate-500 hover:text-[#6d28d9] hover:bg-[#F5F3FF]/50',
+    mobileMenuText: 'text-[#6d28d9]',
+    mobileMenuBg: 'bg-violet-50',
+    mobileMenuBorder: 'border-violet-100',
+    avatarBg: 'bg-[#6d28d9]',
+    avatarShadow: 'shadow-violet-600/10',
+    headerTitleText: 'text-[#5b21b6]',
+    ctaBtn: 'bg-[#7c3aed] hover:bg-[#6d28d9] text-white shadow-[0_6px_20px_rgba(124,58,237,0.25)] btn-border-beam-purple',
+    cardGradient: 'from-[#6d28d9] to-[#8b5cf6] shadow-violet-600/10',
+    cardSub: 'text-violet-200',
+    cardText: 'text-violet-50/90',
+    notifText: 'text-[#6d28d9]',
+    sidebarShadow: 'md:shadow-[0_25px_60px_rgba(109,40,217,0.08)]',
+    backdropBg: 'bg-violet-950/30',
+  },
+  amber: {
+    outerBg: 'bg-[#FEFBF0]',
+    brandText: 'text-[#b45309]',
+    brandSub: 'text-[#92400e]',
+    activeNavText: 'text-[#b45309]',
+    activeNavBg: 'bg-[#FEFBF0]',
+    hoverNav: 'text-slate-500 hover:text-[#b45309] hover:bg-[#FEFBF0]/50',
+    mobileMenuText: 'text-[#b45309]',
+    mobileMenuBg: 'bg-amber-50',
+    mobileMenuBorder: 'border-amber-100',
+    avatarBg: 'bg-[#b45309]',
+    avatarShadow: 'shadow-amber-600/10',
+    headerTitleText: 'text-[#92400e]',
+    ctaBtn: 'bg-[#d97706] hover:bg-[#b45309] text-white shadow-[0_6px_20px_rgba(217,119,6,0.25)] btn-border-beam-amber',
+    cardGradient: 'from-[#b45309] to-[#f59e0b] shadow-amber-600/10',
+    cardSub: 'text-amber-200',
+    cardText: 'text-amber-50/90',
+    notifText: 'text-[#b45309]',
+    sidebarShadow: 'md:shadow-[0_25px_60px_rgba(180,83,9,0.08)]',
+    backdropBg: 'bg-amber-950/30',
+  },
+  blue: {
+    outerBg: 'bg-[#E9ECF5]',
+    brandText: 'text-[#1e40af]',
+    brandSub: 'text-[#1d4ed8]',
+    activeNavText: 'text-[#1e40af]',
+    activeNavBg: 'bg-[#E9ECF5]',
+    hoverNav: 'text-slate-500 hover:text-[#1e40af] hover:bg-[#E9ECF5]/50',
+    mobileMenuText: 'text-[#1e40af]',
+    mobileMenuBg: 'bg-blue-50',
+    mobileMenuBorder: 'border-blue-100',
+    avatarBg: 'bg-[#1e40af]',
+    avatarShadow: 'shadow-blue-600/10',
+    headerTitleText: 'text-[#1555a6]',
+    ctaBtn: 'bg-[#2563eb] hover:bg-[#1e40af] text-white shadow-[0_6px_20px_rgba(37,99,235,0.25)] btn-border-beam-blue',
+    cardGradient: 'from-[#1e40af] to-[#7c3aed]',
+    cardSub: 'text-blue-200',
+    cardText: 'text-blue-100/90',
+    notifText: 'text-[#1e40af]',
+    sidebarShadow: 'md:shadow-[0_25px_60px_rgba(30,64,175,0.08)]',
+    backdropBg: 'bg-blue-950/30',
+  },
+};
+
 export default function DashboardShell({
   navItems = [],
   activeTab,
   onTabChange,
   roleName = 'Dashboard',
-  // eslint-disable-next-line no-unused-vars
   roleColor = 'blue',
   userName = 'User',
   notifications = [],
@@ -38,6 +124,7 @@ export default function DashboardShell({
   children,
   toast = { show: false, message: '' },
 }) {
+  const theme = THEME_MAP[roleColor] || THEME_MAP.blue;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const unreadCount = notifications.filter((n) => n.isNew).length;
@@ -147,18 +234,18 @@ export default function DashboardShell({
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#E9ECF5] p-0 md:p-6 flex items-center justify-center font-sans overflow-hidden relative select-none">
+    <div className={`min-h-[100dvh] ${theme.outerBg} p-0 md:p-6 flex items-center justify-center font-sans overflow-hidden relative select-none`}>
       {/* Decorative dot grids in corners */}
       <div className="absolute top-0 left-0 w-48 h-48 bg-dot-grid opacity-15 pointer-events-none hidden md:block" />
       <div className="absolute bottom-0 right-0 w-48 h-48 bg-dot-grid opacity-15 pointer-events-none hidden md:block" />
 
       {/* Main floating card container */}
-      <div className="bg-white w-full min-h-[100dvh] md:min-h-0 md:h-[calc(100dvh-48px)] md:rounded-[40px] md:shadow-[0_25px_60px_rgba(30,64,175,0.08)] overflow-hidden flex flex-col md:flex-row relative border border-slate-100/50">
+      <div className={`bg-white w-full min-h-[100dvh] md:min-h-0 md:h-[calc(100dvh-48px)] md:rounded-[40px] ${theme.sidebarShadow} overflow-hidden flex flex-col md:flex-row relative border border-slate-100/50`}>
         
         {/* Mobile sidebar overlay backdrop */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-blue-950/30 backdrop-blur-sm z-30 md:hidden"
+            className={`fixed inset-0 ${theme.backdropBg} backdrop-blur-sm z-30 md:hidden`}
             onClick={() => setSidebarOpen(false)}
           />
         )}
@@ -183,7 +270,7 @@ export default function DashboardShell({
             
             {/* Website name - increased size, no icon */}
             <div>
-              <span className="text-[#1e40af] font-black text-3xl tracking-tight block leading-tight">Cograd Pathshala</span>
+              <span className={`${theme.brandText} font-black text-3xl tracking-tight block leading-tight`}>Cograd Pathshala</span>
               <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mt-0.5">
                 {roleName}
               </span>
@@ -194,7 +281,7 @@ export default function DashboardShell({
           <div className="px-5 mt-2 mb-6 shrink-0">
             <button
               onClick={goToCta}
-              className="w-full flex items-center justify-center gap-2 bg-[#7c3aed] text-white hover:bg-[#6d28d9] rounded-full font-black text-[11.5px] py-3.5 px-4 shadow-[0_6px_20px_rgba(124,58,237,0.25)] transition-all cursor-pointer border-0 btn-border-beam-purple"
+              className={`w-full flex items-center justify-center gap-2 text-white rounded-full font-black text-[11.5px] py-3.5 px-4 transition-all cursor-pointer border-0 ${theme.ctaBtn}`}
             >
               <Plus className="w-4 h-4 stroke-[3]" />
               <span>{stats.ctaLabel}</span>
@@ -215,7 +302,7 @@ export default function DashboardShell({
                   className={`
                     w-full flex items-center gap-3.5 px-4.5 py-3 text-[12px] font-bold
                     transition-all duration-200 cursor-pointer text-left rounded-[22px] border-0
-                    ${isActive ? 'bg-white text-[#1e40af] font-black shadow-sm' : 'text-slate-500 hover:text-[#1e40af] hover:bg-slate-50'}
+                    ${isActive ? `bg-white ${theme.activeNavText} font-black shadow-sm` : theme.hoverNav}
                   `}
                 >
                   <Icon className="w-4.5 h-4.5 shrink-0" />
@@ -246,7 +333,7 @@ export default function DashboardShell({
             <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="md:hidden p-2.5 bg-slate-50 text-[#1e40af] hover:bg-slate-100 rounded-xl transition-colors cursor-pointer shrink-0 border border-slate-100 animate-fade-in"
+                className={`md:hidden p-2.5 ${theme.mobileMenuBg} ${theme.mobileMenuText} hover:brightness-95 rounded-xl transition-colors cursor-pointer shrink-0 border ${theme.mobileMenuBorder} animate-fade-in`}
                 aria-label="Open navigation"
               >
                 <Menu className="w-4.5 h-4.5" />
@@ -254,7 +341,7 @@ export default function DashboardShell({
 
               {/* Website name on mobile header */}
               <div className="flex items-center md:hidden select-none shrink-0 animate-fade-in">
-                <span className="font-black text-xl text-[#1e40af] tracking-tight">Cograd Pathshala</span>
+                <span className={`font-black text-xl ${theme.brandText} tracking-tight`}>Cograd Pathshala</span>
               </div>
 
               {/* Minimal Search Bar - Hidden on extra-small mobile screens to make space for branding */}
@@ -284,7 +371,7 @@ export default function DashboardShell({
                   {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full" />}
                 </button>
 
-                <div className="w-9 h-9 rounded-full bg-[#1e40af] text-white text-xs font-black flex items-center justify-center border border-white shadow-sm">
+                <div className={`w-9 h-9 rounded-full ${theme.avatarBg} text-white text-xs font-black flex items-center justify-center border border-white shadow-sm`}>
                   {initials.slice(0, 1)}
                 </div>
               </div>
@@ -298,7 +385,7 @@ export default function DashboardShell({
               {/* Title & Custom Action Row */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-7 pb-6">
                 <div>
-                  <h1 className="text-2xl font-black text-[#1555a6] leading-tight tracking-tight">{activeTab}</h1>
+                  <h1 className={`text-2xl font-black ${theme.headerTitleText} leading-tight tracking-tight`}>{activeTab}</h1>
                   <p className="text-xs font-semibold text-slate-400 mt-1">{stats.title} • {stats.subtitle}</p>
                 </div>
                 {headerRight && <div className="flex items-center gap-2 self-start sm:self-auto">{headerRight}</div>}
@@ -337,7 +424,7 @@ export default function DashboardShell({
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               {/* Initials Avatar */}
-              <div className="w-11 h-11 rounded-full bg-[#1e40af] text-white text-xs font-black flex items-center justify-center border-2 border-white shadow-md shadow-blue-500/10 shrink-0">
+              <div className={`w-11 h-11 rounded-full ${theme.avatarBg} text-white text-xs font-black flex items-center justify-center border-2 border-white shadow-md ${theme.avatarShadow} shrink-0`}>
                 {initials}
               </div>
               <div className="min-w-0">
@@ -356,7 +443,7 @@ export default function DashboardShell({
                 <Bell className="w-4.5 h-4.5" />
                 {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full" />}
               </button>
-              <button className="w-9 h-9 bg-slate-50 hover:bg-slate-100 border border-slate-150 text-slate-500 hover:text-slate-800 rounded-xl flex items-center justify-center cursor-pointer" title="Preferences">
+              <button className="w-9 h-9 bg-slate-50 hover:bg-slate-150 border border-slate-150 text-slate-500 hover:text-slate-800 rounded-xl flex items-center justify-center cursor-pointer" title="Preferences">
                 <SlidersHorizontal className="w-4 h-4" />
               </button>
             </div>
@@ -384,12 +471,12 @@ export default function DashboardShell({
           </div>
 
           {/* Bottom decorative classroom vector container */}
-          <div className="mt-auto bg-gradient-to-br from-[#1e40af] to-[#7c3aed] text-white p-5.5 rounded-[28px] relative overflow-hidden shadow-lg shadow-indigo-600/10">
+          <div className={`mt-auto bg-gradient-to-br ${theme.cardGradient} text-white p-5.5 rounded-[28px] relative overflow-hidden shadow-lg`}>
             <div className="absolute -right-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none" />
             <div className="relative z-10 flex flex-col gap-1.5">
-              <span className="text-[8px] uppercase font-black text-blue-200 tracking-wider">Active Learning Workspace</span>
+              <span className={`text-[8px] uppercase font-black ${theme.cardSub} tracking-wider`}>Active Learning Workspace</span>
               <h4 className="text-sm font-black mt-0.5">Cograd Live Portal</h4>
-              <p className="text-[10px] text-blue-100/90 mt-1 font-semibold leading-relaxed">
+              <p className={`text-[10px] ${theme.cardText} mt-1 font-semibold leading-relaxed`}>
                 Interactive digital notebooks and live home tuition sync slots are active. Keep studying!
               </p>
               <div
@@ -413,7 +500,7 @@ export default function DashboardShell({
                   onClearNotifs?.();
                   setNotifOpen(false);
                 }}
-                className="text-[10px] text-[#1e40af] hover:underline font-extrabold"
+                className={`text-[10px] ${theme.notifText} hover:underline font-extrabold`}
               >
                 Clear all
               </button>

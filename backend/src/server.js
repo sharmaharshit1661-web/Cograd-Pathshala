@@ -126,6 +126,7 @@ const seedData = async () => {
           bio: 'Passionate educator dedicated to simplifying maths and science concepts for school students.',
           qualification: 'M.Sc. in Mathematics, B.Ed.',
           travelRange: '5 km radius',
+          free_slots: ["Monday - 9:00 AM", "Tuesday - 10:00 AM", "Wednesday - 2:00 PM"],
           documents: [
             { id: 1, name: 'M.Sc. Degree Certificate', type: 'Academic', status: 'Approved' },
             { id: 2, name: 'B.Ed. Certification', type: 'Academic', status: 'Approved' },
@@ -145,7 +146,7 @@ const seedData = async () => {
           verification_status: 'Verified',
           current_student_count: 2,
           max_student_capacity: 5,
-          city: 'Meerut',
+          city: 'Noida',
           teaching_style: 'advanced',
           hourly_rate: '₹650/hr',
           rating: 4.7,
@@ -153,6 +154,7 @@ const seedData = async () => {
           avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
           bio: 'Chemistry enthusiast who designs creative visual aids and fun home-based experiments.',
           qualification: 'M.Sc. Chemistry, IIT Delhi',
+          free_slots: ["Monday - 10:00 AM", "Wednesday - 3:00 PM", "Friday - 4:00 PM"],
           documents: [
             { id: 1, name: 'M.Sc. Chemistry Certificate', type: 'Academic', status: 'Approved' },
             { id: 2, name: 'Aadhaar ID Card', type: 'Identity', status: 'Approved' }
@@ -170,7 +172,7 @@ const seedData = async () => {
           verification_status: 'Verified',
           current_student_count: 1,
           max_student_capacity: 5,
-          city: 'Delhi',
+          city: 'Mumbai',
           teaching_style: 'beginner',
           hourly_rate: '₹500/hr',
           rating: 4.7,
@@ -178,6 +180,7 @@ const seedData = async () => {
           avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80',
           bio: 'Focuses on communication skills and board-level academic writing.',
           qualification: 'MA English Literature',
+          free_slots: ["Tuesday - 9:00 AM", "Thursday - 3:00 PM", "Saturday - 2:00 PM"],
           documents: [
             { id: 1, name: 'MA English Certificate', type: 'Academic', status: 'Approved' },
             { id: 2, name: 'Aadhaar ID Card', type: 'Identity', status: 'Approved' }
@@ -195,7 +198,7 @@ const seedData = async () => {
           verification_status: 'Verified',
           current_student_count: 4,
           max_student_capacity: 5,
-          city: 'Meerut',
+          city: 'Pune',
           teaching_style: 'advanced',
           hourly_rate: '₹700/hr',
           rating: 4.9,
@@ -203,6 +206,7 @@ const seedData = async () => {
           avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80',
           bio: 'PhD in Algebra, dedicated to advanced problem solving.',
           qualification: 'PhD Mathematics',
+          free_slots: ["Monday - 11:00 AM", "Wednesday - 5:00 PM", "Friday - 6:00 PM"],
           documents: [
             { id: 1, name: 'PhD Mathematics Certificate', type: 'Academic', status: 'Approved' },
             { id: 2, name: 'Aadhaar ID Card', type: 'Identity', status: 'Approved' }
@@ -215,6 +219,21 @@ const seedData = async () => {
         await User.create(u);
       }
       console.log('Users seeded successfully.');
+    }
+
+    // Ensure the specific admin user exists
+    const specificAdmin = await User.findOne({ email: 'cograd@admin.in' });
+    if (!specificAdmin) {
+      console.log('Registering specific admin credentials...');
+      await User.create({
+        id: `admin_specific_${Date.now()}`,
+        name: 'Cograd Root Admin',
+        email: 'cograd@admin.in',
+        password: 'CoGrad@Amin543',
+        phone: '9876599999',
+        role: 'admin'
+      });
+      console.log('Specific admin credentials registered successfully.');
     }
 
     const assignmentCount = await Assignment.countDocuments();

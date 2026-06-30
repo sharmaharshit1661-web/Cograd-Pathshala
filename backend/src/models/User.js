@@ -106,6 +106,22 @@ const UserSchema = new mongoose.Schema(
         status: { type: String, default: 'Under Review' },
       },
     ],
+    tempPassword: {
+      type: String,
+      default: null,
+    },
+    free_slots: {
+      type: [String],
+      default: [],
+    },
+    login_attempts: {
+      type: Number,
+      default: 0,
+    },
+    lock_until: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -115,10 +131,12 @@ const UserSchema = new mongoose.Schema(
 // Encrypt password before saving
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
-    next();
+    if (typeof next === 'function') next();
+    return;
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  if (typeof next === 'function') next();
 });
 
 // Compare password

@@ -1,9 +1,56 @@
 import express from 'express';
 import User from '../models/User.js';
 import Assignment from '../models/Assignment.js';
+import DemoBooking from '../models/DemoBooking.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
+
+const mapDistrictToCity = (district) => {
+  if (!district) return '';
+  return district.toLowerCase().trim();
+};
+
+// @desc    Get available slots for teachers in a district
+// @route   GET /api/teachers/available-slots
+// @access  Public
+router.get('/teachers/available-slots', async (req, res) => {
+  try {
+    const { district } = req.query;
+    if (!district) {
+      return res.status(400).json({ message: 'District is required' });
+    }
+
+    const targetCity = mapDistrictToCity(district);
+    const teachers = await User.find({
+      role: 'teacher',
+      verification_status: 'Verified',
+      city: { $regex: new RegExp('^' + targetCity + '$', 'i') }
+    });
+
+    const slots = [];
+    teachers.forEach((t) => {
+      if (t.free_slots && Array.isArray(t.free_slots)) {
+        t.free_slots.forEach((slotStr) => {
+          const parts = slotStr.split(' - ');
+          const day = parts[0] || '';
+          const time = parts[1] || '';
+          slots.push({
+            teacherId: t.id,
+            teacherName: t.name,
+            slot: slotStr,
+            day,
+            time
+          });
+        });
+      }
+    });
+
+    res.json(slots);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 // ==========================================
 // STUDENT ROUTES
@@ -153,6 +200,36 @@ router.post('/teachers', protect, async (req, res) => {
   }
 });
 
+const sendTeacherCredentialsEmail = (name, email, password) => {
+  console.log(`
+============================================================
+📧 EMAIL SENT (SIMULATED)
+============================================================
+From: admissions@cogradpathshala.com
+To: ${email}
+Subject: Welcome to Cograd Pathshala - Your Teacher Account is Approved!
+
+Dear ${name},
+
+Congratulations! Your application to join Cograd Pathshala as a
+teacher has been verified and approved by our admin team.
+
+Here are your login credentials:
+------------------------------------------
+Login URL: http://localhost:5173/login
+Email:     ${email}
+Password:  ${password}
+------------------------------------------
+
+Please log in to your dashboard to set up your profile, manage
+your slots, and view student requests.
+
+Best regards,
+Cograd Pathshala Admin Team
+============================================================
+`);
+};
+
 // @desc    Update a teacher
 // @route   PUT /api/teachers/:id
 // @access  Private
@@ -163,9 +240,17 @@ router.put('/teachers/:id', protect, async (req, res) => {
       return res.status(404).json({ message: 'Teacher not found' });
     }
 
+    const oldVerificationStatus = teacher.verification_status;
+
     Object.keys(req.body).forEach((key) => {
       teacher[key] = req.body[key];
     });
+
+    // Check if verification status transitioned to 'Verified'
+    if (oldVerificationStatus === 'Pending' && teacher.verification_status === 'Verified' && teacher.tempPassword) {
+      sendTeacherCredentialsEmail(teacher.name, teacher.email, teacher.tempPassword);
+      teacher.tempPassword = null; // Clear plain-text password for security
+    }
 
     const updatedTeacher = await teacher.save();
     res.json(updatedTeacher);
@@ -394,6 +479,54 @@ router.get('/teachers/suggested/:studentId', protect, async (req, res) => {
 });
 
 // ==========================================
+// PARENT ROUTES
+// ==========================================
+
+// @desc    Get children for a parent (match by parentPhone)
+// @route   GET /api/parents/children
+// @access  Private
+router.get('/parents/children', protect, async (req, res) => {
+  try {
+    // Match students where parentPhone matches the logged-in user's phone
+    const children = await User.find({
+      role: 'student',
+      parentPhone: req.user.phone
+    });
+    res.json(children);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ==========================================
+// ASSIGNMENT FILTER ROUTES
+// ==========================================
+
+// @desc    Get assignments for a specific student
+// @route   GET /api/assignments/student/:studentId
+// @access  Private
+router.get('/assignments/student/:studentId', protect, async (req, res) => {
+  try {
+    const assignments = await Assignment.find({ student_id: req.params.studentId });
+    res.json(assignments);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Get assignments for a specific teacher
+// @route   GET /api/assignments/teacher/:teacherId
+// @access  Private
+router.get('/assignments/teacher/:teacherId', protect, async (req, res) => {
+  try {
+    const assignments = await Assignment.find({ teacher_id: req.params.teacherId });
+    res.json(assignments);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ==========================================
 // SIMULATION RESET ROUTE
 // ==========================================
 
@@ -438,6 +571,169 @@ router.post('/students/reset', protect, async (req, res) => {
     res.json({ message: 'Simulation state reset successfully', student });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// ==========================================
+// DEMO BOOKING ROUTES
+// ==========================================
+
+// @desc    Book a free demo (Public Route)
+// @route   POST /api/demo-bookings
+// @access  Public
+router.post('/demo-bookings', async (req, res) => {
+  try {
+    const {
+      studentName,
+      parentPhone,
+      studentClass,
+      subjects,
+      preferredDate,
+      preferredTime,
+      preferredDays,
+      district,
+      villageArea,
+      landmark,
+    } = req.body;
+
+    const refCode = 'DEMO-' + Math.floor(100000 + Math.random() * 900000);
+
+    let assignedTeacherId = req.body.assigned_teacher_id || req.body.teacherId || null;
+
+    if (!assignedTeacherId) {
+      // 1. Find verified teachers in nearby location (matching city)
+      const teachers = await User.find({ role: 'teacher', verification_status: 'Verified' });
+      const targetCity = mapDistrictToCity(district);
+
+      let eligibleTeachers = teachers.filter((t) => {
+        return t.city && t.city.toLowerCase() === targetCity;
+      });
+
+      if (eligibleTeachers.length > 0) {
+        // Score and rank teachers to pick the best match
+        const ranked = eligibleTeachers.map((t) => {
+          let score = 0;
+          // Subject match
+          const hasSubjectMatch = subjects.some((sub) =>
+            t.subjects_taught && t.subjects_taught.some((ts) => ts.toLowerCase() === sub.toLowerCase())
+          );
+          if (hasSubjectMatch) score += 10;
+
+          // Grade match
+          const isGradeQualified = t.grade_levels_qualified && t.grade_levels_qualified.some(
+            (g) => g.toLowerCase() === studentClass.toLowerCase()
+          );
+          if (isGradeQualified) score += 10;
+
+          // Rating
+          score += (t.rating || 5.0) * 2;
+
+          // Capacity
+          if ((t.current_student_count || 0) < (t.max_student_capacity || 5)) {
+            score += 5;
+          }
+
+          return { id: t.id, score };
+        });
+
+        ranked.sort((a, b) => b.score - a.score);
+        assignedTeacherId = ranked[0].id;
+      }
+    }
+
+    const demoBooking = await DemoBooking.create({
+      id: refCode,
+      studentName,
+      parentPhone,
+      studentClass,
+      subjects,
+      preferredDate,
+      preferredTime,
+      preferredDays,
+      district,
+      villageArea,
+      landmark,
+      assigned_teacher_id: assignedTeacherId,
+      status: 'pending_admin_confirmation',
+    });
+
+    res.status(201).json(demoBooking);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Get all demo bookings (Admin Route)
+// @route   GET /api/demo-bookings
+// @access  Private
+router.get('/demo-bookings', protect, async (req, res) => {
+  try {
+    const bookings = await DemoBooking.find();
+    res.json(bookings);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Confirm/Assign demo booking (Admin Route)
+// @route   PUT /api/demo-bookings/:id/confirm
+// @access  Private
+router.put('/demo-bookings/:id/confirm', protect, async (req, res) => {
+  try {
+    const booking = await DemoBooking.findOne({ id: req.params.id });
+    if (!booking) {
+      return res.status(404).json({ message: 'Demo booking not found' });
+    }
+
+    const { teacherId } = req.body;
+    if (teacherId) {
+      booking.assigned_teacher_id = teacherId;
+    }
+    booking.status = 'pending_teacher_acceptance';
+    await booking.save();
+
+    res.json(booking);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Get demo bookings for a specific teacher
+// @route   GET /api/demo-bookings/teacher/:teacherId
+// @access  Private
+router.get('/demo-bookings/teacher/:teacherId', protect, async (req, res) => {
+  try {
+    const bookings = await DemoBooking.find({
+      assigned_teacher_id: req.params.teacherId,
+      status: { $ne: 'pending_admin_confirmation' }
+    });
+    res.json(bookings);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Teacher accept/decline demo booking
+// @route   PUT /api/demo-bookings/:id/status
+// @access  Private
+router.put('/demo-bookings/:id/status', protect, async (req, res) => {
+  try {
+    const booking = await DemoBooking.findOne({ id: req.params.id });
+    if (!booking) {
+      return res.status(404).json({ message: 'Demo booking not found' });
+    }
+
+    const { accept, status } = req.body;
+    if (status) {
+      booking.status = status;
+    } else if (accept !== undefined) {
+      booking.status = accept ? 'confirmed' : 'declined';
+    }
+
+    await booking.save();
+    res.json(booking);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 });
 

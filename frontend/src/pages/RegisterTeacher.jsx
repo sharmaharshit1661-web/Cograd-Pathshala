@@ -14,10 +14,8 @@ const SUBJECTS = [
 const EXPERIENCE_OPTIONS = ['0–1 years', '1–3 years', '3–5 years', '5–10 years', '10+ years'];
 
 const RegisterTeacher = () => {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '', qualifications: '', experience: '', bio: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', qualifications: '', experience: '', bio: '' });
   const [subjects, setSubjects] = useState([]);
-  const [showPw, setShowPw] = useState(false);
-  const [showCPw, setShowCPw] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const navigate = useNavigate();
 
@@ -26,7 +24,6 @@ const RegisterTeacher = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.password !== form.confirmPassword) { alert('Passwords do not match.'); return; }
     if (subjects.length === 0) { alert('Please select at least one subject.'); return; }
     
     try {
@@ -34,7 +31,6 @@ const RegisterTeacher = () => {
         name: form.name,
         email: form.email,
         phone: form.phone,
-        password: form.password,
         role: 'teacher',
         qualifications: form.qualifications,
         experience: form.experience,
@@ -89,27 +85,6 @@ const RegisterTeacher = () => {
               <div>
                 <label className="form-label"><Phone className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Phone Number</label>
                 <input type="tel" name="phone" required value={form.phone} onChange={handleChange} className="form-input" placeholder="10-digit mobile number" />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="form-label"><Lock className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Password</label>
-                  <div className="relative">
-                    <input type={showPw ? 'text' : 'password'} name="password" required value={form.password} onChange={handleChange} className="form-input pr-10" placeholder="Create a password" />
-                    <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 cursor-pointer">
-                      {showPw ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="form-label"><Lock className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Confirm Password</label>
-                  <div className="relative">
-                    <input type={showCPw ? 'text' : 'password'} name="confirmPassword" required value={form.confirmPassword} onChange={handleChange} className="form-input pr-10" placeholder="Confirm your password" />
-                    <button type="button" onClick={() => setShowCPw(!showCPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 cursor-pointer">
-                      {showCPw ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -191,14 +166,14 @@ const RegisterTeacher = () => {
             </div>
             <h3 className="text-2xl font-bold text-neutral-900 mb-2">Application Received!</h3>
             <p className="text-sm text-neutral-500 leading-relaxed mb-5">
-              Thank you, <strong className="text-neutral-700">{form.name}</strong>! Our vetting committee will review your qualifications and contact you within 24 hours.
+              Thank you, <strong className="text-neutral-700">{form.name}</strong>! Your teacher application has been submitted to the admin team. Once verified and approved, your login credentials will be generated and sent to <strong className="text-neutral-700">{form.email}</strong>.
             </p>
             <div className="bg-neutral-50 rounded-xl p-4 text-left text-sm mb-5 border border-neutral-100">
               <p className="font-semibold text-neutral-800 mb-2 text-xs uppercase tracking-wide">Next Steps</p>
               <ol className="list-decimal list-inside space-y-1 text-neutral-500 text-xs">
-                <li>Credential verification (within 24 hours)</li>
-                <li>Telephonic interview round</li>
-                <li>Profile activation and matching induction</li>
+                <li>Admin verification of your qualifications</li>
+                <li>Approval and account provisioning</li>
+                <li>Login credentials sent to your registered email address</li>
               </ol>
             </div>
             <button onClick={() => { setShowSuccess(false); navigate('/login'); }} className="w-full btn-primary py-3">

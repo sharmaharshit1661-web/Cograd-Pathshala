@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardShell from '../components/DashboardShell';
+import { api } from '../utils/api';
+import { syncWithBackend, getAssignments, getTeachers, getStudents } from '../utils/mockDb';
 import {
   LayoutDashboard,
   BookOpen,
@@ -46,13 +48,50 @@ const StudentDashboard = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showAiChatbot, setShowAiChatbot] = useState(false);
-  
+
+  // Dynamic Student Profile data state
+  const [profileData, setProfileData] = useState({
+    name: 'Loading...',
+    email: '',
+    phone: '',
+    standard: 'Loading...',
+    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80',
+    studentId: 'CP-2026-STU88',
+    parentName: 'Mr. Alok Sharma',
+    parentPhone: '9876500999',
+    district: 'Meerut',
+    state: 'Uttar Pradesh',
+    medium: 'English & Hinglish',
+    joinDate: '12 April 2026',
+    tuitionSlot: 'Evening (04:00 PM - 07:00 PM)',
+    subjects: ['Mathematics', 'Physics', 'Chemistry'],
+    address: 'House No. 42, Sector 4, Shastri Nagar, Meerut',
+    streak: 0,
+    rank: 'N/A',
+    attendance: 'N/A',
+    pendingHW: '0',
+    testsThisWeek: '0',
+    test_score: null,
+    test_completed_at: null,
+    assigned_teacher_id: null,
+  });
+
   // Notification states
-  const [unreadNotifications, setUnreadNotifications] = useState([
-    { id: 1, text: 'New Organic Chemistry notes uploaded', time: '10m ago', isNew: true },
-    { id: 2, text: 'Mock Test #8 results are live', time: '2h ago', isNew: true },
-    { id: 3, text: 'Priya Sharma scheduled a backup math class', time: '1d ago', isNew: false }
-  ]);
+  const [unreadNotifications, setUnreadNotifications] = useState([]);
+
+  useEffect(() => {
+    if (profileData.studentId && profileData.studentId !== 'Loading...') {
+      const saved = localStorage.getItem(`cograd_student_notifications_${profileData.studentId}`);
+      setUnreadNotifications(saved ? JSON.parse(saved) : []);
+    }
+  }, [profileData.studentId]);
+
+  useEffect(() => {
+    if (profileData.studentId && profileData.studentId !== 'Loading...') {
+      localStorage.setItem(`cograd_student_notifications_${profileData.studentId}`, JSON.stringify(unreadNotifications));
+    }
+  }, [unreadNotifications, profileData.studentId]);
+
 
   // Up Next live class timer state: set class start time 14 minutes and 32 seconds from now
   const [timeLeft, setTimeLeft] = useState(14 * 60 + 32);
@@ -71,6 +110,75 @@ const StudentDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Load real user data from backend
+  const [loadingData, setLoadingData] = useState(true);
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        if (!localStorage.getItem('cograd_token')) return;
+        const user = await api.get('/auth/me');
+        if (user) {
+          // Compute pending homework and tests dynamically
+          let liveAssignmentsPending = 0;
+          let liveTestsThisWeek = 0;
+          if (user.assigned_teacher_id) {
+            const teacherAsgsRaw = localStorage.getItem(`cograd_teacher_assignments_${user.assigned_teacher_id}`);
+            const teacherSubsRaw = localStorage.getItem(`cograd_teacher_submissions_${user.assigned_teacher_id}`);
+            const teacherTestsRaw = localStorage.getItem(`cograd_teacher_tests_${user.assigned_teacher_id}`);
+            
+            let teacherAsgs = [];
+            let teacherSubs = [];
+            let teacherTests = [];
+            try { if (teacherAsgsRaw) teacherAsgs = JSON.parse(teacherAsgsRaw); } catch(e) {}
+            try { if (teacherSubsRaw) teacherSubs = JSON.parse(teacherSubsRaw); } catch(e) {}
+            try { if (teacherTestsRaw) teacherTests = JSON.parse(teacherTestsRaw); } catch(e) {}
+            
+            teacherAsgs.forEach(asg => {
+              const matchedSub = teacherSubs.find(sub => sub.assignmentName === asg.name && sub.studentName === user.name);
+              if (!matchedSub) {
+                liveAssignmentsPending += 1;
+              }
+            });
+            liveTestsThisWeek = teacherTests.length;
+          }
+
+          setProfileData(prev => ({
+            ...prev,
+            name: user.name || prev.name,
+            email: user.email || prev.email,
+            phone: user.phone || prev.phone,
+            standard: user.standard || prev.standard,
+            avatar: user.avatar || prev.avatar,
+            parentName: user.parentName || prev.parentName,
+            parentPhone: user.parentPhone || prev.parentPhone,
+            city: user.city || prev.district,
+            district: user.city || prev.district,
+            state: user.state || prev.state,
+            joinDate: user.joinDate || prev.joinDate,
+            tuitionSlot: user.tuitionSlot || prev.tuitionSlot,
+            subjects: user.subjects || prev.subjects,
+            address: user.address || prev.address,
+            studentId: user.id || prev.studentId,
+            test_score: user.test_score || prev.test_score,
+            test_completed_at: user.test_completed_at || prev.test_completed_at,
+            assigned_teacher_id: user.assigned_teacher_id || null,
+            streak: 0,
+            rank: 'N/A',
+            attendance: 'N/A',
+            pendingHW: liveAssignmentsPending.toString(),
+            testsThisWeek: liveTestsThisWeek.toString(),
+          }));
+        }
+        await syncWithBackend();
+      } catch (err) {
+        console.error('Failed to load student data:', err);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+    loadData();
+  }, []);
+
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -82,30 +190,6 @@ const StudentDashboard = () => {
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
   };
-
-  // Dynamic Student Profile data state
-  const [profileData, setProfileData] = useState({
-    name: 'Rahul Sharma',
-    email: 'rahul.sharma@cograd.com',
-    phone: '9876500112',
-    standard: 'Class 12 (JEE Main & Advanced)',
-    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80',
-    studentId: 'CP-2026-STU88',
-    parentName: 'Mr. Alok Sharma',
-    parentPhone: '9876500999',
-    district: 'Meerut',
-    state: 'Uttar Pradesh',
-    medium: 'English & Hinglish',
-    joinDate: '12 April 2026',
-    tuitionSlot: 'Evening (04:00 PM - 07:00 PM)',
-    subjects: ['Mathematics', 'Physics', 'Chemistry'],
-    address: 'House No. 42, Sector 4, Shastri Nagar, Meerut',
-    streak: 12,
-    rank: '#4',
-    attendance: '91%',
-    pendingHW: '1',
-    testsThisWeek: '2'
-  });
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editProfileData, setEditProfileData] = useState({});
@@ -119,20 +203,41 @@ const StudentDashboard = () => {
   ];
 
   // Syllabus Chapter checklist state
-  const [syllabusChapters, setSyllabusChapters] = useState([
-    { id: 'm1', subject: 'Mathematics', name: 'Definite Integration', status: 'Completed' },
-    { id: 'm2', subject: 'Mathematics', name: 'Matrices & Determinants', status: 'Completed' },
-    { id: 'm3', subject: 'Mathematics', name: 'Vector Algebra', status: 'In Progress' },
-    { id: 'm4', subject: 'Mathematics', name: 'Probability & Distributions', status: 'Not Started' },
-    { id: 'p1', subject: 'Physics', name: 'Electrostatics', status: 'Completed' },
-    { id: 'p2', subject: 'Physics', name: 'Current Electricity', status: 'Completed' },
-    { id: 'p3', subject: 'Physics', name: 'Rotational Dynamics', status: 'In Progress' },
-    { id: 'p4', subject: 'Physics', name: 'Wave Optics', status: 'Not Started' },
-    { id: 'c1', subject: 'Chemistry', name: 'Organic Reaction Mechanisms', status: 'Completed' },
-    { id: 'c2', subject: 'Chemistry', name: 'Coordination Chemistry', status: 'Completed' },
-    { id: 'c3', subject: 'Chemistry', name: 'Chemical Kinetics', status: 'In Progress' },
-    { id: 'c4', subject: 'Chemistry', name: 'Biomolecules & Polymers', status: 'Not Started' }
-  ]);
+  const [syllabusChapters, setSyllabusChapters] = useState([]);
+
+  useEffect(() => {
+    if (!profileData.studentId || profileData.studentId === 'Loading...') return;
+    const cacheKey = `cograd_student_syllabus_${profileData.studentId}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      setSyllabusChapters(JSON.parse(cached));
+    } else {
+      const defaultChapters = {
+        'Mathematics': ['Linear Equations', 'Quadratic Equations', 'Trigonometry', 'Coordinate Geometry', 'Probability'],
+        'Science': ['Chemical Reactions', 'Life Processes', 'Light Reflection & Refraction', 'Electricity', 'Carbon Compounds'],
+        'Physics': ['Kinematics', 'Laws of Motion', 'Work, Energy & Power', 'Gravitation', 'Thermodynamics'],
+        'Chemistry': ['Structure of Atom', 'Chemical Bonding', 'States of Matter', 'Chemical Kinetics', 'Organic Chemistry'],
+        'Biology': ['Cell Division', 'Human Anatomy', 'Plant Physiology', 'Genetics', 'Evolution'],
+        'English': ['Tenses & Grammar', 'Reading Comprehension', 'Short Stories', 'Poetry Analysis', 'Letter Writing']
+      };
+      
+      const generated = [];
+      const subjectsList = profileData.subjects || ['Mathematics', 'Science'];
+      subjectsList.forEach(sub => {
+        const chapters = defaultChapters[sub] || ['Chapter 1: Intro', 'Chapter 2: Core', 'Chapter 3: Application', 'Chapter 4: Revision'];
+        chapters.forEach((ch, idx) => {
+          generated.push({
+            id: `${sub.toLowerCase().substring(0, 2)}_${idx + 1}`,
+            subject: sub,
+            name: ch,
+            status: idx < 2 ? 'Completed' : idx === 2 ? 'In Progress' : 'Not Started'
+          });
+        });
+      });
+      setSyllabusChapters(generated);
+      localStorage.setItem(cacheKey, JSON.stringify(generated));
+    }
+  }, [profileData.subjects, profileData.studentId]);
 
   // AI Doubt Solver persona and uploader states
   const [tutorPersona, setTutorPersona] = useState('chemistry'); // chemistry, mathematics, physics
@@ -144,62 +249,61 @@ const StudentDashboard = () => {
 
   // Recent Results full analysis modal state
   const [selectedResult, setSelectedResult] = useState(null);
-  const recentResults = [
-    {
-      id: 1,
-      title: 'Chemistry Part Syllabus Test (JEE Level)',
-      score: '88/100',
-      percentage: 88,
-      rank: '#4',
-      date: '10 June 2026',
-      status: 'Excellent',
-      color: 'emerald',
-      analysis: {
-        correct: 22,
-        incorrect: 3,
-        unanswered: 5,
-        timeSpent: '52 mins',
-        topics: [
-          { name: 'Organic Reaction Mechanisms', score: '95%', strength: 'Strong' },
-          { name: 'Coordination Chemistry', score: '88%', strength: 'Strong' },
-          { name: 'Chemical Kinetics', score: '70%', strength: 'Needs Practice' }
-        ],
-        feedback: 'Excellent grasp of reaction mechanisms. Focus on speeding up Kinetics calculations to avoid leaving unanswered questions.'
-      }
-    },
-    {
-      id: 2,
-      title: 'Physics Mock Test (Mechanics & Waves)',
-      score: '76/100',
-      percentage: 76,
-      rank: '#12',
-      date: '05 June 2026',
-      status: 'Good',
-      color: 'blue',
-      analysis: {
-        correct: 19,
-        incorrect: 5,
-        unanswered: 6,
-        timeSpent: '58 mins',
-        topics: [
-          { name: 'Rotational Dynamics', score: '62%', strength: 'Weak' },
-          { name: 'Simple Harmonic Motion', score: '85%', strength: 'Strong' },
-          { name: 'Electrostatics', score: '82%', strength: 'Strong' }
-        ],
-        feedback: 'Rotational dynamics requires conceptual refinement. Review lecture videos on Moment of Inertia calculations.'
-      }
+  
+  const recentResults = [];
+  if (profileData.test_score) {
+    const subjectsWithScores = Object.keys(profileData.test_score).filter(k => typeof profileData.test_score[k] === 'number');
+    if (subjectsWithScores.length > 0) {
+      let total = 0;
+      let count = 0;
+      const topics = subjectsWithScores.map(sub => {
+        const score = profileData.test_score[sub];
+        total += score;
+        count++;
+        return {
+          name: `${sub} Diagnostic Topics`,
+          score: `${score}%`,
+          strength: score >= 80 ? 'Strong' : score >= 60 ? 'Medium' : 'Needs Practice'
+        };
+      });
+      const avg = Math.round(total / count);
+      recentResults.push({
+        id: 1,
+        title: 'Diagnostic Placement Test',
+        score: `${avg}/100`,
+        percentage: avg,
+        rank: '#10',
+        date: profileData.test_completed_at ? new Date(profileData.test_completed_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Recently',
+        status: avg >= 80 ? 'Excellent' : avg >= 60 ? 'Good' : 'Needs Practice',
+        color: avg >= 80 ? 'emerald' : avg >= 60 ? 'blue' : 'amber',
+        analysis: {
+          correct: Math.round(avg / 4),
+          incorrect: Math.round((100 - avg) / 4),
+          unanswered: 0,
+          timeSpent: '25 mins',
+          topics: topics,
+          feedback: `Placement Diagnostic complete. You scored ${avg}% on average. We recommend focusing on your weaker areas as highlighted.`
+        }
+      });
     }
-  ];
+  }
 
   // Ask AI Doubt Solver state
   const [aiQuestion, setAiQuestion] = useState('');
-  const [aiHistory, setAiHistory] = useState([
-    {
-      question: 'What is the Cannizzaro reaction mechanism?',
-      answer: 'The Cannizzaro reaction is a redox reaction in which two molecules of a non-enolizable aldehyde are reacted with a strong base (like NaOH) to yield a primary alcohol and a carboxylic acid salt. One aldehyde molecule is oxidized, while the other is reduced.\n\n**Mechanism:**\n1. Nucleophilic attack of OH⁻ on the carbonyl carbon of one aldehyde.\n2. Hydride shift from the tetrahedral intermediate to a second aldehyde molecule (rate-determining step).\n3. Proton transfer to yield the final alcohol and carboxylate salt products.',
-      timestamp: 'Yesterday'
+  const [aiHistory, setAiHistory] = useState([]);
+
+  useEffect(() => {
+    if (profileData.studentId && profileData.studentId !== 'Loading...') {
+      const saved = localStorage.getItem(`cograd_student_ai_history_${profileData.studentId}`);
+      setAiHistory(saved ? JSON.parse(saved) : []);
     }
-  ]);
+  }, [profileData.studentId]);
+
+  useEffect(() => {
+    if (profileData.studentId && profileData.studentId !== 'Loading...') {
+      localStorage.setItem(`cograd_student_ai_history_${profileData.studentId}`, JSON.stringify(aiHistory));
+    }
+  }, [aiHistory, profileData.studentId]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [simulatedVoiceState, setSimulatedVoiceState] = useState('idle'); // idle, listening
 
@@ -212,37 +316,37 @@ const StudentDashboard = () => {
   const [uploadDoubtProgress, setUploadDoubtProgress] = useState(0);
   const [expandedTeacherDoubtId, setExpandedTeacherDoubtId] = useState(null);
 
-  const [teacherDoubts, setTeacherDoubts] = useState([
-    {
-      id: 1,
-      teacher: 'Mr. Rajesh Kumar',
-      subject: 'Chemistry',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
-      question: 'Why is phenol more acidic than ethanol?',
-      status: 'Resolved',
-      attachment: 'resonance_phenol.png',
-      answer: 'Phenol is more acidic because the phenoxide ion formed after losing a proton is stabilized by resonance (delocalization of the negative charge over the benzene ring). In contrast, the ethoxide ion from ethanol has no resonance stabilization, and the ethyl group exhibits an electron-donating +I effect which destabilizes the negative charge.',
-      timestamp: '2 days ago',
-      replyTime: 'Yesterday, 10:30 AM'
-    },
-    {
-      id: 2,
-      teacher: 'Dr. Priya Sharma',
-      subject: 'Mathematics',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
-      question: 'How do we solve integration of sec^3(x) dx?',
-      status: 'Resolved',
-      attachment: 'calculus_exercise_5.pdf',
-      answer: 'We solve this using Integration by Parts. Let I = ∫ sec^3(x) dx = ∫ sec(x) * sec^2(x) dx. Let u = sec(x) and dv = sec^2(x) dx. Then du = sec(x)tan(x) dx and v = tan(x). Applying parts: I = sec(x)tan(x) - ∫ sec(x)tan^2(x) dx. Since tan^2(x) = sec^2(x) - 1, we get I = sec(x)tan(x) - ∫ sec^3(x) dx + ∫ sec(x) dx. Thus 2I = sec(x)tan(x) + ln|sec(x) + tan(x)| + C. Finally, I = 0.5 * [sec(x)tan(x) + ln|sec(x) + tan(x)|] + C.',
-      timestamp: '3 days ago',
-      replyTime: '2 days ago'
+  const [teacherDoubts, setTeacherDoubts] = useState([]);
+
+  useEffect(() => {
+    if (profileData.studentId && profileData.studentId !== 'Loading...') {
+      const saved = localStorage.getItem(`cograd_student_teacher_doubts_${profileData.studentId}`);
+      setTeacherDoubts(saved ? JSON.parse(saved) : []);
     }
-  ]);
+  }, [profileData.studentId]);
+
+  useEffect(() => {
+    if (profileData.studentId && profileData.studentId !== 'Loading...') {
+      localStorage.setItem(`cograd_student_teacher_doubts_${profileData.studentId}`, JSON.stringify(teacherDoubts));
+    }
+  }, [teacherDoubts, profileData.studentId]);
 
   // --- PREMIUM DASHBOARD FEATURES STATE ---
 
   // 1. Offline Mode State
   const [isOffline, setIsOffline] = useState(false);
+
+  const [studyHours, setStudyHours] = useState(0);
+  useEffect(() => {
+    if (profileData.studentId && profileData.studentId !== 'Loading...') {
+      const saved = localStorage.getItem(`cograd_student_study_hours_${profileData.studentId}`);
+      if (saved) {
+        setStudyHours(parseInt(saved, 10));
+      } else {
+        localStorage.setItem(`cograd_student_study_hours_${profileData.studentId}`, '0');
+      }
+    }
+  }, [profileData.studentId]);
 
 
 
@@ -253,11 +357,21 @@ const StudentDashboard = () => {
   const [parentTestScore, setParentTestScore] = useState(0);
 
   // 3. Study Planner & Goal Setting State
-  const [userGoals, setUserGoals] = useState([
-    { id: 1, text: 'Solve 10 Integration mock questions', completed: true },
-    { id: 2, text: 'Revise Chemistry Carbonyl compounds roadmap', completed: false },
-    { id: 3, text: 'Attempt physics optics practice sheet', completed: false }
-  ]);
+  const [userGoals, setUserGoals] = useState([]);
+
+  useEffect(() => {
+    if (profileData.studentId && profileData.studentId !== 'Loading...') {
+      const saved = localStorage.getItem(`cograd_student_user_goals_${profileData.studentId}`);
+      setUserGoals(saved ? JSON.parse(saved) : []);
+    }
+  }, [profileData.studentId]);
+
+  useEffect(() => {
+    if (profileData.studentId && profileData.studentId !== 'Loading...') {
+      localStorage.setItem(`cograd_student_user_goals_${profileData.studentId}`, JSON.stringify(userGoals));
+    }
+  }, [userGoals, profileData.studentId]);
+
   const [newGoalText, setNewGoalText] = useState('');
 
   // 4. Smart Video Player State
@@ -266,17 +380,42 @@ const StudentDashboard = () => {
   const [videoPlaying, setVideoPlaying] = useState(false);
   const [videoTime, setVideoTime] = useState(0); // in seconds
   const [videoNotes, setVideoNotes] = useState('');
-  const [savedVideoNotes, setSavedVideoNotes] = useState([
-    { timestamp: '02:15', note: 'Carbonyl carbon is sp2 hybridized and planar.' },
-    { timestamp: '14:40', note: 'Nucleophilic addition follows nucleophilic attack on carbon followed by protonation.' }
-  ]);
+  const [savedVideoNotes, setSavedVideoNotes] = useState([]);
+
+  useEffect(() => {
+    if (profileData.studentId && profileData.studentId !== 'Loading...') {
+      const saved = localStorage.getItem(`cograd_student_video_notes_${profileData.studentId}`);
+      setSavedVideoNotes(saved ? JSON.parse(saved) : []);
+    }
+  }, [profileData.studentId]);
+
+  useEffect(() => {
+    if (profileData.studentId && profileData.studentId !== 'Loading...') {
+      localStorage.setItem(`cograd_student_video_notes_${profileData.studentId}`, JSON.stringify(savedVideoNotes));
+    }
+  }, [savedVideoNotes, profileData.studentId]);
 
   // 5. Peer Learning & Study Groups State
-  const [studyGroups] = useState([
-    { id: 'g1', name: 'Organic Chem Warriors', subject: 'Chemistry', activePeers: 14, description: 'Solving advance mechanics & reaction roadmaps' },
-    { id: 'g2', name: 'Math Integration Ninjas', subject: 'Mathematics', activePeers: 8, description: 'Mastering definite integrations & double integrals' },
-    { id: 'g3', name: 'HC Verma Doubt Solvers', subject: 'Physics', activePeers: 22, description: 'Daily chapter problems discussions & notes share' }
-  ]);
+  const [studyGroups, setStudyGroups] = useState([]);
+
+  useEffect(() => {
+    if (!profileData.studentId || profileData.studentId === 'Loading...') return;
+    const cacheKey = `cograd_student_study_groups_${profileData.studentId}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      setStudyGroups(JSON.parse(cached));
+    } else {
+      const generated = (profileData.subjects || ['Mathematics', 'Science']).map((sub, idx) => ({
+        id: `g${idx + 1}`,
+        name: `${sub} Study Group`,
+        subject: sub,
+        activePeers: Math.floor(Math.random() * 10) + 5,
+        description: `Collaborative study group for ${sub} discussion and doubt resolution.`
+      }));
+      setStudyGroups(generated);
+      localStorage.setItem(cacheKey, JSON.stringify(generated));
+    }
+  }, [profileData.subjects, profileData.studentId]);
   const [activeGroupId, setActiveGroupId] = useState('g1');
   const [groupChats, setGroupChats] = useState({
     g1: [
@@ -446,48 +585,15 @@ const StudentDashboard = () => {
       { name: 'Mr. Rajesh Kumar', subject: 'Chemistry', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80' },
       { name: 'Dr. Priya Sharma', subject: 'Mathematics', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80' },
       { name: 'Dr. Sarah Johnson', subject: 'Physics', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=80' }
-    ].find(t => t.name === selectedTeacherForDoubt);
+    ].find(t => t.name === selectedTeacherForDoubt) || { name: selectedTeacherForDoubt, subject: 'General' };
 
-    const newDoubt = {
-      id: Date.now(),
-      teacher: teacherObj.name,
-      subject: teacherObj.subject,
-      avatar: teacherObj.avatar,
-      question: teacherDoubtText,
-      status: 'Pending Review',
-      attachment: teacherDoubtAttachment,
-      answer: null,
-      timestamp: 'Just now',
-      replyTime: null
-    };
-
-    setTeacherDoubts(prev => [newDoubt, ...prev]);
+    const doubtText = teacherDoubtText.trim();
     setTeacherDoubtText('');
     setTeacherDoubtAttachment(null);
-    triggerToast(`Doubt submitted to ${teacherObj.name}!`);
 
-    // Simulate teacher resolving it in real-time
-    setTimeout(() => {
-      const responses = {
-        'Mr. Rajesh Kumar': 'This is a great question! For this mechanism, recall that the electrophilicity of the carbonyl carbon is the driving factor. I have annotated your image to show the nucleophilic attack of the hydride shift. Let\'s review this in our next class.',
-        'Dr. Priya Sharma': 'Remember that the limits of integration must be evaluated carefully after substituting the variable. In this case, since sec(x) is periodic, check the interval to ensure it does not cross any vertical asymptotes.',
-        'Dr. Sarah Johnson': 'For Young\'s Double Slit Experiment, the path difference Δx = d * sin(θ) ≈ d * y / D. The condition for constructive interference is d * y / D = n * λ. I have uploaded the derivation notes. Please check it.'
-      };
-
-      setTeacherDoubts(prev => prev.map(d => {
-        if (d.id === newDoubt.id) {
-          return {
-            ...d,
-            status: 'Resolved',
-            answer: responses[d.teacher] || 'I have reviewed your doubt. Let\'s discuss this in detail during our session.',
-            replyTime: 'Just now'
-          };
-        }
-        return d;
-      }));
-
-      triggerToast(`${teacherObj.name} resolved your doubt!`);
-    }, 12000);
+    const message = `Hello ${teacherObj.name}, I have a doubt in ${teacherObj.subject}:\n\n${doubtText}`;
+    window.open(`https://wa.me/919876543210?text=${encodeURIComponent(message)}`, "_blank");
+    triggerToast(`Redirecting to WhatsApp to send doubt to ${teacherObj.name}...`);
   };
 
 
@@ -678,12 +784,17 @@ const StudentDashboard = () => {
   const [downloadProgress, setDownloadProgress] = useState({}); // id -> progress percentage
   const [downloadingIds, setDownloadingIds] = useState({}); // id -> true/false
 
-  const studyMaterials = [
-    { id: 1, name: 'Organic Chemistry Roadmap - Carbonyl Compounds.pdf', size: '3.4 MB', type: 'PDF Notes' },
-    { id: 2, name: 'JEE Physics Cheat Sheet - Electromagnetism formulas.pdf', size: '2.1 MB', type: 'Formula Sheet' },
-    { id: 3, name: 'Calculus Integration Mock Practice Problems.pdf', size: '1.5 MB', type: 'Worksheet' },
-    { id: 4, name: 'Inorganic Chemistry Coordination Complexes Key Notes.pdf', size: '4.0 MB', type: 'PDF Revision Notes' }
+  const allStudyMaterials = [
+    { id: 1, name: 'Organic Chemistry Roadmap - Carbonyl Compounds.pdf', size: '3.4 MB', type: 'PDF Notes', subject: 'Chemistry' },
+    { id: 2, name: 'JEE Physics Cheat Sheet - Electromagnetism formulas.pdf', size: '2.1 MB', type: 'Formula Sheet', subject: 'Physics' },
+    { id: 3, name: 'Calculus Integration Mock Practice Problems.pdf', size: '1.5 MB', type: 'Worksheet', subject: 'Mathematics' },
+    { id: 4, name: 'Inorganic Chemistry Coordination Complexes Key Notes.pdf', size: '4.0 MB', type: 'PDF Revision Notes', subject: 'Chemistry' },
+    { id: 5, name: 'Class 10 Science - Chemical Reactions & Equations.pdf', size: '2.8 MB', type: 'PDF Notes', subject: 'Science' },
+    { id: 6, name: 'Cell Structure Revision Notes.pdf', size: '3.1 MB', type: 'PDF Notes', subject: 'Biology' },
+    { id: 7, name: 'Grammar and Writing Skills Guide.pdf', size: '1.9 MB', type: 'PDF Notes', subject: 'English' }
   ];
+
+  const studyMaterials = allStudyMaterials.filter(m => (profileData.subjects || []).includes(m.subject));
 
   const handleDownload = (id, name) => {
     if (downloadingIds[id]) return;
@@ -706,17 +817,40 @@ const StudentDashboard = () => {
   };
 
   // Tab - My Classes Schedules
-  const scheduledClasses = [
-    { id: 1, subject: 'Chemistry', topic: 'Aldehydes, Ketones & Carboxylic Acids', teacher: 'Mr. Rajesh Kumar', time: 'Today, 04:00 PM', duration: '90 mins', isLive: true },
-    { id: 2, subject: 'Mathematics', topic: 'Definite Integration & Areas under curve', teacher: 'Dr. Priya Sharma', time: 'Tomorrow, 10:00 AM', duration: '120 mins', isLive: false },
-    { id: 3, subject: 'Physics', topic: 'Wave Optics - Young\'s Double Slit Experiment', teacher: 'Dr. Sarah Johnson', time: '15 June, 11:30 AM', duration: '90 mins', isLive: false }
-  ];
+  let liveScheduledClasses = [];
+  if (profileData.assigned_teacher_id) {
+    const teacherTimetableRaw = localStorage.getItem(`cograd_teacher_timetable_${profileData.assigned_teacher_id}`);
+    if (teacherTimetableRaw) {
+      try {
+        const teacherTimetable = JSON.parse(teacherTimetableRaw);
+        const teachers = getTeachers();
+        const matchedTeacher = teachers.find(t => t.id === profileData.assigned_teacher_id);
+        const teacherName = matchedTeacher ? matchedTeacher.name : 'Class Tutor';
+        const teacherSubject = matchedTeacher?.subjects_taught?.[0] || 'Mathematics';
 
-  const recordedArchive = [
-    { id: 101, subject: 'Chemistry', topic: 'Isomerism & Nomenclature basics', teacher: 'Mr. Rajesh Kumar', date: 'Yesterday', duration: '75 mins', rating: 4.9 },
-    { id: 102, subject: 'Mathematics', topic: 'Limits, Continuity & Differentiability', teacher: 'Dr. Priya Sharma', date: '3 days ago', duration: '110 mins', rating: 4.8 },
-    { id: 103, subject: 'Physics', topic: 'Electrostatics & Gauss\'s Law application', teacher: 'Dr. Sarah Johnson', date: '5 days ago', duration: '95 mins', rating: 4.9 }
-  ];
+        liveScheduledClasses = Object.keys(teacherTimetable).map((key, idx) => {
+          const parts = key.split('-');
+          const day = parts[0];
+          const slot = parts.slice(1).join('-');
+          const session = teacherTimetable[key];
+          return {
+            id: idx + 1,
+            subject: teacherSubject,
+            topic: session.title,
+            teacher: teacherName,
+            time: `${day}, ${slot.split(' - ')[0]}`,
+            duration: '90 mins',
+            isLive: day === 'Monday'
+          };
+        });
+      } catch (e) {
+        console.error('Failed to parse teacher timetable:', e);
+      }
+    }
+  }
+
+  const scheduledClasses = liveScheduledClasses;
+  const recordedArchive = [];
 
   // Tab - Tests States
   const [activeTestState, setActiveTestState] = useState(null); // 'taking', 'submitted', null
@@ -793,27 +927,70 @@ const StudentDashboard = () => {
   const chemCoverage = getSubjectCoverage('Chemistry');
   const totalCoverage = getGlobalCoverage();
 
-  // Tab - Progress Details
-  const progressStats = {
-    syllabusCoverage: totalCoverage,
-    averageTestScore: 82,
-    assignmentsSubmitted: 18,
-    assignmentsPending: 1,
-    doubtSolvedCount: 34,
-    studyHours: 142
+  const getAverageTestScore = () => {
+    if (profileData.test_score) {
+      const math = profileData.test_score.Mathematics || 0;
+      const science = profileData.test_score.Science || 0;
+      return Math.round((math + science) / 2);
+    }
+    return 82; // Default fallback
   };
 
-  const subjectBreakdown = [
-    { subject: 'Mathematics', rate: mathCoverage, grade: mathCoverage >= 90 ? 'A+' : mathCoverage >= 70 ? 'A' : 'B+', color: 'blue' },
-    { subject: 'Chemistry', rate: chemCoverage, grade: chemCoverage >= 90 ? 'A+' : chemCoverage >= 70 ? 'A' : 'B+', color: 'emerald' },
-    { subject: 'Physics', rate: physicsCoverage, grade: physicsCoverage >= 90 ? 'A+' : physicsCoverage >= 70 ? 'A' : 'B+', color: 'indigo' }
-  ];
+  // Tab - Progress Details
+  const doubtsSolved = aiHistory.length + teacherDoubts.filter(d => d.status === 'Resolved').length;
+  const streakDays = profileData.streak || 0;
+  const attendanceVal = parseFloat(profileData.attendance) || 0;
+
+  let liveAssignmentsSubmitted = 0;
+  let liveAssignmentsPending = 0;
+  if (profileData.assigned_teacher_id) {
+    const teacherAsgsRaw = localStorage.getItem(`cograd_teacher_assignments_${profileData.assigned_teacher_id}`);
+    const teacherSubsRaw = localStorage.getItem(`cograd_teacher_submissions_${profileData.assigned_teacher_id}`);
+    
+    let teacherAsgs = [];
+    let teacherSubs = [];
+    try { if (teacherAsgsRaw) teacherAsgs = JSON.parse(teacherAsgsRaw); } catch(e) {}
+    try { if (teacherSubsRaw) teacherSubs = JSON.parse(teacherSubsRaw); } catch(e) {}
+    
+    teacherAsgs.forEach(asg => {
+      const matchedSub = teacherSubs.find(sub => sub.assignmentName === asg.name && sub.studentName === profileData.name);
+      if (matchedSub) {
+        liveAssignmentsSubmitted += 1;
+      } else {
+        liveAssignmentsPending += 1;
+      }
+    });
+  }
+
+  const progressStats = {
+    syllabusCoverage: totalCoverage,
+    averageTestScore: getAverageTestScore(),
+    assignmentsSubmitted: profileData.assigned_teacher_id ? liveAssignmentsSubmitted : 0,
+    assignmentsPending: profileData.assigned_teacher_id ? liveAssignmentsPending : 0,
+    doubtSolvedCount: doubtsSolved,
+    studyHours: studyHours
+  };
+
+  const subjectBreakdown = (profileData.subjects || []).map((sub) => {
+    const rate = getSubjectCoverage(sub);
+    const grade = rate >= 90 ? 'A+' : rate >= 70 ? 'A' : 'B+';
+    const colors = {
+      'Mathematics': 'blue',
+      'Chemistry': 'emerald',
+      'Physics': 'indigo',
+      'Science': 'orange',
+      'Biology': 'rose',
+      'English': 'purple'
+    };
+    const color = colors[sub] || 'slate';
+    return { subject: sub, rate, grade, color };
+  });
 
   const achievementBadges = [
-    { id: 1, title: 'Streak Master', desc: 'Maintained a study streak of 10+ days', icon: Flame, color: 'text-amber-500 bg-amber-50' },
-    { id: 2, title: 'Doubt Buster', desc: 'Resolved 30+ academic doubts using AI Solver', icon: Sparkles, color: 'text-purple-500 bg-purple-50' },
-    { id: 3, title: 'Top Scorer', desc: 'Ranked in the top 5 of JEE weekly mocks', icon: Award, color: 'text-blue-500 bg-blue-50' },
-    { id: 4, title: 'Regular Attendee', desc: 'Maintained attendance above 90% for a month', icon: CheckCircle2, color: 'text-blue-500 bg-blue-50' }
+    ...(streakDays >= 10 ? [{ id: 1, title: 'Streak Master', desc: `Maintained a study streak of ${streakDays} days (10+ required)`, icon: Flame, color: 'text-amber-500 bg-amber-50' }] : []),
+    ...(doubtsSolved >= 5 ? [{ id: 2, title: 'Doubt Buster', desc: `Resolved ${doubtsSolved} academic doubts (5+ required)`, icon: Sparkles, color: 'text-purple-500 bg-purple-50' }] : []),
+    ...(profileData.rank && parseInt(profileData.rank.replace('#', '')) <= 5 ? [{ id: 3, title: 'Top Scorer', desc: `Ranked ${profileData.rank} in JEE weekly mocks (Top 5 required)`, icon: Award, color: 'text-blue-500 bg-blue-50' }] : []),
+    ...(attendanceVal >= 90 ? [{ id: 4, title: 'Regular Attendee', desc: `Maintained attendance at ${profileData.attendance} (90%+ required)`, icon: CheckCircle2, color: 'text-blue-500 bg-blue-50' }] : [])
   ];
 
   const handleLogout = () => {
@@ -889,24 +1066,27 @@ const StudentDashboard = () => {
         {/* TAB 1: HOME (MY DASHBOARD) */}
         {activeTab === 'Home' && (
           <div className="space-y-6">
-            
             {/* Row 1: Welcome & Up Next Live Timer */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Welcome Card */}
               <div className="lg:col-span-7 bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-800 text-white rounded-2xl p-6 sm:p-8 flex flex-col justify-between shadow-lg shadow-blue-600/15 relative overflow-hidden group">
                 <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-700" />
                 <div>
-                  <h3 className="text-2xl sm:text-3xl font-black mb-2 tracking-tight">Hi Rahul 👋</h3>
+                  <h3 className="text-2xl sm:text-3xl font-black mb-2 tracking-tight">Hi {profileData.name ? profileData.name.split(' ')[0] : 'Student'} 👋</h3>
                   <p className="text-blue-100 text-sm max-w-md font-medium leading-relaxed">
-                    You're in high-focus JEE prep mode. Complete organic homework and attend today's live lecture.
+                    {profileData.test_score ? (
+                      `Your diagnostic placement test score is ${profileData.test_score.totalMarksText} (${getAverageTestScore()}%). We have personalized your study plan for ${profileData.standard || 'your grade'}!`
+                    ) : (
+                      "Welcome to Cograd Pathshala. Complete homework and attend today's live lecture."
+                    )}
                   </p>
-                  {localStorage.getItem('cograd_parent_message_to_Rahul_Varma') && (
+                  {localStorage.getItem(`cograd_parent_message_to_${profileData.studentId || 'Rahul_Varma'}`) && (
                     <div className="mt-4 p-3 bg-white/15 backdrop-blur-md rounded-xl border border-white/10 text-xs text-white max-w-md">
                       <div className="font-extrabold uppercase tracking-wider text-[9px] text-amber-300 flex items-center gap-1 mb-1">
                         <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
-                        Message from Mrs. Sharma (Parent)
+                        Message from {profileData.parentName || 'Parent'}
                       </div>
-                      <p className="font-semibold italic text-slate-100">"{localStorage.getItem('cograd_parent_message_to_Rahul_Varma')}"</p>
+                      <p className="font-semibold italic text-slate-100">"{localStorage.getItem(`cograd_parent_message_to_${profileData.studentId || 'Rahul_Varma'}`)}"</p>
                     </div>
                   )}
                 </div>
@@ -914,7 +1094,7 @@ const StudentDashboard = () => {
                   <button onClick={() => isOffline ? triggerToast('Offline — cannot join live.') : setActiveTab('My Classes')} className="bg-white text-blue-800 hover:bg-blue-50 font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5">
                     Join Live Room <ArrowRight className="w-3.5 h-3.5" />
                   </button>
-                  <span className="text-xs text-blue-200 font-semibold bg-white/10 px-3.5 py-2 rounded-xl">Target: JEE Advanced 2026</span>
+                  <span className="text-xs text-blue-200 font-semibold bg-white/10 px-3.5 py-2 rounded-xl">Target: {profileData.standard || 'Grade Preparation'}</span>
                 </div>
               </div>
 
@@ -949,62 +1129,122 @@ const StudentDashboard = () => {
               </div>
             </div>
 
-
-
-
-
-              {/* Parent Assigned Test Card */}
-              {localStorage.getItem('cograd_assigned_tests_Rahul_Varma') && (() => {
-                let testObj;
-                try {
-                  testObj = JSON.parse(localStorage.getItem('cograd_assigned_tests_Rahul_Varma'));
-                } catch {
-                  return null;
-                }
-                if (!testObj) return null;
-                const testResult = localStorage.getItem('cograd_assigned_tests_result_Rahul_Varma');
-                return (
-                  <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-200 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-slide-up">
-                    <div className="flex items-start space-x-3.5">
-                      <div className="p-3 bg-amber-100 border border-amber-200 text-amber-700 rounded-2xl shrink-0">
-                        <FileText className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="text-sm font-extrabold text-amber-900">📝 Custom Homework Test Assigned by Parent</h4>
-                          {testResult ? (
-                            <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full">Completed</span>
-                          ) : (
-                            <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full animate-pulse">Pending Action</span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-700 font-bold mt-1">Topic: {testObj.subject} — {testObj.topic} ({testObj.questionCount} Questions)</p>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Assigned by parent to check concept understanding. Earns +100 XP upon completion!</p>
-                      </div>
+            {/* Diagnostic Placement Test Result Card */}
+            {profileData.test_score && (
+              <div className="bg-gradient-to-br from-indigo-50 to-slate-50 border border-indigo-100 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 animate-slide-up">
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-indigo-100 text-indigo-800 border border-indigo-200 text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full">
+                      Placement Profile
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-bold">
+                      Completed on {new Date(profileData.test_completed_at || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </span>
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-black text-slate-800 tracking-tight">Your Diagnostic Performance Summary</h4>
+                    <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1">
+                      Based on your placement test for <strong className="text-slate-850 font-bold">{profileData.standard}</strong>, you scored <strong className="text-indigo-600 font-extrabold">{profileData.test_score.totalMarksText}</strong> marks overall. 
+                      Here is how your profile is personalized:
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-4 pt-1">
+                    <div className="bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm text-center min-w-[120px]">
+                      <span className="text-[9px] text-slate-400 font-extrabold uppercase block">Mathematics</span>
+                      <span className="text-base font-black text-emerald-600 block mt-0.5">{profileData.test_score.mathMarksText}</span>
+                      <span className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.25 rounded-md font-bold inline-block mt-1">
+                        {profileData.test_score.Mathematics >= 75 ? 'Excellent' : profileData.test_score.Mathematics >= 50 ? 'Strong' : 'Needs Practice'}
+                      </span>
                     </div>
-
-                    <div>
-                      {testResult ? (
-                        <div className="bg-white border border-emerald-100 rounded-2xl px-4 py-2 text-center shadow-inner">
-                          <span className="text-[9px] text-slate-400 font-extrabold uppercase block">Result Score</span>
-                          <span className="text-base font-black text-emerald-600">{testResult}</span>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setParentTestSubmitted(false);
-                            setParentTestAnswers({});
-                            setShowParentTestModal(true);
-                          }}
-                          className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-2xl shadow-sm transition-all duration-200 cursor-pointer"
-                        >
-                          Start Custom Quiz
-                        </button>
-                      )}
+                    <div className="bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm text-center min-w-[120px]">
+                      <span className="text-[9px] text-slate-400 font-extrabold uppercase block">Science</span>
+                      <span className="text-base font-black text-blue-600 block mt-0.5">{profileData.test_score.scienceMarksText}</span>
+                      <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.25 rounded-md font-bold inline-block mt-1">
+                        {profileData.test_score.Science >= 75 ? 'Excellent' : profileData.test_score.Science >= 50 ? 'Strong' : 'Needs Practice'}
+                      </span>
                     </div>
                   </div>
-                );
-              })()}
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm min-w-[240px] space-y-3.5">
+                  <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Custom Recommendations</h5>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
+                      <p className="text-[11px] text-slate-600 font-semibold leading-normal">
+                        {profileData.test_score.Mathematics < 60 
+                          ? 'Assigned math tutoring focusing on Algebra foundations.' 
+                          : 'Cleared for high-track JEE Mathematics batch.'}
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
+                      <p className="text-[11px] text-slate-600 font-semibold leading-normal">
+                        {profileData.test_score.Science < 60 
+                          ? 'Enrolled in Science basics module & concept review.' 
+                          : 'Matched with Advanced Chemistry/Physics modules.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="pt-1.5 border-t border-slate-100 text-center">
+                    <span className="text-[10px] text-slate-400 font-bold">Matched Tutor will contact you shortly</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Parent Assigned Test Card */}
+            {localStorage.getItem(`cograd_assigned_tests_${profileData.studentId || 'Rahul_Varma'}`) && (() => {
+              let testObj;
+              try {
+                testObj = JSON.parse(localStorage.getItem(`cograd_assigned_tests_${profileData.studentId || 'Rahul_Varma'}`));
+              } catch {
+                return null;
+              }
+              if (!testObj) return null;
+              const testResult = localStorage.getItem(`cograd_assigned_tests_result_${profileData.studentId || 'Rahul_Varma'}`);
+              return (
+                <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-200 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-slide-up">
+                  <div className="flex items-start space-x-3.5">
+                    <div className="p-3 bg-amber-100 border border-amber-200 text-amber-700 rounded-2xl shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="text-sm font-extrabold text-amber-900">📝 Custom Homework Test Assigned by Parent</h4>
+                        {testResult ? (
+                          <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full">Completed</span>
+                        ) : (
+                          <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full animate-pulse">Pending Action</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-700 font-bold mt-1">Topic: {testObj.subject} — {testObj.topic} ({testObj.questionCount} Questions)</p>
+                      <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Assigned by parent to check concept understanding. Earns +100 XP upon completion!</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    {testResult ? (
+                      <div className="bg-white border border-emerald-100 rounded-2xl px-4 py-2 text-center shadow-inner">
+                        <span className="text-[9px] text-slate-400 font-extrabold uppercase block">Result Score</span>
+                        <span className="text-base font-black text-emerald-600">{testResult}</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setParentTestSubmitted(false);
+                          setParentTestAnswers({});
+                          setShowParentTestModal(true);
+                        }}
+                        className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-2xl shadow-sm transition-all duration-200 cursor-pointer"
+                      >
+                        Start Custom Quiz
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
               {/* Row 2: Stats Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -2566,21 +2806,27 @@ const StudentDashboard = () => {
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
                     <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Milestone Badges</h3>
                     <div className="grid grid-cols-2 gap-3">
-                      {achievementBadges.map((badge) => {
-                        const Icon = badge.icon;
-                        return (
-                          <div
-                            key={badge.id}
-                            className="p-3 border border-slate-50 hover:border-blue-100/30 rounded-2xl text-center flex flex-col items-center justify-center transition-all bg-slate-50/30 hover:bg-white"
-                          >
-                            <div className={`p-2 rounded-xl mb-1.5 ${badge.color}`}>
-                              <Icon className="w-4.5 h-4.5" />
+                      {achievementBadges.length === 0 ? (
+                        <div className="col-span-2 text-center py-6 text-slate-400 text-xs">
+                          No milestone badges unlocked yet. Keep studying to earn badges!
+                        </div>
+                      ) : (
+                        achievementBadges.map((badge) => {
+                          const Icon = badge.icon;
+                          return (
+                            <div
+                              key={badge.id}
+                              className="p-3 border border-slate-50 hover:border-blue-100/30 rounded-2xl text-center flex flex-col items-center justify-center transition-all bg-slate-50/30 hover:bg-white"
+                            >
+                              <div className={`p-2 rounded-xl mb-1.5 ${badge.color}`}>
+                                <Icon className="w-4.5 h-4.5" />
+                              </div>
+                              <span className="text-[10px] font-black text-slate-800 truncate w-full">{badge.title}</span>
+                              <span className="text-[8px] text-slate-400 leading-tight mt-0.5 line-clamp-2">{badge.desc}</span>
                             </div>
-                            <span className="text-[10px] font-black text-slate-800 truncate w-full">{badge.title}</span>
-                            <span className="text-[8px] text-slate-400 leading-tight mt-0.5 line-clamp-2">{badge.desc}</span>
-                          </div>
-                        );
-                      })}
+                          );
+                        })
+                      )}
                     </div>
                   </div>
 
@@ -2739,50 +2985,45 @@ const StudentDashboard = () => {
                           </p>
                         </div>
                       ) : (
-                        <div className="flex-grow overflow-y-auto space-y-3 px-1.5 pb-4 max-h-[300px] lg:max-h-none shadow-inner bg-slate-50/20 p-4 rounded-2xl mb-4 border border-slate-100/50">
-                          {chats.map((chat) => {
-                            const isMe = chat.sender === 'You';
-                            return (
-                              <div
-                                key={chat.id}
-                                className={`flex flex-col max-w-[80%] ${isMe ? 'ml-auto items-end' : 'mr-auto items-start'}`}
-                              >
-                                <div className="flex items-center space-x-1.5 text-[9px] font-bold text-slate-400 mb-0.5">
-                                  <span>{chat.sender}</span>
-                                  <span>•</span>
-                                  <span>{chat.time}</span>
-                                </div>
-                                <div className={`p-3 rounded-2xl text-xs font-semibold leading-relaxed shadow-sm ${
-                                  isMe
-                                    ? 'bg-blue-600 text-white rounded-tr-none'
-                                    : 'bg-white border border-slate-150 text-slate-700 rounded-tl-none'
-                                }`}>
-                                  {chat.text}
-                                </div>
-                              </div>
-                            );
-                          })}
+                        <div className="flex-grow flex flex-col items-center justify-center p-6 bg-slate-50/40 rounded-3xl border border-slate-100 text-center space-y-5">
+                          <div className="w-14 h-14 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                            <MessageSquare className="w-7 h-7" />
+                          </div>
+                          
+                          <div className="max-w-md space-y-1.5">
+                            <h4 className="text-sm font-black text-slate-800">Direct WhatsApp Group Chat</h4>
+                            <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
+                              To ensure high-fidelity communication, instant notifications, and seamless sharing of study sheets, assignments, and doubts, peer discussions for **{activeGroup?.name}** have been redirected to our official WhatsApp study group channels.
+                            </p>
+                          </div>
+
+                          <div className="w-full max-w-xs bg-white border border-slate-100 rounded-xl p-3.5 text-left space-y-2.5 shadow-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="text-emerald-500 text-[10px]">✔</span>
+                              <span className="text-[10px] text-slate-700 font-bold">Daily practice questions shared by mentors</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-emerald-500 text-[10px]">✔</span>
+                              <span className="text-[10px] text-slate-700 font-bold">Collaborative doubt solving with batchmates</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-emerald-500 text-[10px]">✔</span>
+                              <span className="text-[10px] text-slate-700 font-bold">Official updates on curriculum schedules</span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              window.open(`https://wa.me/919876543210?text=Hello%2C%20I%20am%20a%20student%20at%20Cograd%20Pathshala%20and%20would%20like%20to%20join%20the%20official%20${encodeURIComponent(activeGroup?.name || 'Study Group')}.`, "_blank");
+                            }}
+                            className="w-full max-w-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-2xl shadow-lg shadow-emerald-600/15 hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            <span>Join WhatsApp Group Chat</span>
+                          </button>
                         </div>
                       )}
-
-                      {/* Chat Input Bar */}
-                      <form onSubmit={handleSendGroupMessage} className="relative flex items-center border-t border-slate-100 pt-4">
-                        <input
-                          type="text"
-                          disabled={isOffline}
-                          value={newGroupMessage}
-                          onChange={(e) => setNewGroupMessage(e.target.value)}
-                          placeholder={isOffline ? "You are offline..." : `Type your message in ${activeGroup?.name}...`}
-                          className="w-full text-xs pl-4 pr-16 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-500 transition-all font-semibold disabled:opacity-50"
-                        />
-                        <button
-                          type="submit"
-                          disabled={isOffline || !newGroupMessage.trim()}
-                          className="absolute right-2.5 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-600/20 transition-all cursor-pointer disabled:opacity-40"
-                        >
-                          <Send className="w-4 h-4" />
-                        </button>
-                      </form>
                     </div>
                   );
                 })()}
@@ -3213,7 +3454,7 @@ const StudentDashboard = () => {
     <div className="fixed bottom-20 right-16 z-[9999] flex flex-col items-end">
       {/* Chatbot Overlay Card */}
       {showAiChatbot && (
-        <div className="mb-4 w-96 max-w-[calc(100vw-2rem)] h-[580px] bg-white border border-slate-150 rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-slide-up text-slate-800">
+        <div className="mb-4 w-96 max-w-[calc(100vw-2rem)] h-[580px] bg-white border border-slate-150 rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-slide-up text-slate-800 no-glass">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-750 text-white p-4.5 flex items-center justify-between shadow-md shrink-0">
             <div className="flex items-center space-x-3">

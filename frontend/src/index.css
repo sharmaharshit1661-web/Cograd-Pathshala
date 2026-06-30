@@ -1386,13 +1386,30 @@ html.lenis, html.lenis body {
   border-right: 1px solid rgba(255, 255, 255, 0.4) !important;
 }
 
-/* Smooth hover adjustments for glassy cards */
 .liquid-glass-active .glow-card:hover,
 .liquid-glass-active .role-card:hover {
   background: rgba(255, 255, 255, 0.6) !important;
   border-color: rgba(255, 255, 255, 0.6) !important;
   box-shadow: 0 20px 48px rgba(15, 23, 42, 0.08) !important;
 }
+
+/* Override utility to completely disable liquid glass filters and transparency */
+.liquid-glass-active .no-glass,
+.liquid-glass-active .no-glass * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.liquid-glass-active .no-glass,
+.liquid-glass-active .no-glass.bg-white,
+.liquid-glass-active .no-glass .bg-white {
+  background: #ffffff !important;
+}
+.liquid-glass-active .no-glass.bg-slate-50,
+.liquid-glass-active .no-glass .bg-slate-50,
+.liquid-glass-active .no-glass .bg-slate-50\/20 {
+  background: #f8fafc !important;
+}
+
 
 /* ============================================================
    SOFT UI / NEUMORPHIC SAAS DESIGN SYSTEM
@@ -1787,6 +1804,28 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-1.5px) !important;
   box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3) !important;
 }
+
+/* Amber Beams */
+.btn-border-beam-amber,
+.dashboard-container button[class*="bg-amber-"] {
+  border: 1.5px solid transparent !important;
+  background: 
+    linear-gradient(135deg, #d97706 0%, #b45309 100%) padding-box,
+    conic-gradient(from var(--angle), transparent 50%, #fbbf24 75%, #d97706 100%) border-box !important;
+  animation: border-beam-rotate 4s linear infinite !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.2) !important;
+}
+
+.btn-border-beam-amber:hover,
+.dashboard-container button[class*="bg-amber-"]:hover {
+  background: 
+    linear-gradient(135deg, #b45309 0%, #92400e 100%) padding-box,
+    conic-gradient(from var(--angle), transparent 50%, #fde68a 75%, #b45309 100%) border-box !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.3) !important;
+}
+
 
 /* ============================================================
    LOGIN PAGE PREMIUM STYLES

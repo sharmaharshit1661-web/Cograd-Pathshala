@@ -178,7 +178,7 @@ export const findSuggestedTeachers = (student) => {
 };
 
 // Allot tutor (Admin Action)
-export const allotTutor = async (studentId, teacherId, adminId = 'admin_1') => {
+export const allotTutor = async (studentId, teacherId) => {
   try {
     await api.post('/assignments/allot', { studentId, teacherId });
     await syncWithBackend();
