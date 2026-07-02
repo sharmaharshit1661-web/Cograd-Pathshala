@@ -232,8 +232,7 @@ const AdminDashboard = () => {
             next[t.id] = {
               degree: docs.find(d => d.type === 'Academic' || d.name.includes('Degree'))?.status === 'Approved' ? 'Approved' : 'Under Review',
               aadhar: docs.find(d => d.type === 'Identity' || d.name.includes('Aadhaar'))?.status === 'Approved' ? 'Approved' : 'Under Review',
-              experience: docs.find(d => d.type === 'Experience' || d.name.includes('Experience'))?.status === 'Approved' ? 'Approved' : 'Under Review',
-              police: docs.find(d => d.name.includes('Police'))?.status === 'Approved' ? 'Approved' : 'Under Review'
+              experience: docs.find(d => d.type === 'Experience' || d.name.includes('Experience'))?.status === 'Approved' ? 'Approved' : 'Under Review'
             };
             updated = true;
           }
@@ -251,7 +250,7 @@ const AdminDashboard = () => {
     setTeacherDocStatus(prev => ({
       ...prev,
       [teacherId]: {
-        ...(prev[teacherId] || { degree: 'Under Review', aadhar: 'Under Review', experience: 'Under Review', police: 'Under Review' }),
+        ...(prev[teacherId] || { degree: 'Under Review', aadhar: 'Under Review', experience: 'Under Review' }),
         [docKey]: nextVal
       }
     }));
@@ -263,7 +262,6 @@ const AdminDashboard = () => {
         if (docKey === 'degree' && (d.type === 'Academic' || d.name.includes('Degree'))) matches = true;
         if (docKey === 'aadhar' && (d.type === 'Identity' || d.name.includes('Aadhaar'))) matches = true;
         if (docKey === 'experience' && (d.type === 'Experience' || d.name.includes('Experience'))) matches = true;
-        if (docKey === 'police' && d.name.includes('Police')) matches = true;
         
         if (matches) {
           return { ...d, status: nextVal === 'Approved' ? 'Approved' : 'Under Review' };
@@ -1070,7 +1068,7 @@ const AdminDashboard = () => {
                   <span key={key} className={`text-[8px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider shrink-0 ${
                     val === 'Approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100 animate-pulse'
                   }`}>
-                    {key === 'degree' ? '🎓 Degree' : key === 'aadhar' ? '🪪 Aadhar' : key === 'experience' ? '📄 Exp. Letter' : '🛡️ Police Check'}: {val === 'Approved' ? '✓' : '⏳'}
+                    {key === 'degree' ? '🎓 Degree' : key === 'aadhar' ? '🪪 Aadhar' : '📄 Exp. Letter'}: {val === 'Approved' ? '✓' : '⏳'}
                   </span>
                 ))}
               </div>
@@ -2947,8 +2945,7 @@ const AdminDashboard = () => {
                 {[
                   { key: 'degree', label: 'Academic Degree Certificate', icon: '🎓', info: 'M.Sc / B.Ed / Graduation proof from university' },
                   { key: 'aadhar', label: 'Aadhaar Identity Card', icon: '🪪', info: 'UIDAI 12-digit unique ID verification' },
-                  { key: 'experience', label: 'Experience Letter', icon: '📄', info: 'Letter from previous institute or employer' },
-                  { key: 'police', label: 'Police Verification Certificate', icon: '🛡️', info: 'Background check clearance from local authority' }
+                  { key: 'experience', label: 'Experience Letter', icon: '📄', info: 'Letter from previous institute or employer' }
                 ].map((doc) => {
                   const status = (teacherDocStatus[selectedTeacherDocs.id] || {})[doc.key] || 'Under Review';
                   const isApproved = status === 'Approved';
