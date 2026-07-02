@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { GraduationCap, Users, ArrowRight, Sparkles } from 'lucide-react';
+import { GraduationCap, Users, ArrowRight, Sparkles, BookOpen } from 'lucide-react';
 
 const ROLES = [
   {
@@ -26,12 +26,24 @@ const ROLES = [
     shadow: 'hover:shadow-amber-100/50',
     arrow: 'text-amber-400 group-hover:text-amber-600',
   },
+  {
+    id: 'teacher',
+    to: '/register/teacher',
+    icon: BookOpen,
+    heading: 'I am a Teacher',
+    subtext: 'I want to teach students and grow my tutoring career',
+    color: 'bg-purple-50',
+    iconColor: 'text-purple-600',
+    border: 'border-purple-100 hover:border-purple-400',
+    shadow: 'hover:shadow-purple-100/50',
+    arrow: 'text-purple-400 group-hover:text-purple-600',
+  },
 ];
 
 const RoleSelector = () => {
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col items-center justify-center py-12 px-4 sm:px-6">
-      <div className="w-full max-w-2xl animate-fade-in">
+      <div className="w-full max-w-4xl animate-fade-in">
 
         {/* Brand */}
         <div className="text-center mb-10">
@@ -43,7 +55,7 @@ const RoleSelector = () => {
         </div>
 
         {/* Role Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
           {ROLES.map(({ id, to, icon: Icon, heading, subtext, color, iconColor, border, shadow, arrow }) => (
             <Link
               key={id}
