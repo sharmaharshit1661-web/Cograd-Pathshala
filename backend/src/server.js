@@ -54,11 +54,26 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Cloudinary env check endpoint for debugging
+app.get('/api/debug-cloudinary', (req, res) => {
+  res.json({
+    hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
+    hasApiKey: !!process.env.CLOUDINARY_API_KEY,
+    hasApiSecret: !!process.env.CLOUDINARY_API_SECRET,
+    hasCloudinaryUrl: !!process.env.CLOUDINARY_URL,
+    cloudinaryUrlStartsWith: process.env.CLOUDINARY_URL ? process.env.CLOUDINARY_URL.substring(0, 20) : 'none'
+  });
+});
+
 // Global error handling middleware (always returns JSON, never HTML)
 app.use((err, req, res, next) => {
   console.error('[Global Error Handler]', err);
+  let msg = err.message || 'An unexpected error occurred on the server.';
+  if (err.storageErrors && err.storageErrors.length > 0) {
+    msg = err.storageErrors.map(e => e.message || JSON.stringify(e)).join(', ');
+  }
   res.status(err.status || 500).json({
-    message: err.message || 'An unexpected error occurred on the server.'
+    message: msg
   });
 });
 
