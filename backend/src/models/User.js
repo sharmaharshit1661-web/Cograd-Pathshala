@@ -169,6 +169,9 @@ const UserSchema = new mongoose.Schema(
         name: String,
         type: { type: String },
         status: { type: String, default: 'Under Review' },
+        filePath: { type: String, default: null },   // server-relative path to uploaded file
+        mimetype: { type: String, default: null },   // e.g. application/pdf, image/jpeg
+        uploadedAt: { type: Date, default: Date.now },
       },
     ],
     tempPassword: {

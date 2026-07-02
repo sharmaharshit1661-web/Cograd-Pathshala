@@ -172,22 +172,43 @@ const RegisterTeacher = () => {
 
     setLoading(true);
     try {
-      const registrationData = {
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        role: 'teacher',
-        qualifications: form.qualifications,
-        experience: form.experience,
-        bio: form.bio,
-        subjects_taught: subjects,
-        grade_levels_qualified: ['Class 9', 'Class 10', 'Class 8', 'Class 7'],
-        city: 'Meerut',
-        // Document names recorded for admin awareness
-        uploaded_documents: Object.entries(docs).map(([id, f]) => ({ type: id, filename: f.name, size: f.size })),
-      };
+      // Build multipart FormData so actual files are sent to the backend
+      const fd = new FormData();
+      fd.append('name',            form.name);
+      fd.append('email',           form.email);
+      fd.append('phone',           form.phone);
+      fd.append('role',            'teacher');
+      fd.append('qualifications',  form.qualifications);
+      fd.append('experience',      form.experience);
+      fd.append('bio',             form.bio);
+      fd.append('city',            'Meerut');
+      // subjects_taught as JSON string (backend spreads extraFields)
+      fd.append('subjects_taught', JSON.stringify(subjects));
+      fd.append('grade_levels_qualified', JSON.stringify(['Class 9', 'Class 10', 'Class 8', 'Class 7']));
 
-      await api.post('/auth/register', registrationData);
+      // Attach each uploaded file under its backend field name
+      // doc_degree | doc_id_proof | doc_experience_letter
+      const FIELD_MAP = {
+        degree:            'doc_degree',
+        id_proof:          'doc_id_proof',
+        experience_letter: 'doc_experience_letter',
+      };
+      for (const [docId, file] of Object.entries(docs)) {
+        const fieldName = FIELD_MAP[docId];
+        if (fieldName && file) fd.append(fieldName, file, file.name);
+      }
+
+      // Use raw fetch so we don't accidentally set Content-Type ourselves
+      // (browser sets it automatically with the correct multipart boundary)
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://cograd-pathshala-ygyi.onrender.com/api';
+      const response = await fetch(`${baseUrl}/auth/register`, {
+        method: 'POST',
+        body: fd,
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Registration failed');
+
       setShowSuccess(true);
     } catch (error) {
       alert(error.message || 'Registration failed. Please try again.');

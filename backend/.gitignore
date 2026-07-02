@@ -10,3 +10,8 @@ node_modules/
 logs
 *.log
 npm-debug.log*
+
+# Uploaded files (stored locally; use cloud storage in production)
+uploads/
+!uploads/.gitkeep
+!uploads/teacher-docs/.gitkeep

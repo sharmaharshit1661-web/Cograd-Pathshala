@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { connectDB } from './config/db.js';
 import User from './models/User.js';
 import Admin from './models/Admin.js';
@@ -11,6 +13,9 @@ import apiRoutes from './routes/api.js';
 // Load environment variables
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
+
 const app = express();
 const PORT = process.env.PORT || 4000;
 
@@ -19,9 +24,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve uploaded teacher documents (protected by admin in production; open here for simplicity)
+app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
+
 // Register routes
 app.use('/api/auth', authRoutes);
 app.use('/api', apiRoutes);
+
 
 // Root Route
 app.get('/', (req, res) => {
