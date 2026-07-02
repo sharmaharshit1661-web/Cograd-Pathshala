@@ -2940,40 +2940,92 @@ const AdminDashboard = () => {
 
               {/* Per-Document Verification Controls */}
               <div className="space-y-2.5">
-                <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Credential Documents — Click to Toggle Status</h5>
-                
-                {[
-                  { key: 'degree', label: 'Academic Degree Certificate', icon: '🎓', info: 'M.Sc / B.Ed / Graduation proof from university' },
-                  { key: 'aadhar', label: 'Aadhaar Identity Card', icon: '🪪', info: 'UIDAI 12-digit unique ID verification' },
-                  { key: 'experience', label: 'Experience Letter', icon: '📄', info: 'Letter from previous institute or employer' }
-                ].map((doc) => {
-                  const status = (teacherDocStatus[selectedTeacherDocs.id] || {})[doc.key] || 'Under Review';
-                  const isApproved = status === 'Approved';
-                  return (
-                    <div key={doc.key} className={`p-3 rounded-xl border flex justify-between items-center gap-3 transition-all ${
-                      isApproved ? 'bg-emerald-50/50 border-emerald-100' : 'bg-amber-50/50 border-amber-100'
-                    }`}>
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="text-base">{doc.icon}</span>
-                        <div className="min-w-0">
-                          <h6 className="text-xs font-bold text-slate-800 truncate">{doc.label}</h6>
-                          <p className="text-[9px] text-slate-400 font-semibold mt-0.5">{doc.info}</p>
+                <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Credential Documents — View &amp; Toggle Status</h5>
+
+                {(() => {
+                  const API_BASE = import.meta.env.VITE_API_URL
+                    ? import.meta.env.VITE_API_URL.replace('/api', '')
+                    : 'https://cograd-pathshala-ygyi.onrender.com';
+
+                  // Map each doc key to the matching uploaded file from teacher.documents
+                  const TYPE_MAP = {
+                    degree:     (d) => d.type === 'Academic'   || d.name?.toLowerCase().includes('degree'),
+                    aadhar:     (d) => d.type === 'Identity'   || d.name?.toLowerCase().includes('aadhaar') || d.name?.toLowerCase().includes('aadhar'),
+                    experience: (d) => d.type === 'Experience' || d.name?.toLowerCase().includes('experience'),
+                  };
+                  const uploadedDocs = selectedTeacherDocs.documents || [];
+
+                  return [
+                    { key: 'degree',     label: 'Academic Degree Certificate', icon: '🎓', info: 'M.Sc / B.Ed / Graduation proof from university' },
+                    { key: 'aadhar',     label: 'Aadhaar Identity Card',       icon: '🪪', info: 'UIDAI 12-digit unique ID verification' },
+                    { key: 'experience', label: 'Experience Letter',            icon: '📄', info: 'Letter from previous institute or employer' },
+                  ].map((doc) => {
+                    const status     = (teacherDocStatus[selectedTeacherDocs.id] || {})[doc.key] || 'Under Review';
+                    const isApproved = status === 'Approved';
+                    const uploadedDoc = uploadedDocs.find(TYPE_MAP[doc.key]);
+                    const fileUrl    = uploadedDoc?.filePath
+                      ? `${API_BASE}/${uploadedDoc.filePath.replace(/\\/g, '/')}`
+                      : null;
+                    const isPdf      = uploadedDoc?.mimetype === 'application/pdf';
+
+                    return (
+                      <div key={doc.key} className={`p-3 rounded-xl border transition-all ${
+                        isApproved ? 'bg-emerald-50/50 border-emerald-100' : 'bg-amber-50/50 border-amber-100'
+                      }`}>
+                        {/* Top row: icon + label + approve btn */}
+                        <div className="flex justify-between items-center gap-3">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-base">{doc.icon}</span>
+                            <div className="min-w-0">
+                              <h6 className="text-xs font-bold text-slate-800 truncate">{doc.label}</h6>
+                              {uploadedDoc
+                                ? <p className="text-[9px] text-slate-500 font-semibold mt-0.5 truncate" title={uploadedDoc.name}>{uploadedDoc.name}</p>
+                                : <p className="text-[9px] text-rose-400 font-semibold mt-0.5">⚠ Not uploaded</p>
+                              }
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => toggleDocStatus(selectedTeacherDocs.id, doc.key)}
+                            className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider shrink-0 border cursor-pointer transition-all hover:scale-105 active:scale-95 ${
+                              isApproved
+                                ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
+                                : 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-emerald-100 hover:text-emerald-700 hover:border-emerald-200'
+                            }`}
+                            title={isApproved ? 'Click to reject this document' : 'Click to approve this document'}
+                          >
+                            {isApproved ? '✓ Approved' : '⏳ Review'}
+                          </button>
                         </div>
+
+                        {/* View / Download row */}
+                        {fileUrl && (
+                          <div className="mt-2 flex gap-2">
+                            <a
+                              href={fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
+                            >
+                              👁 View File
+                            </a>
+                            <a
+                              href={fileUrl}
+                              download={uploadedDoc.name}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
+                            >
+                              ⬇ Download
+                            </a>
+                            {isPdf && (
+                              <span className="px-2 py-1.5 bg-red-50 text-red-500 border border-red-100 rounded-lg text-[9px] font-black uppercase tracking-wider">
+                                PDF
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <button
-                        onClick={() => toggleDocStatus(selectedTeacherDocs.id, doc.key)}
-                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider shrink-0 border cursor-pointer transition-all hover:scale-105 active:scale-95 ${
-                          isApproved 
-                            ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
-                            : 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-emerald-100 hover:text-emerald-700 hover:border-emerald-200'
-                        }`}
-                        title={isApproved ? 'Click to reject this document' : 'Click to approve this document'}
-                      >
-                        {isApproved ? '✓ Approved' : '⏳ Review'}
-                      </button>
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
               </div>
 
               {/* Overall Action Buttons */}
@@ -2996,7 +3048,7 @@ const AdminDashboard = () => {
                       // Approve all docs at once
                       setTeacherDocStatus(prev => ({
                         ...prev,
-                        [selectedTeacherDocs.id]: { degree: 'Approved', aadhar: 'Approved', experience: 'Approved', police: 'Approved' }
+                        [selectedTeacherDocs.id]: { degree: 'Approved', aadhar: 'Approved', experience: 'Approved' }
                       }));
                       triggerToast('All documents approved! You can now grant the Verified badge.');
                     }}
