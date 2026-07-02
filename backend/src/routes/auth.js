@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Admin from '../models/Admin.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -19,9 +20,11 @@ router.post('/register', async (req, res) => {
   const { name, email, password, phone, role, ...extraFields } = req.body;
 
   try {
-    const userExists = await User.findOne({ email });
+    const exists = role === 'admin' 
+      ? await Admin.findOne({ email }) 
+      : await User.findOne({ email });
 
-    if (userExists) {
+    if (exists) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
@@ -123,7 +126,9 @@ router.post('/register', async (req, res) => {
       }
     }
 
-    const user = await User.create(userData);
+    const user = role === 'admin' 
+      ? await Admin.create(userData) 
+      : await User.create(userData);
 
     res.status(201).json({
       token: generateToken(user.id),
@@ -148,7 +153,17 @@ router.post('/login', async (req, res) => {
   const { email, password, role } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    let user;
+    if (role === 'admin') {
+      user = await Admin.findOne({ email });
+    } else if (role) {
+      user = await User.findOne({ email });
+    } else {
+      user = await User.findOne({ email });
+      if (!user) {
+        user = await Admin.findOne({ email });
+      }
+    }
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });

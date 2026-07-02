@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDB } from './config/db.js';
 import User from './models/User.js';
+import Admin from './models/Admin.js';
 import Assignment from './models/Assignment.js';
 import authRoutes from './routes/auth.js';
 import apiRoutes from './routes/api.js';
@@ -40,9 +41,10 @@ app.get('/api/health', (req, res) => {
 const seedData = async () => {
   try {
     const userCount = await User.countDocuments();
-    if (userCount === 0) {
-      console.log('Seeding default users...');
+    const adminCount = await Admin.countDocuments();
 
+    if (adminCount === 0) {
+      console.log('Seeding default admins...');
       const defaultAdmins = [
         {
           id: 'admin_1',
@@ -53,6 +55,14 @@ const seedData = async () => {
           role: 'admin'
         }
       ];
+      for (const a of defaultAdmins) {
+        await Admin.create(a);
+      }
+      console.log('Admins seeded successfully.');
+    }
+
+    if (userCount === 0) {
+      console.log('Seeding default users...');
 
       const defaultParents = [
         {
@@ -220,17 +230,17 @@ const seedData = async () => {
       ];
 
       // Save using loop so pre-save save hook (bcrypt) runs on each
-      for (const u of [...defaultAdmins, ...defaultParents, ...defaultStudents, ...defaultTeachers]) {
+      for (const u of [...defaultParents, ...defaultStudents, ...defaultTeachers]) {
         await User.create(u);
       }
       console.log('Users seeded successfully.');
     }
 
     // Ensure the specific admin user exists
-    const specificAdmin = await User.findOne({ email: 'cograd@admin.in' });
+    const specificAdmin = await Admin.findOne({ email: 'cograd@admin.in' });
     if (!specificAdmin) {
       console.log('Registering specific admin credentials...');
-      await User.create({
+      await Admin.create({
         id: `admin_specific_${Date.now()}`,
         name: 'Cograd Root Admin',
         email: 'cograd@admin.in',
