@@ -1,6 +1,6 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { connectDB } from './config/db.js';
@@ -10,9 +10,6 @@ import Assignment from './models/Assignment.js';
 import authRoutes from './routes/auth.js';
 import apiRoutes from './routes/api.js';
 import { UPLOADS_ROOT } from './utils/paths.js';
-
-// Load environment variables
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);

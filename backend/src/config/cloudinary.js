@@ -10,6 +10,7 @@
  *   CLOUDINARY_API_SECRET
  */
 
+import 'dotenv/config';
 import { v2 as cloudinary } from 'cloudinary';
 
 // If CLOUDINARY_URL is defined, Cloudinary SDK automatically configures itself.
