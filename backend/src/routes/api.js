@@ -795,4 +795,53 @@ router.put('/demo-bookings/:id/status', protect, async (req, res) => {
   }
 });
 
+// @desc    Submit student attendance sheet (Teacher Action)
+// @route   POST /api/attendance
+// @access  Private
+router.post('/attendance', protect, async (req, res) => {
+  const { teacherId, date, records } = req.body;
+
+  try {
+    if (!teacherId || !date || !Array.isArray(records)) {
+      return res.status(400).json({ message: 'Missing teacherId, date, or records' });
+    }
+
+    const teacherObj = await User.findOne({ id: teacherId, role: 'teacher' });
+    if (!teacherObj) {
+      return res.status(404).json({ message: 'Teacher not found' });
+    }
+
+    await Promise.all(
+      records.map(async (rec) => {
+        const student = await User.findOne({ id: rec.studentId, role: 'student' });
+        if (!student) return;
+
+        const newLogItem = {
+          date,
+          status: rec.present ? 'Present' : 'Absent',
+          markedBy: teacherObj.name
+        };
+
+        const oldLogs = student.attendance_log || [];
+        // Prevent duplicate logs for the same day
+        const filteredLogs = oldLogs.filter((log) => log.date !== date);
+        const newLogs = [...filteredLogs, newLogItem];
+
+        // Compute new attendance percentage
+        const presentCount = newLogs.filter((log) => log.status === 'Present').length;
+        const computedPct = Math.round((presentCount / newLogs.length) * 100) + '%';
+
+        student.attendance = computedPct;
+        student.attendance_log = newLogs;
+        
+        await student.save();
+      })
+    );
+
+    res.json({ message: 'Attendance sheet marked and updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;

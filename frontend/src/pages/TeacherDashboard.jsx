@@ -890,14 +890,30 @@ const TeacherDashboard = () => {
     );
   };
 
-  const submitAttendanceSheet = () => {
+  const submitAttendanceSheet = async () => {
     setSubmittingAttendance(true);
-    setTimeout(() => {
-      setSubmittingAttendance(false);
-      setToastMessage('Attendance saved successfully!');
+    try {
+      const records = attendanceRecords.map(rec => ({
+        studentId: rec.id,
+        present: !!rec.present
+      }));
+
+      await api.post('/attendance', {
+        teacherId,
+        date: attendanceDate,
+        records
+      });
+
+      setToastMessage('Attendance saved and synced to database successfully!');
       setShowToast(true);
       triggerConfetti();
-    }, 1000);
+
+      await loadTeacherData(teacherId);
+    } catch (err) {
+      alert(err.message || 'Failed to submit attendance sheet.');
+    } finally {
+      setSubmittingAttendance(false);
+    }
   };
 
   // ----------------------------------------------------
