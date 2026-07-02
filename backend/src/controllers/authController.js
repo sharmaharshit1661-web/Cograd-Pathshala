@@ -6,11 +6,8 @@
  */
 
 import jwt from 'jsonwebtoken';
-import path from 'path';
-import fs from 'fs';
 import User from '../models/User.js';
 import Admin from '../models/Admin.js';
-import { toRelativeUploadPath } from '../utils/paths.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -94,7 +91,10 @@ export const registerUser = async (req, res) => {
       userData.avatar                = extraFields.avatar ||
         'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
 
-      // Build documents array from whatever multer saved
+      // Build documents array from Cloudinary-uploaded files
+      // multer-storage-cloudinary sets:
+      //   f.path     → permanent Cloudinary CDN URL  (e.g. https://res.cloudinary.com/...)
+      //   f.filename → Cloudinary public_id          (used to delete/transform later)
       const uploadedFiles = req.files || {};
       const processedDocs = [];
       let docIndex = 1;
@@ -104,14 +104,14 @@ export const registerUser = async (req, res) => {
         if (fileArr && fileArr.length > 0) {
           const f = fileArr[0];
           processedDocs.push({
-            id:         docIndex++,
-            name:       f.originalname,
-            type:       meta.type,
-            status:     'Under Review',
-            // Store a path relative to backend/ so it works on any machine
-            filePath:   toRelativeUploadPath(f.path),
-            mimetype:   f.mimetype,
-            uploadedAt: new Date(),
+            id:          docIndex++,
+            name:        f.originalname,
+            type:        meta.type,
+            status:      'Under Review',
+            fileUrl:     f.path,        // permanent Cloudinary URL ← used by admin to view
+            publicId:    f.filename,    // Cloudinary public_id    ← used to delete file
+            mimetype:    f.mimetype,
+            uploadedAt:  new Date(),
           });
         }
       }

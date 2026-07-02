@@ -2943,10 +2943,6 @@ const AdminDashboard = () => {
                 <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Credential Documents — View &amp; Toggle Status</h5>
 
                 {(() => {
-                  const API_BASE = import.meta.env.VITE_API_URL
-                    ? import.meta.env.VITE_API_URL.replace('/api', '')
-                    : 'https://cograd-pathshala-ygyi.onrender.com';
-
                   // Map each doc key to the matching uploaded file from teacher.documents
                   const TYPE_MAP = {
                     degree:     (d) => d.type === 'Academic'   || d.name?.toLowerCase().includes('degree'),
@@ -2960,13 +2956,12 @@ const AdminDashboard = () => {
                     { key: 'aadhar',     label: 'Aadhaar Identity Card',       icon: '🪪', info: 'UIDAI 12-digit unique ID verification' },
                     { key: 'experience', label: 'Experience Letter',            icon: '📄', info: 'Letter from previous institute or employer' },
                   ].map((doc) => {
-                    const status     = (teacherDocStatus[selectedTeacherDocs.id] || {})[doc.key] || 'Under Review';
-                    const isApproved = status === 'Approved';
+                    const status      = (teacherDocStatus[selectedTeacherDocs.id] || {})[doc.key] || 'Under Review';
+                    const isApproved  = status === 'Approved';
                     const uploadedDoc = uploadedDocs.find(TYPE_MAP[doc.key]);
-                    const fileUrl    = uploadedDoc?.filePath
-                      ? `${API_BASE}/${uploadedDoc.filePath.replace(/\\/g, '/')}`
-                      : null;
-                    const isPdf      = uploadedDoc?.mimetype === 'application/pdf';
+                    // fileUrl is the permanent Cloudinary CDN URL stored in MongoDB
+                    const fileUrl     = uploadedDoc?.fileUrl || null;
+                    const isPdf       = uploadedDoc?.mimetype === 'application/pdf';
 
                     return (
                       <div key={doc.key} className={`p-3 rounded-xl border transition-all ${

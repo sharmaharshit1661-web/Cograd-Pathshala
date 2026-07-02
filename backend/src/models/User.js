@@ -165,13 +165,14 @@ const UserSchema = new mongoose.Schema(
     },
     documents: [
       {
-        id: Number,
-        name: String,
-        type: { type: String },
-        status: { type: String, default: 'Under Review' },
-        filePath: { type: String, default: null },   // server-relative path to uploaded file
-        mimetype: { type: String, default: null },   // e.g. application/pdf, image/jpeg
-        uploadedAt: { type: Date, default: Date.now },
+        id:         Number,
+        name:       String,
+        type:       { type: String },
+        status:     { type: String, default: 'Under Review' },
+        fileUrl:    { type: String, default: null },   // Cloudinary CDN URL (permanent)
+        publicId:   { type: String, default: null },   // Cloudinary public_id (for deletion)
+        mimetype:   { type: String, default: null },
+        uploadedAt: { type: Date,   default: Date.now },
       },
     ],
     tempPassword: {
