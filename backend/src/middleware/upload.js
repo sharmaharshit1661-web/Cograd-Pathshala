@@ -18,6 +18,7 @@
  */
 
 import multer from 'multer';
+import path from 'path';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import cloudinary from '../config/cloudinary.js';
 
@@ -35,17 +36,21 @@ const storage = new CloudinaryStorage({
   params: (req, file) => {
     const teacherId = req._teacherId || `teacher_${Date.now()}`;
     const prefix    = FIELD_PREFIX[file.fieldname] || file.fieldname;
-    const safeName  = file.originalname
-      .replace(/\.[^/.]+$/, '')           // strip extension
+    const ext       = path.extname(file.originalname).toLowerCase();
+    const safeName  = path.basename(file.originalname, ext)
       .replace(/[^a-zA-Z0-9._-]/g, '_'); // sanitise
+
+    const isPdf = file.mimetype === 'application/pdf' || ext === '.pdf';
 
     return {
       folder        : `cograd-pathshala/teacher-docs/${teacherId}`,
       public_id     : `${prefix}_${Date.now()}_${safeName}`,
-      resource_type : 'auto',             // handles PDFs + images
-      allowed_formats: ALLOWED_FORMATS,
-      // Keep original quality for documents
-      transformation: [{ quality: 'auto' }],
+      resource_type : isPdf ? 'raw' : 'image',
+      // If it's a PDF, we must not supply allowed_formats or image-only transformations
+      ...(isPdf ? {} : {
+        allowed_formats: ['jpg', 'jpeg', 'png'],
+        transformation: [{ quality: 'auto' }],
+      })
     };
   },
 });
