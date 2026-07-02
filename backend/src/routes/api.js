@@ -216,7 +216,7 @@ teacher has been verified and approved by our admin team.
 
 Here are your login credentials:
 ------------------------------------------
-Login URL: http://localhost:5173/login
+Login URL: http://localhost:3000/login
 Email:     ${email}
 Password:  ${password}
 ------------------------------------------
