@@ -50,16 +50,81 @@ const UserSchema = new mongoose.Schema(
     },
     state: String,
     city: String,
+    locality: {
+      type: String,
+      default: null,
+    },
+    matching_eligible: {
+      type: Boolean,
+      default: true,
+    },
     avatar: String,
     parentName: String,
     parentPhone: String,
     address: String,
     attendance: {
       type: String,
-      default: '100%',
+      default: 'N/A',
     },
     joinDate: String,
     tuitionSlot: String,
+    syllabus_chapters: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    study_goals: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    video_notes: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    ai_chat_history: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    teacher_doubts: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    study_hours_log: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    attendance_log: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    parent_assigned_test: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    parent_assigned_test_result: {
+      type: String,
+      default: null,
+    },
+    homework_submissions: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+
+    // Parent fields
+    relationship: String,       // 'Mother' | 'Father' | 'Guardian'
+    childName: String,
+    childDob: Date,
+    childStandard: String,      // 'Class 1' through 'Class 12'
+    childSubjects: [String],
+    childCity: String,
+    childLocality: String,
+    childMatchingEligible: {
+      type: Boolean,
+      default: true,
+    },
+    childTuitionMode: {
+      type: String,
+      enum: ['home', 'online', 'either'],
+    },
 
     // Teacher fields
     qualifications: String,
@@ -112,6 +177,22 @@ const UserSchema = new mongoose.Schema(
     },
     free_slots: {
       type: [String],
+      default: [],
+    },
+    timetable: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    daily_reports: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    assignments: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    submissions: {
+      type: [mongoose.Schema.Types.Mixed],
       default: [],
     },
     login_attempts: {

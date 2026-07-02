@@ -379,19 +379,24 @@ router.get('/teachers/suggested/:studentId', protect, async (req, res) => {
       return res.status(404).json({ message: 'Student not found' });
     }
 
+    // If student is not matching eligible, return empty array (waitlist)
+    if (student.matching_eligible === false) {
+      return res.json([]);
+    }
+
     const teachers = await User.find({ role: 'teacher' });
     const studentGrade = student.standard ? student.standard.split(' ')[0] : 'Class 10';
 
     // Filter teachers
     const eligibleTeachers = teachers.filter((t) => {
-      // 1. Verification Check
+      // 1. City Match (case-insensitive) — cheapest filter, runs first
+      if (!t.city || !student.city || t.city.toLowerCase() !== student.city.toLowerCase()) return false;
+
+      // 2. Verification Check
       if (t.verification_status !== 'Verified') return false;
 
-      // 2. Capacity Check
+      // 3. Capacity Check
       if ((t.current_student_count || 0) >= (t.max_student_capacity || 5)) return false;
-
-      // 3. City Match (case-insensitive)
-      if (!t.city || !student.city || t.city.toLowerCase() !== student.city.toLowerCase()) return false;
 
       // 4. Subject Match
       const hasSubjectMatch = student.subjects.some((sub) =>
@@ -482,19 +487,72 @@ router.get('/teachers/suggested/:studentId', protect, async (req, res) => {
 // PARENT ROUTES
 // ==========================================
 
-// @desc    Get children for a parent (match by parentPhone)
-// @route   GET /api/parents/children
+// @desc    Get all parents
+// @route   GET /api/parents
 // @access  Private
+router.get('/parents', protect, async (req, res) => {
+  try {
+    const parents = await User.find({ role: 'parent' });
+    res.json(parents);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 router.get('/parents/children', protect, async (req, res) => {
   try {
     // Match students where parentPhone matches the logged-in user's phone
-    const children = await User.find({
+    let children = await User.find({
       role: 'student',
       parentPhone: req.user.phone
     });
+
+    if (children.length === 0 && req.user.childName) {
+      // Return a dynamically constructed student record based on parent's child fields
+      children = [{
+        id: `stu_${req.user.id}_child`,
+        name: req.user.childName,
+        role: 'student',
+        standard: req.user.childStandard,
+        subjects: req.user.childSubjects,
+        city: req.user.childCity,
+        locality: req.user.childLocality,
+        tuitionMode: req.user.childTuitionMode,
+        matching_eligible: req.user.childMatchingEligible,
+        test_score: req.user.test_score, // parent's test_score is the child's score
+        test_completed_at: req.user.test_completed_at,
+        status: req.user.status,
+        parentName: req.user.name,
+        parentPhone: req.user.phone,
+        address: `House No. 101, Near Main Chowk, ${req.user.childCity}`
+      }];
+    }
+
     res.json(children);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Update a parent
+// @route   PUT /api/parents/:id
+// @access  Private
+router.put('/parents/:id', protect, async (req, res) => {
+  try {
+    const parent = await User.findOne({ id: req.params.id, role: 'parent' });
+    if (!parent) {
+      return res.status(404).json({ message: 'Parent not found' });
+    }
+
+    // Update fields
+    Object.keys(req.body).forEach((key) => {
+      parent[key] = req.body[key];
+    });
+
+    const updatedParent = await parent.save();
+    res.json(updatedParent);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 });
 

@@ -101,17 +101,29 @@ export const findSuggestedTeachers = (student) => {
   const teachers = getTeachers();
   const studentGrade = student.standard ? student.standard.split(' ')[0] : 'Class 10'; 
 
+  // If student is not matching eligible, return empty array
+  if (student.matching_eligible === false) {
+    return [];
+  }
+
   // Filter teachers
   const eligibleTeachers = teachers.filter(t => {
-    if (t.verification_status !== 'Verified') return false;
-    if (t.current_student_count >= t.max_student_capacity) return false;
-    if (t.city && student.city && t.city.toLowerCase() !== student.city.toLowerCase()) return false;
+    // 1. City Match (case-insensitive) — cheapest filter, runs first
+    if (!t.city || !student.city || t.city.trim().toLowerCase() !== student.city.trim().toLowerCase()) return false;
 
+    // 2. Verification Check
+    if (t.verification_status !== 'Verified') return false;
+
+    // 3. Capacity Check
+    if (t.current_student_count >= t.max_student_capacity) return false;
+
+    // 4. Subject Match
     const hasSubjectMatch = student.subjects.some(sub => 
       t.subjects_taught && t.subjects_taught.some(ts => ts.toLowerCase() === sub.toLowerCase())
     );
     if (!hasSubjectMatch) return false;
 
+    // 5. Grade level Qualification Match
     const isGradeQualified = t.grade_levels_qualified && t.grade_levels_qualified.some(g => g.toLowerCase() === studentGrade.toLowerCase());
     if (!isGradeQualified) return false;
 

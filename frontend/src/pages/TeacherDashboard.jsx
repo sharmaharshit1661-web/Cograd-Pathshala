@@ -439,6 +439,7 @@ const TeacherDashboard = () => {
 
   // 10. Assignments State
   const [assignments, setAssignments] = useState([]);
+  const [doubtAnswers, setDoubtAnswers] = useState({});
 
   useEffect(() => {
     if (teacherId) {
@@ -1513,6 +1514,7 @@ const TeacherDashboard = () => {
     const isDemo = subTabs.classroom === 'demo_bookings';
     const isDLR = subTabs.classroom === 'daily_reports';
     const isSchedule = subTabs.classroom === 'content_schedule';
+    const isDoubtDesk = subTabs.classroom === 'doubts_desk';
 
     const handleCreateBatch = (e) => {
       e.preventDefault();
@@ -1567,7 +1569,8 @@ const TeacherDashboard = () => {
               { id: 'batches', label: 'My Students' },
               { id: 'demo_bookings', label: 'Demo Bookings' },
               { id: 'content_schedule', label: '📅 Schedule' },
-              { id: 'daily_reports', label: '📋 Daily Reports' }
+              { id: 'daily_reports', label: '📋 Daily Reports' },
+              { id: 'doubts_desk', label: '❓ Doubts Desk' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -2118,7 +2121,143 @@ const TeacherDashboard = () => {
                 </div>
               )}
             </div>
+          </div>
+        )}
 
+        {isDoubtDesk && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-6">
+              <div>
+                <h3 className="text-base font-black text-slate-800">Student Doubts Desk</h3>
+                <p className="text-xs text-slate-400 font-semibold mt-1">
+                  Answer questions and clarify concepts raised by your matched students in real-time.
+                </p>
+              </div>
+
+              {(() => {
+                const allStudentDoubts = [];
+                students.forEach(student => {
+                  if (student.teacher_doubts && Array.isArray(student.teacher_doubts)) {
+                    student.teacher_doubts.forEach(doubt => {
+                      if (doubt.teacherName === teacherProfile.name) {
+                        allStudentDoubts.push({
+                          ...doubt,
+                          studentId: student.id,
+                          studentName: student.name
+                        });
+                      }
+                    });
+                  }
+                });
+
+                allStudentDoubts.sort((a, b) => new Date(b.askedAt) - new Date(a.askedAt));
+
+                if (allStudentDoubts.length === 0) {
+                  return (
+                    <div className="py-12 text-center bg-slate-50 rounded-2xl border border-slate-100/50 space-y-2">
+                      <div className="text-3xl">❓</div>
+                      <p className="text-xs font-bold text-slate-400">
+                        No student doubts registered yet. Doubts asked by your matched students will appear here.
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+                    {allStudentDoubts.map((doubt) => {
+                      const isPending = doubt.status !== 'Resolved';
+                      return (
+                        <div key={doubt.id} className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex flex-col sm:flex-row justify-between gap-4">
+                          <div className="space-y-2 max-w-xl">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg">
+                                {doubt.studentName}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-bold">
+                                Asked: {new Date(doubt.askedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg ${
+                                isPending ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                              }`}>
+                                {doubt.status}
+                              </span>
+                            </div>
+                            <p className="text-xs font-black text-slate-800 leading-relaxed">
+                              Question: "{doubt.question}"
+                            </p>
+                            {!isPending && (
+                              <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
+                                <p className="text-[9px] font-black text-emerald-700 uppercase tracking-wide">Your Solution</p>
+                                <p className="text-xs font-semibold text-slate-700 mt-1">"{doubt.answer}"</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {isPending && (
+                            <form
+                              onSubmit={async (e) => {
+                                e.preventDefault();
+                                const ansText = doubtAnswers[doubt.id];
+                                if (!ansText || !ansText.trim()) return;
+                                
+                                try {
+                                  // Find the matched student object in our state
+                                  const studentMatch = students.find(s => s.id === doubt.studentId);
+                                  if (!studentMatch) return;
+                                  const originalStudent = studentMatch.originalStudent;
+                                  
+                                  const updatedDoubts = originalStudent.teacher_doubts.map(d => {
+                                    if (d.id === doubt.id) {
+                                      return {
+                                        ...d,
+                                        status: 'Resolved',
+                                        answer: ansText.trim(),
+                                        resolvedAt: new Date().toISOString()
+                                      };
+                                    }
+                                    return d;
+                                  });
+
+                                  await api.put(`/students/${doubt.studentId}`, {
+                                    teacher_doubts: updatedDoubts
+                                  });
+
+                                  triggerToast('Solution sent successfully to student dashboard!');
+                                  setDoubtAnswers(prev => {
+                                    const copy = { ...prev };
+                                    delete copy[doubt.id];
+                                    return copy;
+                                  });
+                                  await loadTeacherData(teacherId);
+                                } catch (err) {
+                                  alert(err.message || 'Failed to submit doubt solution.');
+                                }
+                              }}
+                              className="sm:w-64 flex flex-col gap-2 shrink-0 justify-end"
+                            >
+                              <textarea
+                                required
+                                value={doubtAnswers[doubt.id] || ''}
+                                onChange={(e) => setDoubtAnswers(prev => ({ ...prev, [doubt.id]: e.target.value }))}
+                                placeholder="Type your solution/answer here..."
+                                className="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none min-h-[60px]"
+                              />
+                              <button
+                                type="submit"
+                                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[10px] rounded-xl shadow-md transition-all cursor-pointer border-0"
+                              >
+                                Send Solution
+                              </button>
+                            </form>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         )}
 
@@ -2702,7 +2841,7 @@ const TeacherDashboard = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Class Batch</label>
                 <select 
@@ -3126,7 +3265,7 @@ const TeacherDashboard = () => {
                 </div>
               ) : (
                 <form onSubmit={handleSaveProfile} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-500 mb-1.5">Full Name</label>
                       <input 
@@ -3145,7 +3284,7 @@ const TeacherDashboard = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-500 mb-1.5">Hourly Rate Fee</label>
                       <input 

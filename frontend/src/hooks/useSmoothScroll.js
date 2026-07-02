@@ -7,7 +7,9 @@ let rafId = null;
 
 const noSmoothScrollPaths = [
   '/login',
+  '/register',
   '/register/student',
+  '/register/parent',
   '/register/teacher',
   '/teacher/dashboard',
   '/admin/dashboard',

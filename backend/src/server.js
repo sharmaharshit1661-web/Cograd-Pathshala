@@ -82,7 +82,7 @@ const seedData = async () => {
           parentName: 'Mr. Alok Sharma',
           parentPhone: '9876500999',
           address: 'House No. 42, Sector 4, Shastri Nagar, Meerut',
-          attendance: '91%',
+          attendance: 'N/A',
           joinDate: '12 April 2026',
           tuitionSlot: 'Evening (04:00 PM - 05:00 PM)',
           test_score: null,

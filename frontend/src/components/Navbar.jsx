@@ -288,7 +288,7 @@ const Navbar = () => {
               <p className="text-sm text-neutral-500 mt-1">Select your role to continue</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
               {ROLES.map(({ id, label, desc, icon: Icon, bg, text, border }) => (
                 <button
                   key={id}
@@ -296,13 +296,13 @@ const Navbar = () => {
                     setModalOpen(false);
                     navigate('/login', { state: { role: id } });
                   }}
-                  className={`role-card p-4.5 rounded-xl border-2 bg-white text-left cursor-pointer transition-all ${border}`}
+                  className={`role-card p-3 sm:p-4.5 rounded-xl border-2 bg-white text-left cursor-pointer transition-all ${border}`}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${bg}`}>
-                    <Icon className={`w-5 h-5 ${text}`} />
+                  <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 ${bg}`}>
+                    <Icon className={`w-4.5 h-4.5 sm:w-5 sm:h-5 ${text}`} />
                   </div>
-                  <p className={`font-semibold text-sm text-neutral-800`}>{label}</p>
-                  <p className="text-[11.5px] text-neutral-400 mt-0.5 leading-snug">{desc}</p>
+                  <p className={`font-semibold text-xs sm:text-sm text-neutral-800`}>{label}</p>
+                  <p className="text-[10px] sm:text-[11.5px] text-neutral-400 mt-0.5 leading-snug">{desc}</p>
                 </button>
               ))}
             </div>
@@ -310,11 +310,11 @@ const Navbar = () => {
             <p className="text-center text-xs text-neutral-400 mt-5">
               New?{' '}
               <Link
-                to="/register/student"
+                to="/register"
                 onClick={() => setModalOpen(false)}
                 className="text-primary-600 font-medium hover:underline"
               >
-                Create a student account
+                Create an account
               </Link>
             </p>
           </div>

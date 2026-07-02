@@ -63,6 +63,14 @@ router.post('/register', async (req, res) => {
       ...extraFields,
     };
 
+    // Normalize city values to lowercase for consistent storage
+    if (userData.city) {
+      userData.city = userData.city.toLowerCase();
+    }
+    if (userData.childCity) {
+      userData.childCity = userData.childCity.toLowerCase();
+    }
+
     // If teacher, set default fields
     if (role === 'teacher') {
       userData.verification_status = extraFields.verification_status || 'Pending';
@@ -85,6 +93,34 @@ router.post('/register', async (req, res) => {
       userData.attendance = '100%';
       userData.joinDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
       userData.tuitionSlot = extraFields.tuitionSlot || 'Evening (05:00 PM - 06:30 PM)';
+      userData.locality = extraFields.locality || null;
+      // If city is 'Other', set matching_eligible to false and status to waitlist
+      if (userData.city && userData.city.toLowerCase() === 'other') {
+        userData.matching_eligible = false;
+        userData.status = 'waitlist';
+        userData.test_score = null;
+        userData.test_completed_at = null;
+      }
+    }
+
+    // If parent, set default fields
+    if (role === 'parent') {
+      userData.status = extraFields.status || 'pending_match';
+      userData.relationship = extraFields.relationship;
+      userData.childName = extraFields.childName;
+      userData.childDob = extraFields.childDob;
+      userData.childStandard = extraFields.childStandard;
+      userData.childSubjects = extraFields.childSubjects;
+      userData.childCity = extraFields.childCity;
+      userData.childLocality = extraFields.childLocality;
+      userData.childTuitionMode = extraFields.childTuitionMode;
+      // If child city is 'Other', set matching_eligible to false and status to waitlist
+      if (userData.childCity && userData.childCity.toLowerCase() === 'other') {
+        userData.childMatchingEligible = false;
+        userData.status = 'waitlist';
+        userData.test_score = null;
+        userData.test_completed_at = null;
+      }
     }
 
     const user = await User.create(userData);

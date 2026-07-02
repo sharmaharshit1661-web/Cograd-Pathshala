@@ -23,8 +23,12 @@ import {
   DollarSign,
   FileText,
   Eye,
-  ShieldCheck
+  ShieldCheck,
+  AlertTriangle,
+  Edit3,
+  Save
 } from 'lucide-react';
+import { getDiagnosticQuestions } from '../utils/mockDb';
 
 // Helper to safely resolve icons stored as string or serialized objects from localStorage
 const getScheduleIcon = (icon) => {
@@ -51,6 +55,13 @@ const ParentDashboard = () => {
   const [toastMessage, setToastMessage] = useState('');
   // Parent profile metadata - load from API
   const [parentName, setParentName] = useState(localStorage.getItem('cograd_parent_name') || 'Mrs. Sharma');
+  const [parentUser, setParentUser] = useState(null);
+  
+  // Child edit & waitlist states
+  const [isEditingChild, setIsEditingChild] = useState(false);
+  const [editChildData, setEditChildData] = useState({});
+  const [showDiagnosticTest, setShowDiagnosticTest] = useState(false);
+  const [placementAnswers, setPlacementAnswers] = useState({});
 
   // Load real parent data from backend
   useEffect(() => {
@@ -58,9 +69,12 @@ const ParentDashboard = () => {
       try {
         if (!localStorage.getItem('cograd_token')) return;
         const user = await api.get('/auth/me');
-        if (user?.name) {
-          setParentName(user.name);
-          localStorage.setItem('cograd_parent_name', user.name);
+        if (user) {
+          setParentUser(user);
+          if (user.name) {
+            setParentName(user.name);
+            localStorage.setItem('cograd_parent_name', user.name);
+          }
         }
         
         // Load children and teachers from backend
@@ -113,6 +127,11 @@ const ParentDashboard = () => {
               return 'A-';
             };
 
+            let attendanceAvg = 'N/A';
+            if (child.attendance && child.attendance !== 'N/A') {
+              attendanceAvg = parseInt(child.attendance, 10);
+            }
+
             const subjectsProgress = childSubjects.map((subName) => {
               const matchedT = mappedTeachers.find(t => t.subject === subName);
               const grade = getSubjectGrade(subName);
@@ -120,14 +139,11 @@ const ParentDashboard = () => {
               return {
                 name: subName,
                 teacher: matchedT ? matchedT.name : 'Class Tutor',
-                attendance: 90 + (subName.length % 9),
+                attendance: attendanceAvg !== 'N/A' ? attendanceAvg : 92,
                 grade: grade,
                 trend: [score - 15, score - 10, score - 5, score]
               };
             });
-
-            const attendanceSum = subjectsProgress.reduce((sum, s) => sum + s.attendance, 0);
-            const attendanceAvg = subjectsProgress.length > 0 ? Math.round(attendanceSum / subjectsProgress.length) : 92;
 
             const grades = subjectsProgress.map(s => s.grade);
             const averageGrade = grades.includes('A+') ? 'A' : grades.includes('A') ? 'A-' : 'B+';
@@ -218,7 +234,7 @@ const ParentDashboard = () => {
   const isValidStudent = (s) => {
     if (!s) return false;
     if (typeof s.name !== 'string' || typeof s.class !== 'string' || typeof s.avatar !== 'string') return false;
-    if (typeof s.feeDue !== 'number' || typeof s.feeStatus !== 'string' || typeof s.attendance !== 'number') return false;
+    if (typeof s.feeDue !== 'number' || typeof s.feeStatus !== 'string' || (typeof s.attendance !== 'number' && typeof s.attendance !== 'string')) return false;
     if (!Array.isArray(s.teachers) || !Array.isArray(s.subjects) || !Array.isArray(s.homeworks) || !Array.isArray(s.schedule) || !Array.isArray(s.activities) || !Array.isArray(s.chatHistory)) return false;
     
     // Validate each subject contains a trend score array
@@ -387,6 +403,33 @@ const ParentDashboard = () => {
     setTimeout(() => {
       navigate('/login');
     }, 800);
+  };
+
+  const handleSaveChildDetails = async (e) => {
+    if (e) e.preventDefault();
+    try {
+      const payload = { ...parentUser, ...editChildData };
+
+      // Handle city waitlist transitions
+      if (editChildData.childCity === 'Other') {
+        payload.childMatchingEligible = false;
+        payload.status = 'waitlist';
+      } else if (parentUser.childCity === 'Other' && (editChildData.childCity === 'Meerut' || editChildData.childCity === 'Allahabad')) {
+        payload.childMatchingEligible = true;
+        payload.status = 'pending_match';
+      }
+
+      await api.put(`/parents/${parentUser.id}`, payload);
+      setIsEditingChild(false);
+      triggerToast('Child details updated successfully!');
+      
+      // Page reload to refresh all context safely
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err) {
+      alert(err.message || 'Failed to update child details.');
+    }
   };
 
   // Fee Payment handler
@@ -697,12 +740,249 @@ const ParentDashboard = () => {
         }
       >
         <div key={activeTab} className="tab-content-enter h-full w-full">
-          {/* ================================== OVERVIEW TAB ================================== */}
-          {activeTab === 'Overview' && (
-            <div className="space-y-6">
+          {parentUser?.childMatchingEligible === false || parentUser?.status === 'waitlist' ? (
+            showDiagnosticTest ? (
+              <div className="max-w-2xl mx-auto bg-white rounded-3xl border border-slate-100 shadow-md p-6 sm:p-8 no-glass">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                  <div className="text-left">
+                    <span className="text-[10px] bg-blue-600 text-white font-black px-2 py-0.5 rounded-lg uppercase tracking-wider">Placement Test</span>
+                    <h3 className="text-lg font-black text-slate-805 mt-1">Assess Child's Level</h3>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                      This short test helps us understand <strong>{parentUser.childName}</strong>'s level in <strong>{parentUser.childSubjects?.join(', ') || 'selected subjects'}</strong>
+                    </p>
+                  </div>
+                  <div className="bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-2xl shrink-0">
+                    <span className="text-[10px] text-amber-700 font-black block uppercase tracking-wide">
+                      {getDiagnosticQuestions(parentUser.childStandard || 'Class 10').reduce((sum, q) => sum + q.marks, 0)} Marks Total
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-5 text-left max-h-[450px] overflow-y-auto pr-2">
+                  {getDiagnosticQuestions(parentUser.childStandard || 'Class 10').map((q, qidx) => (
+                    <div key={q.id} className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg">{q.subject} • {q.marks} Marks</span>
+                        <div className="text-xs font-bold text-slate-850">Question {qidx + 1}. {q.text}</div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {q.options.map((opt) => {
+                          const isSelected = placementAnswers[q.id] === opt;
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => setPlacementAnswers(prev => ({ ...prev, [q.id]: opt }))}
+                              className={`text-left text-xs font-semibold py-2.5 px-3.5 rounded-xl border transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                  : 'bg-white text-slate-650 border-slate-150 hover:bg-slate-50'
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-slate-100 pt-5 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-400 font-bold">
+                    Answered {Object.keys(placementAnswers).filter(k => placementAnswers[k] !== '').length} of {getDiagnosticQuestions(parentUser.childStandard || 'Class 10').length} questions
+                  </span>
+                  <button
+                    type="button"
+                    disabled={!getDiagnosticQuestions(parentUser.childStandard || 'Class 10').every(q => placementAnswers[q.id] !== undefined && placementAnswers[q.id] !== '')}
+                    onClick={async () => {
+                      const qs = getDiagnosticQuestions(parentUser.childStandard || 'Class 10');
+                      let mathScore = 0, scienceScore = 0, mathTotal = 0, scienceTotal = 0;
+                      qs.forEach(q => {
+                        const isCorrect = placementAnswers[q.id] === q.correct;
+                        const pts = isCorrect ? q.marks : 0;
+                        if (q.subject === 'Mathematics') { mathScore += pts; mathTotal += q.marks; }
+                        else if (q.subject === 'Science') { scienceScore += pts; scienceTotal += q.marks; }
+                      });
+                      const scores = {
+                        Mathematics: Math.round((mathScore / mathTotal) * 100) || 0,
+                        Science: Math.round((scienceScore / scienceTotal) * 100) || 0,
+                        mathMarksText: `${mathScore}/${mathTotal}`,
+                        scienceMarksText: `${scienceScore}/${scienceTotal}`,
+                        totalMarksText: `${mathScore + scienceScore}/${mathTotal + scienceTotal}`
+                      };
+                      try {
+                        const updated = {
+                          ...parentUser,
+                          test_score: scores,
+                          test_completed_at: new Date().toISOString(),
+                          status: 'pending_match'
+                        };
+                        await api.put(`/parents/${parentUser.id}`, updated);
+                        setParentUser(updated);
+                        setShowDiagnosticTest(false);
+                        triggerToast('Child placement test completed successfully!');
+                        setTimeout(() => {
+                          window.location.reload();
+                        }, 1000);
+                      } catch (err) {
+                        alert(err.message || 'Failed to submit test score.');
+                      }
+                    }}
+                    className={`px-6 py-3 font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer ${
+                      getDiagnosticQuestions(parentUser.childStandard || 'Class 10').every(q => placementAnswers[q.id] !== undefined && placementAnswers[q.id] !== '')
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
+                        : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                    }`}
+                  >
+                    Submit & Complete Setup
+                    <CheckCircle2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="max-w-2xl mx-auto space-y-6">
+                <div className="bg-amber-50/50 border border-amber-200 rounded-3xl p-6 sm:p-8 text-center space-y-6">
+                  <div className="w-16 h-16 bg-amber-50 border border-amber-100 rounded-full flex items-center justify-center mx-auto">
+                    <AlertTriangle className="w-9 h-9 text-amber-500" />
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-800 tracking-tight">Your Child is on Our Waitlist!</h3>
+                    <p className="text-slate-500 text-xs mt-2">
+                      Welcome to Cograd, parent of <strong>{parentUser.childName}</strong>!
+                    </p>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-5 border border-slate-100 text-left">
+                    <p className="text-xs text-slate-650 font-semibold leading-relaxed">
+                      Cograd Pathshala currently operates in <strong>Meerut</strong> and <strong>Allahabad</strong>. We've recorded child's location preference for <strong>{parentUser.childCity || 'your city'}</strong>, and we'll notify you as soon as we expand to your area.
+                    </p>
+                  </div>
+
+                  {!isEditingChild ? (
+                    <div className="space-y-4">
+                      <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 text-left">
+                        <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block mb-2">Child's Details</span>
+                        <div className="space-y-1.5 text-xs text-slate-650">
+                          <p><span className="font-bold text-slate-800">Name:</span> {parentUser.childName}</p>
+                          <p><span className="font-bold text-slate-800">Class:</span> {parentUser.childStandard}</p>
+                          <p><span className="font-bold text-slate-800">City:</span> {parentUser.childCity}</p>
+                          {parentUser.childLocality && <p><span className="font-bold text-slate-800">Locality:</span> {parentUser.childLocality}</p>}
+                          <p><span className="font-bold text-slate-800">Subjects:</span> {parentUser.childSubjects?.join(', ')}</p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setEditChildData({
+                            childName: parentUser.childName,
+                            childStandard: parentUser.childStandard,
+                            childCity: parentUser.childCity,
+                            childLocality: parentUser.childLocality,
+                          });
+                          setIsEditingChild(true);
+                        }}
+                        className="w-full btn-primary py-3.5 text-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                        Edit Child Details / Change City
+                      </button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSaveChildDetails} className="bg-white rounded-2xl p-5 border border-slate-100 text-left space-y-4">
+                      <span className="text-xs font-black text-slate-850 block">Update Child's Details</span>
+                      
+                      <div>
+                        <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Child's Full Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={editChildData.childName}
+                          onChange={(e) => setEditChildData(prev => ({ ...prev, childName: e.target.value }))}
+                          className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">City</label>
+                          <select
+                            value={editChildData.childCity}
+                            onChange={(e) => setEditChildData(prev => ({ ...prev, childCity: e.target.value }))}
+                            className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
+                          >
+                            <option value="Meerut">Meerut</option>
+                            <option value="Allahabad">Allahabad</option>
+                            <option value="Other">Other</option>
+                          </select>
+                          {editChildData.childCity === 'Other' && (
+                            <p className="text-[10px] text-amber-600 font-semibold mt-1 leading-relaxed">
+                              ⚠️ Cograd operates in Meerut and Allahabad. We'll add your child to our waitlist!
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Area / Locality</label>
+                          <input
+                            type="text"
+                            value={editChildData.childLocality || ''}
+                            onChange={(e) => setEditChildData(prev => ({ ...prev, childLocality: e.target.value }))}
+                            placeholder="e.g. Civil Lines, Sadar"
+                            className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingChild(false)}
+                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-655 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1"
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                          Save Updates
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </div>
+            )
+          ) : (
+            <>
+              {/* Upgrade test prompt */}
+              {parentUser?.childMatchingEligible && !parentUser?.test_score && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center space-y-4 mb-6">
+                  <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
+                  <div>
+                    <h4 className="text-base font-black text-slate-805">Placement Assessment Required</h4>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">Please complete {parentUser.childName}'s Diagnostic Placement Test to find nearby tutors matching their level.</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setPlacementAnswers({});
+                      setShowDiagnosticTest(true);
+                    }}
+                    className="btn-primary py-2.5 px-6 text-xs flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Start Placement Test
+                  </button>
+                </div>
+              )}
+              {/* ================================== OVERVIEW TAB ================================== */}
+              {activeTab === 'Overview' && (
+                <div className="space-y-6">
               
               {/* Smart Attendance Alert Banner */}
-              {activeStudent.attendance < 90 ? (
+              {typeof activeStudent.attendance === 'number' && activeStudent.attendance < 90 ? (
                 <div className="bg-gradient-to-r from-rose-500/10 to-amber-500/10 border border-rose-200 rounded-3xl p-4 flex items-center justify-between gap-4 animate-slide-up">
                   <div className="flex items-center space-x-3">
                     <div className="p-2 bg-rose-100 text-rose-700 rounded-xl border border-rose-200 shrink-0">
@@ -800,7 +1080,9 @@ const ParentDashboard = () => {
                   {/* Attendance badge */}
                   <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 hover:scale-[1.02] transition-transform shadow-inner flex flex-col items-center text-center justify-center">
                     <TrendingUp className="w-5 h-5 text-emerald-500 mb-1" />
-                    <span className="text-lg font-black text-slate-800">{activeStudent.attendance}%</span>
+                    <span className="text-lg font-black text-slate-800">
+                      {activeStudent.attendance === 'N/A' ? 'Pending' : `${activeStudent.attendance}%`}
+                    </span>
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Attendance</span>
                   </div>
 
@@ -1650,7 +1932,7 @@ const ParentDashboard = () => {
                 )}
 
                 {reports.length === 0 ? (
-                  <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-12 text-center space-y-3">
+                  <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 sm:p-12 text-center space-y-3">
                     <div className="text-5xl">📋</div>
                     <h3 className="text-sm font-black text-slate-700">No Reports Yet</h3>
                     <p className="text-xs text-slate-400 font-semibold max-w-sm mx-auto">Once your child's teacher submits a daily learning report after a session, it will appear here with full details.</p>
@@ -1761,7 +2043,8 @@ const ParentDashboard = () => {
             );
           })()}
 
-
+        </>
+        )}
         </div>
       </DashboardShell>
 
@@ -2036,7 +2319,7 @@ const ParentDashboard = () => {
               </div>
 
               {/* Date & Time */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 mb-1">Meeting Date</label>
                   <input

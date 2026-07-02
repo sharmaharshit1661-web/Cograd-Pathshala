@@ -203,18 +203,18 @@ const Student = () => {
 
             {/* Search Box */}
             <div className="max-w-2xl mx-auto mb-8 animate-slide-up">
-              <div className="relative bg-white rounded-2xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(37,99,235,0.08)] transition-all duration-300 focus-within:shadow-[0_8px_30px_rgb(37,99,235,0.1)] focus-within:border-primary-400 focus-within:scale-[1.01] p-1.5 flex items-center">
-                <div className="flex items-center pl-4 flex-1">
-                  <Search className="w-5 h-5 text-primary-500 mr-3 flex-shrink-0" />
+              <div className="relative bg-white rounded-2xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(37,99,235,0.08)] transition-all duration-300 focus-within:shadow-[0_8px_30px_rgb(37,99,235,0.1)] focus-within:border-primary-400 focus-within:scale-[1.01] p-1.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="flex items-center pl-3 sm:pl-4 flex-1">
+                  <Search className="w-5 h-5 text-primary-500 mr-2.5 sm:mr-3 flex-shrink-0" />
                   <input
                     type="text"
                     placeholder="Search for tutors by subject, name, or specialty..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full py-3 bg-transparent text-gray-800 placeholder-gray-400 focus:outline-none text-base"
+                    className="w-full py-2.5 sm:py-3 bg-transparent text-gray-800 placeholder-gray-405 focus:outline-none text-sm sm:text-base"
                   />
                 </div>
-                <button className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-bold px-6 py-3 rounded-xl transition-all duration-200 btn-shimmer cursor-pointer active:scale-95 flex items-center gap-2 shadow-sm">
+                <button className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-bold px-6 py-3 rounded-xl transition-all duration-200 btn-shimmer cursor-pointer active:scale-95 flex items-center justify-center gap-2 shadow-sm">
                   <Search className="w-4 h-4" />
                   <span>Search</span>
                 </button>
@@ -263,7 +263,7 @@ const Student = () => {
             )}
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto animate-slide-up">
-              <Link to="/register/student" className="btn-primary flex-1 py-3 btn-shimmer active:scale-95">
+              <Link to="/register" className="btn-primary flex-1 py-3 btn-shimmer active:scale-95">
                 Get Started
               </Link>
               <a href="#tutors-list" className="btn-outline-primary flex-1 py-3 btn-shimmer active:scale-95">
@@ -425,7 +425,7 @@ const Student = () => {
           <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
             Join thousands of students who have improved their grades and confidence with our expert home tutors.
           </p>
-          <Link to="/register/student" className="btn-slide-white px-8 py-4 text-lg btn-shimmer active:scale-95">
+          <Link to="/register" className="btn-slide-white px-8 py-4 text-lg btn-shimmer active:scale-95">
             Find Your Tutor
           </Link>
         </div>

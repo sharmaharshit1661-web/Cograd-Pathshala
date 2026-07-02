@@ -37,7 +37,8 @@ import {
   Download,
   Clock,
   User,
-  Map
+  Map,
+  List
 } from 'lucide-react';
 
 const InlineGoogleMap = ({ address, label }) => {
@@ -118,6 +119,7 @@ const AdminDashboard = () => {
   // Student roster state - starts empty, populated from backend via syncWithBackend
   const [students, setStudents] = useState([]);
   const [demoBookings, setDemoBookings] = useState([]);
+  const [parents, setParents] = useState([]);
   const [selectedTeachers, setSelectedTeachers] = useState({});
 
   const handleTeacherChange = (bookingId, teacherId) => {
@@ -157,6 +159,15 @@ const AdminDashboard = () => {
     setTeachers(normalizedTeachers);
   };
 
+  const fetchParents = async () => {
+    try {
+      const parentsData = await api.get('/parents');
+      setParents(parentsData);
+    } catch (error) {
+      // Silent fail
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
       const isCleared = localStorage.getItem('cograd_dashboards_cleared_mock');
@@ -187,6 +198,7 @@ const AdminDashboard = () => {
       await syncWithBackend();
       loadAdminData();
       await fetchDemoBookings();
+      await fetchParents();
     };
     init();
   }, []);
@@ -1151,19 +1163,19 @@ const AdminDashboard = () => {
             <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Enrolled</span>
             <span className="text-xl font-black text-slate-800 mt-1 block">{activeBatchStudents.length}</span>
           </div>
-          <div className="text-center border-l border-slate-200/60">
+          <div className="text-center sm:border-l sm:border-slate-200/60 border-l-0">
             <span className="text-[10px] text-emerald-500 font-black uppercase tracking-wider block">Present</span>
             <span className="text-xl font-black text-emerald-600 mt-1 block">
               {activeBatchStudents.filter(s => attendanceLogs[s.id] === 'Present').length}
             </span>
           </div>
-          <div className="text-center border-l border-slate-200/60">
+          <div className="text-center sm:border-l sm:border-slate-200/60 border-l-0">
             <span className="text-[10px] text-rose-500 font-black uppercase tracking-wider block">Absent</span>
             <span className="text-xl font-black text-rose-600 mt-1 block">
               {activeBatchStudents.filter(s => attendanceLogs[s.id] === 'Absent').length}
             </span>
           </div>
-          <div className="text-center border-l border-slate-200/60">
+          <div className="text-center sm:border-l sm:border-slate-200/60 border-l-0">
             <span className="text-[10px] text-primary-500 font-black uppercase tracking-wider block">Rate</span>
             <span className="text-xl font-black text-primary-600 mt-1 block">
               {activeBatchStudents.length > 0 
@@ -2373,6 +2385,119 @@ const AdminDashboard = () => {
     );
   };
 
+  const renderWaitlist = () => {
+    // Waitlisted students (matching_eligible = false or status = 'waitlist')
+    const waitlistedStudents = students.filter(s => s.matching_eligible === false || s.status === 'waitlist' || s.status === 'Waitlist');
+    
+    // Waitlisted parents (childMatchingEligible = false or status = 'waitlist')
+    const waitlistedParents = parents.filter(p => p.childMatchingEligible === false || p.status === 'waitlist' || p.status === 'Waitlist');
+
+    const waitlisted = [...waitlistedStudents, ...waitlistedParents];
+
+    // Group by city
+    const groupedByCity = {};
+    waitlisted.forEach(u => {
+      const city = u.city || u.childCity || 'Unknown';
+      const normalizedCity = city.charAt(0).toUpperCase() + city.slice(1);
+      if (!groupedByCity[normalizedCity]) {
+        groupedByCity[normalizedCity] = [];
+      }
+      groupedByCity[normalizedCity].push(u);
+    });
+
+    const cityNames = Object.keys(groupedByCity).sort();
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Waitlist</h2>
+          <p className="text-slate-500 text-xs mt-1">
+            Users who registered from unsupported cities. They'll be notified when Cograd launches in their area.
+          </p>
+        </div>
+
+        {waitlisted.length === 0 ? (
+          <div className="glow-card p-8 text-center max-w-xl mx-auto">
+            <span className="text-4xl">📋</span>
+            <h3 className="text-lg font-black text-slate-800 mt-4">Waitlist is Empty</h3>
+            <p className="text-xs text-slate-400 mt-2">No users are currently on the waitlist.</p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-black text-blue-800">Total Waitlist: <strong>{waitlisted.length}</strong> users</p>
+                <p className="text-[10px] text-blue-600 font-semibold mt-0.5">Across {cityNames.length} cities</p>
+              </div>
+            </div>
+
+            {cityNames.map(city => (
+              <div key={city} className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <h3 className="text-lg font-black text-slate-800">{city}</h3>
+                  <span className="bg-amber-50 text-amber-700 text-[10px] font-black px-2 py-0.5 rounded-lg border border-amber-100">
+                    {groupedByCity[city].length} waiting
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  {groupedByCity[city].map(user => (
+                    <div key={user.id} className="glow-card p-4 flex items-start justify-between">
+                      <div className="flex items-start space-x-3">
+                        <img 
+                          src={user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'} 
+                          alt={user.name} 
+                          className="w-10 h-10 rounded-full object-cover border border-slate-200"
+                        />
+                        <div>
+                          <h4 className="text-sm font-extrabold text-slate-800">{user.name}</h4>
+                          <p className="text-[10px] text-slate-500 font-semibold">
+                            {user.role === 'parent' ? 'Parent' : 'Student'} 
+                            {user.role === 'parent' && user.childName && ` — Child: ${user.childName}`}
+                            {user.role === 'student' && ` — ${user.standard || ''}`}
+                          </p>
+                          <p className="text-[9px] text-slate-400 mt-0.5">
+                            {user.email} | {user.phone}
+                          </p>
+                          {user.role === 'parent' && user.childSubjects && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {user.childSubjects.map(sub => (
+                                <span key={sub} className="bg-blue-50/70 text-blue-700 border border-blue-100/30 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full">
+                                  {sub}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {user.role === 'student' && user.subjects && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {user.subjects.map(sub => (
+                                <span key={sub} className="bg-blue-50/70 text-blue-700 border border-blue-100/30 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full">
+                                  {sub}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <span className="bg-amber-50 text-amber-700 text-[9px] font-black px-1.5 py-0.5 rounded-lg border border-amber-100 whitespace-nowrap">
+                          Waitlist
+                        </span>
+                        <span className="text-[8px] text-slate-400 font-medium">
+                          Joined: {user.joinDate || user.createdAt ? new Date(user.joinDate || user.createdAt).toLocaleDateString() : 'N/A'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const getTabContent = () => {
     switch (activeTab) {
       case 'Dashboard': return renderDashboard();
@@ -2380,6 +2505,7 @@ const AdminDashboard = () => {
       case 'Teachers': return renderTeachers();
       case 'Demo Bookings': return renderDemoBookings();
       case 'Match Queue': return renderMatchQueue();
+      case 'Waitlist': return renderWaitlist();
       case 'Attendance': return renderAttendance();
       case 'Tests & Results': return renderTestsAndResults();
       case 'Fee Management': return renderFeeManagement();
@@ -2665,7 +2791,7 @@ const AdminDashboard = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Target Batch</label>
                   <select
@@ -2691,7 +2817,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Class Average Score (%)</label>
                   <input
@@ -2898,6 +3024,7 @@ const AdminDashboard = () => {
           { name: 'Teachers', icon: GraduationCap },
           { name: 'Demo Bookings', icon: BookOpen },
           { name: 'Match Queue', icon: Sliders },
+          { name: 'Waitlist', icon: List },
           { name: 'Attendance', icon: UserCheck },
           { name: 'Tests & Results', icon: CheckSquare },
           { name: 'Fee Management', icon: CreditCard },

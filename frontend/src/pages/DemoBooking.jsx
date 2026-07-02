@@ -276,7 +276,7 @@ const DemoBooking = () => {
                       <div className="space-y-5">
                         <div>
                           <label className="form-label mb-2"><BookOpen className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Subjects</label>
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             {SUBJECTS.map((s) => {
                               const sel = selectedSubjects.includes(s);
                               return (
@@ -344,7 +344,7 @@ const DemoBooking = () => {
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                 <div>
                                   <label className="form-label mb-2"><Clock className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Preferred Time</label>
-                                  <div className="grid grid-cols-4 gap-1.5">
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                                     {TIME_SLOTS.map((t) => (
                                       <button key={t} type="button" onClick={() => setForm((p) => ({ ...p, preferredTime: t }))} className={`py-2 text-[10.5px] font-medium rounded-lg border cursor-pointer transition-all text-center ${form.preferredTime === t ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'}`}>
                                         {t}

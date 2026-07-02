@@ -308,7 +308,7 @@ const About = () => {
             <Link to="/register/teacher" className="btn-slide-white px-8 py-3.5 flex items-center gap-2">
               Join as Teacher <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link to="/register/student" className="btn-outline-white px-8 py-3.5">
+            <Link to="/register" className="btn-outline-white px-8 py-3.5">
               Find Teachers
             </Link>
           </div>

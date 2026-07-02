@@ -25,8 +25,16 @@ const AssignmentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['proposed', 'confirmed', 'active', 'ended'],
+      enum: ['proposed', 'confirmed', 'active', 'ended', 'needs_review'],
       default: 'proposed',
+    },
+    needs_review: {
+      type: Boolean,
+      default: false,
+    },
+    review_reason: {
+      type: String,
+      default: null,
     },
   },
   {

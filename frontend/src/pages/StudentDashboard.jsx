@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardShell from '../components/DashboardShell';
 import { api } from '../utils/api';
-import { syncWithBackend, getAssignments, getTeachers, getStudents } from '../utils/mockDb';
+import { syncWithBackend, getAssignments, getTeachers, getStudents, getDiagnosticQuestions } from '../utils/mockDb';
 import {
   LayoutDashboard,
   BookOpen,
@@ -16,6 +16,7 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   Sparkles,
   ArrowRight,
   User,
@@ -74,7 +75,13 @@ const StudentDashboard = () => {
     test_score: null,
     test_completed_at: null,
     assigned_teacher_id: null,
+    matching_eligible: true,
+    locality: '',
+    status: 'pending_match',
   });
+
+  const [showDiagnosticTest, setShowDiagnosticTest] = useState(false);
+  const [placementAnswers, setPlacementAnswers] = useState({});
 
   // Notification states
   const [unreadNotifications, setUnreadNotifications] = useState([]);
@@ -112,34 +119,77 @@ const StudentDashboard = () => {
 
   // Load real user data from backend
   const [loadingData, setLoadingData] = useState(true);
+  const [matchedTeacherData, setMatchedTeacherData] = useState(null);
   useEffect(() => {
     const loadData = async () => {
       try {
         if (!localStorage.getItem('cograd_token')) return;
         const user = await api.get('/auth/me');
         if (user) {
+          // Setup state from DB fields:
+          setAiHistory(user.ai_chat_history || []);
+          setTeacherDoubts(user.teacher_doubts || []);
+          setStudyHours(user.study_hours_log && user.study_hours_log.length > 0 
+            ? user.study_hours_log.reduce((acc, curr) => acc + (curr.hours || 0), 0) 
+            : 0);
+          setUserGoals(user.study_goals || []);
+          setSavedVideoNotes(user.video_notes || []);
+
+          // Initialize syllabus chapters from DB or fallback defaults
+          if (user.syllabus_chapters && user.syllabus_chapters.length > 0) {
+            setSyllabusChapters(user.syllabus_chapters);
+          } else {
+            const defaultChapters = {
+              'Mathematics': ['Linear Equations', 'Quadratic Equations', 'Trigonometry', 'Coordinate Geometry', 'Probability'],
+              'Science': ['Chemical Reactions', 'Life Processes', 'Light Reflection & Refraction', 'Electricity', 'Carbon Compounds'],
+              'Physics': ['Kinematics', 'Laws of Motion', 'Work, Energy & Power', 'Gravitation', 'Thermodynamics'],
+              'Chemistry': ['Structure of Atom', 'Chemical Bonding', 'States of Matter', 'Chemical Kinetics', 'Organic Chemistry'],
+              'Biology': ['Cell Division', 'Human Anatomy', 'Plant Physiology', 'Genetics', 'Evolution'],
+              'English': ['Tenses & Grammar', 'Reading Comprehension', 'Short Stories', 'Poetry Analysis', 'Letter Writing']
+            };
+            const generated = [];
+            const subjectsList = user.subjects || ['Mathematics', 'Science'];
+            subjectsList.forEach(sub => {
+              const chapters = defaultChapters[sub] || ['Chapter 1: Intro', 'Chapter 2: Core', 'Chapter 3: Application', 'Chapter 4: Revision'];
+              chapters.forEach((ch, idx) => {
+                generated.push({
+                  id: `${sub.toLowerCase().substring(0, 2)}_${idx + 1}`,
+                  subject: sub,
+                  name: ch,
+                  status: idx < 2 ? 'Completed' : idx === 2 ? 'In Progress' : 'Not Started'
+                });
+              });
+            });
+            setSyllabusChapters(generated);
+            api.put(`/students/${user.id}`, { syllabus_chapters: generated }).catch(e => console.error(e));
+          }
+
           // Compute pending homework and tests dynamically
           let liveAssignmentsPending = 0;
           let liveTestsThisWeek = 0;
           if (user.assigned_teacher_id) {
-            const teacherAsgsRaw = localStorage.getItem(`cograd_teacher_assignments_${user.assigned_teacher_id}`);
-            const teacherSubsRaw = localStorage.getItem(`cograd_teacher_submissions_${user.assigned_teacher_id}`);
-            const teacherTestsRaw = localStorage.getItem(`cograd_teacher_tests_${user.assigned_teacher_id}`);
-            
-            let teacherAsgs = [];
-            let teacherSubs = [];
-            let teacherTests = [];
-            try { if (teacherAsgsRaw) teacherAsgs = JSON.parse(teacherAsgsRaw); } catch(e) {}
-            try { if (teacherSubsRaw) teacherSubs = JSON.parse(teacherSubsRaw); } catch(e) {}
-            try { if (teacherTestsRaw) teacherTests = JSON.parse(teacherTestsRaw); } catch(e) {}
-            
-            teacherAsgs.forEach(asg => {
-              const matchedSub = teacherSubs.find(sub => sub.assignmentName === asg.name && sub.studentName === user.name);
-              if (!matchedSub) {
-                liveAssignmentsPending += 1;
+            try {
+              const matchedTeacher = await api.get(`/teachers/${user.assigned_teacher_id}`);
+              if (matchedTeacher) {
+                setMatchedTeacherData(matchedTeacher);
+                
+                // Calculate pending assignments
+                const teacherAsgs = matchedTeacher.assignments || [];
+                const studentSubs = user.homework_submissions || [];
+                teacherAsgs.forEach(asg => {
+                  const matchedSub = studentSubs.find(sub => sub.assignmentName === asg.name);
+                  if (!matchedSub) {
+                    liveAssignmentsPending += 1;
+                  }
+                });
+                
+                // Calculate tests this week
+                const teacherTests = matchedTeacher.tests || [];
+                liveTestsThisWeek = teacherTests.length;
               }
-            });
-            liveTestsThisWeek = teacherTests.length;
+            } catch (err) {
+              console.error('Failed to fetch matched teacher details:', err);
+            }
           }
 
           setProfileData(prev => ({
@@ -162,14 +212,18 @@ const StudentDashboard = () => {
             test_score: user.test_score || prev.test_score,
             test_completed_at: user.test_completed_at || prev.test_completed_at,
             assigned_teacher_id: user.assigned_teacher_id || null,
-            streak: 0,
-            rank: 'N/A',
-            attendance: 'N/A',
+            matching_eligible: user.matching_eligible !== undefined ? user.matching_eligible : prev.matching_eligible,
+            locality: user.locality || prev.locality,
+            status: user.status || prev.status,
+            streak: user.streak || 0,
+            rank: user.rank || 'N/A',
+            attendance: user.attendance || 'N/A',
+            attendance_log: user.attendance_log || [],
             pendingHW: liveAssignmentsPending.toString(),
             testsThisWeek: liveTestsThisWeek.toString(),
+            homework_submissions: user.homework_submissions || [],
           }));
         }
-        await syncWithBackend();
       } catch (err) {
         console.error('Failed to load student data:', err);
       } finally {
@@ -206,38 +260,11 @@ const StudentDashboard = () => {
   const [syllabusChapters, setSyllabusChapters] = useState([]);
 
   useEffect(() => {
-    if (!profileData.studentId || profileData.studentId === 'Loading...') return;
-    const cacheKey = `cograd_student_syllabus_${profileData.studentId}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      setSyllabusChapters(JSON.parse(cached));
-    } else {
-      const defaultChapters = {
-        'Mathematics': ['Linear Equations', 'Quadratic Equations', 'Trigonometry', 'Coordinate Geometry', 'Probability'],
-        'Science': ['Chemical Reactions', 'Life Processes', 'Light Reflection & Refraction', 'Electricity', 'Carbon Compounds'],
-        'Physics': ['Kinematics', 'Laws of Motion', 'Work, Energy & Power', 'Gravitation', 'Thermodynamics'],
-        'Chemistry': ['Structure of Atom', 'Chemical Bonding', 'States of Matter', 'Chemical Kinetics', 'Organic Chemistry'],
-        'Biology': ['Cell Division', 'Human Anatomy', 'Plant Physiology', 'Genetics', 'Evolution'],
-        'English': ['Tenses & Grammar', 'Reading Comprehension', 'Short Stories', 'Poetry Analysis', 'Letter Writing']
-      };
-      
-      const generated = [];
-      const subjectsList = profileData.subjects || ['Mathematics', 'Science'];
-      subjectsList.forEach(sub => {
-        const chapters = defaultChapters[sub] || ['Chapter 1: Intro', 'Chapter 2: Core', 'Chapter 3: Application', 'Chapter 4: Revision'];
-        chapters.forEach((ch, idx) => {
-          generated.push({
-            id: `${sub.toLowerCase().substring(0, 2)}_${idx + 1}`,
-            subject: sub,
-            name: ch,
-            status: idx < 2 ? 'Completed' : idx === 2 ? 'In Progress' : 'Not Started'
-          });
-        });
-      });
-      setSyllabusChapters(generated);
-      localStorage.setItem(cacheKey, JSON.stringify(generated));
+    if (profileData.studentId && profileData.studentId !== 'Loading...' && syllabusChapters.length > 0) {
+      api.put(`/students/${profileData.studentId}`, { syllabus_chapters: syllabusChapters })
+        .catch(err => console.error('Failed to sync syllabus chapters:', err));
     }
-  }, [profileData.subjects, profileData.studentId]);
+  }, [syllabusChapters, profileData.studentId]);
 
   // AI Doubt Solver persona and uploader states
   const [tutorPersona, setTutorPersona] = useState('chemistry'); // chemistry, mathematics, physics
@@ -293,15 +320,9 @@ const StudentDashboard = () => {
   const [aiHistory, setAiHistory] = useState([]);
 
   useEffect(() => {
-    if (profileData.studentId && profileData.studentId !== 'Loading...') {
-      const saved = localStorage.getItem(`cograd_student_ai_history_${profileData.studentId}`);
-      setAiHistory(saved ? JSON.parse(saved) : []);
-    }
-  }, [profileData.studentId]);
-
-  useEffect(() => {
-    if (profileData.studentId && profileData.studentId !== 'Loading...') {
-      localStorage.setItem(`cograd_student_ai_history_${profileData.studentId}`, JSON.stringify(aiHistory));
+    if (profileData.studentId && profileData.studentId !== 'Loading...' && aiHistory.length > 0) {
+      api.put(`/students/${profileData.studentId}`, { ai_chat_history: aiHistory })
+        .catch(err => console.error('Failed to sync AI chat history:', err));
     }
   }, [aiHistory, profileData.studentId]);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -319,15 +340,9 @@ const StudentDashboard = () => {
   const [teacherDoubts, setTeacherDoubts] = useState([]);
 
   useEffect(() => {
-    if (profileData.studentId && profileData.studentId !== 'Loading...') {
-      const saved = localStorage.getItem(`cograd_student_teacher_doubts_${profileData.studentId}`);
-      setTeacherDoubts(saved ? JSON.parse(saved) : []);
-    }
-  }, [profileData.studentId]);
-
-  useEffect(() => {
-    if (profileData.studentId && profileData.studentId !== 'Loading...') {
-      localStorage.setItem(`cograd_student_teacher_doubts_${profileData.studentId}`, JSON.stringify(teacherDoubts));
+    if (profileData.studentId && profileData.studentId !== 'Loading...' && teacherDoubts.length > 0) {
+      api.put(`/students/${profileData.studentId}`, { teacher_doubts: teacherDoubts })
+        .catch(err => console.error('Failed to sync doubts:', err));
     }
   }, [teacherDoubts, profileData.studentId]);
 
@@ -338,14 +353,7 @@ const StudentDashboard = () => {
 
   const [studyHours, setStudyHours] = useState(0);
   useEffect(() => {
-    if (profileData.studentId && profileData.studentId !== 'Loading...') {
-      const saved = localStorage.getItem(`cograd_student_study_hours_${profileData.studentId}`);
-      if (saved) {
-        setStudyHours(parseInt(saved, 10));
-      } else {
-        localStorage.setItem(`cograd_student_study_hours_${profileData.studentId}`, '0');
-      }
-    }
+    // Loaded via loadData
   }, [profileData.studentId]);
 
 
@@ -360,15 +368,9 @@ const StudentDashboard = () => {
   const [userGoals, setUserGoals] = useState([]);
 
   useEffect(() => {
-    if (profileData.studentId && profileData.studentId !== 'Loading...') {
-      const saved = localStorage.getItem(`cograd_student_user_goals_${profileData.studentId}`);
-      setUserGoals(saved ? JSON.parse(saved) : []);
-    }
-  }, [profileData.studentId]);
-
-  useEffect(() => {
-    if (profileData.studentId && profileData.studentId !== 'Loading...') {
-      localStorage.setItem(`cograd_student_user_goals_${profileData.studentId}`, JSON.stringify(userGoals));
+    if (profileData.studentId && profileData.studentId !== 'Loading...' && userGoals.length > 0) {
+      api.put(`/students/${profileData.studentId}`, { study_goals: userGoals })
+        .catch(err => console.error('Failed to sync goals:', err));
     }
   }, [userGoals, profileData.studentId]);
 
@@ -383,15 +385,9 @@ const StudentDashboard = () => {
   const [savedVideoNotes, setSavedVideoNotes] = useState([]);
 
   useEffect(() => {
-    if (profileData.studentId && profileData.studentId !== 'Loading...') {
-      const saved = localStorage.getItem(`cograd_student_video_notes_${profileData.studentId}`);
-      setSavedVideoNotes(saved ? JSON.parse(saved) : []);
-    }
-  }, [profileData.studentId]);
-
-  useEffect(() => {
-    if (profileData.studentId && profileData.studentId !== 'Loading...') {
-      localStorage.setItem(`cograd_student_video_notes_${profileData.studentId}`, JSON.stringify(savedVideoNotes));
+    if (profileData.studentId && profileData.studentId !== 'Loading...' && savedVideoNotes.length > 0) {
+      api.put(`/students/${profileData.studentId}`, { video_notes: savedVideoNotes })
+        .catch(err => console.error('Failed to sync video notes:', err));
     }
   }, [savedVideoNotes, profileData.studentId]);
 
@@ -1002,11 +998,49 @@ const StudentDashboard = () => {
     setTimeout(() => navigate('/login'), 900);
   };
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     if (e) e.preventDefault();
-    setProfileData(editProfileData);
-    setIsEditingProfile(false);
-    triggerToast('Profile details saved successfully!');
+    try {
+      const payload = { ...editProfileData };
+      
+      // Handle city waitlist transitions
+      if (editProfileData.city === 'Other') {
+        payload.matching_eligible = false;
+        payload.status = 'waitlist';
+      } else if (profileData.city === 'Other' && (editProfileData.city === 'Meerut' || editProfileData.city === 'Allahabad')) {
+        payload.matching_eligible = true;
+        payload.status = 'pending_match';
+      }
+
+      const updatedUser = await api.put(`/students/${profileData.studentId}`, payload);
+      
+      setProfileData({
+        ...profileData,
+        ...updatedUser,
+        city: updatedUser.city,
+        locality: updatedUser.locality,
+        matching_eligible: updatedUser.matching_eligible,
+        status: updatedUser.status,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        parentName: updatedUser.parentName,
+        parentPhone: updatedUser.parentPhone,
+        address: updatedUser.address,
+        tuitionSlot: updatedUser.tuitionSlot
+      });
+      
+      setIsEditingProfile(false);
+      triggerToast('Profile details saved successfully!');
+
+      // Check if they need to complete diagnostic placement test
+      if (payload.matching_eligible && !updatedUser.test_score) {
+        setPlacementAnswers({});
+        setShowDiagnosticTest(true);
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to update profile details.');
+    }
   };
 
   const handleCancelProfileEdit = () => {
@@ -1063,9 +1097,325 @@ const StudentDashboard = () => {
 
       {/* ── TAB CONTENT ── */}
       <div className="tab-content-enter">
-        {/* TAB 1: HOME (MY DASHBOARD) */}
-        {activeTab === 'Home' && (
-          <div className="space-y-6">
+        {profileData.matching_eligible === false || profileData.status === 'waitlist' ? (
+          showDiagnosticTest ? (
+            <div className="max-w-2xl mx-auto bg-white rounded-3xl border border-slate-100 shadow-md p-6 sm:p-8 no-glass">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                <div className="text-left">
+                  <span className="text-[10px] bg-blue-600 text-white font-black px-2 py-0.5 rounded-lg uppercase tracking-wider">Placement Test</span>
+                  <h3 className="text-lg font-black text-slate-800 mt-1">Assess Your Diagnostic Potential</h3>
+                  <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Calibrated for {profileData.standard} Level</p>
+                </div>
+                <div className="bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-2xl shrink-0">
+                  <span className="text-[10px] text-amber-700 font-black block uppercase tracking-wide">
+                    {getDiagnosticQuestions(profileData.standard).reduce((sum, q) => sum + q.marks, 0)} Marks Total
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-5 text-left max-h-[450px] overflow-y-auto pr-2">
+                {getDiagnosticQuestions(profileData.standard).map((q, qidx) => (
+                  <div key={q.id} className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg">{q.subject} • {q.marks} Marks</span>
+                      <div className="text-xs font-bold text-slate-850">Question {qidx + 1}. {q.text}</div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {q.options.map((opt) => {
+                        const isSelected = placementAnswers[q.id] === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => setPlacementAnswers(prev => ({ ...prev, [q.id]: opt }))}
+                            className={`text-left text-xs font-semibold py-2.5 px-3.5 rounded-xl border transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                : 'bg-white text-slate-600 border-slate-150 hover:bg-slate-50'
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-slate-100 pt-5 flex items-center justify-between">
+                <span className="text-[10px] text-slate-400 font-bold">
+                  Answered {Object.keys(placementAnswers).filter(k => placementAnswers[k] !== '').length} of {getDiagnosticQuestions(profileData.standard).length} questions
+                </span>
+                <button
+                  type="button"
+                  disabled={!getDiagnosticQuestions(profileData.standard).every(q => placementAnswers[q.id] !== undefined && placementAnswers[q.id] !== '')}
+                  onClick={async () => {
+                    const qs = getDiagnosticQuestions(profileData.standard);
+                    let mathScore = 0, scienceScore = 0, mathTotal = 0, scienceTotal = 0;
+                    qs.forEach(q => {
+                      const isCorrect = placementAnswers[q.id] === q.correct;
+                      const pts = isCorrect ? q.marks : 0;
+                      if (q.subject === 'Mathematics') { mathScore += pts; mathTotal += q.marks; }
+                      else if (q.subject === 'Science') { scienceScore += pts; scienceTotal += q.marks; }
+                    });
+                    const scores = {
+                      Mathematics: Math.round((mathScore / mathTotal) * 100) || 0,
+                      Science: Math.round((scienceScore / scienceTotal) * 100) || 0,
+                      mathMarksText: `${mathScore}/${mathTotal}`,
+                      scienceMarksText: `${scienceScore}/${scienceTotal}`,
+                      totalMarksText: `${mathScore + scienceScore}/${mathTotal + scienceTotal}`
+                    };
+                    try {
+                      const updated = {
+                        ...profileData,
+                        test_score: scores,
+                        test_completed_at: new Date().toISOString(),
+                        status: 'pending_match'
+                      };
+                      await api.put(`/students/${profileData.studentId}`, updated);
+                      setProfileData(updated);
+                      setShowDiagnosticTest(false);
+                      triggerToast('Diagnostic placement test completed successfully!');
+                    } catch (err) {
+                      alert(err.message || 'Failed to submit test score.');
+                    }
+                  }}
+                  className={`px-6 py-3 font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer ${
+                    getDiagnosticQuestions(profileData.standard).every(q => placementAnswers[q.id] !== undefined && placementAnswers[q.id] !== '')
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
+                      : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                  }`}
+                >
+                  Submit & Complete Setup
+                  <CheckCircle2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="max-w-2xl mx-auto space-y-6">
+              <div className="bg-amber-50/50 border border-amber-200 rounded-3xl p-6 sm:p-8 text-center space-y-6">
+                <div className="w-16 h-16 bg-amber-50 border border-amber-100 rounded-full flex items-center justify-center mx-auto">
+                  <AlertTriangle className="w-9 h-9 text-amber-500" />
+                </div>
+                
+                <div>
+                  <h3 className="text-2xl font-black text-slate-800 tracking-tight">You're on Our Waitlist!</h3>
+                  <p className="text-slate-500 text-xs mt-2">
+                    Welcome to Cograd, <strong>{profileData.name}</strong>!
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-2xl p-5 border border-slate-100 text-left">
+                  <p className="text-xs text-slate-600 font-semibold leading-relaxed">
+                    Cograd Pathshala currently operates in <strong>Meerut</strong> and <strong>Allahabad</strong>. We've recorded your preference for <strong>{profileData.city || 'your city'}</strong>, and we'll notify you as soon as we expand to your area.
+                  </p>
+                </div>
+
+                {!isEditingProfile ? (
+                  <div className="space-y-4">
+                    <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 text-left">
+                      <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block mb-2">Submitted Details</span>
+                      <div className="space-y-1.5 text-xs text-slate-650">
+                        <p><span className="font-bold text-slate-800">Name:</span> {profileData.name}</p>
+                        <p><span className="font-bold text-slate-800">Class:</span> {profileData.standard}</p>
+                        <p><span className="font-bold text-slate-800">City:</span> {profileData.city}</p>
+                        {profileData.locality && <p><span className="font-bold text-slate-800">Locality:</span> {profileData.locality}</p>}
+                        <p><span className="font-bold text-slate-800">Subjects:</span> {profileData.subjects.join(', ')}</p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setEditProfileData({ ...profileData });
+                        setIsEditingProfile(true);
+                      }}
+                      className="w-full btn-primary py-3.5 text-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      Edit Profile / Change City
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSaveProfile} className="bg-white rounded-2xl p-5 border border-slate-100 text-left space-y-4">
+                    <span className="text-xs font-black text-slate-850 block">Update Profile Details</span>
+                    
+                    <div>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Student Full Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={editProfileData.name}
+                        onChange={(e) => setEditProfileData(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">City</label>
+                        <select
+                          value={editProfileData.city}
+                          onChange={(e) => setEditProfileData(prev => ({ ...prev, city: e.target.value }))}
+                          className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                        >
+                          <option value="Meerut">Meerut</option>
+                          <option value="Allahabad">Allahabad</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Area / Locality</label>
+                        <input
+                          type="text"
+                          value={editProfileData.locality || ''}
+                          onChange={(e) => setEditProfileData(prev => ({ ...prev, locality: e.target.value }))}
+                          placeholder="e.g. Civil Lines, Sadar"
+                          className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingProfile(false)}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-650 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        Save Updates
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+          )
+        ) : showDiagnosticTest ? (
+          <div className="max-w-2xl mx-auto bg-white rounded-3xl border border-slate-100 shadow-md p-6 sm:p-8 no-glass">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+              <div className="text-left">
+                <span className="text-[10px] bg-blue-600 text-white font-black px-2 py-0.5 rounded-lg uppercase tracking-wider">Placement Test</span>
+                <h3 className="text-lg font-black text-slate-800 mt-1">Assess Your Diagnostic Potential</h3>
+                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Calibrated for {profileData.standard} Level</p>
+              </div>
+              <div className="bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-2xl shrink-0">
+                <span className="text-[10px] text-amber-700 font-black block uppercase tracking-wide">
+                  {getDiagnosticQuestions(profileData.standard).reduce((sum, q) => sum + q.marks, 0)} Marks Total
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-5 text-left max-h-[450px] overflow-y-auto pr-2">
+              {getDiagnosticQuestions(profileData.standard).map((q, qidx) => (
+                <div key={q.id} className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg">{q.subject} • {q.marks} Marks</span>
+                    <div className="text-xs font-bold text-slate-850">Question {qidx + 1}. {q.text}</div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {q.options.map((opt) => {
+                      const isSelected = placementAnswers[q.id] === opt;
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setPlacementAnswers(prev => ({ ...prev, [q.id]: opt }))}
+                          className={`text-left text-xs font-semibold py-2.5 px-3.5 rounded-xl border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                              : 'bg-white text-slate-600 border-slate-150 hover:bg-slate-50'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-slate-100 pt-5 flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 font-bold">
+                Answered {Object.keys(placementAnswers).filter(k => placementAnswers[k] !== '').length} of {getDiagnosticQuestions(profileData.standard).length} questions
+              </span>
+              <button
+                type="button"
+                disabled={!getDiagnosticQuestions(profileData.standard).every(q => placementAnswers[q.id] !== undefined && placementAnswers[q.id] !== '')}
+                onClick={async () => {
+                  const qs = getDiagnosticQuestions(profileData.standard);
+                  let mathScore = 0, scienceScore = 0, mathTotal = 0, scienceTotal = 0;
+                  qs.forEach(q => {
+                    const isCorrect = placementAnswers[q.id] === q.correct;
+                    const pts = isCorrect ? q.marks : 0;
+                    if (q.subject === 'Mathematics') { mathScore += pts; mathTotal += q.marks; }
+                    else if (q.subject === 'Science') { scienceScore += pts; scienceTotal += q.marks; }
+                  });
+                  const scores = {
+                    Mathematics: Math.round((mathScore / mathTotal) * 100) || 0,
+                    Science: Math.round((scienceScore / scienceTotal) * 100) || 0,
+                    mathMarksText: `${mathScore}/${mathTotal}`,
+                    scienceMarksText: `${scienceScore}/${scienceTotal}`,
+                    totalMarksText: `${mathScore + scienceScore}/${mathTotal + scienceTotal}`
+                  };
+                  try {
+                    const updated = {
+                      ...profileData,
+                      test_score: scores,
+                      test_completed_at: new Date().toISOString(),
+                      status: 'pending_match'
+                    };
+                    await api.put(`/students/${profileData.studentId}`, updated);
+                    setProfileData(updated);
+                    setShowDiagnosticTest(false);
+                    triggerToast('Diagnostic placement test completed successfully!');
+                  } catch (err) {
+                    alert(err.message || 'Failed to submit test score.');
+                  }
+                }}
+                className={`px-6 py-3 font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer ${
+                  getDiagnosticQuestions(profileData.standard).every(q => placementAnswers[q.id] !== undefined && placementAnswers[q.id] !== '')
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
+                    : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                }`}
+              >
+                Submit & Complete Setup
+                <CheckCircle2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* TAB 1: HOME (MY DASHBOARD) */}
+            {activeTab === 'Home' && (
+              <div className="space-y-6">
+                {/* Upgrade test prompt */}
+                {profileData.matching_eligible && !profileData.test_score && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center space-y-4 mb-6">
+                    <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
+                    <div>
+                      <h4 className="text-base font-black text-slate-805">Placement Assessment Required</h4>
+                      <p className="text-xs text-slate-500 mt-1 font-medium">Please complete your Diagnostic Placement Test to find nearby tutors matching your level.</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setPlacementAnswers({});
+                        setShowDiagnosticTest(true);
+                      }}
+                      className="btn-primary py-2.5 px-6 text-xs flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Start Placement Test
+                    </button>
+                  </div>
+                )}
             {/* Row 1: Welcome & Up Next Live Timer */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Welcome Card */}
@@ -1249,10 +1599,42 @@ const StudentDashboard = () => {
               {/* Row 2: Stats Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 {[
-                  { title: 'Attendance', val: studentProfile.attendance, desc: 'Aim for 95%+', icon: CheckCircle2, color: 'text-blue-600 bg-blue-50' },
-                  { title: 'Batch Rank', val: studentProfile.rank, desc: 'Out of 120 Students', icon: Award, color: 'text-amber-600 bg-amber-50' },
-                  { title: 'Tests This Week', val: studentProfile.testsThisWeek, desc: 'Completed: 1', icon: FileText, color: 'text-purple-600 bg-purple-50' },
-                  { title: 'Pending HW', val: studentProfile.pendingHW, desc: 'Due: Tomorrow', icon: AlertCircle, color: 'text-rose-600 bg-rose-50' }
+                  { 
+                    title: 'Attendance', 
+                    val: (!studentProfile.attendance_log || studentProfile.attendance_log.length === 0) ? 'Pending' : studentProfile.attendance, 
+                    desc: (!studentProfile.attendance_log || studentProfile.attendance_log.length === 0) 
+                      ? 'Attendance will appear here after your first session.' 
+                      : 'Aim for 95%+', 
+                    icon: CheckCircle2, 
+                    color: 'text-blue-600 bg-blue-50' 
+                  },
+                  { 
+                    title: 'Batch Rank', 
+                    val: studentProfile.rank === 'N/A' ? 'Pending' : studentProfile.rank, 
+                    desc: studentProfile.rank === 'N/A' 
+                      ? 'Rank will appear after your first mock test.' 
+                      : 'Out of 120 Students', 
+                    icon: Award, 
+                    color: 'text-amber-600 bg-amber-50' 
+                  },
+                  { 
+                    title: 'Tests This Week', 
+                    val: studentProfile.testsThisWeek === '0' ? '0' : studentProfile.testsThisWeek, 
+                    desc: studentProfile.testsThisWeek === '0' 
+                      ? 'No tests scheduled for this week.' 
+                      : 'Mock papers assigned by teacher', 
+                    icon: FileText, 
+                    color: 'text-purple-600 bg-purple-50' 
+                  },
+                  { 
+                    title: 'Pending HW', 
+                    val: studentProfile.pendingHW === '0' ? '0' : studentProfile.pendingHW, 
+                    desc: studentProfile.pendingHW === '0' 
+                      ? 'All caught up! No pending homework.' 
+                      : 'Homework assignments due soon', 
+                    icon: AlertCircle, 
+                    color: 'text-rose-600 bg-rose-50' 
+                  }
                 ].map((stat, idx) => {
                   const Icon = stat.icon;
                   return (
@@ -1338,30 +1720,38 @@ const StudentDashboard = () => {
                     </div>
 
                     <div className="space-y-3">
-                      {recentResults.map((res) => (
-                        <div
-                          key={res.id}
-                          className="p-3.5 border border-slate-100 hover:border-slate-200 rounded-2xl flex items-center justify-between transition-all"
-                        >
-                          <div className="min-w-0 flex-grow pr-3">
-                            <div className="text-xs font-bold text-slate-800 truncate">{res.title}</div>
-                            <div className="text-[10px] text-slate-400 font-semibold mt-0.5">{res.date}</div>
-                          </div>
-
-                          <div className="flex items-center space-x-3 shrink-0">
-                            <div className="text-right">
-                              <span className="text-sm font-black text-slate-800">{res.score}</span>
-                              <div className="text-[9px] text-slate-400 font-bold">Rank: {res.rank}</div>
-                            </div>
-                            <button
-                              onClick={() => setSelectedResult(res)}
-                              className="text-xs font-bold bg-slate-50 border border-slate-100 text-slate-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100 px-3 py-1.5 rounded-xl transition-all cursor-pointer"
-                            >
-                              Analysis
-                            </button>
-                          </div>
+                      {recentResults.length === 0 ? (
+                        <div className="py-8 text-center space-y-2 bg-slate-50 rounded-2xl border border-slate-100/50">
+                          <FileText className="w-8 h-8 text-slate-300 mx-auto" />
+                          <p className="text-xs font-bold text-slate-500">No test score reports available yet.</p>
+                          <p className="text-[10px] text-slate-400 font-semibold max-w-xs mx-auto">Weekly mock test performance reports and diagnostic scorecards will populate here.</p>
                         </div>
-                      ))}
+                      ) : (
+                        recentResults.map((res) => (
+                          <div
+                            key={res.id}
+                            className="p-3.5 border border-slate-100 hover:border-slate-200 rounded-2xl flex items-center justify-between transition-all"
+                          >
+                            <div className="min-w-0 flex-grow pr-3">
+                              <div className="text-xs font-bold text-slate-800 truncate">{res.title}</div>
+                              <div className="text-[10px] text-slate-400 font-semibold mt-0.5">{res.date}</div>
+                            </div>
+
+                            <div className="flex items-center space-x-3 shrink-0">
+                              <div className="text-right">
+                                <span className="text-sm font-black text-slate-800">{res.score}</span>
+                                <div className="text-[9px] text-slate-400 font-bold">Rank: {res.rank}</div>
+                              </div>
+                              <button
+                                onClick={() => setSelectedResult(res)}
+                                className="text-xs font-bold bg-slate-50 border border-slate-100 text-slate-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100 px-3 py-1.5 rounded-xl transition-all cursor-pointer"
+                              >
+                                Analysis
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
 
@@ -1629,8 +2019,15 @@ const StudentDashboard = () => {
                 <h3 className="text-lg font-black text-slate-800 tracking-tight mb-4">Upcoming Live & Scheduled Rooms</h3>
                 
                 <div className="space-y-4">
-                  {scheduledClasses.map((cls) => (
-                    <div
+                  {scheduledClasses.length === 0 ? (
+                    <div className="py-10 text-center space-y-2 bg-slate-50 rounded-2xl border border-slate-100/50">
+                      <div className="text-3xl">📅</div>
+                      <p className="text-xs font-bold text-slate-500">No upcoming classes scheduled by your tutor yet.</p>
+                      <p className="text-[10px] text-slate-400 font-semibold max-w-xs mx-auto">Your matched tutor will schedule your weekly home tuition slots here.</p>
+                    </div>
+                  ) : (
+                    scheduledClasses.map((cls) => (
+                      <div
                       key={cls.id}
                       className={`p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-all ${
                         cls.isLive
@@ -1691,7 +2088,8 @@ const StudentDashboard = () => {
                         </button>
                       </div>
                     </div>
-                  ))}
+                  ))
+                )}
                 </div>
               </div>
 
@@ -2344,6 +2742,38 @@ const StudentDashboard = () => {
                             </div>
                           </div>
 
+                          {/* City & Area / Locality */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">City</label>
+                              <select
+                                value={editProfileData.city}
+                                onChange={(e) => setEditProfileData(prev => ({ ...prev, city: e.target.value }))}
+                                className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                              >
+                                <option value="Meerut">Meerut</option>
+                                <option value="Allahabad">Allahabad</option>
+                                <option value="Other">Other</option>
+                              </select>
+                              {editProfileData.city === 'Other' && (
+                                <p className="text-[10px] text-amber-600 font-semibold mt-1 leading-relaxed">
+                                  ⚠️ Cograd operates in Meerut and Allahabad. We'll add you to our waitlist!
+                                </p>
+                              )}
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Area / Locality</label>
+                              <input
+                                type="text"
+                                maxLength={100}
+                                value={editProfileData.locality || ''}
+                                onChange={(e) => setEditProfileData(prev => ({ ...prev, locality: e.target.value }))}
+                                placeholder="e.g. Civil Lines, Sadar"
+                                className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                              />
+                            </div>
+                          </div>
+
                           {/* Timing Slots, Medium & Address */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -2542,13 +2972,19 @@ const StudentDashboard = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[360px] overflow-y-auto pr-1">
-                      {syllabusChapters
-                        .filter(ch => selectedProgressSubject === 'All' || ch.subject === selectedProgressSubject)
-                        .map(ch => (
-                          <div
-                            key={ch.id}
-                            className="p-3.5 border border-slate-100 hover:border-blue-100/50 hover:bg-blue-50/5 rounded-2xl flex items-center justify-between transition-all"
-                          >
+                      {syllabusChapters.filter(c => c.status !== 'Not Started').length === 0 ? (
+                        <div className="col-span-2 py-10 text-center space-y-2 bg-slate-50 rounded-2xl border border-slate-100/50">
+                          <BookOpen className="w-8 h-8 text-slate-300 mx-auto" />
+                          <p className="text-xs font-bold text-slate-500 text-center mx-auto">Syllabus progress will update as you complete chapters with your tutor.</p>
+                        </div>
+                      ) : (
+                        syllabusChapters
+                          .filter(ch => selectedProgressSubject === 'All' || ch.subject === selectedProgressSubject)
+                          .map(ch => (
+                            <div
+                              key={ch.id}
+                              className="p-3.5 border border-slate-100 hover:border-blue-100/50 hover:bg-blue-50/5 rounded-2xl flex items-center justify-between transition-all"
+                            >
                             <div className="min-w-0 pr-3">
                               <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
                                 ch.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-800' :
@@ -2571,7 +3007,8 @@ const StudentDashboard = () => {
                               {ch.status}
                             </button>
                           </div>
-                        ))}
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2599,27 +3036,42 @@ const StudentDashboard = () => {
                   {/* Attendance block summary */}
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
                     <h3 className="text-base font-black text-slate-800 tracking-tight mb-3.5">Center Attendance Sheet</h3>
-                    <div className="flex items-center justify-between p-3 bg-blue-50/30 border border-blue-100/50 rounded-2xl mb-4">
-                      <div>
-                        <span className="text-xs font-black text-blue-900 block">Attendance Rate</span>
-                        <p className="text-[10px] text-blue-600 font-bold mt-0.5">Vetted center presence metric</p>
+                    {!studentProfile.attendance_log || studentProfile.attendance_log.length === 0 ? (
+                      <div className="py-6 text-center space-y-2 bg-slate-50 rounded-2xl border border-slate-100/50">
+                        <CheckCircle2 className="w-8 h-8 text-slate-300 mx-auto" />
+                        <p className="text-xs font-bold text-slate-500">Attendance will appear here after your first session.</p>
                       </div>
-                      <span className="text-xl font-black text-blue-800 px-3 py-1 bg-white rounded-xl shadow-sm border border-blue-100/30">91%</span>
-                    </div>
-                    <div className="space-y-2 text-[10px] font-bold text-slate-500">
-                      <div className="flex justify-between">
-                        <span>Total classes scheduled</span>
-                        <span className="text-slate-800 font-black">44 Lectures</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Present classes</span>
-                        <span className="text-slate-800 font-black">40 Lectures</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Excused leaves logged</span>
-                        <span className="text-slate-800 font-black">4 Days</span>
-                      </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between p-3 bg-blue-50/30 border border-blue-100/50 rounded-2xl mb-4">
+                          <div>
+                            <span className="text-xs font-black text-blue-900 block">Attendance Rate</span>
+                            <p className="text-[10px] text-blue-600 font-bold mt-0.5">Vetted center presence metric</p>
+                          </div>
+                          <span className="text-xl font-black text-blue-800 px-3 py-1 bg-white rounded-xl shadow-sm border border-blue-100/30">
+                            {studentProfile.attendance}
+                          </span>
+                        </div>
+                        <div className="space-y-2 text-[10px] font-bold text-slate-500">
+                          <div className="flex justify-between">
+                            <span>Total classes conducted</span>
+                            <span className="text-slate-800 font-black">{studentProfile.attendance_log.length} Lectures</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Present classes</span>
+                            <span className="text-slate-800 font-black">
+                              {studentProfile.attendance_log.filter(l => l.status === 'Present').length} Lectures
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Absent classes</span>
+                            <span className="text-slate-800 font-black">
+                              {studentProfile.attendance_log.filter(l => l.status === 'Absent').length} Lectures
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Daily Target Planner & Goal Setting */}
@@ -3446,7 +3898,8 @@ const StudentDashboard = () => {
           </div>
         </div>
       )}
-
+      </>
+      )}
       </div>{/* end tab-content-enter */}
     </DashboardShell>
 

@@ -15,6 +15,8 @@ const Contact = lazy(() => import('./pages/Contact'));
 const Login = lazy(() => import('./pages/Login'));
 const RegisterStudent = lazy(() => import('./pages/RegisterStudent'));
 const RegisterTeacher = lazy(() => import('./pages/RegisterTeacher'));
+const RoleSelector = lazy(() => import('./pages/RoleSelector'));
+const RegisterParent = lazy(() => import('./pages/RegisterParent'));
 const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
@@ -68,7 +70,7 @@ const ScrollToTop = () => {
 // Layout Wrapper to hide footer on login/signup pages
 const LayoutWrapper = ({ children }) => {
   const location = useLocation();
-  const hideHeaderFooter = ['/login', '/register/student', '/register/teacher', '/teacher/dashboard', '/admin/dashboard', '/student/dashboard', '/parent/dashboard'].includes(location.pathname);
+  const hideHeaderFooter = ['/login', '/register', '/register/student', '/register/parent', '/register/teacher', '/teacher/dashboard', '/admin/dashboard', '/student/dashboard', '/parent/dashboard'].includes(location.pathname);
 
   // Boot Lenis smooth scroll globally
   useSmoothScroll();
@@ -106,7 +108,9 @@ function App() {
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<RoleSelector />} />
             <Route path="/register/student" element={<RegisterStudent />} />
+            <Route path="/register/parent" element={<RegisterParent />} />
             <Route path="/register/teacher" element={<RegisterTeacher />} />
             <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />

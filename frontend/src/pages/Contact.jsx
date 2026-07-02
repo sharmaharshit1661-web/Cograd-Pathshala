@@ -346,8 +346,8 @@ const Contact = () => {
                       color: 'text-primary-600 bg-primary-50'
                     },
                     {
-                      to: '/register/student',
-                      label: 'Register as Student',
+                      to: '/register',
+                      label: 'Register as Student / Parent',
                       desc: 'Sign up to find highly qualified teachers in India.',
                       icon: User,
                       color: 'text-emerald-600 bg-emerald-50'
