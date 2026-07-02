@@ -206,7 +206,14 @@ const RegisterTeacher = () => {
         body: fd,
       });
 
-      const data = await response.json();
+      let data = {};
+      const responseText = await response.text();
+      try {
+        data = JSON.parse(responseText);
+      } catch (err) {
+        throw new Error(responseText || `Server error (status ${response.status})`);
+      }
+
       if (!response.ok) throw new Error(data.message || 'Registration failed');
 
       setShowSuccess(true);

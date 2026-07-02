@@ -51,9 +51,17 @@ app.get('/', (req, res) => {
 // Healthcheck Route
 app.get('/api/health', (req, res) => {
   res.json({
-    status: 'ok',
-    message: 'Cograd Pathshala API is running smoothly',
-    timestamp: new Date().toISOString()
+    status: 'healthy',
+    timestamp: new Date(),
+    uptime: process.uptime()
+  });
+});
+
+// Global error handling middleware (always returns JSON, never HTML)
+app.use((err, req, res, next) => {
+  console.error('[Global Error Handler]', err);
+  res.status(err.status || 500).json({
+    message: err.message || 'An unexpected error occurred on the server.'
   });
 });
 
