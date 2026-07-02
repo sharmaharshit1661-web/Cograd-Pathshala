@@ -142,7 +142,15 @@ router.post('/register', async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error during registration' });
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyValue)[0];
+      return res.status(400).json({ message: `An account with this ${field} already exists.` });
+    }
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({ message: messages.join(', ') });
+    }
+    res.status(500).json({ message: error.message || 'Server error during registration' });
   }
 });
 
@@ -153,20 +161,40 @@ router.post('/login', async (req, res) => {
   const { email, password, role } = req.body;
 
   try {
+    const loginUser = (email || '').trim().toLowerCase();
+    if (!loginUser) {
+      return res.status(400).json({ message: 'Email or phone number is required' });
+    }
+
+    const isPhone = /^\+?[0-9\s\-()]{10,}$/.test(loginUser) && !loginUser.includes('@');
+    let query;
+    if (isPhone) {
+      // Clean phone number input from non-digits to match stored format if needed
+      // but let's keep it simple or direct first:
+      query = { phone: loginUser };
+    } else {
+      // Basic email regex validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(loginUser)) {
+        return res.status(400).json({ message: 'Please enter a valid email address or phone number.' });
+      }
+      query = { email: loginUser };
+    }
+
     let user;
     if (role === 'admin') {
-      user = await Admin.findOne({ email });
+      user = await Admin.findOne(query);
     } else if (role) {
-      user = await User.findOne({ email });
+      user = await User.findOne(query);
     } else {
-      user = await User.findOne({ email });
+      user = await User.findOne(query);
       if (!user) {
-        user = await Admin.findOne({ email });
+        user = await Admin.findOne(query);
       }
     }
 
     if (!user) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({ message: 'Invalid email/phone or password' });
     }
 
     // Check if currently locked out
@@ -207,14 +235,14 @@ router.post('/login', async (req, res) => {
       });
     } else {
       user.login_attempts = (user.login_attempts || 0) + 1;
-      let responseMessage = 'Invalid email or password';
+      let responseMessage = 'Invalid email/phone or password';
 
       if (user.login_attempts >= 4) {
         user.lock_until = Date.now() + 15 * 60 * 1000; // 15 minutes lockout
         responseMessage = 'Account is temporarily locked due to too many failed attempts. Try again in 15 minutes.';
       } else {
         const attemptsLeft = 4 - user.login_attempts;
-        responseMessage = `Invalid email or password. ${attemptsLeft} attempts remaining before temporary lockout.`;
+        responseMessage = `Invalid email/phone or password. ${attemptsLeft} attempts remaining before temporary lockout.`;
       }
 
       await user.save();

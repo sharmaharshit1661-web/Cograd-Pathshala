@@ -34,7 +34,9 @@ const RegisterStudent = () => {
     standard: 'Class 10',
     subjects: ['Mathematics', 'Science'], // Default subjects
     city: '',
-    locality: ''
+    locality: '',
+    parentName: '',
+    parentPhone: ''
   });
 
   // Validation states
@@ -119,8 +121,8 @@ const RegisterStudent = () => {
           locality: form.locality,
           assigned_teacher_id: null,
           status: 'waitlist',
-          parentName: `Mr./Mrs. ${form.name.split(' ').pop()}`,
-          parentPhone: form.phone,
+          parentName: form.parentName,
+          parentPhone: form.parentPhone,
           address: `House No. 101, Near Main Chowk, ${form.city}`,
         };
 
@@ -190,8 +192,8 @@ const RegisterStudent = () => {
         status: 'pending_match',
         city: form.city,
         locality: form.locality,
-        parentName: `Mr./Mrs. ${form.name.split(' ').pop()}`,
-        parentPhone: form.phone,
+        parentName: form.parentName,
+        parentPhone: form.parentPhone,
         address: `House No. 101, Near Main Chowk, ${form.city}`,
       };
 
@@ -306,6 +308,33 @@ const RegisterStudent = () => {
                   className="form-input" 
                   placeholder="10-digit mobile number" 
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label className="form-label"><User className="w-3.5 h-3.5 text-slate-400 mr-1.5" />Parent/Guardian Name</label>
+                  <input 
+                    type="text" 
+                    name="parentName" 
+                    required 
+                    value={form.parentName} 
+                    onChange={handleChange} 
+                    className="form-input" 
+                    placeholder="Parent's full name" 
+                  />
+                </div>
+                <div>
+                  <label className="form-label"><Phone className="w-3.5 h-3.5 text-slate-400 mr-1.5" />Parent/Guardian Phone</label>
+                  <input 
+                    type="tel" 
+                    name="parentPhone" 
+                    required 
+                    value={form.parentPhone} 
+                    onChange={handleChange} 
+                    className="form-input" 
+                    placeholder="Parent's phone number" 
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

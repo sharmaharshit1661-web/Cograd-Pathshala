@@ -802,8 +802,14 @@ router.post('/attendance', protect, async (req, res) => {
   const { teacherId, date, records } = req.body;
 
   try {
-    if (!teacherId || !date || !Array.isArray(records)) {
-      return res.status(400).json({ message: 'Missing teacherId, date, or records' });
+    if (!teacherId) {
+      return res.status(400).json({ message: 'Missing required field: teacherId' });
+    }
+    if (!date) {
+      return res.status(400).json({ message: 'Missing required field: date' });
+    }
+    if (!records || !Array.isArray(records)) {
+      return res.status(400).json({ message: 'Missing or invalid field: records (must be an array)' });
     }
 
     const teacherObj = await User.findOne({ id: teacherId, role: 'teacher' });

@@ -496,12 +496,22 @@ const StudentDashboard = () => {
 
     setTimeout(() => {
       let resolvedAnswer = '';
-      if (questionText.toLowerCase().includes('sn1') || questionText.toLowerCase().includes('sn2')) {
+      const lowerQ = questionText.toLowerCase();
+      
+      if (lowerQ.includes('sn1') || lowerQ.includes('sn2')) {
         resolvedAnswer = `**SN1 vs SN2 Mechanisms:**\n\n- **SN1 (Substitution Nucleophilic Unimolecular):** Renders a 2-step process with a carbocation intermediate. Rate depends only on substrate concentration: Rate = k[R-X]. Favored by polar protic solvents and tertiary substrates.\n- **SN2 (Substitution Nucleophilic Bimolecular):** Renders a 1-step concerted process with transition state and inversion of configuration (Walden Inversion). Rate depends on both: Rate = k[R-X][Nu⁻]. Favored by polar aprotic solvents and primary substrates.`;
-      } else if (questionText.toLowerCase().includes('bohr') || questionText.toLowerCase().includes('orbit')) {
+      } else if (lowerQ.includes('bohr') || lowerQ.includes('orbit')) {
         resolvedAnswer = `**Bohr's Orbit Radius Derivation:**\n\nFor a hydrogenic atom, the electrostatic force balances the centripetal force:\n$$\\frac{m v^2}{r} = \\frac{Z e^2}{4 \\pi \\epsilon_0 r^2}$$\n\nApplying Bohr's quantization condition ($mvr = nh/2\\pi$), we solve for $r_n$:\n$$r_n = \\frac{\\epsilon_0 n^2 h^2}{\\pi m Z e^2} = 0.529 \\frac{n^2}{Z} \\text{ Å}$$\n\nThis shows the radius is directly proportional to the square of the principal quantum number ($n^2$).`;
-      } else if (questionText.toLowerCase().includes('avogadro')) {
+      } else if (lowerQ.includes('avogadro')) {
         resolvedAnswer = `**Avogadro's Hypothesis:**\n\n"Equal volumes of all gases, at the same temperature and pressure, contain the same number of molecules."\n\n- **Formula:** $V \\propto n$ (where $n$ is the number of moles).\n- **At STP:** 1 mole of any ideal gas occupies exactly $22.4 \\text{ Liters}$ and contains $6.022 \\times 10^{23}$ particles.`;
+      } else if (lowerQ.includes('newton') || lowerQ.includes('force') || lowerQ.includes('law')) {
+        resolvedAnswer = `**Newton's Laws of Motion:**\n\n- **First Law (Inertia):** An object remains at rest or in uniform motion unless acted upon by a net external force.\n- **Second Law ($F = ma$):** The rate of change of momentum is directly proportional to the applied force.\n- **Third Law (Action-Reaction):** For every action, there is an equal and opposite reaction.\n- **Problem Tip:** Always draw a Free Body Diagram (FBD) first before setting up equations of motion.`;
+      } else if (lowerQ.includes('quadratic') || lowerQ.includes('equation') || lowerQ.includes('root')) {
+        resolvedAnswer = `**Quadratic Equations & Roots:**\n\nFor any quadratic equation $a x^2 + b x + c = 0$:\n- **Quadratic Formula:** $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$\n- **Discriminant ($D = b^2 - 4ac$):**\n  - $D > 0$: Two distinct real roots.\n  - $D = 0$: Two equal real roots.\n  - $D < 0$: Two complex conjugate roots.\n- **Sum of Roots:** $\\alpha + \\beta = -\\frac{b}{a}$\n- **Product of Roots:** $\\alpha \\beta = \\frac{c}{a}$`;
+      } else if (lowerQ.includes('photosynthesis') || lowerQ.includes('chlorophyll') || lowerQ.includes('plant')) {
+        resolvedAnswer = `**Photosynthesis Process:**\n\nLight-driven process where plants synthesize glucose from carbon dioxide and water:\n$$6\\text{CO}_2 + 6\\text{H}_2\\text{O} \\xrightarrow{\\text{Light/Chlorophyll}} \\text{C}_6\\text{H}_{12}\\text{O}_6 + 6\\text{O}_2$$\n\n- **Light Reactions (in Thylakoid):** Splitting of water (photolysis) to release oxygen, producing ATP and NADPH.\n- **Dark Reactions (Calvin Cycle, in Stroma):** Carbon fixation using ATP and NADPH to construct glucose.`;
+      } else if (lowerQ.includes('acid') || lowerQ.includes('base') || lowerQ.includes('ph')) {
+        resolvedAnswer = `**Acids, Bases & pH Scale:**\n\n- **Arrhenius Concept:** Acids yield $\\text{H}^+$ ions in water; bases yield $\\text{OH}^-$ ions.\n- **Brønsted-Lowry:** Acids are proton donors; bases are proton acceptors.\n- **Lewis Concept:** Acids are electron-pair acceptors; bases are electron-pair donors.\n- **pH Formula:** $\\text{pH} = -\\log_{10}[\\text{H}^+]$\n  - $\\text{pH} < 7$: Acidic\n  - $\\text{pH} = 7$: Neutral\n  - $\\text{pH} > 7$: Basic`;
       } else {
         resolvedAnswer = `**AI Resolution for:** "${questionText}"\n\nBased on your JEE Prep syllabus, here is the analytical breakdown:\n1. **Core Concept:** This question falls under physical chemistry / general principles.\n2. **Detailed Steps:** Follow the conservation laws. Apply standard molecular kinetics equations where pressure is held constant.\n3. **Exam Tip:** Keep track of units (e.g. converting liters to $m^3$ or Kelvin temperatures).`;
       }
@@ -4056,6 +4066,14 @@ const StudentDashboard = () => {
                         </button>
                       ))
                     )}
+                  </div>
+                </div>
+
+                {/* Beta notice banner */}
+                <div className="bg-amber-50/70 border border-amber-200/50 rounded-xl p-2.5 text-left text-[9px] text-amber-800 font-medium">
+                  <div className="flex gap-2">
+                    <span className="text-[10px]">💡</span>
+                    <span><strong>AI Solver Beta:</strong> Responses are generated from our curated NCERT/JEE syllabus database. Live AI model API integration coming soon!</span>
                   </div>
                 </div>
 

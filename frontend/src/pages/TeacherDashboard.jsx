@@ -893,13 +893,26 @@ const TeacherDashboard = () => {
   const submitAttendanceSheet = async () => {
     setSubmittingAttendance(true);
     try {
+      let activeTeacherId = teacherId;
+      if (!activeTeacherId) {
+        const user = await api.get('/auth/me');
+        if (user && user.id) {
+          activeTeacherId = user.id;
+          setTeacherId(user.id);
+        }
+      }
+
+      if (!activeTeacherId) {
+        throw new Error('Teacher session not found. Please log in again.');
+      }
+
       const records = attendanceRecords.map(rec => ({
         studentId: rec.id,
         present: !!rec.present
       }));
 
       await api.post('/attendance', {
-        teacherId,
+        teacherId: activeTeacherId,
         date: attendanceDate,
         records
       });
@@ -908,7 +921,7 @@ const TeacherDashboard = () => {
       setShowToast(true);
       triggerConfetti();
 
-      await loadTeacherData(teacherId);
+      await loadTeacherData(activeTeacherId);
     } catch (err) {
       alert(err.message || 'Failed to submit attendance sheet.');
     } finally {

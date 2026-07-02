@@ -31,6 +31,14 @@ const AdminSchema = new mongoose.Schema(
       type: String,
       default: 'admin',
     },
+    login_attempts: {
+      type: Number,
+      default: 0,
+    },
+    lock_until: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

@@ -1032,9 +1032,9 @@ const AdminDashboard = () => {
           {filteredTeachers.map(teacher => {
             const allDocsOk = areAllDocsApproved(teacher.id);
             return (
-            <div key={teacher.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 hover:shadow-md transition-shadow text-left">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center space-x-3">
+            <div key={teacher.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 hover:shadow-md transition-shadow text-left min-w-0 overflow-hidden flex flex-col justify-between">
+              <div className="flex justify-between items-start gap-2 min-w-0">
+                <div className="flex items-center space-x-3 min-w-0">
                   <div className="relative w-10 h-10 rounded-full bg-slate-100 overflow-hidden shrink-0">
                     <img 
                       src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80"
@@ -1047,17 +1047,17 @@ const AdminDashboard = () => {
                       </div>
                     )}
                   </div>
-                  <div>
-                    <h4 className="font-extrabold text-slate-800 text-sm flex items-center gap-1.5">
+                  <div className="min-w-0">
+                    <h4 className="font-extrabold text-slate-800 text-sm flex items-center gap-1.5 truncate">
                       {teacher.name}
                       {allDocsOk && teacher.status === 'Verified' && (
-                        <span className="text-[8px] bg-emerald-50 border border-emerald-100 text-emerald-600 font-black px-1.5 py-0.5 rounded tracking-wide">✓ VERIFIED</span>
+                        <span className="text-[8px] bg-emerald-50 border border-emerald-100 text-emerald-600 font-black px-1.5 py-0.5 rounded tracking-wide shrink-0">✓ VERIFIED</span>
                       )}
                     </h4>
-                    <p className="text-[10px] text-slate-400 font-bold">{teacher.subject} Specialist</p>
+                    <p className="text-[10px] text-slate-400 font-bold truncate">{teacher.subject} Specialist</p>
                   </div>
                 </div>
-                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 ${
                   teacher.status === 'Verified' && allDocsOk ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
                 }`}>
                   {teacher.status === 'Verified' && allDocsOk ? 'Verified' : 'Pending Docs'}
@@ -1067,7 +1067,7 @@ const AdminDashboard = () => {
               {/* Doc status mini pills */}
               <div className="flex flex-wrap gap-1.5">
                 {Object.entries(teacherDocStatus[teacher.id] || {}).map(([key, val]) => (
-                  <span key={key} className={`text-[8px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider ${
+                  <span key={key} className={`text-[8px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider shrink-0 ${
                     val === 'Approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100 animate-pulse'
                   }`}>
                     {key === 'degree' ? '🎓 Degree' : key === 'aadhar' ? '🪪 Aadhar' : key === 'experience' ? '📄 Exp. Letter' : '🛡️ Police Check'}: {val === 'Approved' ? '✓' : '⏳'}
@@ -1075,26 +1075,26 @@ const AdminDashboard = () => {
                 ))}
               </div>
 
-              <div className="border-t border-b border-slate-50 py-3 text-[11px] font-semibold text-slate-500 space-y-2">
-                <div className="flex justify-between">
-                  <span>Email:</span>
-                  <span className="text-slate-700 font-bold">{teacher.email}</span>
+              <div className="border-t border-b border-slate-50 py-3 text-[11px] font-semibold text-slate-500 space-y-2 min-w-0">
+                <div className="flex justify-between gap-2 min-w-0">
+                  <span className="shrink-0">Email:</span>
+                  <span className="text-slate-700 font-bold truncate" title={teacher.email}>{teacher.email}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Hourly Billing:</span>
-                  <span className="text-slate-700 font-bold">{teacher.rate}</span>
+                <div className="flex justify-between gap-2 min-w-0">
+                  <span className="shrink-0">Hourly Billing:</span>
+                  <span className="text-slate-700 font-bold truncate">{teacher.rate}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Rating:</span>
-                  <span className="text-slate-800 font-extrabold">★ {teacher.rating}</span>
+                <div className="flex justify-between gap-2 min-w-0">
+                  <span className="shrink-0">Rating:</span>
+                  <span className="text-slate-800 font-extrabold shrink-0">★ {teacher.rating}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Active Batches:</span>
-                  <span className="text-slate-700 font-bold">{teacher.batches.join(', ')}</span>
+                <div className="flex justify-between gap-2 min-w-0">
+                  <span className="shrink-0">Active Batches:</span>
+                  <span className="text-slate-700 font-bold truncate" title={teacher.batches.join(', ')}>{teacher.batches.join(', ')}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Base Location:</span>
-                  <span className="text-slate-700 font-bold">{teacher.city || 'Meerut'}</span>
+                <div className="flex justify-between gap-2 min-w-0">
+                  <span className="shrink-0">Base Location:</span>
+                  <span className="text-slate-700 font-bold truncate">{teacher.city || 'Meerut'}</span>
                 </div>
                 <div>
                   <InlineGoogleMap address={teacher.city || 'Meerut'} label="Tutor Location" />

@@ -33,9 +33,23 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const identifier = email.trim();
+    if (!identifier) {
+      alert('Please enter your email address or phone number.');
+      return;
+    }
+    const isPhone = /^\+?[0-9\s\-()]{10,}$/.test(identifier) && !identifier.includes('@');
+    if (!isPhone) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(identifier)) {
+        alert('Please enter a valid email address or phone number.');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
-      const data = await api.post('/auth/login', { email, password, role });
+      const data = await api.post('/auth/login', { email: identifier, password, role });
       localStorage.setItem('cograd_token',           data.token);
       localStorage.setItem('cograd_logged_in',       'true');
       localStorage.setItem('cograd_role',            data.user.role);
@@ -173,21 +187,21 @@ export default function Login() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
 
-            {/* Email */}
+            {/* Email/Phone */}
             <div>
               <label className="form-label">
                 <Mail className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />
-                Email address
+                Email or Phone Number
               </label>
               <input
                 id="login-email"
-                type="email"
+                type="text"
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 className="form-input"
-                placeholder="you@example.com"
-                autoComplete="email"
+                placeholder="you@example.com or 9876543210"
+                autoComplete="username"
               />
             </div>
 

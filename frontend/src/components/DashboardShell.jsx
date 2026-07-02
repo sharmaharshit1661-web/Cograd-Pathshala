@@ -326,7 +326,7 @@ export default function DashboardShell({
         </aside>
 
         {/* ── COLUMN 2: MAIN CONTENT AREA ── */}
-        <div className="flex-grow flex flex-col h-[100dvh] md:h-full overflow-hidden bg-[#F8FAFC]">
+        <div className="flex-grow flex flex-col h-[100dvh] md:h-full overflow-hidden bg-[#F8FAFC] min-w-0">
           
           {/* Content Header */}
           <header className="h-[72px] px-6 md:px-8 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
