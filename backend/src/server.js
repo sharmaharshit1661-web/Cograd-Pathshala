@@ -9,6 +9,7 @@ import Admin from './models/Admin.js';
 import Assignment from './models/Assignment.js';
 import authRoutes from './routes/auth.js';
 import apiRoutes from './routes/api.js';
+import { UPLOADS_ROOT } from './utils/paths.js';
 
 // Load environment variables
 dotenv.config();
@@ -16,18 +17,28 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
-const app = express();
+const app  = express();
 const PORT = process.env.PORT || 4000;
 
-// Middleware
-app.use(cors());
+// ── Core middleware ───────────────────────────────────────────────────────────
+app.use(cors({
+  origin: '*',            // tighten to your Vercel domain in production
+  exposedHeaders: ['Content-Disposition'],
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded teacher documents (protected by admin in production; open here for simplicity)
-app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
+// ── Static: serve uploaded teacher documents ──────────────────────────────────
+// Files are stored at  backend/uploads/**
+// Served at            GET /uploads/**
+// e.g. GET /uploads/teacher-docs/teacher_123/degree_ts_cert.pdf
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(UPLOADS_ROOT));
 
-// Register routes
+// ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api', apiRoutes);
 
