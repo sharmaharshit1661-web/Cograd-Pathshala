@@ -201,6 +201,7 @@ router.post('/teachers', protect, async (req, res) => {
 });
 
 const sendTeacherCredentialsEmail = (name, email, password) => {
+  const frontendUrl = process.env.FRONTEND_URL || 'https://cograd-pathshala-frontend-lovat.vercel.app';
   console.log(`
 ============================================================
 📧 EMAIL SENT (SIMULATED)
@@ -216,7 +217,7 @@ teacher has been verified and approved by our admin team.
 
 Here are your login credentials:
 ------------------------------------------
-Login URL: http://localhost:3000/login
+Login URL: ${frontendUrl}/login
 Email:     ${email}
 Password:  ${password}
 ------------------------------------------
