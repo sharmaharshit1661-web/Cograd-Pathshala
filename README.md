@@ -1,7 +1,7 @@
 # Cograd Pathshala
 
 This  repository is split into two main sections:
-- **`frontend/`**: The frontend React app powered by Vite and Tailwind CSS.
+- **`frontend/`**:The frontend React app powered by Vite and Tailwind CSS.
 - **`backend/`**: The backend services powered by Node.js, Express, and CORS.
 
 ---
