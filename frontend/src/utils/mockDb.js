@@ -177,7 +177,17 @@ export const findSuggestedTeachers = (student) => {
     score += availabilityScore;
     reasons.push(`High availability (${t.max_student_capacity - t.current_student_count} slots open)`);
 
-    const compatibilityPercent = Math.min(100, Math.round((score / 20) * 100));
+    // Locality Match (max 30 points)
+    if (student.locality && t.locality && student.locality.trim().toLowerCase() === t.locality.trim().toLowerCase()) {
+      score += 30;
+      reasons.push(`Mutual Location Match: Same locality (${student.locality})`);
+    } else {
+      const studentLoc = student.locality || 'N/A';
+      const teacherLoc = t.locality || 'N/A';
+      reasons.push(`Same City (${student.city}) but different locality (Student: ${studentLoc}, Tutor: ${teacherLoc})`);
+    }
+
+    const compatibilityPercent = Math.min(100, Math.round((score / 50) * 100));
 
     return {
       teacher: t,

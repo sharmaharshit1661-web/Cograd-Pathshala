@@ -3,9 +3,137 @@ import { Link } from 'react-router-dom';
 import {
   MapPin, Users, GraduationCap, Award,
   TrendingUp, ShieldCheck, Star, ArrowRight, Zap,
-  Heart, Sparkles, ClipboardCheck, UserCheck, Search,
+  Heart, Sparkles, ClipboardCheck, UserCheck, Search, ChevronDown
 } from 'lucide-react';
 
+
+const CITY_GROUPS = [
+  {
+    label: "Delhi NCR",
+    cities: [
+      { name: "Delhi NCR", value: "Delhi NCR" },
+      { name: "Delhi", value: "Delhi" },
+      { name: "Noida", value: "Noida" },
+      { name: "Greater Noida", value: "Greater Noida" },
+      { name: "Gurugram / Gurgaon", value: "Gurugram" },
+      { name: "Faridabad", value: "Faridabad" },
+      { name: "Ghaziabad", value: "Ghaziabad" }
+    ]
+  },
+  {
+    label: "Uttar Pradesh",
+    cities: [
+      { name: "Meerut", value: "Meerut" },
+      { name: "Allahabad (Prayagraj)", value: "Allahabad" },
+      { name: "Lucknow", value: "Lucknow" },
+      { name: "Agra", value: "Agra" },
+      { name: "Aligarh", value: "Aligarh" },
+      { name: "Amroha", value: "Amroha" },
+      { name: "Azamgarh", value: "Azamgarh" },
+      { name: "Ballia", value: "Ballia" },
+      { name: "Banda", value: "Banda" },
+      { name: "Baraut", value: "Baraut" },
+      { name: "Basti", value: "Basti" },
+      { name: "Bulandshahr", value: "Bulandshahr" },
+      { name: "Deoria", value: "Deoria" },
+      { name: "Etah", value: "Etah" },
+      { name: "Etawah", value: "Etawah" },
+      { name: "Farrukhabad", value: "Farrukhabad" },
+      { name: "Fatehpur", value: "Fatehpur" },
+      { name: "Firozabad", value: "Firozabad" },
+      { name: "Ghazipur", value: "Ghazipur" },
+      { name: "Gonda", value: "Gonda" },
+      { name: "Gorakhpur", value: "Gorakhpur" },
+      { name: "Hapur", value: "Hapur" },
+      { name: "Hardoi", value: "Hardoi" },
+      { name: "Hathras", value: "Hathras" },
+      { name: "Jaunpur", value: "Jaunpur" },
+      { name: "Jhansi", value: "Jhansi" },
+      { name: "Kanpur", value: "Kanpur" },
+      { name: "Lakhimpur", value: "Lakhimpur" },
+      { name: "Mainpuri", value: "Mainpuri" },
+      { name: "Mathura", value: "Mathura" },
+      { name: "Mirzapur", value: "Mirzapur" },
+      { name: "Moradabad", value: "Moradabad" },
+      { name: "Muzaffarnagar", value: "Muzaffarnagar" },
+      { name: "Orai", value: "Orai" },
+      { name: "Rampur", value: "Rampur" },
+      { name: "Saharanpur", value: "Saharanpur" },
+      { name: "Sambhal", value: "Sambhal" },
+      { name: "Shahjahanpur", value: "Shahjahanpur" },
+      { name: "Sitapur", value: "Sitapur" },
+      { name: "Unnao", value: "Unnao" },
+      { name: "Varanasi", value: "Varanasi" }
+    ]
+  },
+  {
+    label: "Haryana",
+    cities: [
+      { name: "Ambala", value: "Ambala" },
+      { name: "Bahadurgarh", value: "Bahadurgarh" },
+      { name: "Bhiwani", value: "Bhiwani" },
+      { name: "Hisar", value: "Hisar" },
+      { name: "Jind", value: "Jind" },
+      { name: "Karnal", value: "Karnal" },
+      { name: "Kurukshetra", value: "Kurukshetra" },
+      { name: "Panchkula", value: "Panchkula" },
+      { name: "Panipat", value: "Panipat" },
+      { name: "Rewari", value: "Rewari" },
+      { name: "Rohtak", value: "Rohtak" },
+      { name: "Sirsa", value: "Sirsa" },
+      { name: "Sonipat", value: "Sonipat" },
+      { name: "Yamunanagar", value: "Yamunanagar" }
+    ]
+  },
+  {
+    label: "Uttarakhand",
+    cities: [
+      { name: "Dehradun", value: "Dehradun" },
+      { name: "Haldwani", value: "Haldwani" },
+      { name: "Haridwar", value: "Haridwar" },
+      { name: "Kashipur", value: "Kashipur" },
+      { name: "Nainital", value: "Nainital" },
+      { name: "Rishikesh", value: "Rishikesh" },
+      { name: "Roorkee", value: "Roorkee" },
+      { name: "Rudrapur", value: "Rudrapur" }
+    ]
+  },
+  {
+    label: "Punjab",
+    cities: [
+      { name: "Amritsar", value: "Amritsar" },
+      { name: "Barnala", value: "Barnala" },
+      { name: "Batala", value: "Batala" },
+      { name: "Bathinda", value: "Bathinda" },
+      { name: "Firozpur", value: "Firozpur" },
+      { name: "Hoshiarpur", value: "Hoshiarpur" },
+      { name: "Jalandhar", value: "Jalandhar" },
+      { name: "Ludhiana", value: "Ludhiana" },
+      { name: "Moga", value: "Moga" },
+      { name: "Mohali (SAS Nagar)", value: "Mohali" },
+      { name: "Pathankot", value: "Pathankot" },
+      { name: "Patiala", value: "Patiala" },
+      { name: "Sangrur", value: "Sangrur" }
+    ]
+  },
+  {
+    label: "Nearby States & Territories",
+    cities: [
+      { name: "Chandigarh", value: "Chandigarh" },
+      { name: "Jaipur", value: "Jaipur" },
+      { name: "Ajmer", value: "Ajmer" },
+      { name: "Alwar", value: "Alwar" },
+      { name: "Bikaner", value: "Bikaner" },
+      { name: "Jodhpur", value: "Jodhpur" },
+      { name: "Kota", value: "Kota" },
+      { name: "Udaipur", value: "Udaipur" },
+      { name: "Shimla", value: "Shimla" },
+      { name: "Dharamshala", value: "Dharamshala" },
+      { name: "Mandi", value: "Mandi" },
+      { name: "Solan", value: "Solan" }
+    ]
+  }
+];
 
 const STATS = [
   { icon: MapPin,        value: '50+',  label: 'Cities Covered',   color: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-100' },
@@ -29,32 +157,136 @@ const TESTIMONIALS = [
 
 const DISTRICTS = [
   {
-    city: 'Metro Cities',
+    city: 'Delhi NCR',
     status: 'Fully Active',
     statusColor: 'text-emerald-600 bg-emerald-50 border-emerald-100',
-    students: '75,000+',
+    students: '8,200+',
     teachers: '450+',
     accentColor: 'border-l-primary-500',
-    desc: 'Fully operational in Delhi NCR, Mumbai, Bengaluru, and Pune with instant tutor matches.',
-    statsLabel1: 'Active Students',
+    desc: 'Extensive coverage across the national capital region. Fast 1-on-1 home tutor matching.',
+    statsLabel1: 'Students Served',
     statsLabel2: 'Vetted Tutors',
-    actionText: 'Book Free Demo',
-    link: '/demo-booking'
+    actionText: 'Book Free Demo in NCR',
+    link: '/demo-booking',
+    cities: ['Delhi', 'Noida', 'Gurugram', 'Faridabad', 'Ghaziabad', 'Greater Noida'],
+    textColor: 'text-blue-600',
+    btnClass: 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/10 hover:shadow-blue-500/25'
   },
   {
-    city: 'Tier 2 & 3 Hubs',
+    city: 'Uttar Pradesh',
+    status: 'Active Coverage',
+    statusColor: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+    students: '12,400+',
+    teachers: '620+',
+    accentColor: 'border-l-violet-500',
+    desc: 'Connecting students to qualified local home tutors in key educational and regional hubs.',
+    statsLabel1: 'Matched Students',
+    statsLabel2: 'Verified Tutors',
+    actionText: 'Find Tutor in UP',
+    link: '/demo-booking',
+    cities: ['Meerut', 'Allahabad', 'Lucknow', 'Agra', 'Varanasi', 'Kanpur', 'Saharanpur', 'Jhansi', 'Gorakhpur'],
+    textColor: 'text-violet-600',
+    btnClass: 'bg-violet-600 hover:bg-violet-700 text-white shadow-violet-500/10 hover:shadow-violet-500/25'
+  },
+  {
+    city: 'Haryana',
+    status: 'Fully Active',
+    statusColor: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+    students: '4,800+',
+    teachers: '240+',
+    accentColor: 'border-l-teal-500',
+    desc: 'Premium home tutors serving major urban cities and educational hubs across the state.',
+    statsLabel1: 'Enrolled Students',
+    statsLabel2: 'Home Tutors',
+    actionText: 'Find Tutor in Haryana',
+    link: '/demo-booking',
+    cities: ['Faridabad', 'Gurugram', 'Ambala', 'Hisar', 'Karnal', 'Panipat', 'Rohtak', 'Panchkula', 'Sonipat'],
+    textColor: 'text-teal-600',
+    btnClass: 'bg-teal-600 hover:bg-teal-700 text-white shadow-teal-500/10 hover:shadow-teal-500/25'
+  },
+  {
+    city: 'Uttarakhand',
+    status: 'Active Coverage',
+    statusColor: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+    students: '3,100+',
+    teachers: '180+',
+    accentColor: 'border-l-amber-500',
+    desc: 'Enabling high-quality personal home coaching in mountainous and plain regions alike.',
+    statsLabel1: 'Students Matched',
+    statsLabel2: 'Expert Tutors',
+    actionText: 'Find Tutor in Uttarakhand',
+    link: '/demo-booking',
+    cities: ['Dehradun', 'Haldwani', 'Haridwar', 'Roorkee', 'Rudrapur', 'Rishikesh', 'Kashipur'],
+    textColor: 'text-amber-600',
+    btnClass: 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-500/10 hover:shadow-amber-500/25'
+  },
+  {
+    city: 'Punjab',
     status: 'Expanding Daily',
     statusColor: 'text-amber-600 bg-amber-50 border-amber-100',
-    students: '55,000+',
-    teachers: '280+',
-    accentColor: 'border-l-secondary-500',
-    desc: 'Rapidly growing across Meerut, Allahabad, Lucknow, and Jaipur with qualified local teachers.',
-    statsLabel1: 'Matched Students',
-    statsLabel2: 'Registered Tutors',
-    actionText: 'Request a Tutor',
-    link: '/demo-booking'
+    students: '5,600+',
+    teachers: '310+',
+    accentColor: 'border-l-rose-500',
+    desc: 'Expanding presence with dedicated subject mentors providing personalized board and competitive exam preparation.',
+    statsLabel1: 'Active Learners',
+    statsLabel2: 'Tutors Onboarded',
+    actionText: 'Find Tutor in Punjab',
+    link: '/demo-booking',
+    cities: ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda', 'Mohali', 'Pathankot', 'Moga'],
+    textColor: 'text-rose-600',
+    btnClass: 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/10 hover:shadow-rose-500/25'
   }
 ];
+
+const STATE_NODES = [
+  // Delhi NCR
+  [
+    { name: 'Delhi', x: 190, y: 150, color: '#3b82f6' },
+    { name: 'Noida', x: 260, y: 165, color: '#3b82f6' },
+    { name: 'Gurugram', x: 130, y: 185, color: '#3b82f6' },
+    { name: 'Faridabad', x: 180, y: 235, color: '#3b82f6' },
+    { name: 'Ghaziabad', x: 250, y: 105, color: '#3b82f6' },
+    { name: 'Greater Noida', x: 310, y: 190, color: '#3b82f6' },
+  ],
+  // Uttar Pradesh
+  [
+    { name: 'Lucknow', x: 250, y: 150, color: '#8b5cf6' },
+    { name: 'Meerut', x: 140, y: 70, color: '#8b5cf6' },
+    { name: 'Allahabad', x: 320, y: 220, color: '#8b5cf6' },
+    { name: 'Agra', x: 90, y: 160, color: '#8b5cf6' },
+    { name: 'Varanasi', x: 390, y: 210, color: '#8b5cf6' },
+    { name: 'Kanpur', x: 200, y: 180, color: '#8b5cf6' },
+  ],
+  // Haryana
+  [
+    { name: 'Gurugram', x: 200, y: 230, color: '#0d9488' },
+    { name: 'Ambala', x: 170, y: 70, color: '#0d9488' },
+    { name: 'Hisar', x: 90, y: 140, color: '#0d9488' },
+    { name: 'Karnal', x: 210, y: 120, color: '#0d9488' },
+    { name: 'Rohtak', x: 130, y: 175, color: '#0d9488' },
+    { name: 'Panipat', x: 200, y: 150, color: '#0d9488' },
+  ],
+  // Uttarakhand
+  [
+    { name: 'Dehradun', x: 140, y: 90, color: '#d97706' },
+    { name: 'Haldwani', x: 280, y: 195, color: '#d97706' },
+    { name: 'Haridwar', x: 180, y: 120, color: '#d97706' },
+    { name: 'Roorkee', x: 160, y: 145, color: '#d97706' },
+    { name: 'Rudrapur', x: 300, y: 220, color: '#d97706' },
+    { name: 'Rishikesh', x: 210, y: 110, color: '#d97706' },
+  ],
+  // Punjab
+  [
+    { name: 'Ludhiana', x: 210, y: 140, color: '#e11d48' },
+    { name: 'Amritsar', x: 100, y: 90, color: '#e11d48' },
+    { name: 'Jalandhar', x: 160, y: 110, color: '#e11d48' },
+    { name: 'Patiala', x: 240, y: 185, color: '#e11d48' },
+    { name: 'Bathinda', x: 130, y: 205, color: '#e11d48' },
+    { name: 'Mohali', x: 280, y: 160, color: '#e11d48' },
+  ]
+];
+
+
 
 /* ── Intersection-Observer scroll reveal ── */
 function useReveal() {
@@ -76,6 +308,44 @@ function useReveal() {
 const Home = () => {
   const pageRef = useReveal();
   const [selectedDistrict, setSelectedDistrict] = useState(0);
+  const [selectedCity, setSelectedCity] = useState("Meerut");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const handleSelectCity = (cityVal) => {
+    let matchedVal = cityVal;
+    for (const group of CITY_GROUPS) {
+      const match = group.cities.find(c => c.name.toLowerCase() === cityVal.toLowerCase() || c.value.toLowerCase() === cityVal.toLowerCase());
+      if (match) {
+        matchedVal = match.value;
+        break;
+      }
+    }
+    setSelectedCity(matchedVal);
+    setDropdownOpen(false);
+    const areaInput = document.getElementById('area-input');
+    if (areaInput) areaInput.focus();
+    window.scrollTo({ top: 250, behavior: 'smooth' });
+  };
+
+  const filteredCityGroups = CITY_GROUPS.map(group => {
+    const matching = group.cities.filter(c => 
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      group.label.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    return { ...group, cities: matching };
+  }).filter(group => group.cities.length > 0);
 
   return (
     <div ref={pageRef} className="min-h-screen bg-neutral-50">
@@ -206,52 +476,114 @@ const Home = () => {
             </h1>
 
             <p className="text-base sm:text-lg text-neutral-500 max-w-2xl mx-auto mb-8 animate-slide-up font-medium leading-relaxed" style={{ animationDelay: '120ms' }}>
-              1-on-1 home tuition for Class 1–10 students in Meerut, Allahabad, Lucknow & Delhi NCR.
+              1-on-1 home tuition for Class 1–10 students across Uttar Pradesh, Haryana, Uttarakhand, Punjab, Delhi NCR & nearby states.
             </p>
 
-            <div className="max-w-2xl mx-auto bg-white border border-neutral-200/80 rounded-2xl p-3.5 shadow-xl shadow-primary-500/5 mb-6 animate-slide-up" style={{ animationDelay: '220ms' }}>
-              <div className="text-left text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2.5 px-1 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-primary-500 animate-bounce" />
+            <div
+              className="max-w-2xl mx-auto bg-white border border-neutral-200/80 rounded-2xl p-3.5 mb-6 animate-slide-up transition-all duration-300 focus-within:shadow-[0_8px_32px_rgba(37,99,235,0.12)] focus-within:border-primary-200 relative z-30"
+              style={{ animationDelay: '220ms', boxShadow: '0 4px 24px rgba(15,23,42,0.06)' }}
+            >
+              <div className="text-left text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2.5 px-1 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-primary-500" aria-hidden="true" />
                 <span>Find a verified home tutor in your area</span>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                {/* City Dropdown */}
-                <div className="relative flex-1">
-                  <select 
-                    id="city-select"
-                    className="w-full h-12 pl-4 pr-10 bg-slate-50 border border-neutral-200 rounded-xl text-sm font-semibold text-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all cursor-pointer appearance-none"
-                    defaultValue="Meerut"
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                {/* Custom City Dropdown */}
+                <div className="flex-grow sm:flex-1 relative" ref={dropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="w-full h-12 px-4 bg-slate-50 hover:bg-slate-100/70 border border-neutral-200 rounded-xl text-sm font-semibold text-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-400 transition-all cursor-pointer flex items-center justify-between text-left"
                   >
-                    <option value="Meerut">Meerut</option>
-                    <option value="Allahabad">Allahabad</option>
-                    <option value="Lucknow">Lucknow</option>
-                    <option value="Delhi NCR">Delhi NCR</option>
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
-                    <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                      <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                    </svg>
-                  </div>
+                    <span className="truncate">
+                      📍 {
+                        (() => {
+                          for (const g of CITY_GROUPS) {
+                            const match = g.cities.find(c => c.value === selectedCity);
+                            if (match) return match.name;
+                          }
+                          return selectedCity;
+                        })()
+                      }
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform duration-200 shrink-0 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* Hidden input to preserve city value for backwards compatibility */}
+                  <input type="hidden" id="city-select" value={selectedCity} readOnly />
+
+                  {/* Dropdown panel */}
+                  {dropdownOpen && (
+                    <div className="absolute left-0 right-0 mt-1.5 bg-white border border-neutral-100 rounded-2xl shadow-xl z-50 overflow-hidden min-w-[280px]">
+                      {/* Search Bar */}
+                      <div className="p-2.5 border-b border-neutral-100 flex items-center gap-2">
+                        <Search className="w-4 h-4 text-neutral-400 shrink-0" />
+                        <input
+                          type="text"
+                          placeholder="Search city or state..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full text-xs font-semibold placeholder-neutral-400 bg-transparent outline-none focus:ring-0 focus:border-0 border-0 p-0"
+                          autoFocus
+                        />
+                      </div>
+
+                      {/* List options */}
+                      <div className="max-h-64 overflow-y-auto py-1">
+                        {filteredCityGroups.length > 0 ? (
+                          filteredCityGroups.map((group) => (
+                            <div key={group.label}>
+                              <div className="px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-neutral-400 bg-slate-50/50">
+                                {group.label}
+                              </div>
+                              {group.cities.map((city) => {
+                                const isSelected = city.value === selectedCity;
+                                return (
+                                  <button
+                                    key={city.value}
+                                    type="button"
+                                    onClick={() => handleSelectCity(city.value)}
+                                    className={`w-full px-4 py-2 text-xs text-left transition-colors flex items-center justify-between border-0 cursor-pointer ${
+                                      isSelected
+                                        ? 'bg-primary-50 text-primary-700 font-bold'
+                                        : 'bg-white hover:bg-slate-50 text-neutral-600 hover:text-neutral-900 font-medium'
+                                    }`}
+                                  >
+                                    <span>📍 {city.name}</span>
+                                    {isSelected && <span className="text-[10px] font-black uppercase text-primary-600">Selected</span>}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-4 py-6 text-xs text-center text-neutral-400 font-medium">
+                            No cities found matching "{searchQuery}"
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {/* Area Input */}
                 <div className="flex-[2] relative">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     id="area-input"
-                    placeholder="Enter your area or sector (e.g. Shastri Nagar)..." 
-                    className="w-full h-12 px-4 bg-slate-50 border border-neutral-200 rounded-xl text-sm font-medium text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                    aria-label="Enter your area"
+                    placeholder="Your area or sector, e.g. Shastri Nagar…"
+                    className="w-full h-12 px-4 bg-slate-50 border border-neutral-200 rounded-xl text-sm font-medium text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-400 focus:bg-white transition-all"
                   />
                 </div>
                 {/* Search Button */}
-                <button 
+                <button
                   onClick={() => {
-                    const city = document.getElementById('city-select').value;
                     const area = document.getElementById('area-input').value;
-                    window.location.href = `/student?location=${encodeURIComponent(city)}&area=${encodeURIComponent(area)}`;
+                    window.location.href = `/student?location=${encodeURIComponent(selectedCity)}&area=${encodeURIComponent(area)}`;
                   }}
-                  className="btn-primary h-12 px-8 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary-500/20 active:scale-[0.98] transition-all cursor-pointer"
+                  className="btn-primary h-12 px-7 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-primary-500/20 active:scale-[0.97] transition-all cursor-pointer whitespace-nowrap"
                 >
-                  <Search className="w-4 h-4" />
+                  <Search className="w-4 h-4" aria-hidden="true" />
                   <span>Find Tutors</span>
                 </button>
               </div>
@@ -279,30 +611,27 @@ const Home = () => {
       {/* ─── STATS STRIP ─── */}
       <section id="stats-strip" className="py-14 border-y border-neutral-100 bg-white relative z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
             {STATS.map((s, i) => {
               const Icon = s.icon;
+              const glows = [
+                'linear-gradient(135deg, #2563eb, #60a5fa)',
+                'linear-gradient(135deg, #10b981, #34d399)',
+                'linear-gradient(135deg, #7c3aed, #a78bfa)',
+                'linear-gradient(135deg, #f59e0b, #fbbf24)',
+              ];
               return (
                 <div
                   key={i}
-                  className={`reveal-on-scroll glow-card text-center flex flex-col items-center gap-3 p-5 transition-all duration-300`}
-                  style={{
-                    transitionDelay: `${i * 80}ms`,
-                    '--glow-gradient': i === 0 
-                      ? 'linear-gradient(135deg, #2563eb, #60a5fa)' 
-                      : i === 1 
-                      ? 'linear-gradient(135deg, #10b981, #34d399)' 
-                      : i === 2 
-                      ? 'linear-gradient(135deg, #7c3aed, #a78bfa)' 
-                      : 'linear-gradient(135deg, #f59e0b, #fbbf24)'
-                  }}
+                  className="reveal-on-scroll glow-card text-center flex flex-col items-center gap-3 p-6 cursor-default"
+                  style={{ transitionDelay: `${i * 80}ms`, '--glow-gradient': glows[i] }}
                 >
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${s.bg} relative z-20`}>
-                    <Icon className={`w-5.5 h-5.5 ${s.color}`} />
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${s.bg} border ${s.border} relative z-20 transition-transform duration-300 group-hover:scale-110`}>
+                    <Icon className={`w-5 h-5 ${s.color}`} aria-hidden="true" />
                   </div>
                   <div className="relative z-20">
-                    <div className={`text-3xl font-extrabold ${s.color}`}>{s.value}</div>
-                    <div className="text-[12.5px] text-neutral-500 mt-0.5 font-medium">{s.label}</div>
+                    <div className={`text-3xl font-black ${s.color} stat-number`}>{s.value}</div>
+                    <div className="text-[12px] text-neutral-500 mt-0.5 font-semibold tracking-tight">{s.label}</div>
                   </div>
                 </div>
               );
@@ -579,52 +908,39 @@ const Home = () => {
 
                 {/* Connection paths */}
                 <g fill="none" strokeWidth="1.5">
-                  <path d="M 60 110 L 85 80" stroke="#94a3b8" strokeDasharray="3, 3" className="opacity-50" />
-                  <path d="M 85 80 Q 150 120, 220 150" stroke="url(#lineGrad)" className="animate-dash-flow" />
-                  <path d="M 220 150 Q 270 190, 320 220" stroke="url(#lineGrad)" className="animate-dash-flow" />
-                  <path d="M 220 150 L 380 215" stroke="#cbd5e1" strokeDasharray="4, 4" className="opacity-40" />
-                  <path d="M 320 220 L 380 215" stroke="#cbd5e1" strokeDasharray="4, 4" className="opacity-40" />
+                  {STATE_NODES[selectedDistrict].slice(0, -1).map((node, nIdx) => {
+                    const nextNode = STATE_NODES[selectedDistrict][nIdx + 1];
+                    return (
+                      <path 
+                        key={nIdx}
+                        d={`M ${node.x} ${node.y} Q ${(node.x + nextNode.x)/2} ${(node.y + nextNode.y)/2 - 15}, ${nextNode.x} ${nextNode.y}`} 
+                        stroke="url(#lineGrad)" 
+                        className="animate-dash-flow opacity-60" 
+                      />
+                    );
+                  })}
                 </g>
 
                 {/* City Nodes */}
-                {[
-                  { name: 'Delhi NCR', x: 60, y: 110, status: 'Active', color: '#10b981', index: 0 },
-                  { name: 'Mumbai', x: 85, y: 80, status: 'Active', color: '#10b981', index: 0 },
-                  { name: 'Bengaluru', x: 220, y: 150, status: 'Active', color: '#10b981', index: 0 },
-                  { name: 'Meerut', x: 320, y: 220, status: 'Active', color: '#f59e0b', index: 1 },
-                  { name: 'Allahabad', x: 380, y: 215, status: 'Active', color: '#f59e0b', index: 1 },
-                ].map((c) => {
-                  const isInteractive = c.index !== undefined;
-                  const isActive = isInteractive && selectedDistrict === c.index;
-                  const nodeColor = isActive 
-                    ? (c.index === 0 ? '#3b82f6' : '#8b5cf6')
-                    : c.color;
-
+                {STATE_NODES[selectedDistrict].map((c) => {
+                  const nodeColor = c.color;
                   return (
                     <g 
                       key={c.name} 
-                      className={isInteractive ? 'cursor-pointer group/node' : 'opacity-70'}
-                      onClick={() => isInteractive && setSelectedDistrict(c.index)}
+                      className="cursor-pointer group/node"
+                      onClick={() => handleSelectCity(c.name)}
                     >
-                      {/* Concentric pulsing circles for active node */}
-                      {isActive && (
-                        <>
-                          <circle cx={c.x} cy={c.y} r="6" fill={nodeColor} opacity="0.4">
-                            <animate attributeName="r" values="6;22" dur="2.5s" begin="0s" repeatCount="indefinite" />
-                            <animate attributeName="opacity" values="0.8;0" dur="2.5s" begin="0s" repeatCount="indefinite" />
-                          </circle>
-                          <circle cx={c.x} cy={c.y} r="6" fill={nodeColor} opacity="0.4">
-                            <animate attributeName="r" values="6;22" dur="2.5s" begin="1.25s" repeatCount="indefinite" />
-                            <animate attributeName="opacity" values="0.8;0" dur="2.5s" begin="1.25s" repeatCount="indefinite" />
-                          </circle>
-                        </>
-                      )}
+                      {/* Pulse effect */}
+                      <circle cx={c.x} cy={c.y} r="6" fill={nodeColor} opacity="0.4">
+                        <animate attributeName="r" values="6;16" dur="2s" begin="0s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="0.8;0" dur="2s" begin="0s" repeatCount="indefinite" />
+                      </circle>
 
                       {/* Main Node Point */}
                       <circle 
                         cx={c.x} 
                         cy={c.y} 
-                        r={isActive ? "6" : "4.5"} 
+                        r="5" 
                         fill={nodeColor} 
                         className="transition-all duration-300 stroke-white stroke-2 group-hover/node:scale-125"
                         style={{ transformOrigin: `${c.x}px ${c.y}px` }}
@@ -635,27 +951,11 @@ const Home = () => {
                         x={c.x} 
                         y={c.y - 12} 
                         textAnchor="middle" 
-                        className={`text-[10px] select-none transition-all duration-300 ${
-                          isActive 
-                            ? 'font-bold fill-neutral-900 drop-shadow-sm' 
-                            : 'font-semibold fill-neutral-400 group-hover/node:fill-neutral-700'
-                        }`}
+                        className="text-[9px] select-none font-bold fill-neutral-800 drop-shadow-sm transition-all duration-300 group-hover/node:fill-primary-700"
                         style={{ transformOrigin: `${c.x}px ${c.y - 12}px` }}
                       >
                         {c.name}
                       </text>
-
-                      {/* Mini status indicator */}
-                      {!isInteractive && (
-                        <text 
-                          x={c.x} 
-                          y={c.y + 13} 
-                          textAnchor="middle" 
-                          className="text-[6.5px] font-medium fill-neutral-400 tracking-wide select-none"
-                        >
-                          {c.status}
-                        </text>
-                      )}
                     </g>
                   );
                 })}
@@ -663,14 +963,14 @@ const Home = () => {
 
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-white border border-neutral-200/80 shadow-sm rounded-full text-[9px] font-bold text-neutral-600 tracking-wider uppercase z-20 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
-                Interactive Coverage Map
+                Interactive state map
               </div>
             </div>
 
             {/* Right Side: Interactive Details Panel */}
             <div className="lg:col-span-7 flex flex-col justify-between gap-6">
               {/* Tab Selector */}
-              <div className="flex bg-slate-100/85 p-1.5 rounded-xl border border-slate-200/50">
+              <div className="flex flex-wrap sm:flex-nowrap bg-slate-100/85 p-1.5 rounded-xl border border-slate-200/50 gap-1">
                 {DISTRICTS.map((d, index) => (
                   <button
                     key={d.city}
@@ -682,11 +982,7 @@ const Home = () => {
                     }`}
                   >
                     {d.city}
-                    {d.status === 'Active' ? (
-                      <span className="ml-1.5 w-1.5 h-1.5 inline-block bg-emerald-500 rounded-full animate-pulse" />
-                    ) : (
-                      <span className="ml-1.5 w-1.5 h-1.5 inline-block bg-amber-500 rounded-full" />
-                    )}
+                    <span className="ml-1.5 w-1.5 h-1.5 inline-block bg-emerald-500 rounded-full animate-pulse" />
                   </button>
                 ))}
               </div>
@@ -707,7 +1003,7 @@ const Home = () => {
 
                 <div className="grid grid-cols-2 gap-4 my-2">
                   <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 text-center hover:bg-slate-50 transition-colors duration-300">
-                    <div className={`text-3xl font-extrabold ${selectedDistrict === 0 ? 'text-primary-600' : 'text-secondary-600'}`}>
+                    <div className={`text-3xl font-extrabold ${DISTRICTS[selectedDistrict].textColor}`}>
                       {DISTRICTS[selectedDistrict].students}
                     </div>
                     <div className="text-[11px] text-neutral-400 mt-1.5 font-semibold tracking-wide uppercase">
@@ -715,7 +1011,7 @@ const Home = () => {
                     </div>
                   </div>
                   <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 text-center hover:bg-slate-50 transition-colors duration-300">
-                    <div className={`text-3xl font-extrabold ${selectedDistrict === 0 ? 'text-primary-600' : 'text-secondary-600'}`}>
+                    <div className={`text-3xl font-extrabold ${DISTRICTS[selectedDistrict].textColor}`}>
                       {DISTRICTS[selectedDistrict].teachers}
                     </div>
                     <div className="text-[11px] text-neutral-400 mt-1.5 font-semibold tracking-wide uppercase">
@@ -723,16 +1019,28 @@ const Home = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Interactive city tags */}
+                <div className="mt-4">
+                  <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 mb-2">Select a City to Search Tutors:</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {DISTRICTS[selectedDistrict].cities.map((city) => (
+                      <span 
+                        key={city}
+                        onClick={() => handleSelectCity(city)}
+                        className="px-2.5 py-1 text-[10px] font-bold bg-slate-50 hover:bg-slate-100 text-neutral-600 hover:text-neutral-900 border border-slate-200/60 rounded-full transition-all duration-200 cursor-pointer"
+                      >
+                        📍 {city}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Call-to-Action */}
               <Link
                 to={DISTRICTS[selectedDistrict].link}
-                className={`w-full py-3.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all duration-300 ${
-                  selectedDistrict === 0 
-                    ? 'btn-primary shadow-sm shadow-primary-500/10 hover:shadow-primary-500/25' 
-                    : 'btn-secondary shadow-sm shadow-secondary-500/10 hover:shadow-secondary-500/25'
-                }`}
+                className={`w-full py-3.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all duration-300 text-center ${DISTRICTS[selectedDistrict].btnClass}`}
               >
                 {DISTRICTS[selectedDistrict].actionText} <ArrowRight className="w-3.5 h-3.5" />
               </Link>

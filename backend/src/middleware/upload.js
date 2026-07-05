@@ -26,7 +26,7 @@ import cloudinary from '../config/cloudinary.js';
 const FIELD_PREFIX = {
   doc_degree:            'degree',
   doc_id_proof:          'id_proof',
-  doc_experience_letter: 'experience',
+  doc_resume:            'resume',
 };
 
 const ALLOWED_FORMATS = ['pdf', 'jpg', 'jpeg', 'png'];
@@ -45,9 +45,11 @@ const storage = new CloudinaryStorage({
     return {
       folder        : `cograd-pathshala/teacher-docs/${teacherId}`,
       public_id     : `${prefix}_${Date.now()}_${safeName}`,
-      resource_type : isPdf ? 'raw' : 'image',
-      // If it's a PDF, we must not supply allowed_formats or image-only transformations
-      ...(isPdf ? {} : {
+      resource_type : 'image', // Force 'image' resource type to allow public PDF delivery without 401
+      ...(isPdf ? {
+        format: 'pdf',
+        allowed_formats: ['pdf']
+      } : {
         allowed_formats: ['jpg', 'jpeg', 'png'],
         transformation: [{ quality: 'auto' }],
       })
@@ -75,5 +77,5 @@ const upload = multer({
 export const uploadTeacherDocs = upload.fields([
   { name: 'doc_degree',            maxCount: 1 },
   { name: 'doc_id_proof',          maxCount: 1 },
-  { name: 'doc_experience_letter', maxCount: 1 },
+  { name: 'doc_resume',            maxCount: 1 },
 ]);

@@ -419,14 +419,12 @@ const Contact = () => {
                             )}
                           </span>
                         </button>
-                        <div 
-                          className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                            isOpen ? 'max-h-24 opacity-100 mt-2.5' : 'max-h-0 opacity-0'
-                          }`}
-                        >
-                          <p className="text-gray-500 text-xs sm:text-[13px] leading-relaxed pl-3 border-l-2 border-primary-500/40">
+                        <div className={`faq-body ${isOpen ? 'open' : ''}`}>
+                          <div>
+                          <p className="text-gray-500 text-xs sm:text-[13px] leading-relaxed pl-3 border-l-2 border-primary-500/40 mt-2.5">
                             {faq.answer}
                           </p>
+                          </div>
                         </div>
                       </div>
                     );

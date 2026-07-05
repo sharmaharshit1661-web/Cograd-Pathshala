@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import DashboardShell from '../components/DashboardShell';
 import {
   getStudents,
-  saveStudents,
   getAssignments,
   updateAssignmentStatus,
   syncWithBackend
@@ -36,7 +35,10 @@ import {
   FileSpreadsheet,
   Users,
   BrainCircuit,
-  Map
+  Map,
+  Phone,
+  MapPin,
+  HelpCircle
 } from 'lucide-react';
 
 const InlineGoogleMap = ({ address, label }) => {
@@ -97,6 +99,32 @@ const TeacherDashboard = () => {
   const triggerToast = (msg) => {
     setToastMessage(msg);
     setShowToast(true);
+    setTimeout(() => setShowToast(false), 3500);
+  };
+
+  const [supportForm, setSupportForm] = useState({ category: 'General Support', title: '', description: '' });
+  const [supportSubmitting, setSupportSubmitting] = useState(false);
+
+  const handleSupportSubmit = async (e) => {
+    e.preventDefault();
+    setSupportSubmitting(true);
+    try {
+      await api.post('/support-tickets', {
+        userId: teacherId || 'TEACHER_GUEST',
+        userName: teacherProfile.name || 'Teacher User',
+        userRole: 'Teacher',
+        title: supportForm.title,
+        description: supportForm.description,
+        category: supportForm.category
+      });
+      setSupportForm({ category: 'General Support', title: '', description: '' });
+      triggerToast('Support ticket submitted successfully!');
+    } catch (err) {
+      console.error(err);
+      triggerToast('Failed to submit support ticket.');
+    } finally {
+      setSupportSubmitting(false);
+    }
   };
 
   // Notification center states
@@ -117,25 +145,22 @@ const TeacherDashboard = () => {
 
   // 1. Teacher Profile States
   const [teacherProfile, setTeacherProfile] = useState({
-    name: 'Priya Sharma',
-    email: 'priya.sharka@cogradpathshala.com', // note: matching close enough to qual/email patterns
-    phone: '9876543210',
-    experience: '6+ Years',
-    qualification: 'M.Sc. in Mathematics, B.Ed.',
-    primarySubject: 'Mathematics & Science (Classes 1–10)',
-    medium: 'English, Hindi',
-    availableSlots: '25 hours/week',
-    travelRange: '5 km radius',
-    hourlyRate: '₹600 / hour',
-    bio: 'Passionate educator dedicated to simplifying maths and science concepts for school students. Believes in interactive worksheets, regular homework, and keeping parents informed after every home visit.',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
-    verified: true,
-    documents: [
-      { id: 1, name: 'M.Sc. Degree Certificate', type: 'Academic', status: 'Verified' },
-      { id: 2, name: 'B.Ed. Certification', type: 'Academic', status: 'Verified' },
-      { id: 3, name: 'Aadhaar ID Card', type: 'Identity', status: 'Verified' },
-      { id: 4, name: 'Previous Experience Letter', type: 'Experience', status: 'Verified' }
-    ]
+    id: '',
+    name: 'Loading...',
+    email: '',
+    phone: '',
+    experience: '',
+    qualification: '',
+    primarySubject: '',
+    medium: '',
+    travelRange: '',
+    hourlyRate: '',
+    city: '',
+    locality: '',
+    bio: '',
+    avatar: '',
+    verified: false,
+    documents: []
   });
 
   const [editProfileData, setEditProfileData] = useState({ ...teacherProfile });
@@ -144,7 +169,7 @@ const TeacherDashboard = () => {
   const [pendingAssignments, setPendingAssignments] = useState([]);
   const [students, setStudents] = useState([]);
   
-  // Load real teacher profile from backend
+  // Load real teacher profile and child states from backend
   useEffect(() => {
     const loadTeacherProfile = async () => {
       try {
@@ -152,22 +177,54 @@ const TeacherDashboard = () => {
         const user = await api.get('/auth/me');
         if (user) {
           setTeacherId(user.id);
-          setTeacherProfile(prev => ({
-            ...prev,
-            name: user.name || prev.name,
-            email: user.email || prev.email,
-            phone: user.phone || prev.phone,
-            experience: user.experience || prev.experience,
-            qualification: user.qualification || user.qualifications || prev.qualification,
-            primarySubject: user.subjects_taught ? user.subjects_taught.join(', ') : prev.primarySubject,
-            medium: user.medium || prev.medium,
-            travelRange: user.travelRange || prev.travelRange,
-            hourlyRate: user.hourly_rate || prev.hourlyRate,
-            bio: user.bio || prev.bio,
-            avatar: user.avatar || prev.avatar,
+          const profile = {
+            id: user.id,
+            name: user.name || '',
+            email: user.email || '',
+            phone: user.phone || '',
+            experience: user.experience || '',
+            qualification: user.qualification || user.qualifications || '',
+            primarySubject: user.primarySubject || (user.subjects_taught ? user.subjects_taught.join(', ') : ''),
+            medium: user.medium || '',
+            travelRange: user.travelRange || '',
+            hourlyRate: user.hourly_rate || '',
+            city: user.city || '',
+            locality: user.locality || '',
+            bio: user.bio || '',
+            avatar: user.avatar || '',
             verified: user.verification_status === 'Verified',
-            documents: user.documents || prev.documents,
-          }));
+            documents: user.documents || [],
+          };
+          setTeacherProfile(profile);
+          setEditProfileData(profile);
+
+          if (user.timetable && user.timetable.length > 0) {
+            setTimetableSessions(user.timetable[0] || {});
+          }
+          if (user.study_materials && user.study_materials.length > 0) {
+            setResources(user.study_materials);
+          }
+          if (user.daily_reports && user.daily_reports.length > 0) {
+            setDailyReports(user.daily_reports);
+          }
+          if (user.content_schedule && user.content_schedule.length > 0) {
+            setContentSchedule(user.content_schedule);
+          }
+          if (user.assignments && user.assignments.length > 0) {
+            setAssignments(user.assignments);
+          }
+          if (user.submissions && user.submissions.length > 0) {
+            setGradingSubmissions(user.submissions);
+          }
+          if (user.earnings_log && user.earnings_log.length > 0) {
+            setBillingLogs(user.earnings_log);
+          }
+          if (user.reviews && user.reviews.length > 0) {
+            setReviewsList(user.reviews);
+          }
+          if (user.tests && user.tests.length > 0) {
+            setTests(user.tests);
+          }
         }
       } catch (err) {
         console.error('Failed to load teacher profile:', err);
@@ -176,73 +233,197 @@ const TeacherDashboard = () => {
     loadTeacherProfile();
   }, []);
 
-  const loadTeacherData = (tId) => {
-    const tid = tId || teacherId || localStorage.getItem('cograd_teacher_id') || '1';
-    const allAssignments = getAssignments();
-    const allStudents = getStudents();
-    
-    const proposed = allAssignments.filter(a => a.teacher_id === tid && a.status === 'proposed');
-    const proposedWithDetails = proposed.map(a => {
-      const student = allStudents.find(s => s.id === a.student_id);
-      return {
-        assignment: a,
-        student: student
-      };
-    }).filter(x => x.student !== undefined);
-    
-    setPendingAssignments(proposedWithDetails);
+  const loadTeacherData = async (tId) => {
+    const tid = tId || teacherId;
+    if (!tid) return;
+    try {
+      const allAssignments = await api.get(`/assignments/teacher/${tid}`);
+      const allStudents = await api.get('/students');
 
-    const activeAsgs = allAssignments.filter(a => a.teacher_id === tid && a.status === 'active');
-    const matchedStudents = activeAsgs.map(a => {
-      const student = allStudents.find(s => s.id === a.student_id);
-      return student;
-    }).filter(s => s !== undefined).map(s => ({
-      id: s.id,
-      name: s.name,
-      batchId: 'class-9-10',
-      attendanceRate: 100,
-      avgGrade: s.test_score ? (
-        s.test_score.Mathematics !== undefined && s.test_score.Science !== undefined
-          ? Math.round((s.test_score.Mathematics + s.test_score.Science) / 2)
-          : s.test_score.Mathematics !== undefined ? s.test_score.Mathematics : (s.test_score.Science || 90)
-      ) : 90,
-      status: 'Active'
-    }));
+      const proposed = allAssignments.filter(a => a.status === 'proposed');
+      const proposedWithDetails = proposed.map(a => {
+        const student = allStudents.find(s => s.id === a.student_id);
+        return {
+          assignment: a,
+          student: student
+        };
+      }).filter(x => x.student !== undefined);
+      
+      setPendingAssignments(proposedWithDetails);
 
-    setStudents(matchedStudents);
+      const activeAsgs = allAssignments.filter(a => a.status === 'active');
+      const matchedStudents = activeAsgs.map(a => {
+        const student = allStudents.find(s => s.id === a.student_id);
+        return student;
+      }).filter(s => s !== undefined).map(s => ({
+        id: s.id,
+        name: s.name,
+        email: s.email,
+        phone: s.phone,
+        batchId: 'class-9-10',
+        attendanceRate: parseFloat(s.attendance) || 100,
+        avgGrade: s.test_score ? (
+          s.test_score.Mathematics !== undefined && s.test_score.Science !== undefined
+            ? Math.round((s.test_score.Mathematics + s.test_score.Science) / 2)
+            : s.test_score.Mathematics !== undefined ? s.test_score.Mathematics : (s.test_score.Science || 90)
+        ) : 90,
+        status: 'Active',
+        homework_submissions: s.homework_submissions || [],
+        study_hours_log: s.study_hours_log || []
+      }));
+
+      setStudents(matchedStudents);
+    } catch (err) {
+      console.error('Failed to load teacher data:', err);
+    }
   };
 
+  const handleUpdateAssignmentStatus = async (studentId, accept) => {
+    try {
+      await api.put('/assignments/status', {
+        studentId,
+        teacherId,
+        accept
+      });
+      if (accept) {
+        triggerToast('Availability confirmed and assigned to your roster!');
+      } else {
+        triggerToast('Flagged slot conflict to Cograd support.');
+      }
+      await loadTeacherData();
+    } catch (err) {
+      console.error(err);
+      triggerToast('Failed to update assignment status.');
+    }
+  };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    syncWithBackend().then(() => loadTeacherData(teacherId));
-    const handleStorage = () => {
+    if (teacherId) {
       loadTeacherData(teacherId);
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, [teacherId]);
+    }
+  }, [teacherId, activeTab]);
 
+  // 1. Timetable Sync
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadTeacherData(teacherId);
-  }, [activeTab, teacherId]);
+    if (!teacherId || Object.keys(timetableSessions).length === 0) return;
+    const syncTimetable = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { timetable: [timetableSessions] });
+      } catch (e) {
+        console.error('Failed to sync timetable:', e);
+      }
+    };
+    syncTimetable();
+  }, [timetableSessions, teacherId]);
+
+  // 2. Study Materials Sync
+  useEffect(() => {
+    if (!teacherId || resources.length === 0) return;
+    const syncResources = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { study_materials: resources });
+      } catch (e) {
+        console.error('Failed to sync study materials:', e);
+      }
+    };
+    syncResources();
+  }, [resources, teacherId]);
+
+  // 3. Daily Reports Sync
+  useEffect(() => {
+    if (!teacherId || dailyReports.length === 0) return;
+    const syncDailyReports = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { daily_reports: dailyReports });
+      } catch (e) {
+        console.error('Failed to sync daily reports:', e);
+      }
+    };
+    syncDailyReports();
+  }, [dailyReports, teacherId]);
+
+  // 3.5 Content Schedule Sync
+  useEffect(() => {
+    if (!teacherId || contentSchedule.length === 0) return;
+    const syncContentSchedule = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { content_schedule: contentSchedule });
+      } catch (e) {
+        console.error('Failed to sync content schedule:', e);
+      }
+    };
+    syncContentSchedule();
+  }, [contentSchedule, teacherId]);
+
+  // 4. Assignments Sync
+  useEffect(() => {
+    if (!teacherId || assignments.length === 0) return;
+    const syncAssignments = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { assignments: assignments });
+      } catch (e) {
+        console.error('Failed to sync assignments:', e);
+      }
+    };
+    syncAssignments();
+  }, [assignments, teacherId]);
+
+  // 5. Submissions Sync
+  useEffect(() => {
+    if (!teacherId || gradingSubmissions.length === 0) return;
+    const syncSubmissions = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { submissions: gradingSubmissions });
+      } catch (e) {
+        console.error('Failed to sync submissions:', e);
+      }
+    };
+    syncSubmissions();
+  }, [gradingSubmissions, teacherId]);
+
+  // 6. Reviews Sync
+  useEffect(() => {
+    if (!teacherId || reviewsList.length === 0) return;
+    const syncReviews = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { reviews: reviewsList });
+      } catch (e) {
+        console.error('Failed to sync reviews:', e);
+      }
+    };
+    syncReviews();
+  }, [reviewsList, teacherId]);
+
+  // 7. Earnings Sync
+  useEffect(() => {
+    if (!teacherId || billingLogs.length === 0) return;
+    const syncEarnings = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { earnings_log: billingLogs });
+      } catch (e) {
+        console.error('Failed to sync earnings:', e);
+      }
+    };
+    syncEarnings();
+  }, [billingLogs, teacherId]);
+
+  // 8. Tests Sync
+  useEffect(() => {
+    if (!teacherId || tests.length === 0) return;
+    const syncTests = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { tests: tests });
+      } catch (e) {
+        console.error('Failed to sync tests:', e);
+      }
+    };
+    syncTests();
+  }, [tests, teacherId]);
 
   // 2. Shared Data States
   const [batches, setBatches] = useState([]);
 
-  useEffect(() => {
-    if (teacherId) {
-      const saved = localStorage.getItem(`cograd_teacher_batches_${teacherId}`);
-      setBatches(saved ? JSON.parse(saved) : []);
-    }
-  }, [teacherId]);
 
-  useEffect(() => {
-    if (teacherId) {
-      localStorage.setItem(`cograd_teacher_batches_${teacherId}`, JSON.stringify(batches));
-    }
-  }, [batches, teacherId]);
 
   // Dynamically seed batches from active students
   useEffect(() => {
@@ -297,18 +478,7 @@ const TeacherDashboard = () => {
   // 4. Content Management & Resource Sharing State
   const [resources, setResources] = useState([]);
 
-  useEffect(() => {
-    if (teacherId) {
-      const saved = localStorage.getItem(`cograd_teacher_resources_${teacherId}`);
-      setResources(saved ? JSON.parse(saved) : []);
-    }
-  }, [teacherId]);
 
-  useEffect(() => {
-    if (teacherId) {
-      localStorage.setItem(`cograd_teacher_resources_${teacherId}`, JSON.stringify(resources));
-    }
-  }, [resources, teacherId]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [customFileName, setCustomFileName] = useState('');
@@ -378,7 +548,7 @@ const TeacherDashboard = () => {
     if (teacherId) {
       fetchDemoBookings();
     }
-  }, [teacherId]);
+  }, [teacherId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 10.5 Daily Learning Reports
   const [dailyReports, setDailyReports] = useState([]);
@@ -551,58 +721,17 @@ const TeacherDashboard = () => {
   const [earningsStats, setEarningsStats] = useState({ totalEarned: 0, availablePayout: 0, pendingInvoices: 0 });
   const [billingLogs, setBillingLogs] = useState([]);
 
+  // Compute dynamic earnings based on actual billing logs in state
   useEffect(() => {
-    if (teacherId) {
-      const saved = localStorage.getItem(`cograd_teacher_earnings_${teacherId}`);
-      if (saved) setEarningsStats(JSON.parse(saved));
-    }
-  }, [teacherId]);
-
-  useEffect(() => {
-    if (teacherId) {
-      localStorage.setItem(`cograd_teacher_earnings_${teacherId}`, JSON.stringify(earningsStats));
-    }
-  }, [earningsStats, teacherId]);
-
-  useEffect(() => {
-    if (teacherId) {
-      const saved = localStorage.getItem(`cograd_teacher_billing_logs_${teacherId}`);
-      if (saved) setBillingLogs(JSON.parse(saved));
-    }
-  }, [teacherId]);
-
-  useEffect(() => {
-    if (teacherId) {
-      localStorage.setItem(`cograd_teacher_billing_logs_${teacherId}`, JSON.stringify(billingLogs));
-    }
-  }, [billingLogs, teacherId]);
-
-  // Compute dynamic initial earnings based on active students
-  useEffect(() => {
-    if (teacherId && students.length > 0) {
-      const saved = localStorage.getItem(`cograd_teacher_earnings_${teacherId}`);
-      if (!saved) {
-        const rateNum = parseInt(teacherProfile.hourlyRate.replace(/[^0-9]/g, '')) || 600;
-        const studentCount = students.length;
-        const totalEarned = studentCount * rateNum * 10;
-        const availablePayout = studentCount * rateNum * 4;
-        const pendingInvoices = studentCount * rateNum * 2;
-        setEarningsStats({ totalEarned, availablePayout, pendingInvoices });
-
-        const logs = students.map((s, idx) => ({
-          id: idx + 1,
-          date: new Date(Date.now() - idx * 24 * 60 * 60 * 1000 * 3).toISOString().split('T')[0],
-          description: `Home Tuition Class: ${s.name} (${s.batchId === 'class-9-10' ? 'Class 9-10' : 'Class 6-8'} Mathematics)`,
-          amount: rateNum * 2,
-          status: 'Paid'
-        }));
-        setBillingLogs(logs);
-      }
-    } else if (teacherId && students.length === 0) {
+    if (billingLogs && billingLogs.length > 0) {
+      const totalEarned = billingLogs.filter(l => l.status === 'Paid').reduce((acc, curr) => acc + (curr.amount || 0), 0);
+      const pendingInvoices = billingLogs.filter(l => l.status === 'Pending').reduce((acc, curr) => acc + (curr.amount || 0), 0);
+      const availablePayout = Math.round(totalEarned * 0.4);
+      setEarningsStats({ totalEarned, availablePayout, pendingInvoices });
+    } else {
       setEarningsStats({ totalEarned: 0, availablePayout: 0, pendingInvoices: 0 });
-      setBillingLogs([]);
     }
-  }, [students, teacherId, teacherProfile.hourlyRate]);
+  }, [billingLogs]);
 
   const [payoutProgress, setPayoutProgress] = useState(0);
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
@@ -610,18 +739,7 @@ const TeacherDashboard = () => {
   // 16. Ratings & Reviews Feed State
   const [reviewsList, setReviewsList] = useState([]);
 
-  useEffect(() => {
-    if (teacherId) {
-      const saved = localStorage.getItem(`cograd_teacher_reviews_${teacherId}`);
-      setReviewsList(saved ? JSON.parse(saved) : []);
-    }
-  }, [teacherId]);
 
-  useEffect(() => {
-    if (teacherId) {
-      localStorage.setItem(`cograd_teacher_reviews_${teacherId}`, JSON.stringify(reviewsList));
-    }
-  }, [reviewsList, teacherId]);
 
   const [selectedReviewReplyId, setSelectedReviewReplyId] = useState(null);
   const [reviewReplyInput, setReviewReplyInput] = useState('');
@@ -680,7 +798,7 @@ const TeacherDashboard = () => {
       }, 150);
     }
     return () => clearTimeout(withdrawTimer);
-  }, [isProcessingPayout, payoutProgress]);
+  }, [isProcessingPayout, payoutProgress, earningsStats.availablePayout]);
 
   // AI Lesson Plan progress timer with dependency corrections
   useEffect(() => {
@@ -738,7 +856,7 @@ const TeacherDashboard = () => {
     setTimeout(() => {
       setAiGeneratingFeedback(false);
       setAiGeneratedFeedback(
-        `Subject: Academic Performance Update - ${student.name}\n\nDear Parent,\n\nI am writing to share a brief update on ${student.name}'s progress in our Mathematics batch. Currently, ${student.name} maintains an average grade of ${student.avgGrade}% with a highly commendable attendance record of ${student.attendanceRate}%.\n\nIn our latest sessions covering Algebra and Trigonometry, they have shown ${student.avgGrade > 85 ? 'great analytical logic and quick participation.' : 'steady improvement, but need to practice calculus worksheets more regularly to strengthen fundamentals.'}\n\nWe will be conducting our term quizzes shortly. Feel free to reach out if you have any questions.\n\nWarm regards,\nPriya Sharma\nCograd Pathshala Mentor`
+        `Subject: Academic Performance Update - ${student.name}\n\nDear Parent,\n\nI am writing to share a brief update on ${student.name}'s progress in our Mathematics batch. Currently, ${student.name} maintains an average grade of ${student.avgGrade}% with a highly commendable attendance record of ${student.attendanceRate}%.\n\nIn our latest sessions covering Algebra and Trigonometry, they have shown ${student.avgGrade > 85 ? 'great analytical logic and quick participation.' : 'steady improvement, but need to practice calculus worksheets more regularly to strengthen fundamentals.'}\n\nWe will be conducting our term quizzes shortly. Feel free to reach out if you have any questions.\n\nWarm regards,\n${teacherProfile.name || 'Priya Sharma'}\nCograd Pathshala Mentor`
       );
       setToastMessage("AI Feedback drafted!");
       setShowToast(true);
@@ -943,17 +1061,23 @@ const TeacherDashboard = () => {
         {/* Header Block with Hello & Verification Status (Priority 4) */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glow-card p-8">
           <div>
-            <h2 className="text-xl font-black text-slate-800">Hello, Priya Sharma 👋</h2>
+            <h2 className="text-xl font-black text-slate-800">Hello, {teacherProfile.name || 'Mentor'} 👋</h2>
             <p className="text-xs text-slate-500 mt-1">Here is your home tutoring overview for today.</p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-xl border border-emerald-100 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
-              Verified Mentor
+            <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl border flex items-center gap-1.5 ${
+              teacherProfile.verified 
+                ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                : 'bg-amber-50 text-amber-600 border-amber-100'
+            }`}>
+              {teacherProfile.verified && <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>}
+              {teacherProfile.verified ? 'Verified Mentor' : 'Verification Pending'}
             </span>
-            <span className="text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl border border-blue-100">
-              Math & Science
-            </span>
+            {teacherProfile.primarySubject && (
+              <span className="text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl border border-blue-100">
+                {teacherProfile.primarySubject}
+              </span>
+            )}
           </div>
         </div>
 
@@ -1028,21 +1152,13 @@ const TeacherDashboard = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => {
-                              updateAssignmentStatus(student.id, 1, false);
-                              triggerToast('Flagged slot conflict to Cograd support.');
-                              loadTeacherData();
-                            }}
+                            onClick={() => handleUpdateAssignmentStatus(student.id, false)}
                             className="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-[10px] rounded-xl shadow-sm transition-all cursor-pointer border-0"
                           >
                             Flag Conflict
                           </button>
                           <button
-                            onClick={() => {
-                              updateAssignmentStatus(student.id, 1, true);
-                              triggerToast(`Assigned ${student.name} to your roster!`);
-                              loadTeacherData();
-                            }}
+                            onClick={() => handleUpdateAssignmentStatus(student.id, true)}
                             className="flex-1 py-2 bg-white hover:bg-slate-50 text-indigo-900 font-extrabold text-[10px] rounded-xl shadow-md transition-all cursor-pointer border-0"
                           >
                             Confirm Availability
@@ -1898,9 +2014,12 @@ const TeacherDashboard = () => {
                 <span className="text-[10px] font-black text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full">{dailyReports.length} reports</span>
               </div>
               {dailyReports.length === 0 ? (
-                <div className="py-10 text-center">
-                  <div className="text-4xl mb-3">📋</div>
-                  <p className="text-xs font-bold text-slate-400">No reports submitted yet. Submit your first daily report above.</p>
+                <div className="empty-state">
+                  <div className="empty-state-icon">
+                    <FileSpreadsheet className="w-5 h-5" />
+                  </div>
+                  <p className="empty-state-title">No Reports Yet</p>
+                  <p className="empty-state-desc">Submit your first daily learning report above.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -2080,9 +2199,10 @@ const TeacherDashboard = () => {
               </div>
 
               {contentSchedule.length === 0 ? (
-                <div className="py-10 text-center space-y-2">
-                  <div className="text-4xl">📅</div>
-                  <p className="text-xs font-bold text-slate-400">No lessons scheduled yet. Use the form above to plan your first session.</p>
+                <div className="empty-state">
+                  <div className="empty-state-icon"><Calendar className="w-5 h-5" /></div>
+                  <p className="empty-state-title">No Lessons Scheduled</p>
+                  <p className="empty-state-desc">Use the form above to plan your first session.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -2186,7 +2306,7 @@ const TeacherDashboard = () => {
                     <div className="py-12 text-center bg-slate-50 rounded-2xl border border-slate-100/50 space-y-2">
                       <div className="text-3xl">❓</div>
                       <p className="text-xs font-bold text-slate-400">
-                        No student doubts registered yet. Doubts asked by your matched students will appear here.
+                        No student doubts yet — doubts from your students will appear here.
                       </p>
                     </div>
                   );
@@ -2666,7 +2786,7 @@ const TeacherDashboard = () => {
 
         {/* Report Card Modal */}
         {selectedReportStudent && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="modal-overlay">
             <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full border border-slate-100 p-6 relative animate-slide-up">
               <button onClick={() => setSelectedReportStudent(null)} className="absolute top-4 right-4 p-1.5 hover:bg-slate-50 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer"><X className="w-5 h-5" /></button>
               
@@ -2926,7 +3046,7 @@ const TeacherDashboard = () => {
 
         {/* Schedule Modal */}
         {showScheduleModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="modal-overlay">
             <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full border border-slate-100 p-6 relative animate-slide-up">
               <button onClick={() => setShowScheduleModal(false)} className="absolute top-4 right-4 p-1.5 hover:bg-slate-50 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer"><X className="w-5 h-5" /></button>
               
@@ -3158,13 +3278,42 @@ const TeacherDashboard = () => {
   const renderPublicProfileReviews = () => {
     const isReviews = subTabs.profile === 'reviews';
 
-    const handleSaveProfile = (e) => {
+    const handleSaveProfile = async (e) => {
       e.preventDefault();
-      setTeacherProfile(editProfileData);
-      setIsEditingProfile(false);
-      setToastMessage('Profile details synchronized!');
-      setShowToast(true);
-      triggerConfetti();
+      try {
+        const payload = {
+          name: editProfileData.name,
+          qualification: editProfileData.qualification,
+          hourly_rate: editProfileData.hourlyRate,
+          medium: editProfileData.medium,
+          bio: editProfileData.bio,
+          city: editProfileData.city,
+          locality: editProfileData.locality,
+          travelRange: editProfileData.travelRange
+        };
+        const updated = await api.put(`/teachers/${teacherId}`, payload);
+        if (updated) {
+          setTeacherProfile(prev => ({
+            ...prev,
+            name: updated.name || prev.name,
+            qualification: updated.qualification || prev.qualification,
+            hourlyRate: updated.hourly_rate || prev.hourlyRate,
+            medium: updated.medium || prev.medium,
+            bio: updated.bio || prev.bio,
+            city: updated.city || prev.city,
+            locality: updated.locality || prev.locality,
+            travelRange: updated.travelRange || prev.travelRange
+          }));
+          setIsEditingProfile(false);
+          setToastMessage('Profile details synchronized with database!');
+          setShowToast(true);
+          triggerConfetti();
+        }
+      } catch (err) {
+        console.error('Failed to save profile:', err);
+        setToastMessage(err.message || 'Failed to sync updates to database');
+        setShowToast(true);
+      }
     };
 
     const handleReviewReply = (id) => {
@@ -3285,6 +3434,14 @@ const TeacherDashboard = () => {
                       <span className="text-slate-400">Tuition Rate:</span>
                       <h4 className="font-extrabold text-slate-700 mt-1">{teacherProfile.hourlyRate}</h4>
                     </div>
+                    <div>
+                      <span className="text-slate-400">City &amp; Area / Locality:</span>
+                      <h4 className="font-extrabold text-slate-700 mt-1">{teacherProfile.locality || 'N/A'}, {teacherProfile.city || 'N/A'}</h4>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Travel Radius Range:</span>
+                      <h4 className="font-extrabold text-slate-700 mt-1">{teacherProfile.travelRange || '5 km radius'}</h4>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -3329,6 +3486,43 @@ const TeacherDashboard = () => {
                         onChange={(e) => setEditProfileData(p => ({ ...p, medium: e.target.value }))}
                         className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
                       />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1.5">City</label>
+                      <select 
+                        required value={editProfileData.city || ''}
+                        onChange={(e) => setEditProfileData(p => ({ ...p, city: e.target.value }))}
+                        className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none cursor-pointer"
+                      >
+                        <option value="" disabled>Select City</option>
+                        <option value="Meerut">Meerut</option>
+                        <option value="Allahabad">Allahabad</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1.5">Area / Locality</label>
+                      <input 
+                        type="text" required value={editProfileData.locality || ''}
+                        onChange={(e) => setEditProfileData(p => ({ ...p, locality: e.target.value }))}
+                        className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
+                        placeholder="e.g. Shastri Nagar, Civil Lines"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1.5">Travel Radius Range</label>
+                      <select 
+                        required value={editProfileData.travelRange || '5 km radius'}
+                        onChange={(e) => setEditProfileData(p => ({ ...p, travelRange: e.target.value }))}
+                        className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none cursor-pointer"
+                      >
+                        <option value="3 km radius">3 km radius</option>
+                        <option value="5 km radius">5 km radius</option>
+                        <option value="10 km radius">10 km radius</option>
+                        <option value="15 km radius">15 km radius</option>
+                      </select>
                     </div>
                   </div>
 
@@ -3452,12 +3646,109 @@ const TeacherDashboard = () => {
     );
   };
 
+  const renderHelpSupport = () => {
+    return (
+      <div className="space-y-6 text-left">
+        <div className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 p-6 rounded-3xl border border-blue-500/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-base font-black text-slate-800 tracking-tight">Help & Support Desk</h3>
+            <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Submit query directly to CoGrad corporate team</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
+            <h3 className="text-base font-black text-slate-800 tracking-tight">Create Support Ticket</h3>
+            <form onSubmit={handleSupportSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Category</label>
+                <select
+                  required
+                  value={supportForm.category}
+                  onChange={(e) => setSupportForm(p => ({ ...p, category: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                >
+                  <option value="General Support">General Support</option>
+                  <option value="Technical Issue">Technical Issue</option>
+                  <option value="Academic Enquiry">Academic Enquiry</option>
+                  <option value="Billing & Fee">Billing & Fee</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Subject</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="E.g. Class scheduling glitch"
+                  value={supportForm.title}
+                  onChange={(e) => setSupportForm(p => ({ ...p, title: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Description</label>
+                <textarea
+                  required
+                  rows="4"
+                  placeholder="Please describe your query in detail..."
+                  value={supportForm.description}
+                  onChange={(e) => setSupportForm(p => ({ ...p, description: e.target.value }))}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 font-semibold"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={supportSubmitting}
+                className="w-full btn-primary py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+              >
+                {supportSubmitting ? 'Submitting...' : 'Submit Support Ticket'}
+              </button>
+            </form>
+          </div>
+
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
+            <h3 className="text-base font-black text-slate-800 tracking-tight">CoGrad Contact Info</h3>
+            <div className="space-y-4 text-xs font-semibold text-slate-600">
+              <div className="flex items-start gap-3">
+                <Phone className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-extrabold text-slate-800">+91-9220253001</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Mon–Sat, 10am – 6pm IST</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <Mail className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-extrabold text-slate-800">connect@cograd.in</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Reply within 24 hours</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <MapPin className="w-4 h-4 text-violet-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-extrabold text-slate-800">PI Softek Ltd</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">C-56A/28, Sector 62, Noida 201301</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const getActiveTabContent = () => {
     switch (activeTab) {
       case 'Study Materials': return renderContentResources();
       case 'My Students': return renderClassroomBatches();
       case 'Homework': return renderAssignmentsGrading();
       case 'Schedule & Attendance': return renderSchedulesAttendance();
+      case 'Help & Support': return renderHelpSupport();
 
       case 'Profile & Reviews': return renderPublicProfileReviews();
       case 'My Dashboard':
@@ -3496,7 +3787,8 @@ const TeacherDashboard = () => {
           { name: 'Study Materials', icon: BookOpen },
           { name: 'Homework', icon: CheckSquare },
           { name: 'Schedule & Attendance', icon: Calendar },
-          { name: 'Profile & Reviews', icon: User }
+          { name: 'Profile & Reviews', icon: User },
+          { name: 'Help & Support', icon: HelpCircle }
         ]}
         activeTab={activeTab}
         onTabChange={setActiveTab}

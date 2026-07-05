@@ -50,10 +50,12 @@ const UserSchema = new mongoose.Schema(
     },
     state: String,
     city: String,
+    district: String,
     locality: {
       type: String,
       default: null,
     },
+    medium: String,
     matching_eligible: {
       type: Boolean,
       default: true,
@@ -96,6 +98,30 @@ const UserSchema = new mongoose.Schema(
       type: [mongoose.Schema.Types.Mixed],
       default: [],
     },
+    xp: {
+      type: Number,
+      default: 0,
+    },
+    unlocked_rewards: {
+      type: [String],
+      default: [],
+    },
+    earned_certificates: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    flashcard_mastered: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    study_groups: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    mock_tests_log: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
     parent_assigned_test: {
       type: mongoose.Schema.Types.Mixed,
       default: null,
@@ -108,6 +134,35 @@ const UserSchema = new mongoose.Schema(
       type: [mongoose.Schema.Types.Mixed],
       default: [],
     },
+    feeDue: {
+      type: Number,
+      default: 3000,
+    },
+    feeDueDate: {
+      type: String,
+      default: '15 July',
+    },
+    feeStatus: {
+      type: String,
+      default: 'Unpaid',
+    },
+    activities: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    schedule: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    rank: {
+      type: Number,
+      default: 5,
+    },
+    totalInBatch: {
+      type: Number,
+      default: 25,
+    },
+
 
     // Parent fields
     relationship: String,       // 'Mother' | 'Father' | 'Guardian'
@@ -125,11 +180,16 @@ const UserSchema = new mongoose.Schema(
       type: String,
       enum: ['home', 'online', 'either'],
     },
+    linkedChildId: {            // ID of an existing student account linked to this parent
+      type: String,
+      default: null,
+    },
 
     // Teacher fields
     qualifications: String,
     experience: String,
     bio: String,
+    primarySubject: String,
     subjects_taught: [String],
     grade_levels_qualified: [String],
     verification_status: {
@@ -195,7 +255,27 @@ const UserSchema = new mongoose.Schema(
       type: [mongoose.Schema.Types.Mixed],
       default: [],
     },
+    content_schedule: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
     submissions: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    study_materials: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    earnings_log: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    reviews: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    tests: {
       type: [mongoose.Schema.Types.Mixed],
       default: [],
     },

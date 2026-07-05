@@ -8,13 +8,53 @@ import {
 import { getDiagnosticQuestions } from '../utils/mockDb';
 import { api } from '../utils/api';
 
-const CITIES = ['Meerut', 'Allahabad', 'Other'];
+const CITIES = [
+  'Adoni', 'Agartala', 'Agra', 'Ahmedabad', 'Ahmednagar', 'Aizawl', 'Ajmer', 'Akola', 'Alappuzha', 'Aligarh', 'Allahabad', 'Alwar', 'Ambala', 'Ambattur', 'Ambikapur', 'Amravati', 'Amreli', 'Amritsar', 'Amroha', 'Anand', 'Anantapur', 'Arrah', 'Asansol', 'Aurangabad', 'Avadi', 'Azamgarh',
+  'Badlapur', 'Bagaha', 'Bahadurgarh', 'Baharampur', 'Bahraich', 'Balasore', 'Ballia', 'Banda', 'Bangalore', 'Banswara', 'Barasat', 'Baraut', 'Bardhaman', 'Bareilly', 'Barmer', 'Barnala', 'Barrackpore', 'Basirhat', 'Basti', 'Batala', 'Bathinda', 'Begusarai', 'Belgaum', 'Bellary', 'Bengaluru', 'Bettiah', 'Betul', 'Bhagalpur', 'Bharatpur', 'Bharuch', 'Bhavnagar', 'Bhilai', 'Bhilwara', 'Bhimavaram', 'Bhind', 'Bhiwandi', 'Bhiwani', 'Bhopal', 'Bhubaneswar', 'Bhuj', 'Bhusawal', 'Bidar', 'Bihar Sharif', 'Bijapur', 'Bikaner', 'Bilaspur', 'Bokaro Steel City', 'Bulandshahr', 'Bundi', 'Burdwan', 'Burhanpur',
+  'Chandigarh', 'Chandrapur', 'Chapra', 'Chennai', 'Chhattarpur', 'Chhindwara', 'Chikkamagaluru', 'Chitradurga', 'Chittoor', 'Churu', 'Coimbatore', 'Cuddalore', 'Cuttack',
+  'Daltonganj', 'Daman', 'Darbhanga', 'Darjeeling', 'Davangere', 'Dehradun', 'Delhi', 'Delhi NCR', 'Deoria', 'Dewas', 'Dhanbad', 'Dharamshala', 'Dharwad', 'Dhule', 'Dibrugarh', 'Dimapur', 'Dindigul', 'Dombivli', 'Durg', 'Durgapur',
+  'Eluru', 'Erode', 'Etah', 'Etawah',
+  'Faridabad', 'Farrukhabad', 'Fatehpur', 'Firozabad', 'Firozpur',
+  'Gandhidham', 'Gandhinagar', 'Gangtok', 'Gaya', 'Ghaziabad', 'Ghazipur', 'Giridih', 'Goa', 'Godhra', 'Gonda', 'Gondia', 'Gorakhpur', 'Greater Noida', 'Gulbarga', 'Guna', 'Guntur', 'Gurugram', 'Guwahati', 'Gwalior',
+  'Haldia', 'Haldwani', 'Hapur', 'Hardoi', 'Haridwar', 'Hassan', 'Hathras', 'Hazaribagh', 'Hisar', 'Hoshiarpur', 'Hospet', 'Howrah', 'Hubli-Dharwad', 'Hyderabad',
+  'Ichalkaranji', 'Imphal', 'Indore', 'Itanagar',
+  'Jabalpur', 'Jaipur', 'Jalandhar', 'Jalgaon', 'Jalna', 'Jalpaiguri', 'Jammu', 'Jamnagar', 'Jamshedpur', 'Jaunpur', 'Jhansi', 'Jhunjhunu', 'Jind', 'Jodhpur', 'Jorhat', 'Junagadh',
+  'Kadapa', 'Kakinada', 'Kalaburagi', 'Kalyan-Dombivli', 'Kanpur', 'Kanyakumari', 'Karimnagar', 'Karnal', 'Karur', 'Kashipur', 'Katihar', 'Katni', 'Khammam', 'Khandwa', 'Kharagpur', 'Kochi', 'Kohima', 'Kolhapur', 'Kolkata', 'Kollam', 'Korba', 'Kota', 'Kottayam', 'Kozhikode', 'Kullu', 'Kumbakonam', 'Kurnool', 'Kurukshetra',
+  'Lakhimpur', 'Latur', 'Lucknow', 'Ludhiana',
+  'Machilipatnam', 'Madurai', 'Mahbubnagar', 'Mainpuri', 'Malappuram', 'Malegaon', 'Mandi', 'Mangaluru', 'Mathura', 'Meerut', 'Mehsana', 'Mirzapur', 'Moga', 'Mohali', 'Moradabad', 'Morena', 'Motihari', 'Mumbai', 'Munger', 'Muzaffarnagar', 'Muzaffarpur', 'Mysuru',
+  'Nadiad', 'Nagaon', 'Nagaur', 'Nagercoil', 'Nagpur', 'Nainital', 'Nanded', 'Nandyal', 'Nashik', 'Navi Mumbai', 'Navsari', 'Neemuch', 'Nellore', 'New Delhi', 'Nizamabad', 'Noida',
+  'Ongole', 'Orai', 'Osmanabad',
+  'Palakkad', 'Palanpur', 'Palghar', 'Palwal', 'Panaji', 'Panchkula', 'Panipat', 'Panvel', 'Parbhani', 'Pathankot', 'Patiala', 'Patna', 'Pimpri-Chinchwad', 'Porbandar', 'Port Blair', 'Puducherry', 'Pune', 'Puri', 'Purnia',
+  'Raichur', 'Raipur', 'Rajahmundry', 'Rajkot', 'Rajnandgaon', 'Rampur', 'Ranchi', 'Ratlam', 'Ratnagiri', 'Rewa', 'Rewari', 'Rishikesh', 'Rohtak', 'Roorkee', 'Rourkela', 'Rudrapur',
+  'Sagar', 'Saharanpur', 'Saharsa', 'Salem', 'Sambalpur', 'Sambhal', 'Sangli', 'Sangrur', 'Satara', 'Satna', 'Secunderabad', 'Shahjahanpur', 'Shamli', 'Shillong', 'Shimla', 'Shivamogga', 'Sikar', 'Silchar', 'Siliguri', 'Silvassa', 'Singrauli', 'Sirsa', 'Sitapur', 'Sivakasi', 'Siwan', 'Solan', 'Solapur', 'Sonipat', 'Srinagar', 'Surat',
+  'Thane', 'Thanjavur', 'Thiruvananthapuram', 'Thoothukudi', 'Thrissur', 'Tinsukia', 'Tiruchirappalli', 'Tirupati', 'Tiruppur', 'Tumakuru',
+  'Udaipur', 'Ujjain', 'Ulhasnagar', 'Unnao',
+  'Vadodara', 'Valsad', 'Vapi', 'Varanasi', 'Vasai-Virar', 'Vellore', 'Vidisha', 'Vijayawada', 'Visakhapatnam', 'Vizianagaram',
+  'Warangal', 'Wardha',
+  'Yamunanagar', 'Yavatmal',
+  'Other'
+];
 
 const CLASSES = [
   'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
   'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
   'Class 11', 'Class 12'
 ];
+
+const SUBJECTS = [
+  'Mathematics', 'Science', 'English', 'Hindi', 'Physics', 'Chemistry', 'Biology',
+  'History', 'Geography', 'Computer Science', 'Economics', 'Accountancy', 'Business Studies',
+];
+
+const getPasswordRequirements = (password) => {
+  return [
+    { label: 'At least 8 characters', met: password.length >= 8 },
+    { label: 'At least 1 uppercase letter', met: /[A-Z]/.test(password) },
+    { label: 'At least 1 lowercase letter', met: /[a-z]/.test(password) },
+    { label: 'At least 1 number', met: /[0-9]/.test(password) },
+    { label: 'At least 1 special character (e.g. @, #, $, %, etc.)', met: /[^A-Za-z0-9]/.test(password) }
+  ];
+};
 
 const RegisterStudent = () => {
   const navigate = useNavigate();
@@ -50,6 +90,12 @@ const RegisterStudent = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    // Restrict phone fields to digits only
+    if (name === 'phone' || name === 'parentPhone') {
+      const digitsOnly = value.replace(/\D/g, '');
+      setForm(prev => ({ ...prev, [name]: digitsOnly }));
+      return;
+    }
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
@@ -89,6 +135,12 @@ const RegisterStudent = () => {
 
   const handleCredentialsSubmit = (e) => {
     e.preventDefault();
+    const requirements = getPasswordRequirements(form.password);
+    const unmet = requirements.filter(r => !r.met);
+    if (unmet.length > 0) {
+      alert('Password does not meet all security requirements:\n' + unmet.map(r => '• ' + r.label).join('\n'));
+      return;
+    }
     if (form.password !== form.confirmPassword) {
       alert('Passwords do not match.');
       return;
@@ -98,50 +150,6 @@ const RegisterStudent = () => {
 
   const handleAcademicSubmit = async (e) => {
     e.preventDefault();
-    setCityTouched(true);
-
-    if (!form.city) {
-      setCityError('Please select your city to find nearby teachers');
-      return;
-    }
-
-    if (form.city === 'Other') {
-      setIsOtherCity(true);
-      // Save to backend as waitlist — skip diagnostic test
-      try {
-        const registrationData = {
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
-          password: form.password,
-          role: 'student',
-          standard: form.standard,
-          subjects: form.subjects,
-          city: form.city,
-          locality: form.locality,
-          assigned_teacher_id: null,
-          status: 'waitlist',
-          parentName: form.parentName,
-          parentPhone: form.parentPhone,
-          address: `House No. 101, Near Main Chowk, ${form.city}`,
-        };
-
-        const data = await api.post('/auth/register', registrationData);
-
-        localStorage.setItem('cograd_token', data.token);
-        localStorage.setItem('cograd_logged_in', 'true');
-        localStorage.setItem('cograd_role', 'student');
-        localStorage.setItem('cograd_logged_in_email', form.email);
-        localStorage.setItem('cograd_student_name', form.name);
-        localStorage.setItem('cograd_city', form.city);
-
-        setStep(4);
-      } catch (error) {
-        alert(error.message || 'Registration failed. Please try again.');
-      }
-      return;
-    }
-
     setStep(3);
     setPlacementAnswers({});
     setIsOtherCity(false);
@@ -237,32 +245,39 @@ const RegisterStudent = () => {
           <p className="text-slate-500 text-sm">Create an account and match with vetted home tutors based on your actual level</p>
         </div>
 
-        {/* Progress Tracker */}
-        <div className="flex items-center justify-between mb-8 max-w-md mx-auto px-4">
-          <div className="flex flex-col items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border transition-all ${
-              step >= 1 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-400 border-slate-200'
-            }`}>1</div>
-            <span className="text-[10px] font-bold text-slate-500 mt-1">Credentials</span>
-          </div>
-          <div className="flex-1 h-0.5 bg-slate-200 mx-2 mb-4">
-            <div className={`h-full bg-blue-600 transition-all duration-300 ${step >= 2 ? 'w-full' : 'w-0'}`} />
-          </div>
-          <div className="flex flex-col items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border transition-all ${
-              step >= 2 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-400 border-slate-200'
-            }`}>2</div>
-            <span className="text-[10px] font-bold text-slate-500 mt-1">Academic</span>
-          </div>
-          <div className="flex-1 h-0.5 bg-slate-200 mx-2 mb-4">
-            <div className={`h-full bg-blue-600 transition-all duration-300 ${step >= 3 && !isOtherCity ? 'w-full' : 'w-0'}`} />
-          </div>
-          <div className="flex flex-col items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border transition-all ${
-              step >= 3 && !isOtherCity ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-400 border-slate-200'
-            }`}>3</div>
-            <span className="text-[10px] font-bold text-slate-500 mt-1">Diagnostic Test</span>
-          </div>
+        {/* Step Progress Bar */}
+        <div className="flex items-center mb-8 max-w-md mx-auto px-2" role="list" aria-label="Registration steps">
+          {[
+            { num: 1, label: 'Credentials' },
+            { num: 2, label: 'Academic' },
+            { num: 3, label: 'Placement Test' }
+          ].map((s, idx) => (
+            <div key={s.num} className="flex flex-1 items-center" role="listitem">
+              <div className="flex flex-col items-center shrink-0">
+                <div
+                  className={`step-dot ${step > s.num ? 'completed' : step === s.num ? 'active' : ''}`}
+                  aria-label={`Step ${s.num}: ${s.label}${step > s.num ? ' (completed)' : step === s.num ? ' (current)' : ''}`}
+                >
+                  {step > s.num ? (
+                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : s.num}
+                </div>
+                <span className={`text-[10px] font-bold mt-1 transition-colors ${step >= s.num ? 'text-slate-700' : 'text-slate-400'}`}>
+                  {s.label}
+                </span>
+              </div>
+              {idx < 2 && (
+                <div className="step-connector mx-1 mb-5">
+                  <div
+                    className="step-connector-fill"
+                    style={{ width: step > s.num ? '100%' : '0%' }}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
         </div>
 
         {/* Step Cards */}
@@ -306,7 +321,11 @@ const RegisterStudent = () => {
                   value={form.phone} 
                   onChange={handleChange} 
                   className="form-input" 
-                  placeholder="10-digit mobile number" 
+                  placeholder="10-digit mobile number"
+                  maxLength={10}
+                  pattern="[0-9]{10}"
+                  inputMode="numeric"
+                  title="Please enter a valid 10-digit phone number"
                 />
               </div>
 
@@ -332,7 +351,11 @@ const RegisterStudent = () => {
                     value={form.parentPhone} 
                     onChange={handleChange} 
                     className="form-input" 
-                    placeholder="Parent's phone number" 
+                    placeholder="Parent's phone number"
+                    maxLength={10}
+                    pattern="[0-9]{10}"
+                    inputMode="numeric"
+                    title="Please enter a valid 10-digit phone number"
                   />
                 </div>
               </div>
@@ -354,6 +377,17 @@ const RegisterStudent = () => {
                       {showPw ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
                     </button>
                   </div>
+                  {form.password && (
+                    <div className="mt-2.5 space-y-1.5 p-3 bg-slate-50 border border-slate-100 rounded-xl text-left">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Password Strength Requirements</p>
+                      {getPasswordRequirements(form.password).map((req, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-[10.5px]">
+                          <CheckCircle2 className={`w-3.5 h-3.5 ${req.met ? 'text-emerald-500 fill-emerald-50' : 'text-slate-300'}`} />
+                          <span className={`${req.met ? 'text-slate-600 font-semibold' : 'text-slate-400'}`}>{req.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="form-label"><Lock className="w-3.5 h-3.5 text-slate-400 mr-1.5" />Confirm Password</label>
@@ -407,54 +441,10 @@ const RegisterStudent = () => {
                 </div>
               </div>
 
-              {/* City — required dropdown */}
-              <div className="text-left">
-                <label className="form-label"><MapPin className="w-3.5 h-3.5 text-slate-400 mr-1.5" />City</label>
-                <select
-                  name="city"
-                  value={form.city}
-                  onChange={handleCityChange}
-                  onBlur={handleCityBlur}
-                  className={`form-input pr-8 ${cityError && cityTouched ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : ''}`}
-                >
-                  <option value="" disabled>Select your city</option>
-                  {CITIES.map((ct) => (
-                    <option key={ct} value={ct}>{ct}</option>
-                  ))}
-                </select>
-                {cityError && cityTouched && (
-                  <p className="text-[10px] text-red-500 font-semibold mt-1">{cityError}</p>
-                )}
-                {form.city === 'Other' && (
-                  <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-[10px] text-amber-700 font-medium leading-relaxed">
-                      Cograd Pathshala currently operates in Meerut and Allahabad. 
-                      We'll notify you when we expand to your city.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Area / Locality — optional */}
-              <div className="text-left">
-                <label className="form-label"><MapPin className="w-3.5 h-3.5 text-slate-400 mr-1.5" />Area / Locality</label>
-                <input
-                  type="text"
-                  name="locality"
-                  value={form.locality}
-                  onChange={handleChange}
-                  className="form-input"
-                  placeholder="e.g. Civil Lines, Sadar, Shastri Nagar"
-                  maxLength={100}
-                />
-                <p className="text-[9px] text-slate-400 font-medium mt-1">Helps us match you with a teacher nearby</p>
-              </div>
-
               <div className="text-left">
                 <label className="form-label"><CheckSquare className="w-3.5 h-3.5 text-slate-400 mr-1.5" />Subjects Needed for Tuition</label>
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                  {['Mathematics', 'Science'].map((sub) => {
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+                  {SUBJECTS.map((sub) => {
                     const isChecked = form.subjects.includes(sub);
                     return (
                       <button
@@ -467,7 +457,7 @@ const RegisterStudent = () => {
                             : 'bg-white text-slate-500 border-slate-150 hover:bg-slate-50'
                         }`}
                       >
-                        <span>{sub} Tuition</span>
+                        <span>{sub}</span>
                         <span className={`w-4 h-4 rounded border flex items-center justify-center text-[10px] font-black ${
                           isChecked ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300'
                         }`}>{isChecked ? '✓' : ''}</span>
@@ -478,7 +468,7 @@ const RegisterStudent = () => {
               </div>
 
               <button type="submit" className="w-full btn-primary py-3.5 text-sm mt-3 flex items-center justify-center gap-1.5">
-                {form.city === 'Other' ? 'Complete Registration' : 'Proceed to Diagnostic Placement Test'}
+                Proceed to Diagnostic Placement Test
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>

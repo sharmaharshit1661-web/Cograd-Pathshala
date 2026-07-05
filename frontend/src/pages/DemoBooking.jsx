@@ -168,7 +168,7 @@ const DemoBooking = () => {
       </section>
 
       {/* Main */}
-      <section className="py-14">
+      <section className="pt-28 pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
 
@@ -176,24 +176,32 @@ const DemoBooking = () => {
             <div className={`bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden transition-all ${shake ? 'animate-shake' : ''}`}>
 
               {/* Progress header */}
-              <div className="bg-gradient-to-r from-primary-600 to-secondary-600 p-6 text-white">
-                <div className="flex items-center justify-between mb-4">
+              <div className="bg-gradient-to-r from-primary-600 to-secondary-600 p-5 text-white">
+                <div className="flex items-center gap-2 mb-4">
                   {STEPS.map((s, i) => (
-                    <div key={s.n} className="flex items-center gap-2">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-all ${
-                        step > s.n ? 'bg-white text-primary-700 border-white' :
-                        step === s.n ? 'bg-white/20 text-white border-white' :
-                        'bg-white/10 text-white/50 border-white/20'
+                    <div key={s.n} className="flex items-center gap-2 flex-1 last:flex-none">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 shrink-0 ${
+                        step > s.n
+                          ? 'bg-white text-primary-700 border-white'
+                          : step === s.n
+                          ? 'bg-white/20 text-white border-white shadow-md'
+                          : 'bg-white/10 text-white/50 border-white/20'
                       }`}>
-                        {step > s.n ? <CheckCircle className="w-4 h-4" /> : s.n}
+                        {step > s.n ? (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : s.n}
                       </div>
-                      <span className={`text-sm font-medium ${step >= s.n ? 'text-white' : 'text-white/50'}`}>{s.label}</span>
-                      {i < STEPS.length - 1 && <div className="w-10 h-px bg-white/20 mx-1" />}
+                      <span className={`text-xs font-semibold hidden sm:block ${step >= s.n ? 'text-white' : 'text-white/50'}`}>{s.label}</span>
+                      {i < STEPS.length - 1 && (
+                        <div className="flex-1 h-px mx-1 transition-all duration-500" style={{ background: step > s.n ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.2)' }} />
+                      )}
                     </div>
                   ))}
                 </div>
-                <h2 className="text-lg font-bold">Book Free Demo Class</h2>
-                <p className="text-white/75 text-sm">Fill in details to experience learning at home</p>
+                <h2 className="text-base font-bold">Book Free Demo Class</h2>
+                <p className="text-white/70 text-xs mt-0.5">Fill in details to experience learning at home</p>
               </div>
 
               <div className="p-7">
@@ -225,46 +233,58 @@ const DemoBooking = () => {
                           </div>
                         </div>
                         <div className="relative">
-                          <label className="form-label mb-2"><MapPin className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Search and Select Your District / City</label>
-                          <input
-                            type="text"
-                            placeholder="Type to search (e.g. Pune, Noida, Meerut)..."
-                            value={citySearch}
-                            onChange={(e) => {
-                              setCitySearch(e.target.value);
-                              setShowCityDropdown(true);
-                              setForm(p => ({ ...p, district: e.target.value }));
-                            }}
-                            onFocus={() => setShowCityDropdown(true)}
-                            onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
-                            className="form-input"
-                          />
-                          {showCityDropdown && (
-                            <div className="absolute z-50 left-0 right-0 mt-1 max-h-52 overflow-y-auto bg-white border border-neutral-200 rounded-xl shadow-lg divide-y divide-neutral-50">
-                              {filteredCities.length === 0 ? (
-                                <div className="p-3 text-xs text-neutral-400 italic">No matching cities found. Using "{citySearch}"</div>
-                              ) : (
-                                filteredCities.map((city) => (
-                                  <button
-                                    key={city}
-                                    type="button"
-                                    onMouseDown={() => {
-                                      setForm(p => ({ ...p, district: city }));
-                                      setCitySearch(city);
-                                      setShowCityDropdown(false);
-                                      setSelectedSlot(null);
-                                    }}
-                                    className="w-full text-left px-4 py-2.5 text-xs font-semibold text-neutral-700 hover:bg-primary-50 hover:text-primary-700 transition-colors cursor-pointer"
-                                  >
-                                    {city}
-                                  </button>
-                                ))
-                              )}
-                            </div>
-                          )}
+                          <label className="form-label mb-2">
+                            <MapPin className="w-3.5 h-3.5 text-neutral-400 mr-1.5" aria-hidden="true" />
+                            Search and Select Your District / City
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="Type to search (e.g. Pune, Noida, Meerut)..."
+                              value={citySearch}
+                              onChange={(e) => {
+                                setCitySearch(e.target.value);
+                                setShowCityDropdown(true);
+                                setForm(p => ({ ...p, district: e.target.value }));
+                              }}
+                              onFocus={() => setShowCityDropdown(true)}
+                              onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
+                              className="form-input"
+                              aria-autocomplete="list"
+                              aria-expanded={showCityDropdown}
+                              role="combobox"
+                            />
+                            {showCityDropdown && (
+                              <div className="dropdown-list" role="listbox" aria-label="City suggestions">
+                                {filteredCities.length === 0 ? (
+                                  <div className="dropdown-item text-slate-400 italic">
+                                    No matches — using "{citySearch}"
+                                  </div>
+                                ) : (
+                                  filteredCities.map((city) => (
+                                    <button
+                                      key={city}
+                                      type="button"
+                                      role="option"
+                                      onMouseDown={() => {
+                                        setForm(p => ({ ...p, district: city }));
+                                        setCitySearch(city);
+                                        setShowCityDropdown(false);
+                                        setSelectedSlot(null);
+                                      }}
+                                      className="dropdown-item w-full text-left flex items-center gap-2"
+                                    >
+                                      <MapPin className="w-3 h-3 text-neutral-400 shrink-0" aria-hidden="true" />
+                                      {city}
+                                    </button>
+                                  ))
+                                )}
+                              </div>
+                            )}
+                          </div>
                           {form.district && (
-                            <p className="text-[10px] text-primary-600 font-extrabold mt-1.5">
-                              Selected Location: {form.district}
+                            <p className="text-[11px] text-primary-600 font-semibold mt-1.5 flex items-center gap-1">
+                              <span aria-hidden="true">📍</span> Selected: <strong>{form.district}</strong>
                             </p>
                           )}
                         </div>

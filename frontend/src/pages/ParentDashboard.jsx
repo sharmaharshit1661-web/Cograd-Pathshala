@@ -26,7 +26,11 @@ import {
   ShieldCheck,
   AlertTriangle,
   Edit3,
-  Save
+  Save,
+  Phone,
+  Mail,
+  MapPin,
+  HelpCircle
 } from 'lucide-react';
 import { getDiagnosticQuestions } from '../utils/mockDb';
 
@@ -53,9 +57,15 @@ const ParentDashboard = () => {
   const [activeTab, setActiveTab] = useState('Overview');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+
+
+  const [supportForm, setSupportForm] = useState({ category: 'General Support', title: '', description: '' });
+  const [supportSubmitting, setSupportSubmitting] = useState(false);
   // Parent profile metadata - load from API
   const [parentName, setParentName] = useState(localStorage.getItem('cograd_parent_name') || 'Mrs. Sharma');
   const [parentUser, setParentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   
   // Child edit & waitlist states
   const [isEditingChild, setIsEditingChild] = useState(false);
@@ -63,7 +73,50 @@ const ParentDashboard = () => {
   const [showDiagnosticTest, setShowDiagnosticTest] = useState(false);
   const [placementAnswers, setPlacementAnswers] = useState({});
 
-  // Load real parent data from backend
+  const [studentsData, setStudentsData] = useState({});
+  const [selectedStudentKey, setSelectedStudentKey] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [paymentsList, setPaymentsList] = useState([]);
+  
+  const [dailyReports, setDailyReports] = useState([]);
+  const [dailyReportsLoading, setDailyReportsLoading] = useState(false);
+  const [supportTickets, setSupportTickets] = useState([]);
+  const [teachers, setTeachers] = useState([]);
+
+  // Helper function to update child backend data
+  const updateChildDataOnBackend = async (childId, updatedFields) => {
+    try {
+      const isRealStudent = !childId.endsWith('_child');
+      if (isRealStudent) {
+        // Update the Student document directly on the backend
+        const updatedStudent = await api.put(`/students/${childId}`, updatedFields);
+        return updatedStudent;
+      } else {
+        // Update the Parent document since the child is virtual/waitlisted
+        const parentPayload = { ...parentUser };
+        if (updatedFields.name !== undefined) parentPayload.childName = updatedFields.name;
+        if (updatedFields.standard !== undefined) parentPayload.childStandard = updatedFields.standard;
+        if (updatedFields.city !== undefined) parentPayload.childCity = updatedFields.city;
+        if (updatedFields.locality !== undefined) parentPayload.childLocality = updatedFields.locality;
+        if (updatedFields.test_score !== undefined) parentPayload.test_score = updatedFields.test_score;
+        if (updatedFields.status !== undefined) parentPayload.status = updatedFields.status;
+        
+        if (updatedFields.feeDue !== undefined) parentPayload.feeDue = updatedFields.feeDue;
+        if (updatedFields.feeStatus !== undefined) parentPayload.feeStatus = updatedFields.feeStatus;
+        if (updatedFields.feeDueDate !== undefined) parentPayload.feeDueDate = updatedFields.feeDueDate;
+        if (updatedFields.activities !== undefined) parentPayload.activities = updatedFields.activities;
+        if (updatedFields.schedule !== undefined) parentPayload.schedule = updatedFields.schedule;
+        
+        const updatedParent = await api.put(`/parents/${parentUser.id}`, parentPayload);
+        setParentUser(updatedParent);
+        return updatedParent;
+      }
+    } catch (err) {
+      console.error('Failed to update child backend data:', err);
+      throw err;
+    }
+  };
+
   useEffect(() => {
     const loadParentData = async () => {
       try {
@@ -77,35 +130,29 @@ const ParentDashboard = () => {
           }
         }
         
-        // Load children and teachers from backend
-        const [children, teachersList] = await Promise.all([
+        // Load children, teachers, payments and support tickets from backend
+        const [children, teachersList, paymentsData, supportTicketsData] = await Promise.all([
           api.get('/parents/children'),
-          api.get('/teachers')
+          api.get('/teachers'),
+          api.get('/payments'),
+          api.get('/support-tickets')
         ]);
 
+        setPaymentsList(paymentsData || []);
+        setTeachers(teachersList || []);
+        if (supportTicketsData && user) {
+          setSupportTickets(supportTicketsData.filter(t => t.userId === user.id) || []);
+        }
+
         if (children && children.length > 0) {
-          const cached = localStorage.getItem('cograd_parent_students_data');
-          let parsedCache = {};
-          if (cached) {
-            try { parsedCache = JSON.parse(cached); } catch (e) {}
-          }
-
-          const childNameHash = (name) => {
-            if (!name) return 0;
-            let hash = 0;
-            for (let i = 0; i < name.length; i++) {
-              hash += name.charCodeAt(i);
-            }
-            return hash;
-          };
-
           const newStudentsData = {};
           children.forEach((child) => {
             const childId = child.id || child._id;
             const childSubjects = child.subjects || ['Mathematics', 'Science'];
+            const isActive = child.status === 'active' || child.status === 'Active' || child.status === 'matched';
             
-            // Map teachers for these subjects
-            const mappedTeachers = childSubjects.map((subName) => {
+            // Map teachers for these subjects only if matched
+            const mappedTeachers = child.assigned_teacher_id ? childSubjects.map((subName) => {
               const matchedT = (teachersList || []).find((t) => 
                 t.role === 'teacher' && 
                 (t.subjects_taught || []).some(s => s.toLowerCase() === subName.toLowerCase())
@@ -115,58 +162,68 @@ const ParentDashboard = () => {
                 subject: subName,
                 avatar: matchedT ? matchedT.avatar : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
               };
-            });
+            }) : [];
 
-            const primaryTeacherName = mappedTeachers[0]?.name || 'Class Tutor';
+            const assignedTeacherObj = child.assigned_teacher_id 
+              ? (teachersList || []).find(t => t.id === child.assigned_teacher_id)
+              : null;
+            const primaryTeacherName = assignedTeacherObj 
+              ? assignedTeacherObj.name 
+              : (mappedTeachers[0]?.name || 'Not Assigned');
 
             const getSubjectGrade = (sub) => {
               if (child.test_score && typeof child.test_score[sub] === 'number') {
                 const score = child.test_score[sub];
                 return score >= 90 ? 'A+' : score >= 80 ? 'A' : score >= 75 ? 'B+' : score >= 60 ? 'B' : 'C';
               }
-              return 'A-';
+              return 'N/A';
             };
 
             let attendanceAvg = 'N/A';
-            if (child.attendance && child.attendance !== 'N/A') {
+            if (child.attendance_log && child.attendance_log.length > 0) {
+              const presentCount = child.attendance_log.filter(l => l.status === 'Present').length;
+              attendanceAvg = Math.round((presentCount / child.attendance_log.length) * 100);
+            } else if (child.attendance && child.attendance !== 'N/A') {
               attendanceAvg = parseInt(child.attendance, 10);
             }
 
             const subjectsProgress = childSubjects.map((subName) => {
               const matchedT = mappedTeachers.find(t => t.subject === subName);
               const grade = getSubjectGrade(subName);
-              const score = child.test_score && typeof child.test_score[subName] === 'number' ? child.test_score[subName] : 85;
+              
+              // Extract real scores from mock_tests_log for this subject
+              const subjectTests = (child.mock_tests_log || [])
+                .filter(t => t.subject && t.subject.toLowerCase() === subName.toLowerCase())
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+              let trendPoints = [];
+              if (subjectTests.length > 0) {
+                trendPoints = subjectTests.map(t => typeof t.percentageNum === 'number' ? t.percentageNum : parseFloat(t.score || t.percentage || 0));
+              }
+
               return {
                 name: subName,
-                teacher: matchedT ? matchedT.name : 'Class Tutor',
-                attendance: attendanceAvg !== 'N/A' ? attendanceAvg : 92,
+                teacher: child.assigned_teacher_id ? (matchedT ? matchedT.name : primaryTeacherName) : 'Not Assigned',
+                attendance: attendanceAvg !== 'N/A' ? attendanceAvg : 0,
                 grade: grade,
-                trend: [score - 15, score - 10, score - 5, score]
+                trend: trendPoints
               };
             });
 
-            const grades = subjectsProgress.map(s => s.grade);
-            const averageGrade = grades.includes('A+') ? 'A' : grades.includes('A') ? 'A-' : 'B+';
+            const realGrades = subjectsProgress.map(s => s.grade).filter(g => g !== 'N/A');
+            const averageGrade = realGrades.length > 0 ? (realGrades.includes('A+') ? 'A+' : realGrades.includes('A') ? 'A' : 'B+') : 'N/A';
 
-            const cachedChild = parsedCache && parsedCache[childId] ? parsedCache[childId] : {};
-
-            const isActive = child.status === 'active' || child.status === 'Active' || child.status === 'matched';
-            const feeDue = isActive ? (cachedChild.feeDue !== undefined ? cachedChild.feeDue : 3000) : 0;
-            const feeStatus = feeDue > 0 ? 'Unpaid' : 'Paid';
-            const feeDueDate = cachedChild.feeDueDate || '15 June';
+            const feeDue = child.feeDue !== undefined ? child.feeDue : (isActive && child.assigned_teacher_id ? 3000 : 0);
+            const feeStatus = child.feeStatus || (feeDue > 0 ? 'Unpaid' : 'Paid');
+            const feeDueDate = child.feeDueDate || '15 June';
 
             let liveHomeworks = [];
-            if (child.assigned_teacher_id) {
-              const teacherAsgsRaw = localStorage.getItem(`cograd_teacher_assignments_${child.assigned_teacher_id}`);
-              const teacherSubsRaw = localStorage.getItem(`cograd_teacher_submissions_${child.assigned_teacher_id}`);
-              
-              let teacherAsgs = [];
-              let teacherSubs = [];
-              try { if (teacherAsgsRaw) teacherAsgs = JSON.parse(teacherAsgsRaw); } catch(e) {}
-              try { if (teacherSubsRaw) teacherSubs = JSON.parse(teacherSubsRaw); } catch(e) {}
+            if (child.assigned_teacher_id && assignedTeacherObj) {
+              const teacherAsgs = assignedTeacherObj.assignments || [];
+              const teacherSubs = assignedTeacherObj.submissions || [];
               
               liveHomeworks = teacherAsgs.map(asg => {
-                const matchedSub = teacherSubs.find(sub => sub.assignmentName === asg.name && sub.studentName === child.name);
+                const matchedSub = teacherSubs.find(sub => sub.assignmentName === asg.name && (sub.studentName === child.name || sub.studentId === childId));
                 return {
                   id: asg.id || `h_${Date.now()}_${asg.name}`,
                   title: asg.name,
@@ -184,151 +241,109 @@ const ParentDashboard = () => {
               class: child.standard ? `Class ${child.standard}` : 'High School',
               avatar: child.avatar || 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?auto=format&fit=crop&w=150&q=80',
               attendance: attendanceAvg,
-              rank: cachedChild.rank || (childNameHash(child.name) % 8 + 3),
-              totalInBatch: cachedChild.totalInBatch || 25,
+              attendance_log: child.attendance_log || [],
+              rank: child.rank !== undefined ? child.rank : 'N/A',
+              totalInBatch: child.totalInBatch !== undefined ? child.totalInBatch : 'N/A',
               feeDue: feeDue,
               feeDueDate: feeDueDate,
               feeStatus: feeStatus,
               averageGrade: averageGrade,
-              primaryTeacher: primaryTeacherName,
+              primaryTeacher: child.assigned_teacher_id ? primaryTeacherName : 'Not Assigned',
               teachers: mappedTeachers,
               subjects: subjectsProgress,
-              homeworks: liveHomeworks.length > 0 ? liveHomeworks : (cachedChild.homeworks || []),
-              schedule: cachedChild.schedule || [],
-              activities: cachedChild.activities || [],
-              chatHistory: cachedChild.chatHistory || []
+              homeworks: liveHomeworks,
+              schedule: child.schedule || [],
+              activities: child.activities || [],
+              mock_tests_log: child.mock_tests_log || []
             };
           });
 
           setStudentsData(newStudentsData);
 
-          // Build dynamic notifications
-          setNotifications([
-            { id: 1, text: `${children[0].name} was marked PRESENT today at 08:35 AM`, time: '1h ago', isNew: true },
-            { id: 2, text: `Teacher shared feedback on ${children[0].name}'s recent test`, time: '4h ago', isNew: true },
-            ...(children[1] ? [{ id: 3, text: `Fee invoice for ${children[1].name} generated successfully`, time: '2d ago', isNew: false }] : [])
-          ]);
-          
-          setSelectedStudentKey(prev => {
-            if (prev && newStudentsData[prev]) return prev;
-            return Object.keys(newStudentsData)[0];
-          });
+          const defaultStudentKey = Object.keys(newStudentsData)[0];
+          setSelectedStudentKey(defaultStudentKey);
         }
       } catch (err) {
         console.error('Failed to load parent data:', err);
+      } finally {
+        setLoading(false);
       }
     };
     loadParentData();
   }, []);
 
-  // Notifications
-  const [notifications, setNotifications] = useState(() => {
-    return [
-      { id: 1, text: `Rahul was marked PRESENT today at 08:35 AM`, time: '1h ago', isNew: true },
-      { id: 2, text: `Teacher shared feedback on Rahul's recent test`, time: '4h ago', isNew: true }
-    ];
-  });
-
-  // Dynamic state for Child data
-  // Deep schema validator for cached parent-students data to prevent runtime crashes
-  const isValidStudent = (s) => {
-    if (!s) return false;
-    if (typeof s.name !== 'string' || typeof s.class !== 'string' || typeof s.avatar !== 'string') return false;
-    if (typeof s.feeDue !== 'number' || typeof s.feeStatus !== 'string' || (typeof s.attendance !== 'number' && typeof s.attendance !== 'string')) return false;
-    if (!Array.isArray(s.teachers) || !Array.isArray(s.subjects) || !Array.isArray(s.homeworks) || !Array.isArray(s.schedule) || !Array.isArray(s.activities) || !Array.isArray(s.chatHistory)) return false;
-    
-    // Validate each subject contains a trend score array
-    for (const sub of s.subjects) {
-      if (!sub || typeof sub.name !== 'string' || !Array.isArray(sub.trend) || sub.trend.length === 0) return false;
-    }
-    // Validate schedule items and check for serialized React icons
-    for (const item of s.schedule) {
-      if (!item || typeof item.icon === 'object') return false;
-    }
-    return true;
-  };
-
-  const DEFAULT_STUDENTS_DATA = {
-    'child_rahul': {
-      id: 'child_rahul',
-      name: 'Rahul Sharma',
-      class: 'Class 10',
-      avatar: 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?auto=format&fit=crop&w=150&q=80',
-      attendance: 94,
-      rank: 4,
-      totalInBatch: 25,
-      feeDue: 3000,
-      feeDueDate: '15 July 2026',
-      feeStatus: 'Unpaid',
-      averageGrade: 'A',
-      primaryTeacher: 'Priya Sharma',
-      teachers: [
-        { name: 'Priya Sharma', subject: 'Mathematics', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80' },
-        { name: 'Amit Verma', subject: 'Science', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80' }
-      ],
-      subjects: [
-        { name: 'Mathematics', teacher: 'Priya Sharma', attendance: 96, grade: 'A+', trend: [70, 78, 85, 92] },
-        { name: 'Science', teacher: 'Amit Verma', attendance: 92, grade: 'A', trend: [72, 75, 82, 88] }
-      ],
-      homeworks: [
-        { id: 'h1', title: 'Quadratic Equations Practice Sheet', subject: 'Mathematics', due: 'Tomorrow', status: 'Pending' },
-        { id: 'h2', title: 'Chemical Reactions Worksheet', subject: 'Science', due: 'In 2 days', status: 'Submitted' },
-        { id: 'h3', title: 'Arithmetic Progressions Assignment', subject: 'Mathematics', due: 'Completed', status: 'Graded', score: '95/100' }
-      ],
-      schedule: [
-        { id: 's1', title: 'Mathematics Home Visit', time: '04:00 PM - 05:30 PM', date: 'Today', icon: 'Clock' },
-        { id: 's2', title: 'Science Zoom Live Class', time: '06:00 PM - 07:00 PM', date: 'Tomorrow', icon: 'Video' }
-      ],
-      activities: [
-        { id: 'act1', type: 'success', text: 'Rahul joined Mathematics live session 2 mins early.', time: 'Today 04:00 PM' },
-        { id: 'act2', type: 'primary', text: 'Homework Quadratic Equations submitted.', time: 'Yesterday' }
-      ],
-      chatHistory: [
-        { sender: 'teacher', text: 'Hello, Rahul did exceptionally well in today\'s algebra practice. Please ensure he completes the worksheet.', time: 'Yesterday' }
-      ]
-    }
-  };
-
-  // Dynamic state for Child data
-  // Using LocalStorage to persist updates (payments, PTM bookings, chat messages)
-  const [studentsData, setStudentsData] = useState(() => {
-    const cached = localStorage.getItem('cograd_parent_students_data');
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed && Object.keys(parsed).length > 0 && Object.keys(parsed).every(key => isValidStudent(parsed[key]))) {
-          return parsed;
-        }
-      } catch (e) {
-        console.error('Error parsing student cache:', e);
-      }
-      // Outdated or corrupt cache, remove it
-      localStorage.removeItem('cograd_parent_students_data');
-    }
-    return DEFAULT_STUDENTS_DATA;
-  });
-
-  // Active student key
-  const [selectedStudentKey, setSelectedStudentKey] = useState(() => {
-    const cached = localStorage.getItem('cograd_parent_students_data');
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed && Object.keys(parsed).length > 0) {
-          return Object.keys(parsed)[0];
-        }
-      } catch (e) {}
-    }
-    return 'child_rahul';
-  });
-
-  // Trigger cache save when student state changes
+  // Dynamic Notifications Effect
   useEffect(() => {
-    localStorage.setItem('cograd_parent_students_data', JSON.stringify(studentsData));
-  }, [studentsData]);
+    if (!selectedStudentKey || !studentsData[selectedStudentKey]) return;
+    const defStudent = studentsData[selectedStudentKey];
+    const generatedNotifications = [];
+
+    if (defStudent.attendance_log && defStudent.attendance_log.length > 0) {
+      defStudent.attendance_log.slice(-2).forEach((log, index) => {
+        generatedNotifications.push({
+          id: 'notif_att_' + index + '_' + selectedStudentKey,
+          text: `${defStudent.name} was marked ${log.status.toUpperCase()} on ${log.date} by tutor ${log.markedBy}`,
+          time: 'Tutor update',
+          isNew: false
+        });
+      });
+    }
+
+    if (defStudent.mock_tests_log && defStudent.mock_tests_log.length > 0) {
+      defStudent.mock_tests_log.slice(-2).forEach((test, index) => {
+        generatedNotifications.push({
+          id: 'notif_test_' + index + '_' + selectedStudentKey,
+          text: `New result: ${defStudent.name} scored ${test.percentage || (test.percentageNum + '%')} in ${test.testName || test.subject}`,
+          time: 'Academic update',
+          isNew: true
+        });
+      });
+    }
+
+    const defPayments = (paymentsList || []).filter(p => p.studentId === selectedStudentKey);
+    if (defPayments.length > 0) {
+      defPayments.slice(-2).forEach((pay, index) => {
+        generatedNotifications.push({
+          id: 'notif_pay_' + index + '_' + selectedStudentKey,
+          text: `Payment of ₹${pay.amount} for ${defStudent.name} is processed successfully`,
+          time: pay.date,
+          isNew: false
+        });
+      });
+    }
+
+    if (generatedNotifications.length === 0) {
+      generatedNotifications.push({
+        id: 'notif_welcome_' + selectedStudentKey,
+        text: `Welcome to Cograd! Keep track of your child ${defStudent.name}'s tuition progress here.`,
+        time: 'System',
+        isNew: true
+      });
+    }
+
+    setNotifications(generatedNotifications);
+  }, [selectedStudentKey, studentsData, paymentsList]);
+
+  // Fetch daily learning reports dynamically on active student change
+  useEffect(() => {
+    if (!selectedStudentKey) return;
+    const fetchDailyReports = async () => {
+      setDailyReportsLoading(true);
+      try {
+        const reports = await api.get(`/students/${selectedStudentKey}/daily-reports`);
+        setDailyReports(reports || []);
+      } catch (err) {
+        console.error('Failed to fetch daily reports:', err);
+      } finally {
+        setDailyReportsLoading(false);
+      }
+    };
+    fetchDailyReports();
+  }, [selectedStudentKey]);
 
   // Current student object based on state selector
   const activeStudent = studentsData[selectedStudentKey] || null;
+
 
   const getChildNameHash = (name) => {
     if (!name) return 0;
@@ -433,7 +448,7 @@ const ParentDashboard = () => {
   };
 
   // Fee Payment handler
-  const handlePayFeeSubmit = (e) => {
+  const handlePayFeeSubmit = async (e) => {
     e.preventDefault();
     if (activeStudent.feeDue <= 0) {
       triggerToast('Fee is already paid!');
@@ -449,100 +464,72 @@ const ParentDashboard = () => {
     }
 
     setPayLoading(true);
-    setTimeout(() => {
-      setPayLoading(false);
-      setShowPayModal(false);
+    try {
+      // 1. Record payment record
+      await api.post('/payments', {
+        studentId: activeStudent.id,
+        studentName: activeStudent.name,
+        amount: String(activeStudent.feeDue),
+        method: payMethod === 'card' ? 'Card' : 'UPI'
+      });
 
-      // Update student data status
+      // 2. Prepare updated fields
+      const oldDue = activeStudent.feeDue;
+      const updatedActivities = [
+        {
+          id: 'pay_' + Date.now(),
+          text: `Paid Tuition fee of ₹${oldDue.toLocaleString('en-IN')} successfully via ${payMethod.toUpperCase()}`,
+          time: 'Just now',
+          tag: 'Billing',
+          type: 'success'
+        },
+        ...(activeStudent.activities || [])
+      ];
+
+      const updatedFields = {
+        feeDue: 0,
+        feeStatus: 'Paid',
+        feeDueDate: 'Paid on ' + new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+        activities: updatedActivities
+      };
+
+      // 3. Save to backend database
+      await updateChildDataOnBackend(selectedStudentKey, updatedFields);
+
+      // 4. Update frontend state
       setStudentsData(prev => {
-        const studentCopy = { ...prev[selectedStudentKey] };
-        const oldDue = studentCopy.feeDue;
-        studentCopy.feeDue = 0;
-        studentCopy.feeStatus = 'Paid';
-        studentCopy.feeDueDate = 'Paid on ' + new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-        
-        // Append payment activity
-        studentCopy.activities = [
-          {
-            id: 'pay_' + Date.now(),
-            text: `Paid Tuition fee of ₹${oldDue.toLocaleString('en-IN')} successfully via ${payMethod.toUpperCase()}`,
-            time: 'Just now',
-            tag: 'Billing',
-            type: 'success'
-          },
-          ...studentCopy.activities
-        ];
-        return {
-          ...prev,
-          [selectedStudentKey]: studentCopy
-        };
+        const studentCopy = { ...prev[selectedStudentKey], ...updatedFields };
+        return { ...prev, [selectedStudentKey]: studentCopy };
       });
 
       // Append to global notifications
       setNotifications(prev => [
         {
           id: Date.now(),
-          text: `Payment of ₹${activeStudent.feeDue.toLocaleString('en-IN')} for ${activeStudent.name} is processed.`,
+          text: `Payment of ₹${oldDue.toLocaleString('en-IN')} for ${activeStudent.name} is processed.`,
           time: 'Just now',
           isNew: true
         },
         ...prev
       ]);
 
-      // Reset payment card fields
+      // Reset payment card fields and close
       setCardNumber('');
       setCardExpiry('');
       setCardCvv('');
       setUpiId('');
-
+      setShowPayModal(false);
       triggerToast('Payment Processed Successfully!');
-    }, 1800);
-  };
-
-  // Message Send handler with simulator reply
-  // eslint-disable-next-line no-unused-vars
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
-
-    const userMessageText = chatInput.trim();
-    setChatInput('');
-
-    // Append parent message
-    setStudentsData(prev => {
-      const studentCopy = { ...prev[selectedStudentKey] };
-      studentCopy.chatHistory = [
-        ...studentCopy.chatHistory,
-        { sender: 'parent', text: userMessageText, time: 'Just now' }
-      ];
-      return {
-        ...prev,
-        [selectedStudentKey]: studentCopy
-      };
-    });
-
-    // Simulate teacher reply
-    setTimeout(() => {
-      let replyText = `Hello Mrs. Sharma. Thank you for the message. I have reviewed ${activeStudent.name}'s progress in our sessions. They are doing well, and I will share target practice sheets this weekend.`;
-
-      setStudentsData(prev => {
-        const studentCopy = { ...prev[selectedStudentKey] };
-        studentCopy.chatHistory = [
-          ...studentCopy.chatHistory,
-          { sender: 'teacher', text: replyText, time: 'Just now' }
-        ];
-        return {
-          ...prev,
-          [selectedStudentKey]: studentCopy
-        };
-      });
-
-      triggerToast(`New message from ${selectedChatTeacher}`);
-    }, 1500);
+    } catch (err) {
+      console.error('Payment processing failed:', err);
+      triggerToast('Payment failed: ' + err.message);
+    } finally {
+      setPayLoading(false);
+    }
   };
 
   // PTM Scheduling handler
-  const handleBookPTMSubmit = (e) => {
+  const handleBookPTMSubmit = async (e) => {
     e.preventDefault();
     if (!selectedTeacher || !bookingDate || !bookingTime) {
       triggerToast('Please fill out all booking fields to continue.');
@@ -550,66 +537,118 @@ const ParentDashboard = () => {
     }
 
     setPtmLoading(true);
-    setTimeout(() => {
-      setPtmLoading(false);
-      setShowPTMModal(false);
-
+    try {
       const formattedDate = new Date(bookingDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
       const [hours, minutes] = bookingTime.split(':');
       const ampm = parseInt(hours) >= 12 ? 'PM' : 'AM';
       const formattedTime = `${parseInt(hours) % 12 || 12}:${minutes} ${ampm}`;
 
-      setStudentsData(prev => {
-        const studentCopy = { ...prev[selectedStudentKey] };
-        
-        // Append schedule event
-        studentCopy.schedule = [
-          {
-            id: 'ptm_' + Date.now(),
-            type: 'PTM',
-            title: `PTM with ${selectedTeacher}`,
-            date: formattedDate,
-            time: formattedTime,
-            details: `${ptmMode === 'Call' ? 'Telephonic Call' : 'In-Home Visit'} scheduled`,
-            icon: ptmMode === 'Call' ? 'phone' : 'home'
-          },
-          ...studentCopy.schedule
-        ];
+      const ptmScheduleItem = {
+         id: 'ptm_' + Date.now(),
+         type: 'PTM',
+         title: `PTM with ${selectedTeacher}`,
+         date: formattedDate,
+         time: formattedTime,
+         details: `${ptmMode === 'Call' ? 'Telephonic Call' : 'In-Home Visit'} scheduled`,
+         icon: ptmMode === 'Call' ? 'phone' : 'home'
+      };
 
-        // Append activity log
-        studentCopy.activities = [
-          {
-            id: 'ptm_act_' + Date.now(),
-            text: `Booked Parent-Teacher Meeting with ${selectedTeacher} for ${formattedDate} at ${formattedTime}`,
-            time: 'Just now',
-            tag: 'Calendar',
-            type: 'primary'
-          },
-          ...studentCopy.activities
-        ];
+      const ptmActivityItem = {
+         id: 'ptm_act_' + Date.now(),
+         text: `Booked Parent-Teacher Meeting with ${selectedTeacher} for ${formattedDate} at ${formattedTime}`,
+         time: 'Just now',
+         tag: 'Calendar',
+         type: 'primary'
+      };
 
-        return {
-          ...prev,
-          [selectedStudentKey]: studentCopy
-        };
+      const updatedSchedule = [ptmScheduleItem, ...(activeStudent.schedule || [])];
+      const updatedActivities = [ptmActivityItem, ...(activeStudent.activities || [])];
+
+      await updateChildDataOnBackend(selectedStudentKey, {
+        schedule: updatedSchedule,
+        activities: updatedActivities
       });
 
-      triggerToast('Parent-Teacher Meeting booked successfully!');
-      // Reset fields
+      setStudentsData(prev => {
+        const studentCopy = { 
+          ...prev[selectedStudentKey], 
+          schedule: updatedSchedule, 
+          activities: updatedActivities 
+        };
+        return { ...prev, [selectedStudentKey]: studentCopy };
+      });
+
       setSelectedTeacher('');
       setBookingDate('');
       setBookingTime('');
-    }, 1500);
+      setShowPTMModal(false);
+      triggerToast('Parent-Teacher Meeting booked successfully!');
+    } catch (err) {
+      console.error('PTM booking failed:', err);
+      triggerToast('PTM booking failed: ' + err.message);
+    } finally {
+      setPtmLoading(false);
+    }
   };
 
-  // Simulate downloading report card
-  const handleDownloadReport = () => {
-    setDownloadLoading(true);
-    setTimeout(() => {
-      setDownloadLoading(false);
-      setShowReportModal(false);
+  // Support Ticket Submission handler
+  const handleSupportSubmit = async (e) => {
+    e.preventDefault();
+    if (!supportForm.title || !supportForm.description) {
+      triggerToast('Please fill out all fields.');
+      return;
+    }
 
-      // Create dummy link download
+    setSupportSubmitting(true);
+    try {
+      const response = await api.post('/support-tickets', {
+        userId: parentUser?.id,
+        userName: parentName,
+        userRole: 'parent',
+        title: supportForm.title,
+        description: supportForm.description,
+        category: supportForm.category
+      });
+
+      if (response && response.ticket) {
+        setSupportTickets(prev => [response.ticket, ...prev]);
+        setSupportForm({ category: 'General Support', title: '', description: '' });
+        triggerToast('Support ticket submitted successfully!');
+      } else {
+        throw new Error('Failed to submit support ticket.');
+      }
+    } catch (err) {
+      console.error('Failed to submit support ticket:', err);
+      triggerToast('Submission failed: ' + (err.message || 'Server error'));
+    } finally {
+      setSupportSubmitting(false);
+    }
+  };
+
+  // Compile and download report card
+  const handleDownloadReport = async () => {
+    setDownloadLoading(true);
+    try {
+      const updatedActivities = [
+        {
+          id: 'dl_' + Date.now(),
+          text: `Downloaded Academic Report Card for Term Examination`,
+          time: 'Just now',
+          tag: 'Report',
+          type: 'success'
+        },
+        ...(activeStudent.activities || [])
+      ];
+
+      await updateChildDataOnBackend(selectedStudentKey, {
+        activities: updatedActivities
+      });
+
+      setStudentsData(prev => {
+        const studentCopy = { ...prev[selectedStudentKey], activities: updatedActivities };
+        return { ...prev, [selectedStudentKey]: studentCopy };
+      });
+
       const element = document.createElement('a');
       const file = new Blob([
         `=========================================\n`,
@@ -634,27 +673,14 @@ const ParentDashboard = () => {
       element.click();
       document.body.removeChild(element);
 
-      // Add to activities
-      setStudentsData(prev => {
-        const studentCopy = { ...prev[selectedStudentKey] };
-        studentCopy.activities = [
-          {
-            id: 'dl_' + Date.now(),
-            text: `Downloaded Academic Report Card for Term Examination`,
-            time: 'Just now',
-            tag: 'Report',
-            type: 'success'
-          },
-          ...studentCopy.activities
-        ];
-        return {
-          ...prev,
-          [selectedStudentKey]: studentCopy
-        };
-      });
-
+      setShowReportModal(false);
       triggerToast('Report Card file downloaded successfully!');
-    }, 1600);
+    } catch (err) {
+      console.error('Failed to compile report card:', err);
+      triggerToast('Failed to compile report card.');
+    } finally {
+      setDownloadLoading(false);
+    }
   };
 
   // Helper for activity tag styling
@@ -686,12 +712,36 @@ const ParentDashboard = () => {
     }
   };
 
-  if (!activeStudent) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-12 h-12 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-sm font-black text-slate-650">Loading children details...</p>
+        <div className="flex flex-col items-center gap-4">
+          <div className="spinner" style={{ width: '2.5rem', height: '2.5rem' }} aria-label="Loading" />
+          <p className="text-sm font-semibold text-slate-500">Loading your dashboard…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeStudent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 max-w-md w-full shadow-xl text-center">
+          <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-100">
+            <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-black text-slate-800 mb-2">No Linked Children Found</h3>
+          <p className="text-xs text-slate-500 mt-2 leading-relaxed max-w-sm mx-auto">
+            There are no children linked to your parent account (<strong>{parentName}</strong>). Please register your child via the student portal with your phone number, or contact administration.
+          </p>
+          <button
+            onClick={() => { localStorage.clear(); window.location.href = '/login'; }}
+            className="mt-6 w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm rounded-xl shadow-md transition-all cursor-pointer"
+          >
+            Sign Out &amp; Try Again
+          </button>
         </div>
       </div>
     );
@@ -705,7 +755,8 @@ const ParentDashboard = () => {
           { name: 'Progress', icon: BookOpen },
           { name: 'Daily Learning', icon: Eye },
           { name: 'Fee Manager', icon: CreditCard },
-          { name: 'PTM & Support', icon: Calendar }
+          { name: 'PTM & Support', icon: Calendar },
+          { name: 'Help & Support', icon: HelpCircle }
         ]}
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -979,72 +1030,125 @@ const ParentDashboard = () => {
               )}
               {/* ================================== OVERVIEW TAB ================================== */}
               {activeTab === 'Overview' && (
-                <div className="space-y-6">
-              
-              {/* Smart Attendance Alert Banner */}
-              {typeof activeStudent.attendance === 'number' && activeStudent.attendance < 90 ? (
-                <div className="bg-gradient-to-r from-rose-500/10 to-amber-500/10 border border-rose-200 rounded-3xl p-4 flex items-center justify-between gap-4 animate-slide-up">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-rose-100 text-rose-700 rounded-xl border border-rose-200 shrink-0">
-                      <AlertCircle className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-extrabold text-rose-900 uppercase tracking-wide">⚠️ Smart Attendance Alert</h4>
-                      <p className="text-xs font-bold text-slate-700 mt-0.5">{activeStudent.name}'s overall attendance has dropped to {activeStudent.attendance}% (below recommended 90%).</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setStudentsData(prev => {
-                        const studentCopy = { ...prev[selectedStudentKey] };
-                        const exists = studentCopy.schedule.some(s => s.title.includes(studentCopy.primaryTeacher));
-                        if (!exists) {
-                          studentCopy.schedule = [
+                <div className="space-y-6">              {/* Smart Attendance Alert Banner or Gate Status Banner */}
+              {(() => {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const todayRecord = activeStudent.attendance_log?.find(log => log.date === todayStr);
+
+                if (todayRecord) {
+                  if (todayRecord.status === 'Present') {
+                    return (
+                      <div className="bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border border-emerald-200 rounded-3xl p-4 flex items-center justify-between gap-4 animate-slide-up">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200 shrink-0">
+                            <CheckCircle2 className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-extrabold text-emerald-900 uppercase tracking-wide">✅ Center Check-in Status</h4>
+                            <p className="text-xs font-bold text-slate-700 mt-0.5">{activeStudent.name} successfully checked in at the center (marked Present by {todayRecord.markedBy}) today.</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full font-bold">Checked In</span>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="bg-gradient-to-r from-rose-500/10 to-amber-500/10 border border-rose-200 rounded-3xl p-4 flex items-center justify-between gap-4 animate-slide-up">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 bg-rose-100 text-rose-700 rounded-xl border border-rose-200 shrink-0">
+                            <AlertCircle className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-extrabold text-rose-900 uppercase tracking-wide">⚠️ Center Check-in Alert</h4>
+                            <p className="text-xs font-bold text-slate-700 mt-0.5">{activeStudent.name} was marked ABSENT today by tutor {todayRecord.markedBy}.</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1 rounded-full font-bold">Absent</span>
+                      </div>
+                    );
+                  }
+                }
+
+                // If no entry for today, check overall attendance
+                const attendancePct = typeof activeStudent.attendance === 'number' 
+                  ? activeStudent.attendance 
+                  : parseInt(activeStudent.attendance, 10);
+
+                if (!isNaN(attendancePct) && attendancePct < 90) {
+                  return (
+                    <div className="bg-gradient-to-r from-rose-500/10 to-amber-500/10 border border-rose-200 rounded-3xl p-4 flex items-center justify-between gap-4 animate-slide-up">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-rose-100 text-rose-700 rounded-xl border border-rose-200 shrink-0">
+                          <AlertCircle className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-extrabold text-rose-900 uppercase tracking-wide">⚠️ Smart Attendance Alert</h4>
+                          <p className="text-xs font-bold text-slate-700 mt-0.5">{activeStudent.name}'s overall attendance has dropped to {activeStudent.attendance}% (below recommended 90%).</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          const updatedSchedule = [
                             {
                               id: 'ptm_sync_' + Date.now(),
                               type: 'PTM',
-                              title: `PTM with ${studentCopy.primaryTeacher}`,
-                              date: '17 June',
+                              title: `PTM with ${activeStudent.primaryTeacher}`,
+                              date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
                               time: '3:00 PM',
                               details: 'Attendance Review Sync (Call)',
                               icon: 'phone'
                             },
-                            ...studentCopy.schedule
+                            ...(activeStudent.schedule || [])
                           ];
-                          studentCopy.activities = [
+                          const updatedActivities = [
                             {
                               id: 'ptm_act_sync_' + Date.now(),
-                              text: `Requested urgent performance sync with ${studentCopy.primaryTeacher}`,
+                              text: `Requested urgent performance sync with ${activeStudent.primaryTeacher}`,
                               time: 'Just now',
                               tag: 'Calendar',
                               type: 'warning'
                             },
-                            ...studentCopy.activities
+                            ...(activeStudent.activities || [])
                           ];
-                        }
-                        return { ...prev, [selectedStudentKey]: studentCopy };
-                      });
-                      triggerToast(`Counselor meeting scheduled with ${activeStudent.primaryTeacher}!`);
-                    }}
-                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-colors cursor-pointer shrink-0"
-                  >
-                    Request Tutor Sync
-                  </button>
-                </div>
-              ) : (
-                <div className="bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border border-emerald-200 rounded-3xl p-4 flex items-center justify-between gap-4 animate-slide-up">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200 shrink-0">
-                      <CheckCircle2 className="w-5 h-5" />
+
+                          try {
+                            await updateChildDataOnBackend(selectedStudentKey, {
+                              schedule: updatedSchedule,
+                              activities: updatedActivities
+                            });
+                            setStudentsData(prev => {
+                              const studentCopy = { ...prev[selectedStudentKey], schedule: updatedSchedule, activities: updatedActivities };
+                              return { ...prev, [selectedStudentKey]: studentCopy };
+                            });
+                            triggerToast(`Counselor meeting scheduled with ${activeStudent.primaryTeacher}!`);
+                          } catch (err) {
+                            triggerToast('Failed to schedule sync.');
+                          }
+                        }}
+                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-colors cursor-pointer shrink-0"
+                      >
+                        Request Tutor Sync
+                      </button>
                     </div>
-                    <div>
-                      <h4 className="text-xs font-extrabold text-emerald-900 uppercase tracking-wide">✅ Center Check-in Status</h4>
-                      <p className="text-xs font-bold text-slate-700 mt-0.5">{activeStudent.name} successfully checked in at the Meerut tuition center gate at 08:28 AM today.</p>
+                  );
+                }
+
+                // Default banner if everything is fine
+                return (
+                  <div className="bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border border-emerald-200 rounded-3xl p-4 flex items-center justify-between gap-4 animate-slide-up">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200 shrink-0">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-extrabold text-emerald-900 uppercase tracking-wide">✅ Center Check-in Status</h4>
+                        <p className="text-xs font-bold text-slate-700 mt-0.5">Classes are active. No attendance alerts or abnormalities recorded for {activeStudent.name}.</p>
+                      </div>
                     </div>
+                    <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full font-bold">Good Standing</span>
                   </div>
-                  <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full font-bold">Checked In</span>
-                </div>
-              )}
+                );
+              })()}
               
               {/* Active Child Profile Summary Card */}
               <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative overflow-hidden">
@@ -1222,13 +1326,14 @@ const ParentDashboard = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {activeStudent.subjects.map((sub, index) => {
-                      const trendMin = Math.min(...sub.trend);
-                      const trendMax = Math.max(...sub.trend);
-                      const points = sub.trend.map((val, idx) => {
+                      const hasTrend = sub.trend && sub.trend.length > 0;
+                      const trendMin = hasTrend ? Math.min(...sub.trend) : 0;
+                      const trendMax = hasTrend ? Math.max(...sub.trend) : 0;
+                      const points = hasTrend ? sub.trend.map((val, idx) => {
                         const x = (idx / (sub.trend.length - 1)) * 100;
                         const y = 50 - ((val - trendMin) / (trendMax - trendMin || 1)) * 40;
                         return `${x},${y}`;
-                      }).join(' ');
+                      }).join(' ') : '';
 
                       return (
                         <div key={index} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between hover:shadow-md transition-shadow group">
@@ -1241,25 +1346,29 @@ const ParentDashboard = () => {
                           </div>
 
                           {/* Mini SVG Trend Line Chart */}
-                          <div className="w-full h-12 my-3 relative overflow-hidden">
-                            <svg className="w-full h-full" viewBox="0 0 100 50" preserveAspectRatio="none">
-                              <defs>
-                                <linearGradient id={`grad-${index}`} x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
-                                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-                                </linearGradient>
-                              </defs>
-                              <path
-                                d={`M 0,50 L ${points} L 100,50 Z`}
-                                fill={`url(#grad-${index})`}
-                              />
-                              <polyline
-                                fill="none"
-                                stroke="#2563eb"
-                                strokeWidth="2"
-                                points={points}
-                              />
-                            </svg>
+                          <div className="w-full h-12 my-3 relative overflow-hidden flex items-center justify-center">
+                            {hasTrend ? (
+                              <svg className="w-full h-full" viewBox="0 0 100 50" preserveAspectRatio="none">
+                                <defs>
+                                  <linearGradient id={`grad-${index}`} x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
+                                    <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                                  </linearGradient>
+                                </defs>
+                                <path
+                                  d={`M 0,50 L ${points} L 100,50 Z`}
+                                  fill={`url(#grad-${index})`}
+                                />
+                                <polyline
+                                  fill="none"
+                                  stroke="#2563eb"
+                                  strokeWidth="2"
+                                  points={points}
+                                />
+                              </svg>
+                            ) : (
+                              <span className="text-[9px] text-slate-400 italic">No score progress</span>
+                            )}
                           </div>
 
                           <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 pt-2 border-t border-slate-100">
@@ -1540,48 +1649,47 @@ const ParentDashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {(activeStudent.subjects || []).map((sub, sIdx) => {
-                    const scoreVal = sub.trend && sub.trend.length > 0 ? sub.trend[sub.trend.length - 1] : 85;
-                    const rankVal = sIdx === 0 ? 4 : sIdx === 1 ? 12 : 7;
-                    return {
-                      title: `${sub.name} Topic Assessment Test`,
-                      subject: sub.name,
-                      score: `${scoreVal} / 100`,
-                      percentage: `${scoreVal}%`,
-                      rank: `Rank #${rankVal} / 25`,
-                      status: scoreVal >= 85 ? 'Outstanding' : scoreVal >= 70 ? 'Good' : 'Average',
-                      feedback: scoreVal >= 85 
-                        ? `Excellent grasp of ${sub.name} concepts. Practice advanced sheets to maintain performance.` 
-                        : `Decent conceptual clarity in ${sub.name}. Extra practice on numericals is recommended.`,
-                      teacher: sub.teacher || 'Class Tutor'
-                    };
-                  }).map((result, rIdx) => (
-                    <div key={rIdx} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between hover:shadow-md transition-all">
-                      <div>
-                        <div className="flex justify-between items-start">
-                          <span className="text-xs font-bold text-slate-800 leading-snug truncate max-w-[80%]">{result.title}</span>
-                          <span className="px-2 py-0.5 text-[9px] bg-blue-50 text-blue-700 font-bold border border-blue-100 rounded">{result.subject}</span>
-                        </div>
-                        <div className="flex justify-between items-end my-3.5">
+                  {activeStudent.mock_tests_log && activeStudent.mock_tests_log.length > 0 ? (
+                    activeStudent.mock_tests_log.map((test, idx) => {
+                      const scoreNum = typeof test.percentageNum === 'number' ? test.percentageNum : parseFloat(test.score || test.percentage || 0);
+                      const status = scoreNum >= 85 ? 'Outstanding' : scoreNum >= 70 ? 'Good' : 'Average';
+                      const feedback = test.feedback || (scoreNum >= 85 
+                        ? `Excellent grasp of ${test.subject || 'subject'} concepts. Maintain this great level of dedication.` 
+                        : `Decent conceptual clarity in ${test.subject || 'subject'}. Further practice and query resolution recommended.`);
+                      
+                      return (
+                        <div key={idx} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between hover:shadow-md transition-all">
                           <div>
-                            <span className="text-2xl font-black text-slate-800">{result.score}</span>
-                            <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">{result.rank}</span>
+                            <div className="flex justify-between items-start">
+                              <span className="text-xs font-bold text-slate-805 leading-snug truncate max-w-[80%]">{test.title || test.testName || `${test.subject || 'Subject'} Mock Test`}</span>
+                              <span className="px-2 py-0.5 text-[9px] bg-blue-50 text-blue-700 font-bold border border-blue-100 rounded">{test.subject || 'General'}</span>
+                            </div>
+                            <div className="flex justify-between items-end my-3.5">
+                              <div>
+                                <span className="text-2xl font-black text-slate-800">{test.score || `${scoreNum}%`}</span>
+                                <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Rank: {test.rank || 'Completed'} • {test.date}</span>
+                              </div>
+                              <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-lg border ${
+                                status === 'Outstanding' 
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                  : 'bg-blue-50 text-blue-700 border-blue-100'
+                              }`}>
+                                {status}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-medium leading-relaxed bg-white border border-slate-100 rounded-xl p-2.5">
+                              <strong className="text-slate-700 block text-[9px] uppercase tracking-wide mb-0.5">Mentor Feedback:</strong>
+                              "{feedback}"
+                            </p>
                           </div>
-                          <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-lg border ${
-                            result.status === 'Outstanding' 
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                              : 'bg-blue-50 text-blue-700 border-blue-100'
-                          }`}>
-                            {result.status}
-                          </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed bg-white border border-slate-100 rounded-xl p-2.5">
-                          <strong className="text-slate-700 block text-[9px] uppercase tracking-wide mb-0.5">Feedback from {result.teacher}:</strong>
-                          "{result.feedback}"
-                        </p>
-                      </div>
+                      );
+                    })
+                  ) : (
+                    <div className="sm:col-span-2 py-10 text-center text-slate-400 text-xs font-semibold bg-slate-50 rounded-2xl border border-slate-100">
+                      No mock tests or examinations have been completed yet.
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
 
@@ -1631,13 +1739,16 @@ const ParentDashboard = () => {
                 <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
                   <div className="flex items-center space-x-3 mb-3 text-slate-400">
                     <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Total Paid (FY 2026)</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">Total Paid</span>
                   </div>
                   <div className="text-3xl font-black text-slate-800">
-                    ₹{(activeStudent.feeDue === 0 ? (24000 + baseMonthlyFee) : 24000).toLocaleString('en-IN')}
+                    ₹{paymentsList
+                      .filter(p => p.studentId === activeStudent.id)
+                      .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
+                      .toLocaleString('en-IN')}
                   </div>
                   <p className="text-xs text-slate-400 font-semibold mt-1">
-                    Including taxes and service parameters
+                    Sum of processed backend tuition receipts
                   </p>
                 </div>
 
@@ -1645,13 +1756,19 @@ const ParentDashboard = () => {
                 <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm flex flex-col justify-between">
                   <div className="flex items-center space-x-3 mb-1 text-slate-400">
                     <DollarSign className="w-5 h-5 text-blue-500" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Saved Methods</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">Active Gateways</span>
                   </div>
-                  <div className="text-xs font-bold text-slate-700 py-1 flex items-center justify-between">
-                    <span>HDFC Credit Card (•••• 8820)</span>
-                    <span className="text-[10px] text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">Primary</span>
+                  <div className="text-[11px] font-bold text-slate-705 py-1 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span>Credit/Debit Card</span>
+                      <span className="text-[9px] text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md">Active</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>UPI Payment ID</span>
+                      <span className="text-[9px] text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md">Active</span>
+                    </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 font-medium">Click Pay Fee to choose card or UPI</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Sandbox environment simulation active</p>
                 </div>
 
               </div>
@@ -1687,92 +1804,88 @@ const ParentDashboard = () => {
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
                       
-                      {/* Current monthly invoice */}
-                      <tr className="hover:bg-slate-50/50 transition-colors">
-                        <td className="py-4 text-blue-600 font-bold">INV-2026-M06</td>
-                        <td className="py-4">
-                          <div>Tuition Fee - June 2026</div>
-                          <span className="text-[10px] text-slate-400 font-medium">Regular monthly mentorship class fees</span>
-                        </td>
-                        <td className="py-4">{activeStudent.feeDueDate}</td>
-                        <td className="py-4 font-black">₹{activeStudent.feeDue > 0 ? activeStudent.feeDue.toLocaleString('en-IN') : baseMonthlyFee.toLocaleString('en-IN')}</td>
-                        <td className="py-4">
-                          <span className={`px-2.5 py-0.5 text-[9px] font-extrabold uppercase rounded-lg border ${
-                            activeStudent.feeDue === 0 
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                              : 'bg-amber-50 text-amber-700 border-amber-100'
-                          }`}>
-                            {activeStudent.feeDue === 0 ? 'Paid' : 'Unpaid'}
-                          </span>
-                        </td>
-                        <td className="py-4 text-right">
-                          {activeStudent.feeDue > 0 ? (
+                      {/* Current monthly invoice if unpaid */}
+                      {activeStudent.feeDue > 0 && (
+                        <tr className="hover:bg-slate-50/50 transition-colors">
+                          <td className="py-4 text-blue-600 font-bold">INV-{new Date().getFullYear()}-M{String(new Date().getMonth() + 1).padStart(2, '0')}</td>
+                          <td className="py-4">
+                            <div>Tuition Fee - {new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</div>
+                            <span className="text-[10px] text-slate-400 font-medium">Regular monthly mentorship class fees</span>
+                          </td>
+                          <td className="py-4">{activeStudent.feeDueDate}</td>
+                          <td className="py-4 font-black">₹{activeStudent.feeDue.toLocaleString('en-IN')}</td>
+                          <td className="py-4">
+                            <span className="px-2.5 py-0.5 text-[9px] font-extrabold uppercase rounded-lg border bg-amber-50 text-amber-700 border-amber-100">
+                              Unpaid
+                            </span>
+                          </td>
+                          <td className="py-4 text-right">
                             <button 
                               onClick={() => setShowPayModal(true)}
                               className="text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
                             >
                               Pay Now
                             </button>
-                          ) : (
+                          </td>
+                        </tr>
+                      )}
+
+                      {/* Real payments loaded from backend */}
+                      {paymentsList.filter(p => p.studentId === activeStudent.id).map((pay) => (
+                        <tr key={pay.id || pay._id} className="hover:bg-slate-50/50 transition-colors text-slate-500">
+                          <td className="py-4">{pay.id || 'INV-PAY'}</td>
+                          <td className="py-4">
+                            <div>Tuition Fee Payment</div>
+                            <span className="text-[10px] text-slate-400 font-medium">Paid via {pay.method}</span>
+                          </td>
+                          <td className="py-4">{pay.date}</td>
+                          <td className="py-4 font-bold">₹{parseFloat(pay.amount).toLocaleString('en-IN')}</td>
+                          <td className="py-4">
+                            <span className="px-2.5 py-0.5 text-[9px] font-extrabold uppercase rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-100">
+                              Paid
+                            </span>
+                          </td>
+                          <td className="py-4 text-right">
                             <button 
                               onClick={() => {
-                                triggerToast(`Receipt INV-2026-M06 generated for ${activeStudent.name}. Downloading PDF...`);
+                                triggerToast(`Downloading Receipt ${pay.id}...`);
+                                const element = document.createElement('a');
+                                const file = new Blob([
+                                  `=========================================\n`,
+                                  `    COGRAD PATHSHALA - PAYMENT RECEIPT   \n`,
+                                  `=========================================\n\n`,
+                                  `Receipt ID    : ${pay.id}\n`,
+                                  `Date          : ${pay.date}\n`,
+                                  `Student Name  : ${pay.studentName}\n`,
+                                  `Student ID    : ${pay.studentId}\n`,
+                                  `Amount Paid   : ₹${pay.amount}\n`,
+                                  `Payment Method: ${pay.method}\n`,
+                                  `Status        : SUCCESS / PAID\n\n`,
+                                  `Thank you for your payment!\n`,
+                                  `=========================================\n`
+                                ], { type: 'text/plain' });
+                                element.href = URL.createObjectURL(file);
+                                element.download = `Receipt_${pay.id}.txt`;
+                                document.body.appendChild(element);
+                                element.click();
+                                document.body.removeChild(element);
                               }}
-                              className="text-slate-400 hover:text-slate-700 font-bold cursor-pointer"
+                              className="text-slate-400 hover:text-slate-700 font-semibold cursor-pointer"
                             >
                               Receipt PDF
                             </button>
-                          )}
-                        </td>
-                      </tr>
+                          </td>
+                        </tr>
+                      ))}
 
-                      {/* Older invoices */}
-                      <tr className="hover:bg-slate-50/50 transition-colors text-slate-500">
-                        <td className="py-4">INV-2026-M05</td>
-                        <td className="py-4">
-                          <div>Tuition Fee - May 2026</div>
-                          <span className="text-[10px] text-slate-400 font-medium">Paid via HDFC card</span>
-                        </td>
-                        <td className="py-4">15 May 2026</td>
-                        <td className="py-4 font-bold">₹{baseMonthlyFee.toLocaleString('en-IN')}</td>
-                        <td className="py-4">
-                          <span className="px-2.5 py-0.5 text-[9px] font-extrabold uppercase rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-100">
-                            Paid
-                          </span>
-                        </td>
-                        <td className="py-4 text-right">
-                          <button 
-                            onClick={() => triggerToast('Downloading Receipt INV-2026-M05...')}
-                            className="text-slate-400 hover:text-slate-700 font-semibold cursor-pointer"
-                          >
-                            Receipt PDF
-                          </button>
-                        </td>
-                      </tr>
-
-                      <tr className="hover:bg-slate-50/50 transition-colors text-slate-500">
-                        <td className="py-4">INV-2026-M04</td>
-                        <td className="py-4">
-                          <div>Tuition Fee - April 2026</div>
-                          <span className="text-[10px] text-slate-400 font-medium">Paid via HDFC card</span>
-                        </td>
-                        <td className="py-4">15 Apr 2026</td>
-                        <td className="py-4 font-bold">₹{baseMonthlyFee.toLocaleString('en-IN')}</td>
-                        <td className="py-4">
-                          <span className="px-2.5 py-0.5 text-[9px] font-extrabold uppercase rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-100">
-                            Paid
-                          </span>
-                        </td>
-                        <td className="py-4 text-right">
-                          <button 
-                            onClick={() => triggerToast('Downloading Receipt INV-2026-M04...')}
-                            className="text-slate-400 hover:text-slate-700 font-semibold cursor-pointer"
-                          >
-                            Receipt PDF
-                          </button>
-                        </td>
-                      </tr>
-
+                      {/* If no invoices and no payments */}
+                      {activeStudent.feeDue <= 0 && paymentsList.filter(p => p.studentId === activeStudent.id).length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="py-4 text-center text-xs text-slate-400 font-medium">
+                            No billing records or invoices found for this student.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -1893,17 +2006,8 @@ const ParentDashboard = () => {
           {/* DAILY LEARNING REPORTS TAB - Shows teacher-submitted reports */}
           {/* ============================================================ */}
           {activeTab === 'Daily Learning' && (() => {
-            // Read daily reports from localStorage (written by Teacher Dashboard)
-            let reports = [];
-            try {
-              const saved = localStorage.getItem('cograd_daily_reports');
-              if (saved) reports = JSON.parse(saved);
-            } catch {
-              // reports is already []
-            }
-
             const today = new Date().toISOString().split('T')[0];
-            const todayReports = reports.filter(r => r.date === today);
+            const todayReports = (dailyReports || []).filter(r => r.date === today);
             const hasReportToday = todayReports.length > 0;
 
             const engEmoji = (e) => e === 'Excellent' ? '🌟' : e === 'Good' ? '✅' : e === 'Average' ? '⚠️' : '❌';
@@ -1926,12 +2030,17 @@ const ParentDashboard = () => {
                     <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                     <div>
                       <p className="text-xs font-black text-amber-900">⚠️ No Learning Report for Today ({today})</p>
-                      <p className="text-xs text-amber-700 font-semibold mt-0.5">Your child's teacher has not submitted a daily report yet. You can message the teacher from the PTM &amp; Messaging tab to follow up.</p>
+                      <p className="text-xs text-amber-700 font-semibold mt-0.5">Your child's teacher has not submitted a daily report yet. You can coordinate with them or check back later.</p>
                     </div>
                   </div>
                 )}
 
-                {reports.length === 0 ? (
+                {dailyReportsLoading ? (
+                  <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 sm:p-12 text-center">
+                    <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-xs text-slate-400 font-semibold">Loading daily reports from database...</p>
+                  </div>
+                ) : !dailyReports || dailyReports.length === 0 ? (
                   <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 sm:p-12 text-center space-y-3">
                     <div className="text-5xl">📋</div>
                     <h3 className="text-sm font-black text-slate-700">No Reports Yet</h3>
@@ -1939,7 +2048,7 @@ const ParentDashboard = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {reports.map((report, idx) => (
+                    {dailyReports.map((report, idx) => (
                       <div key={report.id || idx} className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 space-y-4 hover:shadow-md transition-shadow">
                         {/* Report header */}
                         <div className="flex items-start justify-between gap-3">
@@ -1991,19 +2100,20 @@ const ParentDashboard = () => {
 
                 {/* Upcoming Schedule Section */}
                 {(() => {
-                  let schedule = [];
-                  try {
-                    const saved = localStorage.getItem('cograd_content_schedule');
-                    if (saved) schedule = JSON.parse(saved);
-                  } catch {
-                    // schedule is already []
+                  let upcoming = [];
+                  if (activeStudent) {
+                    const matchedTeacher = (teachers || []).find(t => t.id === activeStudent.assigned_teacher_id);
+                    if (matchedTeacher && matchedTeacher.content_schedule) {
+                      const todayDate = new Date();
+                      todayDate.setHours(0, 0, 0, 0);
+                      upcoming = matchedTeacher.content_schedule.filter(s => new Date(s.date + 'T00:00:00') >= todayDate).slice(0, 5);
+                    }
                   }
+
+                  if (upcoming.length === 0) return null;
 
                   const todayDate = new Date();
                   todayDate.setHours(0, 0, 0, 0);
-                  const upcoming = schedule.filter(s => new Date(s.date + 'T00:00:00') >= todayDate).slice(0, 5);
-
-                  if (upcoming.length === 0) return null;
 
                   return (
                     <div className="space-y-3">
@@ -2038,10 +2148,130 @@ const ParentDashboard = () => {
                     </div>
                   );
                 })()}
-
               </div>
             );
           })()}
+          {activeTab === 'Help & Support' && (
+            <div className="space-y-6 text-left">
+              <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-6 rounded-3xl border border-amber-500/10 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in">
+                <div>
+                  <h3 className="text-base font-black text-slate-800 tracking-tight">Help & Support Desk</h3>
+                  <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Submit query directly to CoGrad corporate team</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+                <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
+                  <h3 className="text-base font-black text-slate-800 tracking-tight">Create Support Ticket</h3>
+                  <form onSubmit={handleSupportSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Category</label>
+                      <select
+                        required
+                        value={supportForm.category}
+                        onChange={(e) => setSupportForm(p => ({ ...p, category: e.target.value }))}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                      >
+                        <option value="General Support">General Support</option>
+                        <option value="Technical Issue">Technical Issue</option>
+                        <option value="Academic Enquiry">Academic Enquiry</option>
+                        <option value="Billing & Fee">Billing & Fee</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Subject</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="E.g. Student fee invoice issue"
+                        value={supportForm.title}
+                        onChange={(e) => setSupportForm(p => ({ ...p, title: e.target.value }))}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Description</label>
+                      <textarea
+                        required
+                        rows="4"
+                        placeholder="Please describe your query in detail..."
+                        value={supportForm.description}
+                        onChange={(e) => setSupportForm(p => ({ ...p, description: e.target.value }))}
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 font-semibold"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={supportSubmitting}
+                      className="w-full btn-primary py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      {supportSubmitting ? 'Submitting...' : 'Submit Support Ticket'}
+                    </button>
+                  </form>
+                </div>
+
+                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
+                  <h3 className="text-base font-black text-slate-800 tracking-tight">CoGrad Contact Info</h3>
+                  <div className="space-y-4 text-xs font-semibold text-slate-600">
+                    <div className="flex items-start gap-3">
+                      <Phone className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="font-extrabold text-slate-800">+91-9220253001</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Mon–Sat, 10am – 6pm IST</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <Mail className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="font-extrabold text-slate-800">connect@cograd.in</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Reply within 24 hours</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <MapPin className="w-4 h-4 text-violet-600 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="font-extrabold text-slate-800">PI Softek Ltd</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">C-56A/28, Sector 62, Noida 201301</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Existing Support Tickets List */}
+              {supportTickets && supportTickets.length > 0 && (
+                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4 animate-fade-in mt-6">
+                  <h3 className="text-base font-black text-slate-800 tracking-tight">Your Support Tickets</h3>
+                  <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto pr-1">
+                    {supportTickets.map((ticket) => (
+                      <div key={ticket.id || ticket._id} className="py-4 flex justify-between items-center first:pt-0 last:pb-0">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-extrabold text-slate-800">{ticket.title}</span>
+                            <span className="text-[9px] bg-slate-50 border border-slate-150 px-2 py-0.5 rounded text-slate-500 font-semibold">{ticket.category}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 font-medium mt-1 leading-relaxed">{ticket.description}</p>
+                          <span className="text-[9px] text-slate-400 font-bold block mt-1">Ticket ID: {ticket.id}</span>
+                        </div>
+                        <span className={`px-2.5 py-1 text-[9px] font-extrabold uppercase rounded-lg border shrink-0 ${
+                          ticket.status === 'Resolved' 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                            : 'bg-amber-50 text-amber-700 border-amber-100 animate-pulse'
+                        }`}>
+                          {ticket.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
         </>
         )}
@@ -2052,8 +2282,8 @@ const ParentDashboard = () => {
 
       {/* 1. PAY FEE MODAL */}
       {showPayModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full border border-slate-100 shadow-2xl p-6 relative overflow-hidden animate-slide-up">
+        <div className="modal-overlay">
+          <div className="modal-panel p-6">
             
             <button 
               onClick={() => setShowPayModal(false)}
@@ -2189,8 +2419,8 @@ const ParentDashboard = () => {
 
       {/* 3. REPORT CARD PREVIEW MODAL */}
       {showReportModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full border border-slate-100 shadow-2xl p-6 relative overflow-hidden animate-slide-up">
+        <div className="modal-overlay">
+          <div className="modal-panel p-6">
             
             <button 
               onClick={() => setShowReportModal(false)}
@@ -2263,8 +2493,8 @@ const ParentDashboard = () => {
 
       {/* 4. BOOK PTM MODAL */}
       {showPTMModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full border border-slate-100 shadow-2xl p-6 relative overflow-hidden animate-slide-up">
+        <div className="modal-overlay">
+          <div className="modal-panel p-6">
             
             <button 
               onClick={() => setShowPTMModal(false)}

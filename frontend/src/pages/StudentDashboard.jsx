@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardShell from '../components/DashboardShell';
 import { api } from '../utils/api';
-import { syncWithBackend, getAssignments, getTeachers, getStudents, getDiagnosticQuestions } from '../utils/mockDb';
+import { getTeachers, getDiagnosticQuestions } from '../utils/mockDb';
 import {
   LayoutDashboard,
   BookOpen,
@@ -40,6 +40,9 @@ import {
   Search,
   Trophy,
   HelpCircle,
+  Phone,
+  Mail,
+  MapPin
 } from 'lucide-react';
 
 const StudentDashboard = () => {
@@ -50,23 +53,66 @@ const StudentDashboard = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [showAiChatbot, setShowAiChatbot] = useState(false);
 
+  // Achievements & Portfolio Tracker State (Moved here to avoid Temporal Dead Zone errors in useEffect hooks)
+  const [earnedCertificates, setEarnedCertificates] = useState([]);
+  const [studentXp, setStudentXp] = useState(0);
+  const [unlockedRewards, setUnlockedRewards] = useState([]); // rewardIds
+
+  // 6. Smart Notes & Flashcards State (Moved here to avoid Temporal Dead Zone errors in useEffect hooks)
+  const [flashcardDecks] = useState([
+    {
+      id: 'd1',
+      name: 'Organic Reaction Mechanisms',
+      subject: 'Chemistry',
+      cards: [
+        { front: 'What undergoes Cannizzaro reaction?', back: 'Non-enolizable aldehydes (aldehydes without alpha-hydrogens, e.g., Formaldehyde, Benzaldehyde) in the presence of strong base.' },
+        { front: 'What is the rate-determining step in SN1 kinetics?', back: 'The formation of the carbocation intermediate (ionization step).' },
+        { front: 'Which solvent type favors SN2 reaction mechanism?', back: 'Polar aprotic solvents (like DMSO, Acetone, DMF) as they do not solvate the nucleophile strongly.' }
+      ]
+    },
+    {
+      id: 'd2',
+      name: 'Hydrogenic Atoms (Bohr Derivations)',
+      subject: 'Physics',
+      cards: [
+        { front: "What is Bohr's orbit radius proportional to?", back: 'Directly proportional to the square of principal quantum number (n^2 / Z).' },
+        { front: 'What is the speed of an electron in Bohr\'s orbit proportional to?', back: 'Directly proportional to (Z / n).' },
+        { front: 'What is the total energy of an electron in H-atom in ground state?', back: '-13.6 eV' }
+      ]
+    },
+    {
+      id: 'd3',
+      name: 'Integral calculus standard forms',
+      subject: 'Mathematics',
+      cards: [
+        { front: 'What is the integral of sec(x) dx?', back: 'ln|sec(x) + tan(x)| + C' },
+        { front: 'What is the integral of 1/(x^2 + a^2) dx?', back: '(1/a) * arctan(x/a) + C' },
+        { front: 'What is the integral of e^x * (f(x) + f\'(x)) dx?', back: 'e^x * f(x) + C' }
+      ]
+    }
+  ]);
+  const [activeDeckId, setActiveDeckId] = useState('d1');
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [isCardFlipped, setIsCardFlipped] = useState(false);
+  const [deckProgress, setDeckProgress] = useState({ d1: 0, d2: 0, d3: 0 }); // deckId -> mastered count
+
   // Dynamic Student Profile data state
   const [profileData, setProfileData] = useState({
     name: 'Loading...',
     email: '',
     phone: '',
-    standard: 'Loading...',
-    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80',
-    studentId: 'CP-2026-STU88',
-    parentName: 'Mr. Alok Sharma',
-    parentPhone: '9876500999',
-    district: 'Meerut',
-    state: 'Uttar Pradesh',
-    medium: 'English & Hinglish',
-    joinDate: '12 April 2026',
-    tuitionSlot: 'Evening (04:00 PM - 07:00 PM)',
-    subjects: ['Mathematics', 'Physics', 'Chemistry'],
-    address: 'House No. 42, Sector 4, Shastri Nagar, Meerut',
+    standard: '',
+    avatar: '',
+    studentId: '',
+    parentName: '',
+    parentPhone: '',
+    district: '',
+    state: '',
+    medium: '',
+    joinDate: '',
+    tuitionSlot: '',
+    subjects: [],
+    address: '',
     streak: 0,
     rank: 'N/A',
     attendance: 'N/A',
@@ -78,6 +124,8 @@ const StudentDashboard = () => {
     matching_eligible: true,
     locality: '',
     status: 'pending_match',
+    mock_tests_log: [],
+    study_hours_log: [],
   });
 
   const [showDiagnosticTest, setShowDiagnosticTest] = useState(false);
@@ -118,7 +166,7 @@ const StudentDashboard = () => {
   }, []);
 
   // Load real user data from backend
-  const [loadingData, setLoadingData] = useState(true);
+  const [, setLoadingData] = useState(true);
   const [matchedTeacherData, setMatchedTeacherData] = useState(null);
   useEffect(() => {
     const loadData = async () => {
@@ -134,10 +182,20 @@ const StudentDashboard = () => {
             : 0);
           setUserGoals(user.study_goals || []);
           setSavedVideoNotes(user.video_notes || []);
+          setStudentXp(user.xp || 0);
+          setUnlockedRewards(user.unlocked_rewards || []);
+          setEarnedCertificates(user.earned_certificates || []);
+          setDeckProgress(user.flashcard_mastered || { d1: 0, d2: 0, d3: 0 });
 
           // Initialize syllabus chapters from DB or fallback defaults
           if (user.syllabus_chapters && user.syllabus_chapters.length > 0) {
-            setSyllabusChapters(user.syllabus_chapters);
+            if (!user.assigned_teacher_id) {
+              const cleanedChapters = user.syllabus_chapters.map(c => ({ ...c, status: 'Not Started' }));
+              setSyllabusChapters(cleanedChapters);
+              api.put(`/students/${user.id}`, { syllabus_chapters: cleanedChapters }).catch(e => console.error(e));
+            } else {
+              setSyllabusChapters(user.syllabus_chapters);
+            }
           } else {
             const defaultChapters = {
               'Mathematics': ['Linear Equations', 'Quadratic Equations', 'Trigonometry', 'Coordinate Geometry', 'Probability'],
@@ -156,7 +214,7 @@ const StudentDashboard = () => {
                   id: `${sub.toLowerCase().substring(0, 2)}_${idx + 1}`,
                   subject: sub,
                   name: ch,
-                  status: idx < 2 ? 'Completed' : idx === 2 ? 'In Progress' : 'Not Started'
+                  status: 'Not Started'
                 });
               });
             });
@@ -222,6 +280,8 @@ const StudentDashboard = () => {
             pendingHW: liveAssignmentsPending.toString(),
             testsThisWeek: liveTestsThisWeek.toString(),
             homework_submissions: user.homework_submissions || [],
+            mock_tests_log: user.mock_tests_log || [],
+            study_hours_log: user.study_hours_log || [],
           }));
         }
       } catch (err) {
@@ -243,6 +303,31 @@ const StudentDashboard = () => {
     setToastMessage(msg);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const [supportForm, setSupportForm] = useState({ category: 'General Support', title: '', description: '' });
+  const [supportSubmitting, setSupportSubmitting] = useState(false);
+
+  const handleSupportSubmit = async (e) => {
+    e.preventDefault();
+    setSupportSubmitting(true);
+    try {
+      await api.post('/support-tickets', {
+        userId: profileData.studentId || 'STUDENT_GUEST',
+        userName: profileData.name || 'Student User',
+        userRole: 'Student',
+        title: supportForm.title,
+        description: supportForm.description,
+        category: supportForm.category
+      });
+      setSupportForm({ category: 'General Support', title: '', description: '' });
+      triggerToast('Support ticket submitted successfully!');
+    } catch (err) {
+      console.error(err);
+      triggerToast('Failed to submit support ticket. Please try again.');
+    } finally {
+      setSupportSubmitting(false);
+    }
   };
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -315,6 +400,33 @@ const StudentDashboard = () => {
     }
   }
 
+  if (profileData.mock_tests_log && profileData.mock_tests_log.length > 0) {
+    profileData.mock_tests_log.forEach((mock, idx) => {
+      recentResults.push({
+        id: `mock_${mock.id || idx}`,
+        title: mock.title,
+        score: mock.score,
+        percentage: mock.percentage,
+        rank: mock.rank,
+        date: mock.date,
+        status: mock.percentage >= 80 ? 'Excellent' : mock.percentage >= 60 ? 'Good' : 'Needs Practice',
+        color: mock.percentage >= 80 ? 'emerald' : mock.percentage >= 60 ? 'blue' : 'amber',
+        analysis: {
+          correct: mock.correct,
+          incorrect: mock.incorrect,
+          unanswered: 0,
+          timeSpent: '3 mins',
+          topics: [
+            { name: 'Core Chemistry Concepts', score: mock.percentage >= 66 ? 'Passed' : 'Needs Review' },
+            { name: 'Concave Mirror Optics', score: mock.percentage >= 66 ? 'Passed' : 'Needs Review' },
+            { name: 'Kinetics and Order', score: mock.percentage >= 100 ? 'Passed' : 'Needs Review' }
+          ],
+          feedback: `Mock exam submitted. You scored ${mock.percentage}% in this mock test. Focus on speed and accuracy in high-yield topics.`
+        }
+      });
+    });
+  }
+
   // Ask AI Doubt Solver state
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiHistory, setAiHistory] = useState([]);
@@ -345,6 +457,42 @@ const StudentDashboard = () => {
         .catch(err => console.error('Failed to sync doubts:', err));
     }
   }, [teacherDoubts, profileData.studentId]);
+  
+  // Sync XP to backend
+  useEffect(() => {
+    if (profileData.studentId && profileData.studentId !== 'Loading...' && studentXp > 0) {
+      api.put(`/students/${profileData.studentId}`, { xp: studentXp })
+        .catch(err => console.error('Failed to sync XP:', err));
+    }
+  }, [studentXp, profileData.studentId]);
+
+  // Sync Unlocked Rewards to backend
+  useEffect(() => {
+    if (profileData.studentId && profileData.studentId !== 'Loading...' && unlockedRewards.length > 0) {
+      api.put(`/students/${profileData.studentId}`, { unlocked_rewards: unlockedRewards })
+        .catch(err => console.error('Failed to sync rewards:', err));
+    }
+  }, [unlockedRewards, profileData.studentId]);
+
+  // Sync Earned Certificates to backend
+  useEffect(() => {
+    if (profileData.studentId && profileData.studentId !== 'Loading...' && earnedCertificates.length > 0) {
+      api.put(`/students/${profileData.studentId}`, { earned_certificates: earnedCertificates })
+        .catch(err => console.error('Failed to sync certificates:', err));
+    }
+  }, [earnedCertificates, profileData.studentId]);
+
+  // Sync Flashcard deck progress to backend
+  useEffect(() => {
+    if (profileData.studentId && profileData.studentId !== 'Loading...') {
+      // Only sync if any deck has mastery count > 0 to avoid zero-overwrites
+      const hasProgress = Object.values(deckProgress).some(v => v > 0);
+      if (hasProgress) {
+        api.put(`/students/${profileData.studentId}`, { flashcard_mastered: deckProgress })
+          .catch(err => console.error('Failed to sync flashcard progress:', err));
+      }
+    }
+  }, [deckProgress, profileData.studentId]);
 
   // --- PREMIUM DASHBOARD FEATURES STATE ---
 
@@ -396,85 +544,13 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     if (!profileData.studentId || profileData.studentId === 'Loading...') return;
-    const cacheKey = `cograd_student_study_groups_${profileData.studentId}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      setStudyGroups(JSON.parse(cached));
-    } else {
-      const generated = (profileData.subjects || ['Mathematics', 'Science']).map((sub, idx) => ({
-        id: `g${idx + 1}`,
-        name: `${sub} Study Group`,
-        subject: sub,
-        activePeers: Math.floor(Math.random() * 10) + 5,
-        description: `Collaborative study group for ${sub} discussion and doubt resolution.`
-      }));
-      setStudyGroups(generated);
-      localStorage.setItem(cacheKey, JSON.stringify(generated));
-    }
-  }, [profileData.subjects, profileData.studentId]);
+    setStudyGroups(profileData.study_groups || []);
+  }, [profileData.study_groups, profileData.studentId]);
   const [activeGroupId, setActiveGroupId] = useState('g1');
-  const [groupChats, setGroupChats] = useState({
-    g1: [
-      { id: 1, sender: 'Aryan', text: "Hey guys, did you check Rajesh sir's newly uploaded organic notes?", time: '12:30 PM' },
-      { id: 2, sender: 'Divya', text: 'Yes! The Carbonyl reactions roadmap is extremely helpful.', time: '12:32 PM' },
-      { id: 3, sender: 'You', text: 'I am starting the worksheet questions now.', time: '12:35 PM' }
-    ],
-    g2: [
-      { id: 1, sender: 'Kunal', text: 'How do we solve integration of sec^3(x)? It seems tricky.', time: '11:00 AM' },
-      { id: 2, sender: 'Preeti', text: "Priya ma'am resolved it yesterday! Check history, she used integration by parts.", time: '11:05 AM' }
-    ],
-    g3: [
-      { id: 1, sender: 'Rohan', text: 'Who has solved chapter 15 Rotational Dynamics question 28?', time: 'Yesterday' },
-      { id: 2, sender: 'Simran', text: 'I have. The trick is to conserve angular momentum about the hinge point.', time: 'Yesterday' }
-    ]
-  });
-  const [newGroupMessage, setNewGroupMessage] = useState('');
 
-  // 6. Smart Notes & Flashcards State
-  const [flashcardDecks] = useState([
-    {
-      id: 'd1',
-      name: 'Organic Reaction Mechanisms',
-      subject: 'Chemistry',
-      cards: [
-        { front: 'What undergoes Cannizzaro reaction?', back: 'Non-enolizable aldehydes (aldehydes without alpha-hydrogens, e.g., Formaldehyde, Benzaldehyde) in the presence of strong base.' },
-        { front: 'What is the rate-determining step in SN1 kinetics?', back: 'The formation of the carbocation intermediate (ionization step).' },
-        { front: 'Which solvent type favors SN2 reaction mechanism?', back: 'Polar aprotic solvents (like DMSO, Acetone, DMF) as they do not solvate the nucleophile strongly.' }
-      ]
-    },
-    {
-      id: 'd2',
-      name: 'Hydrogenic Atoms (Bohr Derivations)',
-      subject: 'Physics',
-      cards: [
-        { front: "What is Bohr's orbit radius proportional to?", back: 'Directly proportional to the square of principal quantum number (n^2 / Z).' },
-        { front: 'What is the speed of an electron in Bohr\'s orbit proportional to?', back: 'Directly proportional to (Z / n).' },
-        { front: 'What is the total energy of an electron in H-atom in ground state?', back: '-13.6 eV' }
-      ]
-    },
-    {
-      id: 'd3',
-      name: 'Integral calculus standard forms',
-      subject: 'Mathematics',
-      cards: [
-        { front: 'What is the integral of sec(x) dx?', back: 'ln|sec(x) + tan(x)| + C' },
-        { front: 'What is the integral of 1/(x^2 + a^2) dx?', back: '(1/a) * arctan(x/a) + C' },
-        { front: 'What is the integral of e^x * (f(x) + f\'(x)) dx?', back: 'e^x * f(x) + C' }
-      ]
-    }
-  ]);
-  const [activeDeckId, setActiveDeckId] = useState('d1');
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [isCardFlipped, setIsCardFlipped] = useState(false);
-  const [deckProgress, setDeckProgress] = useState({ d1: 0, d2: 0, d3: 0 }); // deckId -> mastered count
+  // 6. Smart Notes & Flashcards State (Moved to top of component body to prevent initialization/TDZ errors)
 
-  // 7. Achievements & Portfolio Tracker State
-  const [earnedCertificates] = useState([
-    { id: 1, title: 'JEE Prep Consistency Master', date: 'June 01, 2026', type: 'Streak Master', unlockedAt: '10 Day Streak' },
-    { id: 2, title: 'Chemistry Mock Test Gold Badge', date: 'June 10, 2026', type: 'Mock Champion', unlockedAt: 'Score > 85%' }
-  ]);
-  const [studentXp, setStudentXp] = useState(4850);
-  const [unlockedRewards, setUnlockedRewards] = useState(['r1']); // rewardIds
+  // 7. Achievements & Portfolio Tracker State (State variables moved to top of component body)
   const rewardsList = [
     { id: 'r1', name: 'Virtual Student Hub Access', cost: 1000, desc: 'Unlocks advanced peer groups chats' },
     { id: 'r2', name: '1-on-1 Personal Mentor Call', cost: 3000, desc: '30-minute private advice slot with Mr. Rajesh Kumar' },
@@ -486,7 +562,7 @@ const StudentDashboard = () => {
   // --- END PREMIUM FEATURES STATE ---
 
 
-  const handleAiSubmit = (e) => {
+  const handleAiSubmit = async (e) => {
     if (e) e.preventDefault();
     if (!aiQuestion.trim()) return;
 
@@ -494,7 +570,24 @@ const StudentDashboard = () => {
     const questionText = aiQuestion;
     setAiQuestion('');
 
-    setTimeout(() => {
+    try {
+      // Limit history items passed to AI to the last 5 questions/answers to save tokens
+      const recentHistory = aiHistory.slice(0, 5).reverse().map(h => ({
+        question: h.question,
+        answer: h.answer
+      }));
+
+      const res = await api.post('/ai/chat', { question: questionText, history: recentHistory });
+      
+      setAiHistory((prev) => [
+        { question: questionText, answer: res.answer || '', timestamp: 'Just Now' },
+        ...prev
+      ]);
+      triggerToast('AI Doubt Solver completed resolution!');
+    } catch (err) {
+      console.error('Failed to call AI Chat API, falling back to local database:', err);
+      
+      // Local NCERT/JEE mock database answers fallback
       let resolvedAnswer = '';
       const lowerQ = questionText.toLowerCase();
       
@@ -517,12 +610,13 @@ const StudentDashboard = () => {
       }
 
       setAiHistory((prev) => [
-        { question: questionText, answer: resolvedAnswer, timestamp: 'Just Now' },
+        { question: questionText, answer: resolvedAnswer, timestamp: 'Local Cache' },
         ...prev
       ]);
+      triggerToast('Using Offline NCERT / JEE Cache');
+    } finally {
       setIsAiLoading(false);
-      triggerToast('AI Doubt Solver completed resolution!');
-    }, 1500);
+    }
   };
 
   // Voice Simulation
@@ -583,23 +677,41 @@ const StudentDashboard = () => {
     }, 200);
   };
 
-  const handleTeacherDoubtSubmit = (e) => {
+  const handleTeacherDoubtSubmit = async (e) => {
     e.preventDefault();
-    if (!teacherDoubtText.trim()) return;
-
-    const teacherObj = [
-      { name: 'Mr. Rajesh Kumar', subject: 'Chemistry', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80' },
-      { name: 'Dr. Priya Sharma', subject: 'Mathematics', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80' },
-      { name: 'Dr. Sarah Johnson', subject: 'Physics', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=80' }
-    ].find(t => t.name === selectedTeacherForDoubt) || { name: selectedTeacherForDoubt, subject: 'General' };
+    if (!teacherDoubtText.trim() || !matchedTeacherData) return;
 
     const doubtText = teacherDoubtText.trim();
+    const newDoubt = {
+      id: 'doubt_' + Date.now(),
+      studentId: profileData.studentId,
+      studentName: profileData.name,
+      teacherId: matchedTeacherData.id,
+      teacherName: matchedTeacherData.name,
+      subject: matchedTeacherData.primarySubject || 'General',
+      question: doubtText,
+      status: 'Pending',
+      askedAt: new Date().toISOString(),
+      timestamp: 'Just Now',
+      avatar: matchedTeacherData.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
+      attachment: teacherDoubtAttachment || null
+    };
+
     setTeacherDoubtText('');
     setTeacherDoubtAttachment(null);
 
-    const message = `Hello ${teacherObj.name}, I have a doubt in ${teacherObj.subject}:\n\n${doubtText}`;
-    window.open(`https://wa.me/919876543210?text=${encodeURIComponent(message)}`, "_blank");
-    triggerToast(`Redirecting to WhatsApp to send doubt to ${teacherObj.name}...`);
+    try {
+      const updatedDoubts = [newDoubt, ...teacherDoubts];
+      await api.put(`/students/${profileData.studentId}`, { teacher_doubts: updatedDoubts });
+      setTeacherDoubts(updatedDoubts);
+      triggerToast('Doubt submitted to tutor successfully!');
+      
+      const message = `Hello ${matchedTeacherData.name}, I have a doubt in ${matchedTeacherData.primarySubject || 'General'}:\n\n${doubtText}`;
+      window.open(`https://wa.me/919876543210?text=${encodeURIComponent(message)}`, "_blank");
+    } catch (err) {
+      console.error(err);
+      triggerToast('Failed to save doubt to database.');
+    }
   };
 
 
@@ -680,44 +792,6 @@ const StudentDashboard = () => {
     setStudentXp(prev => prev + 20);
   };
 
-  // 5. Peer Chat
-  const handleSendGroupMessage = (e) => {
-    e.preventDefault();
-    if (!newGroupMessage.trim()) return;
-
-    const newMessage = {
-      id: Date.now(),
-      sender: 'You',
-      text: newGroupMessage.trim(),
-      time: 'Just now'
-    };
-
-    setGroupChats(prev => ({
-      ...prev,
-      [activeGroupId]: [...(prev[activeGroupId] || []), newMessage]
-    }));
-    setNewGroupMessage('');
-
-    // Simulated automated peer reply after 3 seconds
-    setTimeout(() => {
-      const automatedReplies = {
-        g1: { sender: 'Aryan', text: "Nice! Let's schedule a study session for that organic chemistry worksheet soon." },
-        g2: { sender: 'Kunal', text: "Thanks! That parts formula makes perfect sense now. I am working on the practice problems next." },
-        g3: { sender: 'Rohan', text: "Got it! Angular momentum conservation makes rotational dynamics much cleaner." }
-      };
-      const reply = automatedReplies[activeGroupId] || { sender: 'Aryan', text: 'Glad we are studying together!' };
-      const botMsg = {
-        id: Date.now() + 1,
-        sender: reply.sender,
-        text: reply.text,
-        time: 'Just now'
-      };
-      setGroupChats(prev => ({
-        ...prev,
-        [activeGroupId]: [...(prev[activeGroupId] || []), botMsg]
-      }));
-    }, 3000);
-  };
 
   // 6. Flashcards
   const handleFlipCard = () => {
@@ -790,17 +864,7 @@ const StudentDashboard = () => {
   const [downloadProgress, setDownloadProgress] = useState({}); // id -> progress percentage
   const [downloadingIds, setDownloadingIds] = useState({}); // id -> true/false
 
-  const allStudyMaterials = [
-    { id: 1, name: 'Organic Chemistry Roadmap - Carbonyl Compounds.pdf', size: '3.4 MB', type: 'PDF Notes', subject: 'Chemistry' },
-    { id: 2, name: 'JEE Physics Cheat Sheet - Electromagnetism formulas.pdf', size: '2.1 MB', type: 'Formula Sheet', subject: 'Physics' },
-    { id: 3, name: 'Calculus Integration Mock Practice Problems.pdf', size: '1.5 MB', type: 'Worksheet', subject: 'Mathematics' },
-    { id: 4, name: 'Inorganic Chemistry Coordination Complexes Key Notes.pdf', size: '4.0 MB', type: 'PDF Revision Notes', subject: 'Chemistry' },
-    { id: 5, name: 'Class 10 Science - Chemical Reactions & Equations.pdf', size: '2.8 MB', type: 'PDF Notes', subject: 'Science' },
-    { id: 6, name: 'Cell Structure Revision Notes.pdf', size: '3.1 MB', type: 'PDF Notes', subject: 'Biology' },
-    { id: 7, name: 'Grammar and Writing Skills Guide.pdf', size: '1.9 MB', type: 'PDF Notes', subject: 'English' }
-  ];
-
-  const studyMaterials = allStudyMaterials.filter(m => (profileData.subjects || []).includes(m.subject));
+  const studyMaterials = matchedTeacherData?.study_materials || [];
 
   const handleDownload = (id, name) => {
     if (downloadingIds[id]) return;
@@ -824,34 +888,31 @@ const StudentDashboard = () => {
 
   // Tab - My Classes Schedules
   let liveScheduledClasses = [];
-  if (profileData.assigned_teacher_id) {
-    const teacherTimetableRaw = localStorage.getItem(`cograd_teacher_timetable_${profileData.assigned_teacher_id}`);
-    if (teacherTimetableRaw) {
-      try {
-        const teacherTimetable = JSON.parse(teacherTimetableRaw);
-        const teachers = getTeachers();
-        const matchedTeacher = teachers.find(t => t.id === profileData.assigned_teacher_id);
-        const teacherName = matchedTeacher ? matchedTeacher.name : 'Class Tutor';
-        const teacherSubject = matchedTeacher?.subjects_taught?.[0] || 'Mathematics';
+  if (profileData.assigned_teacher_id && matchedTeacherData) {
+    try {
+      const teacherTimetable = matchedTeacherData.timetable?.[0] || {};
+      const teacherName = matchedTeacherData.name || 'Class Tutor';
+      const teacherSubject = matchedTeacherData.primarySubject || matchedTeacherData.subjects_taught?.[0] || 'Mathematics';
+      const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const currentDay = daysOfWeek[new Date().getDay()];
 
-        liveScheduledClasses = Object.keys(teacherTimetable).map((key, idx) => {
-          const parts = key.split('-');
-          const day = parts[0];
-          const slot = parts.slice(1).join('-');
-          const session = teacherTimetable[key];
-          return {
-            id: idx + 1,
-            subject: teacherSubject,
-            topic: session.title,
-            teacher: teacherName,
-            time: `${day}, ${slot.split(' - ')[0]}`,
-            duration: '90 mins',
-            isLive: day === 'Monday'
-          };
-        });
-      } catch (e) {
-        console.error('Failed to parse teacher timetable:', e);
-      }
+      liveScheduledClasses = Object.keys(teacherTimetable).map((key, idx) => {
+        const parts = key.split('-');
+        const day = parts[0];
+        const slot = parts.slice(1).join('-');
+        const session = teacherTimetable[key];
+        return {
+          id: idx + 1,
+          subject: teacherSubject,
+          topic: session.title,
+          teacher: teacherName,
+          time: `${day}, ${slot.split(' - ')[0]}`,
+          duration: '90 mins',
+          isLive: day.toLowerCase() === currentDay.toLowerCase()
+        };
+      });
+    } catch (e) {
+      console.error('Failed to parse teacher timetable:', e);
     }
   }
 
@@ -870,9 +931,51 @@ const StudentDashboard = () => {
     triggerToast('Mock Test started. Standard timer running.');
   };
 
-  const handleSubmitTest = () => {
-    setActiveTestState('submitted');
-    triggerToast('Mock Test submitted successfully! Report generated.');
+  const handleSubmitTest = async () => {
+    let correct = 0;
+    if (testAnswers.q1 === 'Formaldehyde') correct++;
+    if (testAnswers.q2 === 'Remains Unchanged') correct++;
+    if (testAnswers.q3 === 'First order') correct++;
+
+    const totalQuestions = mockTestQuestions.length;
+    const scoreText = `${correct * 4} / ${totalQuestions * 4}`;
+    const percentage = Math.round((correct / totalQuestions) * 100);
+
+    const newMockResult = {
+      id: `mock_${Date.now()}`,
+      title: 'Chemistry & Physics Mini Mock #1',
+      score: scoreText,
+      percentage: percentage,
+      rank: `#${Math.floor(Math.random() * 20) + 1}`,
+      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+      correct: correct,
+      incorrect: totalQuestions - correct,
+      percentageNum: percentage,
+      xpEarned: 100
+    };
+
+    try {
+      const currentLog = profileData.mock_tests_log || [];
+      const updatedLog = [newMockResult, ...currentLog];
+      const nextXp = studentXp + 100;
+
+      await api.put(`/students/${profileData.studentId}`, {
+        mock_tests_log: updatedLog,
+        xp: nextXp
+      });
+
+      setProfileData(prev => ({
+        ...prev,
+        mock_tests_log: updatedLog,
+      }));
+      setStudentXp(nextXp);
+      setActiveTestState('submitted');
+      triggerToast('Mock Test submitted and saved to cloud! +100 XP');
+    } catch (err) {
+      console.error('Failed to save mock test:', err);
+      setActiveTestState('submitted');
+      triggerToast('Mock Test submitted successfully!');
+    }
   };
 
   useEffect(() => {
@@ -892,6 +995,81 @@ const StudentDashboard = () => {
     return () => clearInterval(tInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTestState]);
+
+  const [logHoursInput, setLogHoursInput] = useState('');
+
+  const handleLogStudyHours = async (e) => {
+    e.preventDefault();
+    const hrs = parseFloat(logHoursInput);
+    if (isNaN(hrs) || hrs <= 0 || hrs > 24) {
+      triggerToast('Please enter a valid number of hours (0.5 to 24).');
+      return;
+    }
+
+    const newLogEntry = {
+      date: new Date().toISOString(),
+      hours: hrs
+    };
+
+    try {
+      const currentLog = profileData.study_hours_log || [];
+      const updatedLog = [...currentLog, newLogEntry];
+      const nextStudyHours = studyHours + hrs;
+      const nextXp = studentXp + Math.round(hrs * 10); // Award 10 XP per hour
+
+      await api.put(`/students/${profileData.studentId}`, {
+        study_hours_log: updatedLog,
+        xp: nextXp
+      });
+
+      setProfileData(prev => ({
+        ...prev,
+        study_hours_log: updatedLog
+      }));
+      setStudyHours(nextStudyHours);
+      setStudentXp(nextXp);
+      setLogHoursInput('');
+      triggerToast(`Successfully logged ${hrs} study hours! +${Math.round(hrs * 10)} XP`);
+    } catch (err) {
+      console.error('Failed to log study hours:', err);
+      triggerToast('Failed to save study hours to cloud.');
+    }
+  };
+
+  const getWeeklyHoursData = () => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const loggedHours = { Sun: 0, Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0 };
+    
+    const log = profileData.study_hours_log || [];
+    log.forEach(item => {
+      try {
+        const d = new Date(item.date);
+        const dayName = days[d.getDay()];
+        loggedHours[dayName] += item.hours || 0;
+      } catch (e) {
+        console.error(e);
+      }
+    });
+
+    const maxHrs = Math.max(...Object.values(loggedHours), 1);
+    return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
+      const hrs = loggedHours[day] || 0;
+      return {
+        day,
+        hrs,
+        pct: `${Math.min(Math.round((hrs / maxHrs) * 100), 100)}%`
+      };
+    });
+  };
+
+  const getMockTestTrendData = () => {
+    const list = [...(profileData.mock_tests_log || [])].slice(0, 5).reverse();
+    return list.map((item, idx) => ({
+      label: `Mock #${idx + 1}`,
+      score: item.percentage,
+      pct: `${item.percentage}%`
+    }));
+  };
 
   // Mock Active Test details
   const mockTestQuestions = [
@@ -928,18 +1106,30 @@ const StudentDashboard = () => {
     }));
   };
 
-  const mathCoverage = getSubjectCoverage('Mathematics');
-  const physicsCoverage = getSubjectCoverage('Physics');
-  const chemCoverage = getSubjectCoverage('Chemistry');
   const totalCoverage = getGlobalCoverage();
 
   const getAverageTestScore = () => {
+    let totalPct = 0;
+    let count = 0;
+    
     if (profileData.test_score) {
       const math = profileData.test_score.Mathematics || 0;
       const science = profileData.test_score.Science || 0;
-      return Math.round((math + science) / 2);
+      totalPct += Math.round((math + science) / 2);
+      count++;
     }
-    return 82; // Default fallback
+    
+    if (profileData.mock_tests_log && profileData.mock_tests_log.length > 0) {
+      profileData.mock_tests_log.forEach(test => {
+        totalPct += test.percentage;
+        count++;
+      });
+    }
+
+    if (count > 0) {
+      return Math.round(totalPct / count);
+    }
+    return 0;
   };
 
   // Tab - Progress Details
@@ -949,17 +1139,12 @@ const StudentDashboard = () => {
 
   let liveAssignmentsSubmitted = 0;
   let liveAssignmentsPending = 0;
-  if (profileData.assigned_teacher_id) {
-    const teacherAsgsRaw = localStorage.getItem(`cograd_teacher_assignments_${profileData.assigned_teacher_id}`);
-    const teacherSubsRaw = localStorage.getItem(`cograd_teacher_submissions_${profileData.assigned_teacher_id}`);
-    
-    let teacherAsgs = [];
-    let teacherSubs = [];
-    try { if (teacherAsgsRaw) teacherAsgs = JSON.parse(teacherAsgsRaw); } catch(e) {}
-    try { if (teacherSubsRaw) teacherSubs = JSON.parse(teacherSubsRaw); } catch(e) {}
+  if (profileData.assigned_teacher_id && matchedTeacherData) {
+    const teacherAsgs = matchedTeacherData.assignments || [];
+    const studentSubs = profileData.homework_submissions || [];
     
     teacherAsgs.forEach(asg => {
-      const matchedSub = teacherSubs.find(sub => sub.assignmentName === asg.name && sub.studentName === profileData.name);
+      const matchedSub = studentSubs.find(sub => sub.assignmentName === asg.name);
       if (matchedSub) {
         liveAssignmentsSubmitted += 1;
       } else {
@@ -995,7 +1180,12 @@ const StudentDashboard = () => {
   const achievementBadges = [
     ...(streakDays >= 10 ? [{ id: 1, title: 'Streak Master', desc: `Maintained a study streak of ${streakDays} days (10+ required)`, icon: Flame, color: 'text-amber-500 bg-amber-50' }] : []),
     ...(doubtsSolved >= 5 ? [{ id: 2, title: 'Doubt Buster', desc: `Resolved ${doubtsSolved} academic doubts (5+ required)`, icon: Sparkles, color: 'text-purple-500 bg-purple-50' }] : []),
-    ...(profileData.rank && parseInt(profileData.rank.replace('#', '')) <= 5 ? [{ id: 3, title: 'Top Scorer', desc: `Ranked ${profileData.rank} in JEE weekly mocks (Top 5 required)`, icon: Award, color: 'text-blue-500 bg-blue-50' }] : []),
+    ...(() => {
+      if (!profileData.rank) return [];
+      const rankNum = parseInt(String(profileData.rank).replace('#', ''));
+      if (isNaN(rankNum) || rankNum > 5) return [];
+      return [{ id: 3, title: 'Top Scorer', desc: `Ranked ${profileData.rank} in JEE weekly mocks (Top 5 required)`, icon: Award, color: 'text-blue-500 bg-blue-50' }];
+    })(),
     ...(attendanceVal >= 90 ? [{ id: 4, title: 'Regular Attendee', desc: `Maintained attendance at ${profileData.attendance} (90%+ required)`, icon: CheckCircle2, color: 'text-blue-500 bg-blue-50' }] : [])
   ];
 
@@ -1037,7 +1227,10 @@ const StudentDashboard = () => {
         parentName: updatedUser.parentName,
         parentPhone: updatedUser.parentPhone,
         address: updatedUser.address,
-        tuitionSlot: updatedUser.tuitionSlot
+        tuitionSlot: updatedUser.tuitionSlot,
+        standard: updatedUser.standard,
+        medium: updatedUser.medium,
+        district: updatedUser.district
       });
       
       setIsEditingProfile(false);
@@ -1065,6 +1258,7 @@ const StudentDashboard = () => {
     { name: 'Tests',          icon: FileText },
     { name: 'Study Groups',   icon: Users },
     { name: 'Profile & Progress', icon: User },
+    { name: 'Help & Support', icon: HelpCircle }
   ];
 
   return (
@@ -1440,13 +1634,13 @@ const StudentDashboard = () => {
                       "Welcome to Cograd Pathshala. Complete homework and attend today's live lecture."
                     )}
                   </p>
-                  {localStorage.getItem(`cograd_parent_message_to_${profileData.studentId || 'Rahul_Varma'}`) && (
+                  {localStorage.getItem(`cograd_parent_message_to_${profileData.studentId}`) && (
                     <div className="mt-4 p-3 bg-white/15 backdrop-blur-md rounded-xl border border-white/10 text-xs text-white max-w-md">
                       <div className="font-extrabold uppercase tracking-wider text-[9px] text-amber-300 flex items-center gap-1 mb-1">
                         <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
                         Message from {profileData.parentName || 'Parent'}
                       </div>
-                      <p className="font-semibold italic text-slate-100">"{localStorage.getItem(`cograd_parent_message_to_${profileData.studentId || 'Rahul_Varma'}`)}"</p>
+                      <p className="font-semibold italic text-slate-100">"{localStorage.getItem(`cograd_parent_message_to_${profileData.studentId}`)}"</p>
                     </div>
                   )}
                 </div>
@@ -1460,32 +1654,73 @@ const StudentDashboard = () => {
 
               {/* Up Next card */}
               <div className="lg:col-span-5 bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 text-xs font-bold px-2.5 py-1 rounded-lg">
-                    <span className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
-                    UP NEXT LIVE
-                  </span>
-                  <span className="text-xs font-semibold text-slate-400">Starts in</span>
-                </div>
-                <div>
-                  <h4 className="text-base font-black text-slate-800 tracking-tight">Organic Chemistry: Carbonyl Compounds</h4>
-                  <p className="text-slate-400 text-xs mt-1">Instructor: Mr. Rajesh Kumar</p>
-                </div>
-                <div className="my-4 py-3 px-4 bg-slate-50 rounded-xl flex items-center justify-between border border-slate-100">
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <Clock className="w-4 h-4 text-slate-400" />
-                    <span className="text-xs font-bold">Countdown</span>
+                {!profileData.assigned_teacher_id || !matchedTeacherData ? (
+                  <div className="flex flex-col justify-between h-full space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 text-xs font-bold px-2.5 py-1 rounded-lg">
+                        Premium Tutor Match
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-slate-805 tracking-tight">Tutor Match in Progress</h4>
+                      <p className="text-slate-400 text-[11px] mt-1 font-semibold leading-relaxed">
+                        We are matching you with a verified JEE/Boards home tutor in your locality. You will receive session updates here shortly.
+                      </p>
+                    </div>
+                    <button onClick={() => setActiveTab('Help & Support')} className="w-full py-2.5 bg-slate-50 border border-slate-150 text-slate-650 hover:text-blue-600 hover:bg-blue-50 font-bold text-xs rounded-xl transition-all cursor-pointer">
+                      Contact Counselor
+                    </button>
                   </div>
-                  <span className="text-base font-black text-slate-800 tabular-nums">{timeLeft > 0 ? formatTime(timeLeft) : 'Live Now!'}</span>
-                </div>
-                <div className="flex gap-2.5">
-                  <button onClick={() => { setReminderSet(!reminderSet); triggerToast(reminderSet ? 'Reminder cancelled' : 'Reminder set!'); }} className={`flex-1 py-2.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${reminderSet ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-white text-slate-600 border-slate-100 hover:bg-slate-50'}`}>
-                    {reminderSet ? 'Reminder Set ✓' : 'Set Reminder'}
-                  </button>
-                  <button onClick={() => isOffline ? triggerToast('Offline.') : window.open('https://zoom.us', '_blank')} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
-                    <Play className="w-3 h-3 fill-current" /> Join Class
-                  </button>
-                </div>
+                ) : scheduledClasses.length === 0 ? (
+                  <div className="flex flex-col justify-between h-full space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 bg-slate-50 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-lg">
+                        Schedule Pending
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-slate-805 tracking-tight">No sessions scheduled yet</h4>
+                      <p className="text-slate-400 text-[11px] mt-1 font-semibold leading-relaxed">
+                        Your matched tutor ({matchedTeacherData.name}) has not set any live slots on the timetable yet.
+                      </p>
+                    </div>
+                    <button onClick={() => isOffline ? triggerToast('Offline.') : window.open(`https://wa.me/919876543210?text=Hi%20${encodeURIComponent(matchedTeacherData.name)}%2C%20could%20you%20please%20schedule%20our%20weekly%20session%20on%20Cograd%3F`, '_blank')} className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer">
+                      Request Schedule from Tutor
+                    </button>
+                  </div>
+                ) : (() => {
+                  const activeClass = scheduledClasses.find(c => c.isLive) || scheduledClasses[0];
+                  return (
+                    <div className="flex flex-col justify-between h-full">
+                      <div className="flex items-center justify-between mb-4">
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg ${activeClass.isLive ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
+                          {activeClass.isLive && <span className="w-2 h-2 bg-red-500 rounded-full animate-ping" />}
+                          {activeClass.isLive ? 'LIVE NOW' : 'UPCOMING CLASS'}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-400">{activeClass.time}</span>
+                      </div>
+                      <div>
+                        <h4 className="text-base font-black text-slate-805 tracking-tight">{activeClass.topic}</h4>
+                        <p className="text-slate-400 text-xs mt-1">Instructor: {activeClass.teacher}</p>
+                      </div>
+                      <div className="my-4 py-3 px-4 bg-slate-50 rounded-xl flex items-center justify-between border border-slate-100">
+                        <div className="flex items-center gap-2 text-slate-650">
+                          <Clock className="w-4 h-4 text-slate-400" />
+                          <span className="text-xs font-bold">Subject</span>
+                        </div>
+                        <span className="text-xs font-black text-slate-800">{activeClass.subject}</span>
+                      </div>
+                      <div className="flex gap-2.5">
+                        <button onClick={() => { setReminderSet(!reminderSet); triggerToast(reminderSet ? 'Reminder cancelled' : 'Reminder set!'); }} className={`flex-1 py-2.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${reminderSet ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-white text-slate-600 border-slate-100 hover:bg-slate-50'}`}>
+                          {reminderSet ? 'Reminder Set ✓' : 'Set Reminder'}
+                        </button>
+                        <button onClick={() => isOffline ? triggerToast('Offline.') : window.open('https://zoom.us', '_blank')} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
+                          <Play className="w-3 h-3 fill-current" /> Join Class
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -1547,22 +1782,26 @@ const StudentDashboard = () => {
                     </div>
                   </div>
                   <div className="pt-1.5 border-t border-slate-100 text-center">
-                    <span className="text-[10px] text-slate-400 font-bold">Matched Tutor will contact you shortly</span>
+                    <span className="text-[10px] text-slate-400 font-bold">
+                      {matchedTeacherData
+                        ? `Matched Tutor: ${matchedTeacherData.name} (${matchedTeacherData.phone})`
+                        : 'Matched Tutor will contact you shortly'}
+                    </span>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Parent Assigned Test Card */}
-            {localStorage.getItem(`cograd_assigned_tests_${profileData.studentId || 'Rahul_Varma'}`) && (() => {
+            {localStorage.getItem(`cograd_assigned_tests_${profileData.studentId}`) && (() => {
               let testObj;
               try {
-                testObj = JSON.parse(localStorage.getItem(`cograd_assigned_tests_${profileData.studentId || 'Rahul_Varma'}`));
+                testObj = JSON.parse(localStorage.getItem(`cograd_assigned_tests_${profileData.studentId}`));
               } catch {
                 return null;
               }
               if (!testObj) return null;
-              const testResult = localStorage.getItem(`cograd_assigned_tests_result_${profileData.studentId || 'Rahul_Varma'}`);
+              const testResult = localStorage.getItem(`cograd_assigned_tests_result_${profileData.studentId}`);
               return (
                 <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-200 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-slide-up">
                   <div className="flex items-start space-x-3.5">
@@ -1672,52 +1911,66 @@ const StudentDashboard = () => {
                 <div className="lg:col-span-7 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-black text-slate-800 tracking-tight">My Batches</h3>
-                    <span className="text-xs font-semibold text-slate-400">Total Enrolled: 2</span>
+                    <span className="text-xs font-semibold text-slate-400">Total Enrolled: {(!profileData.assigned_teacher_id || !matchedTeacherData) ? 0 : 1}</span>
                   </div>
 
                   <div className="space-y-4">
-                    {[
-                      { id: 'b1', name: 'JEE Advanced Focus Batch', tutor: 'Mr. Rajesh Kumar (Chem) & Sarah J. (Phys)', syllabus: 68, rating: 'A-', code: 'JEE-CHEM-PHYS' },
-                      { id: 'b2', name: 'Class 12 Boards Core Syllabus', tutor: 'Dr. Priya Sharma (Maths)', syllabus: 88, rating: 'A+', code: 'C12-BOARD-MATH' }
-                    ].map((batch) => (
-                      <div
-                        key={batch.id}
-                        className="p-4 bg-slate-50/50 hover:bg-slate-50 border border-slate-100 rounded-2xl transition-colors flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
-                      >
-                        <div className="space-y-1">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-black text-slate-800">{batch.name}</span>
-                            <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-bold">{batch.rating}</span>
-                          </div>
-                          <p className="text-slate-400 text-xs font-medium">Tutor: {batch.tutor}</p>
-                          
-                          {/* Syllabus progress bar */}
-                          <div className="flex items-center space-x-3 w-48 sm:w-56 mt-2">
-                            <div className="h-1.5 bg-slate-200 rounded-full flex-grow">
-                              <div className="h-full bg-blue-600 rounded-full" style={{ width: `${batch.syllabus}%` }}></div>
-                            </div>
-                            <span className="text-[10px] text-slate-500 font-bold shrink-0">{batch.syllabus}% Syllabus</span>
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => handleDownload(batch.id, `${batch.code}_Class_Notes.zip`)}
-                          className="w-full sm:w-auto shrink-0 flex items-center justify-center space-x-1.5 bg-white border border-slate-100 hover:border-blue-200 hover:bg-blue-50 text-slate-600 hover:text-blue-700 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
-                        >
-                          {downloadingIds[batch.id] ? (
-                            <>
-                              <span className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
-                              <span className="tabular-nums">{downloadProgress[batch.id]}%</span>
-                            </>
-                          ) : (
-                            <>
-                              <Download className="w-3.5 h-3.5" />
-                              <span>Notes</span>
-                            </>
-                          )}
-                        </button>
+                    {!profileData.assigned_teacher_id || !matchedTeacherData ? (
+                      <div className="empty-state bg-slate-50 border border-slate-100 rounded-2xl">
+                        <span className="text-2xl">🤝</span>
+                        <h4 className="text-xs font-black text-slate-800 mt-2">Tutor Matching In Progress</h4>
+                        <p className="text-[10px] text-slate-400 font-semibold mt-1">Our academic team is selecting a premium local tutor for you. Stay tuned!</p>
                       </div>
-                    ))}
+                    ) : (
+                      [
+                        {
+                          id: matchedTeacherData.id,
+                          name: `${profileData.standard || 'Class 10'} ${matchedTeacherData.primarySubject || 'Mathematics'} Batch`,
+                          tutor: `${matchedTeacherData.name} (${matchedTeacherData.primarySubject || 'Tutor'})`,
+                          syllabus: getSubjectCoverage(matchedTeacherData.primarySubject || 'Mathematics'),
+                          rating: matchedTeacherData.rating >= 4.8 ? 'A+' : 'A',
+                          code: `TUT-${matchedTeacherData.name.split(' ').pop().toUpperCase()}`
+                        }
+                      ].map((batch) => (
+                        <div
+                          key={batch.id}
+                          className="p-4 bg-slate-50/50 hover:bg-slate-50 border border-slate-100 rounded-2xl transition-colors flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-black text-slate-800">{batch.name}</span>
+                              <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-bold">{batch.rating}</span>
+                            </div>
+                            <p className="text-slate-400 text-xs font-medium">Tutor: {batch.tutor}</p>
+                            
+                            {/* Syllabus progress bar */}
+                            <div className="flex items-center space-x-3 w-48 sm:w-56 mt-2">
+                              <div className="h-1.5 bg-slate-200 rounded-full flex-grow">
+                                <div className="h-full bg-blue-600 rounded-full" style={{ width: `${batch.syllabus}%` }}></div>
+                              </div>
+                              <span className="text-[10px] text-slate-500 font-bold shrink-0">{batch.syllabus}% Syllabus</span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleDownload(batch.id, `${batch.code}_Class_Notes.zip`)}
+                            className="w-full sm:w-auto shrink-0 flex items-center justify-center space-x-1.5 bg-white border border-slate-100 hover:border-blue-200 hover:bg-blue-50 text-slate-600 hover:text-blue-700 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
+                          >
+                            {downloadingIds[batch.id] ? (
+                              <>
+                                <span className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
+                                <span className="tabular-nums">{downloadProgress[batch.id]}%</span>
+                              </>
+                            ) : (
+                              <>
+                                <Download className="w-3.5 h-3.5" />
+                                <span>Notes</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -1731,7 +1984,7 @@ const StudentDashboard = () => {
 
                     <div className="space-y-3">
                       {recentResults.length === 0 ? (
-                        <div className="py-8 text-center space-y-2 bg-slate-50 rounded-2xl border border-slate-100/50">
+                        <div className="empty-state bg-slate-50 rounded-2xl border border-slate-100/50">
                           <FileText className="w-8 h-8 text-slate-300 mx-auto" />
                           <p className="text-xs font-bold text-slate-500">No test score reports available yet.</p>
                           <p className="text-[10px] text-slate-400 font-semibold max-w-xs mx-auto">Weekly mock test performance reports and diagnostic scorecards will populate here.</p>
@@ -1793,36 +2046,41 @@ const StudentDashboard = () => {
                 </div>
 
                 {/* Teacher Selector */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-5">
-                  {[
-                    { name: 'Mr. Rajesh Kumar', subject: 'Chemistry', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80', status: 'Online' },
-                    { name: 'Dr. Priya Sharma', subject: 'Mathematics', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80', status: 'Online' },
-                    { name: 'Dr. Sarah Johnson', subject: 'Physics', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=80', status: 'Away' }
-                  ].map((t) => {
-                    const isSelected = selectedTeacherForDoubt === t.name;
-                    return (
-                      <button
-                        key={t.name}
-                        type="button"
-                        onClick={() => setSelectedTeacherForDoubt(t.name)}
-                        className={`p-3.5 rounded-2xl border text-left flex items-center space-x-3 transition-all cursor-pointer active:scale-98 ${
-                          isSelected
-                            ? 'border-indigo-500 bg-indigo-50/20 ring-2 ring-indigo-500/10 shadow-sm'
-                            : 'border-slate-100 hover:border-slate-200 bg-slate-50/20 hover:bg-slate-50/50'
-                        }`}
-                      >
-                        <div className="w-10 h-10 rounded-full overflow-hidden relative flex-shrink-0 border border-slate-100">
-                          <img src={t.avatar} alt={t.name} className="w-full h-full object-cover" />
-                          <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${t.status === 'Online' ? 'bg-green-500' : 'bg-amber-500'}`} />
-                        </div>
-                        <div className="min-w-0 flex-grow">
-                          <div className="text-xs font-black text-slate-800 truncate">{t.name}</div>
-                          <div className="text-[10px] text-slate-400 font-bold mt-0.5">{t.subject} • {t.status}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                {!profileData.assigned_teacher_id || !matchedTeacherData ? (
+                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-center text-xs text-slate-500 font-semibold mb-5">
+                    No home tutor assigned yet. You will be able to ask doubts once your tutor match is finalized.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-5">
+                    {[
+                      { 
+                        name: matchedTeacherData.name, 
+                        subject: matchedTeacherData.primarySubject || 'Tutor', 
+                        avatar: matchedTeacherData.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80', 
+                        status: 'Online' 
+                      }
+                    ].map((t) => {
+                      const isSelected = selectedTeacherForDoubt === t.name;
+                      return (
+                        <button
+                          key={t.name}
+                          type="button"
+                          onClick={() => setSelectedTeacherForDoubt(t.name)}
+                          className={`p-3.5 rounded-2xl border text-left flex items-center space-x-3 transition-all cursor-pointer active:scale-98 border-indigo-500 bg-indigo-50/20 ring-2 ring-indigo-500/10 shadow-sm`}
+                        >
+                          <div className="w-10 h-10 rounded-full overflow-hidden relative flex-shrink-0 border border-slate-100">
+                            <img src={t.avatar} alt={t.name} className="w-full h-full object-cover" />
+                            <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white bg-green-500`} />
+                          </div>
+                          <div className="min-w-0 flex-grow">
+                            <div className="text-xs font-black text-slate-805 truncate">{t.name}</div>
+                            <div className="text-[10px] text-slate-400 font-bold mt-0.5">{t.subject} • {t.status}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Form to submit doubt */}
                 <form onSubmit={handleTeacherDoubtSubmit} className="space-y-4">
@@ -2030,7 +2288,7 @@ const StudentDashboard = () => {
                 
                 <div className="space-y-4">
                   {scheduledClasses.length === 0 ? (
-                    <div className="py-10 text-center space-y-2 bg-slate-50 rounded-2xl border border-slate-100/50">
+                    <div className="empty-state bg-slate-50 rounded-2xl border border-slate-100/50">
                       <div className="text-3xl">📅</div>
                       <p className="text-xs font-bold text-slate-500">No upcoming classes scheduled by your tutor yet.</p>
                       <p className="text-[10px] text-slate-400 font-semibold max-w-xs mx-auto">Your matched tutor will schedule your weekly home tuition slots here.</p>
@@ -2164,54 +2422,50 @@ const StudentDashboard = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { id: 10, name: 'S-Block Elements Comprehensive Revision Notes', size: '2.8 MB', subject: 'Chemistry', date: 'June 09, 2026' },
-                      { id: 11, name: 'Electrostatics Part 1 (Charge & Field) Problems', size: '1.9 MB', subject: 'Physics', date: 'June 08, 2026' },
-                      { id: 12, name: 'Vector Algebra Theory & Advanced Solved Set', size: '4.2 MB', subject: 'Mathematics', date: 'June 06, 2026' },
-                      { id: 13, name: 'Gaseous State & Molecular Theory Notes', size: '3.1 MB', subject: 'Chemistry', date: 'June 04, 2026' },
-                      { id: 14, name: 'Kinematics 2D Relative Motion Worksheet', size: '1.2 MB', subject: 'Physics', date: 'June 02, 2026' },
-                      { id: 15, name: 'Permutations & Combinations Core Concepts', size: '2.5 MB', subject: 'Mathematics', date: 'May 28, 2026' }
-                    ].map((doc) => (
-                      <div
-                        key={doc.id}
-                        className="p-4 border border-slate-100 hover:border-blue-100 hover:bg-slate-50/20 rounded-2xl transition-all flex flex-col justify-between"
-                      >
-                        <div>
-                          <div className="flex justify-between items-center">
-                            <span className={`text-[9px] px-2 py-0.5 rounded-md font-bold uppercase ${
-                              doc.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-800' :
-                              doc.subject === 'Mathematics' ? 'bg-blue-50 text-blue-800' :
-                              'bg-indigo-50 text-indigo-800'
-                            }`}>
-                              {doc.subject}
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-semibold">{doc.size}</span>
-                          </div>
-                          <h4 className="text-xs font-bold text-slate-800 mt-3 leading-snug">{doc.name}</h4>
-                          <span className="text-[10px] text-slate-400 mt-1 block">Uploaded: {doc.date}</span>
-                        </div>
-
-                        <div className="mt-5 pt-3 border-t border-slate-50 flex items-center justify-between">
-                          {downloadingIds[doc.id] ? (
-                            <div className="w-full flex items-center justify-between">
-                              <span className="text-[9px] font-bold text-blue-700 animate-pulse">Downloading...</span>
-                              <span className="text-[9px] font-bold text-blue-700">{downloadProgress[doc.id]}%</span>
-                            </div>
-                          ) : (
-                            <>
-                              <span className="text-[10px] text-slate-400">PDF Document</span>
-                              <button
-                                onClick={() => handleDownload(doc.id, doc.name)}
-                                className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center space-x-1 border border-slate-100 hover:border-blue-100"
-                              >
-                                <Download className="w-3.5 h-3.5" />
-                                <span>Download</span>
-                              </button>
-                            </>
-                          )}
-                        </div>
+                    {studyMaterials.length === 0 ? (
+                      <div className="md:col-span-2 empty-state bg-slate-50 border border-slate-100 rounded-2xl py-10">
+                        <BookMarked className="w-8 h-8 text-slate-300 mx-auto" />
+                        <p className="text-xs font-bold text-slate-500 mt-2">No study materials shared by your tutor yet.</p>
                       </div>
-                    ))}
+                    ) : (
+                      studyMaterials.map((doc) => (
+                        <div
+                          key={doc.id}
+                          className="p-4 border border-slate-100 hover:border-blue-100 hover:bg-slate-50/20 rounded-2xl transition-all flex flex-col justify-between"
+                        >
+                          <div>
+                            <div className="flex justify-between items-center">
+                              <span className={`text-[9px] px-2 py-0.5 rounded-md font-bold uppercase bg-blue-50 text-blue-800`}>
+                                {doc.batch || 'Study Notes'}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-semibold">{doc.size || '1.4 MB'}</span>
+                            </div>
+                            <h4 className="text-xs font-bold text-slate-805 mt-3 leading-snug">{doc.name}</h4>
+                            <span className="text-[10px] text-slate-400 mt-1 block">Uploaded: {doc.date || 'Recently'}</span>
+                          </div>
+
+                          <div className="mt-5 pt-3 border-t border-slate-50 flex items-center justify-between">
+                            {downloadingIds[doc.id] ? (
+                              <div className="w-full flex items-center justify-between">
+                                <span className="text-[9px] font-bold text-blue-700 animate-pulse">Downloading...</span>
+                                <span className="text-[9px] font-bold text-blue-700">{downloadProgress[doc.id]}%</span>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="text-[10px] text-slate-400">PDF Document</span>
+                                <button
+                                  onClick={() => handleDownload(doc.id, doc.name)}
+                                  className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center space-x-1 border border-slate-100 hover:border-blue-100"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  <span>Download</span>
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -2445,47 +2699,64 @@ const StudentDashboard = () => {
                   
                   {/* Left: Active Mock test */}
                   <div className="lg:col-span-2 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                    <h3 className="text-lg font-black text-slate-800 tracking-tight mb-4">Active Assessment Papers</h3>
+                    <h3 className="text-lg font-black text-slate-805 tracking-tight mb-4">Active Assessment Papers</h3>
                     
-                    <div className="p-5 border border-blue-100 bg-blue-50/10 rounded-2xl">
-                      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                        <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">JEE Mains Mini Mock</span>
-                        <span className="text-[10px] text-slate-400 font-bold">Duration: 180s (Demo Timer)</span>
+                    {!profileData.assigned_teacher_id || !matchedTeacherData ? (
+                      <div className="empty-state bg-slate-50 border border-slate-100 rounded-2xl py-10">
+                        <FileText className="w-8 h-8 text-slate-300 mx-auto" />
+                        <p className="text-xs font-bold text-slate-500 mt-2">No tutor matched yet.</p>
                       </div>
-                      <h4 className="text-sm font-black text-slate-800">Chemistry & Physics Mini Mock #1</h4>
-                      <p className="text-xs text-slate-500 mt-1">Includes Alkyl halides, Bohr derivation model, and electrostatics calculation problems.</p>
-                      
-                      <div className="mt-5 flex items-center justify-end space-x-3">
-                        <button
-                          onClick={handleStartTest}
-                          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
-                        >
-                          Start Test Room
-                        </button>
+                    ) : !matchedTeacherData.tests || matchedTeacherData.tests.length === 0 ? (
+                      <div className="empty-state bg-slate-50 border border-slate-100 rounded-2xl py-10">
+                        <FileText className="w-8 h-8 text-slate-300 mx-auto" />
+                        <p className="text-xs font-bold text-slate-500 mt-2">No active tests assigned by your tutor yet.</p>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {matchedTeacherData.tests.map((test) => (
+                          <div key={test.id} className="p-5 border border-blue-100 bg-blue-50/10 rounded-2xl flex justify-between items-center">
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">{test.batch || 'Tutor Assignment'}</span>
+                                <span className="text-[10px] text-slate-400 font-bold">Duration: {test.duration || '60 mins'}</span>
+                              </div>
+                              <h4 className="text-sm font-black text-slate-800">{test.name}</h4>
+                              <p className="text-xs text-slate-500 mt-1">Status: {test.status || 'Active'}</p>
+                            </div>
+                            <button
+                              onClick={handleStartTest}
+                              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer shrink-0"
+                            >
+                              Start Test Room
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Right: Previous results */}
                   <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
                     <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Past Test Performance</h3>
                     <div className="space-y-3">
-                      {[
-                        { title: 'Weekly Mock Test #7', score: '92/100', rank: '#2', date: '28 May 2026' },
-                        { title: 'Physics Part Syllabus', score: '68/100', rank: '#24', date: '22 May 2026' },
-                        { title: 'Chemistry Mechanics MCQ', score: '80/100', rank: '#8', date: '15 May 2026' }
-                      ].map((mock, idx) => (
-                        <div key={idx} className="p-3 bg-slate-50/50 border border-slate-100 rounded-2xl flex justify-between items-center text-xs">
-                          <div>
-                            <span className="font-bold text-slate-700">{mock.title}</span>
-                            <span className="text-[10px] text-slate-400 block mt-0.5">Date: {mock.date}</span>
-                          </div>
-                          <div className="text-right">
-                            <span className="font-black text-slate-800">{mock.score}</span>
-                            <span className="text-[9px] text-blue-600 block font-bold">Rank: {mock.rank}</span>
-                          </div>
+                      {!profileData.mock_tests_log || profileData.mock_tests_log.length === 0 ? (
+                        <div className="py-6 text-center text-slate-400 text-[11px] font-semibold bg-slate-50 rounded-2xl border border-slate-100/55">
+                          No mock tests completed yet. Start a test above!
                         </div>
-                      ))}
+                      ) : (
+                        profileData.mock_tests_log.map((mock, idx) => (
+                          <div key={idx} className="p-3 bg-slate-50/50 border border-slate-100 rounded-2xl flex justify-between items-center text-xs animate-fade-in">
+                            <div>
+                              <span className="font-bold text-slate-700">{mock.title}</span>
+                              <span className="text-[10px] text-slate-400 block mt-0.5">Date: {mock.date}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="font-black text-slate-800">{mock.score}</span>
+                              <span className="text-[9px] text-blue-600 block font-bold">Rank: {mock.rank}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
 
@@ -2853,20 +3124,30 @@ const StudentDashboard = () => {
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">Weekly Study Hours</h4>
-                          <span className="text-sm font-black text-slate-800">Total: 49 Hours</span>
+                          <span className="text-sm font-black text-slate-800">Total: {studyHours} Hours</span>
                         </div>
-                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">+12% vs last week</span>
                       </div>
-                      <div className="h-32 flex items-end justify-between px-2 pt-6">
-                        {[
-                          { day: 'Mon', hrs: 6, pct: '60%' },
-                          { day: 'Tue', hrs: 8, pct: '80%' },
-                          { day: 'Wed', hrs: 5, pct: '50%' },
-                          { day: 'Thu', hrs: 9, pct: '90%' },
-                          { day: 'Fri', hrs: 7, pct: '70%' },
-                          { day: 'Sat', hrs: 10, pct: '100%' },
-                          { day: 'Sun', hrs: 4, pct: '40%' }
-                        ].map((item, idx) => (
+                      
+                      {/* Log Hours Inline Form */}
+                      <form onSubmit={handleLogStudyHours} className="flex gap-2 mb-4">
+                        <input
+                          type="number"
+                          step="0.5"
+                          min="0.5"
+                          max="24"
+                          required
+                          value={logHoursInput}
+                          onChange={(e) => setLogHoursInput(e.target.value)}
+                          placeholder="Log study hours (e.g. 2)"
+                          className="flex-grow text-[11px] p-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
+                        />
+                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-sm">
+                          Log
+                        </button>
+                      </form>
+
+                      <div className="h-32 flex items-end justify-between px-2 pt-2">
+                        {getWeeklyHoursData().map((item, idx) => (
                           <div key={idx} className="flex flex-col items-center flex-grow group">
                             <div className="w-full px-1 relative flex justify-center">
                               <span className="absolute -top-7 scale-0 group-hover:scale-100 transition-all duration-200 bg-slate-900 text-white font-bold text-[9px] px-2 py-0.5 rounded shadow">
@@ -2888,47 +3169,33 @@ const StudentDashboard = () => {
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">Mock Test Scores Trend</h4>
-                          <span className="text-sm font-black text-slate-800">Average Tier: A (82%)</span>
+                          <span className="text-sm font-black text-slate-800">Average Score: {getAverageTestScore()}%</span>
                         </div>
-                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Last 5 Weekly Mocks</span>
                       </div>
-                      <div className="h-32 pt-4">
-                        <svg className="w-full h-full overflow-visible" viewBox="0 0 320 80">
-                          <defs>
-                            <linearGradient id="trendGrad" x1="0" y1="0" x2="1" y2="0">
-                              <stop offset="0%" stopColor="#3b82f6" />
-                              <stop offset="50%" stopColor="#8b5cf6" />
-                              <stop offset="100%" stopColor="#10b981" />
-                            </linearGradient>
-                          </defs>
-                          <line x1="0" y1="15" x2="320" y2="15" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3" />
-                          <line x1="0" y1="45" x2="320" y2="45" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3" />
-                          <line x1="0" y1="75" x2="320" y2="75" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3" />
-                          
-                          <path
-                            d="M 10 75 Q 80 65 150 50 T 250 35 T 310 20"
-                            fill="none"
-                            stroke="url(#trendGrad)"
-                            strokeWidth="3.5"
-                            strokeLinecap="round"
-                          />
-                          
-                          <circle cx="10" cy="75" r="4.5" fill="#3b82f6" stroke="#fff" strokeWidth="2" />
-                          <text x="10" y="90" textAnchor="middle" className="text-[9px] fill-slate-400 font-bold">72%</text>
-
-                          <circle cx="90" cy="63" r="4.5" fill="#3b82f6" stroke="#fff" strokeWidth="2" />
-                          <text x="90" y="50" textAnchor="middle" className="text-[9px] fill-slate-500 font-black">76%</text>
-
-                          <circle cx="170" cy="48" r="4.5" fill="#8b5cf6" stroke="#fff" strokeWidth="2" />
-                          <text x="170" y="35" textAnchor="middle" className="text-[9px] fill-slate-500 font-black">80%</text>
-
-                          <circle cx="250" cy="35" r="4.5" fill="#10b981" stroke="#fff" strokeWidth="2" />
-                          <text x="250" y="22" textAnchor="middle" className="text-[9px] fill-slate-500 font-black">85%</text>
-
-                          <circle cx="310" cy="20" r="4.5" fill="#10b981" stroke="#fff" strokeWidth="2" />
-                          <text x="310" y="10" textAnchor="middle" className="text-[9px] fill-slate-500 font-black">88%</text>
-                        </svg>
-                      </div>
+                      
+                      {getMockTestTrendData().length === 0 ? (
+                        <div className="h-32 flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-150 text-center p-4">
+                          <span className="text-xl">🏆</span>
+                          <span className="text-[10px] font-black text-slate-500 block mt-1.5">No mock test scores logged yet.</span>
+                        </div>
+                      ) : (
+                        <div className="h-32 flex items-end justify-between px-2 pt-6">
+                          {getMockTestTrendData().map((item, idx) => (
+                            <div key={idx} className="flex flex-col items-center flex-grow group">
+                              <div className="w-full px-1 relative flex justify-center">
+                                <span className="absolute -top-7 scale-0 group-hover:scale-100 transition-all duration-200 bg-slate-900 text-white font-bold text-[9px] px-2 py-0.5 rounded shadow">
+                                  {item.score}%
+                                </span>
+                                <div
+                                  style={{ height: item.pct }}
+                                  className="w-5 bg-gradient-to-t from-indigo-400 to-indigo-500 hover:from-indigo-600 hover:to-indigo-600 rounded-t-lg transition-all duration-300 shadow-sm shadow-indigo-400/20 cursor-pointer"
+                                ></div>
+                              </div>
+                              <span className="text-[10px] text-slate-400 font-bold mt-2">{item.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -2983,7 +3250,7 @@ const StudentDashboard = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[360px] overflow-y-auto pr-1">
                       {syllabusChapters.filter(c => c.status !== 'Not Started').length === 0 ? (
-                        <div className="col-span-2 py-10 text-center space-y-2 bg-slate-50 rounded-2xl border border-slate-100/50">
+                        <div className="col-span-2 empty-state bg-slate-50 rounded-2xl border border-slate-100/50">
                           <BookOpen className="w-8 h-8 text-slate-300 mx-auto" />
                           <p className="text-xs font-bold text-slate-500 text-center mx-auto">Syllabus progress will update as you complete chapters with your tutor.</p>
                         </div>
@@ -3028,18 +3295,28 @@ const StudentDashboard = () => {
                   
                   {/* Vetted Home Tutors Assigned */}
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
-                    <h3 className="text-base font-black text-slate-800 tracking-tight">Vetted Home Tutors Assigned</h3>
+                    <h3 className="text-base font-black text-slate-805 tracking-tight">Vetted Home Tutors Assigned</h3>
                     <div className="space-y-3">
-                      {[
-                        { subject: 'Chemistry', teacher: 'Mr. Rajesh Kumar', qual: 'M.Sc, IIT Delhi alumnus', type: 'Assigned Home Tutor' },
-                        { subject: 'Mathematics', teacher: 'Dr. Priya Sharma', qual: 'Ph.D in Algebra, 10+ yrs exp', type: 'Assigned Backup Tutor' }
-                      ].map((tut, i) => (
-                        <div key={i} className="p-3 bg-slate-50/50 border border-slate-100 rounded-xl">
-                          <span className="text-[8px] bg-blue-50 text-blue-800 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">{tut.type}</span>
-                          <h4 className="text-xs font-black text-slate-800 mt-2">{tut.teacher}</h4>
-                          <span className="text-[10px] text-slate-400 font-semibold mt-0.5 block">{tut.subject} • {tut.qual}</span>
+                      {!profileData.assigned_teacher_id || !matchedTeacherData ? (
+                        <div className="empty-state bg-slate-50 border border-slate-100 rounded-2xl py-6 text-center text-xs text-slate-500 font-semibold">
+                          Tutor matching in progress. We will show your assigned home tutors here.
                         </div>
-                      ))}
+                      ) : (
+                        [
+                          { 
+                            subject: matchedTeacherData.primarySubject || 'Mathematics', 
+                            teacher: matchedTeacherData.name, 
+                            qual: matchedTeacherData.qualification || 'Verified Home Tutor', 
+                            type: 'Assigned Home Tutor' 
+                          }
+                        ].map((tut, i) => (
+                          <div key={i} className="p-3 bg-slate-50/50 border border-slate-100 rounded-xl">
+                            <span className="text-[8px] bg-blue-50 text-blue-800 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">{tut.type}</span>
+                            <h4 className="text-xs font-black text-slate-805 mt-2">{tut.teacher}</h4>
+                            <span className="text-[10px] text-slate-400 font-semibold mt-0.5 block">{tut.subject} • {tut.qual}</span>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
 
@@ -3047,7 +3324,7 @@ const StudentDashboard = () => {
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
                     <h3 className="text-base font-black text-slate-800 tracking-tight mb-3.5">Center Attendance Sheet</h3>
                     {!studentProfile.attendance_log || studentProfile.attendance_log.length === 0 ? (
-                      <div className="py-6 text-center space-y-2 bg-slate-50 rounded-2xl border border-slate-100/50">
+                      <div className="empty-state bg-slate-50 rounded-2xl border border-slate-100/50">
                         <CheckCircle2 className="w-8 h-8 text-slate-300 mx-auto" />
                         <p className="text-xs font-bold text-slate-500">Attendance will appear here after your first session.</p>
                       </div>
@@ -3084,284 +3361,6 @@ const StudentDashboard = () => {
                     )}
                   </div>
 
-                  {/* Daily Target Planner & Goal Setting */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-50">
-                      <div>
-                        <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
-                          <CheckSquare className="w-5 h-5 text-blue-600" />
-                          <span>Daily Target Planner</span>
-                        </h3>
-                        <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Stay disciplined. Complete daily goals for XP!</p>
-                      </div>
-                    </div>
-
-                    {(() => {
-                      const completedCount = userGoals.filter(g => g.completed).length;
-                      const totalCount = userGoals.length;
-                      const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-                      return (
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-[10px] font-bold text-slate-400">
-                            <span>Daily Completion</span>
-                            <span>{completedCount} / {totalCount} ({percent}%)</span>
-                          </div>
-                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-600 rounded-full transition-all duration-500" style={{ width: `${percent}%` }}></div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    <div className="space-y-2.5 max-h-[160px] overflow-y-auto pr-1">
-                      {userGoals.map((g) => (
-                        <div
-                          key={g.id}
-                          onClick={() => handleToggleGoal(g.id)}
-                          className={`p-3 rounded-2xl border text-xs font-semibold cursor-pointer flex items-center space-x-3 transition-colors ${
-                            g.completed
-                              ? 'bg-blue-50/30 border-blue-100 text-slate-400 line-through'
-                              : 'bg-slate-50/50 border-slate-100 text-slate-700 hover:bg-slate-50 hover:border-slate-200'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={g.completed}
-                            onChange={() => {}} // handled by outer click
-                            className="w-4.5 h-4.5 text-blue-600 border-slate-355 rounded-lg focus:ring-0 cursor-pointer"
-                          />
-                          <span className="flex-grow select-none leading-snug">{g.text}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <form onSubmit={handleAddGoal} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newGoalText}
-                        onChange={(e) => setNewGoalText(e.target.value)}
-                        placeholder="Add a custom daily target..."
-                        className="flex-grow text-xs py-2 px-3 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-600/20 font-semibold"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!newGoalText.trim()}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs p-2.5 rounded-xl transition-all cursor-pointer shadow-md disabled:opacity-45"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </form>
-                  </div>
-
-                  {/* Focus & Strength Tracker */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
-                    <h3 className="text-base font-black text-slate-800 tracking-tight">Focus & Strength Tracker</h3>
-                    <div className="space-y-3">
-                      <div className="bg-blue-50/40 border border-blue-100/50 p-3.5 rounded-2xl">
-                        <div className="flex items-center space-x-2 text-blue-800 mb-2">
-                          <CheckCircle2 className="w-4.5 h-4.5 text-blue-600" />
-                          <span className="text-xs font-black uppercase tracking-wider">Top Concept Strengths</span>
-                        </div>
-                        <ul className="text-xs text-blue-700 font-semibold space-y-1 pl-6 list-disc">
-                          <li>Organic reaction mechanisms</li>
-                          <li>Definite Integration derivations</li>
-                          <li>Electrostatics charge fields</li>
-                        </ul>
-                      </div>
-
-                      <div className="bg-rose-50/40 border border-rose-100/50 p-3.5 rounded-2xl">
-                        <div className="flex items-center space-x-2 text-rose-800 mb-2">
-                          <AlertCircle className="w-4.5 h-4.5 text-rose-600" />
-                          <span className="text-xs font-black uppercase tracking-wider">Growth Focus Areas</span>
-                        </div>
-                        <ul className="text-xs text-rose-700 font-semibold space-y-1 pl-6 list-disc">
-                          <li>Rotational dynamics kinematics</li>
-                          <li>Chemical Kinetics rate calculations</li>
-                          <li>Vector algebra geometry vectors</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Leaderboard & XP Store */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-50">
-                      <div>
-                        <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
-                          <Zap className="w-5 h-5 text-amber-500 fill-amber-500 animate-pulse" />
-                          <span>Leaderboard & XP Store</span>
-                        </h3>
-                        <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Trade your earned XP for premium JEE study items!</p>
-                      </div>
-                      <span className="text-xs font-black bg-amber-50 text-amber-700 px-3 py-1 rounded-full border border-amber-100 animate-pulse">
-                        {studentXp} XP Available
-                      </span>
-                    </div>
-
-                    <div className="space-y-2">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Batch Leaderboard (Rank Coordinates)</span>
-                      {[
-                        { name: 'Priya Patel', xp: 5120, rank: 1, isMe: false },
-                        { name: 'Harsh Verma', xp: 4980, rank: 2, isMe: false },
-                        { name: 'Aman Kumar', xp: 4900, rank: 3, isMe: false },
-                        { name: 'Rahul Sharma (You)', xp: studentXp, rank: 4, isMe: true },
-                        { name: 'Neha Singh', xp: 4750, rank: 5, isMe: false }
-                      ]
-                        .sort((a, b) => b.xp - a.xp)
-                        .map((u, i) => (
-                          <div
-                            key={i}
-                            className={`p-2 rounded-xl text-xs font-semibold flex justify-between items-center transition-colors ${
-                              u.isMe
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'bg-slate-50 border border-slate-100 text-slate-700'
-                            }`}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <span className={`w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center ${
-                                u.rank === 1 ? 'bg-amber-400 text-amber-900' :
-                                u.rank === 2 ? 'bg-slate-300 text-slate-905' :
-                                u.rank === 3 ? 'bg-amber-600 text-white' :
-                                'bg-slate-200 text-slate-800'
-                              }`}>
-                                {u.rank}
-                              </span>
-                              <span>{u.name}</span>
-                            </div>
-                            <span className="font-black">{u.xp} XP</span>
-                          </div>
-                        ))}
-                    </div>
-
-                    <div className="pt-3 border-t border-slate-100 space-y-3">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">XP Redeem Shop</span>
-                      <div className="space-y-2">
-                        {rewardsList.map((reward) => {
-                          const isUnlocked = unlockedRewards.includes(reward.id);
-                          return (
-                            <div key={reward.id} className="p-3 bg-slate-50/50 border border-slate-150 rounded-2xl flex justify-between items-center gap-3">
-                              <div className="min-w-0 flex-grow">
-                                <h4 className="text-xs font-black text-slate-800 leading-tight">{reward.name}</h4>
-                                <p className="text-[9px] text-slate-550 font-semibold mt-0.5">{reward.desc}</p>
-                                <span className="text-[9px] text-amber-700 font-extrabold mt-1 block">Cost: {reward.cost} XP</span>
-                              </div>
-                              <button
-                                type="button"
-                                disabled={isUnlocked}
-                                onClick={() => handleRedeemReward(reward)}
-                                className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors shrink-0 ${
-                                  isUnlocked
-                                    ? 'bg-emerald-100 text-emerald-800 cursor-default font-extrabold'
-                                    : 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer active:scale-95'
-                                }`}
-                              >
-                                {isUnlocked ? 'Unlocked' : 'Redeem'}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Milestone Badges */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
-                    <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Milestone Badges</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {achievementBadges.length === 0 ? (
-                        <div className="col-span-2 text-center py-6 text-slate-400 text-xs">
-                          No milestone badges unlocked yet. Keep studying to earn badges!
-                        </div>
-                      ) : (
-                        achievementBadges.map((badge) => {
-                          const Icon = badge.icon;
-                          return (
-                            <div
-                              key={badge.id}
-                              className="p-3 border border-slate-50 hover:border-blue-100/30 rounded-2xl text-center flex flex-col items-center justify-center transition-all bg-slate-50/30 hover:bg-white"
-                            >
-                              <div className={`p-2 rounded-xl mb-1.5 ${badge.color}`}>
-                                <Icon className="w-4.5 h-4.5" />
-                              </div>
-                              <span className="text-[10px] font-black text-slate-800 truncate w-full">{badge.title}</span>
-                              <span className="text-[8px] text-slate-400 leading-tight mt-0.5 line-clamp-2">{badge.desc}</span>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Academic Stepper timeline */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
-                    <h3 className="text-base font-black text-slate-800 tracking-tight mb-4">Academic Stepper</h3>
-                    <div className="space-y-4 relative pl-4 border-l-2 border-slate-100">
-                      {[
-                        { title: 'Core Syllabus Finish', time: 'Oct 15, 2026', desc: 'Focusing on physical chem & mechanics', active: true, done: true },
-                        { title: 'Full Mock Test Phase', time: 'Nov - Dec 2026', desc: 'Complete 3-hour exam drills', active: true, done: false },
-                        { title: 'JEE Main Phase 1 Attempt', time: 'Jan 2027', desc: 'First official attempt run', active: false, done: false },
-                        { title: 'JEE Advanced Exam Finale', time: 'May 2027', desc: 'Targeting Top 500 AIR rank', active: false, done: false }
-                      ].map((step, idx) => (
-                        <div key={idx} className="relative text-xs">
-                          <div className={`absolute -left-6.5 top-0.5 w-3 h-3 rounded-full border-2 ${
-                            step.done ? 'bg-blue-600 border-blue-500' :
-                            step.active ? 'bg-white border-blue-500 animate-pulse' :
-                            'bg-white border-slate-200'
-                          }`} />
-                          <h5 className={`font-extrabold ${step.done || step.active ? 'text-slate-800' : 'text-slate-400'}`}>{step.title}</h5>
-                          <span className="text-[9px] text-slate-400 font-bold block mt-0.5">{step.time}</span>
-                          <p className="text-[10px] text-slate-550 mt-1 leading-normal font-semibold">{step.desc}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Academic Certificates */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
-                    <h3 className="text-base font-black text-slate-800 tracking-tight">Academic Certificates</h3>
-                    <p className="text-slate-400 text-[10px] font-semibold">Verified credential awards portfolio</p>
-                    
-                    <div className="space-y-3">
-                      {earnedCertificates.map((cert) => {
-                        const isDownloading = downloadingCertId === cert.id;
-                        return (
-                          <div key={cert.id} className="p-3.5 bg-slate-50/50 border border-slate-100 rounded-xl space-y-2">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h4 className="text-xs font-black text-slate-800 leading-tight">{cert.title}</h4>
-                                <span className="text-[9px] text-blue-600 font-extrabold mt-1 block">{cert.type} • {cert.unlockedAt}</span>
-                              </div>
-                            </div>
-                            <div className="flex justify-between items-center text-[9px] text-slate-400 font-bold pt-2 border-t border-slate-100/50">
-                              <span>Earned: {cert.date}</span>
-                              
-                              {isDownloading ? (
-                                <div className="w-24 text-right">
-                                  <div className="flex justify-between text-[8px] text-blue-750 font-bold mb-0.5">
-                                    <span>Downloading...</span>
-                                    <span>{certDownloadProgress}%</span>
-                                  </div>
-                                  <div className="h-1 bg-slate-200 rounded-full overflow-hidden">
-                                    <div className="h-full bg-blue-600 transition-all" style={{ width: `${certDownloadProgress}%` }}></div>
-                                  </div>
-                                </div>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDownloadCertificate(cert.id, cert.title)}
-                                  className="text-blue-600 hover:text-blue-700 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
-                                >
-                                  <Download className="w-3 h-3" />
-                                  <span>Download PDF</span>
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
                 </div>
               </div>
             </div>
@@ -3370,127 +3369,137 @@ const StudentDashboard = () => {
           {/* TAB: STUDY GROUPS */}
           {activeTab === 'Study Groups' && (
             <div className="space-y-6 tab-content-enter">
-              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col lg:flex-row gap-6 min-h-[580px]">
-                
-                {/* Left Panel: Available Rooms */}
-                <div className="w-full lg:w-1/3 space-y-4 lg:border-r lg:border-slate-150 lg:pr-6">
-                  <div>
-                    <h3 className="text-lg font-black text-slate-800 tracking-tight">Peer Study Hub</h3>
-                    <p className="text-slate-400 text-xs">Collaborate, share notes, and solve doubts with cohort peers.</p>
+              {studyGroups.length === 0 ? (
+                <div className="bg-white border border-slate-100 rounded-3xl p-12 shadow-sm text-center flex flex-col items-center justify-center min-h-[500px]">
+                  <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center border border-blue-100 shadow-inner mb-4">
+                    <Users className="w-8 h-8" />
                   </div>
-
-                  <div className="space-y-2.5">
-                    {studyGroups.map((group) => {
-                      const isSelected = activeGroupId === group.id;
-                      return (
-                        <button
-                          key={group.id}
-                          onClick={() => {
-                            setActiveGroupId(group.id);
-                            triggerToast(`Joined group chat: ${group.name}`);
-                          }}
-                          className={`w-full text-left p-4 rounded-2xl border transition-all cursor-pointer ${
-                            isSelected
-                              ? 'border-blue-500 bg-blue-50/20 ring-2 ring-blue-500/10 shadow-sm'
-                              : 'border-slate-100 hover:border-slate-200 bg-slate-50/30'
-                          }`}
-                        >
-                          <div className="flex justify-between items-start">
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                              group.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-800' :
-                              group.subject === 'Mathematics' ? 'bg-blue-50 text-blue-800' :
-                              'bg-indigo-50 text-indigo-800'
-                            }`}>
-                              {group.subject}
-                            </span>
-                            <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full">
-                              {group.activePeers} online
-                            </span>
-                          </div>
-                          <h4 className="text-xs font-black text-slate-800 mt-2.5">{group.name}</h4>
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-relaxed">{group.description}</p>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <h3 className="text-lg font-black text-slate-805 tracking-tight">No Study Groups Joined</h3>
+                  <p className="text-xs text-slate-400 font-semibold max-w-sm mt-1.5 leading-relaxed">
+                    You are currently not enrolled in any peer study groups. You will be automatically added to the official cohort study groups once your classes begin.
+                  </p>
                 </div>
+              ) : (
+                <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col lg:flex-row gap-6 min-h-[580px]">
+                  
+                  {/* Left Panel: Available Rooms */}
+                  <div className="w-full lg:w-1/3 space-y-4 lg:border-r lg:border-slate-150 lg:pr-6">
+                    <div>
+                      <h3 className="text-lg font-black text-slate-805 tracking-tight">Peer Study Hub</h3>
+                      <p className="text-slate-400 text-xs">Collaborate, share notes, and solve doubts with cohort peers.</p>
+                    </div>
 
-                {/* Right Panel: Discussion Panel & Messages */}
-                {(() => {
-                  const activeGroup = studyGroups.find(g => g.id === activeGroupId);
-                  const chats = groupChats[activeGroupId] || [];
-                  return (
-                    <div className="w-full lg:w-2/3 flex flex-col justify-between h-[450px] lg:h-auto">
-                      {/* Active Room Header */}
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 mb-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-sm shadow-inner">
-                            {activeGroup?.name[0]}
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-black text-slate-800 leading-none">{activeGroup?.name}</h4>
-                            <span className="text-[10px] font-semibold text-slate-400 mt-1 block">Discussion room for JEE {activeGroup?.subject} topics</span>
-                          </div>
-                        </div>
-                        <span className="text-[10px] bg-slate-100 text-slate-500 font-black px-2.5 py-1 rounded-xl uppercase shadow-sm">
-                          Direct Feed
-                        </span>
-                      </div>
+                    <div className="space-y-2.5">
+                      {studyGroups.map((group) => {
+                        const isSelected = activeGroupId === group.id;
+                        return (
+                          <button
+                            key={group.id}
+                            onClick={() => {
+                              setActiveGroupId(group.id);
+                              triggerToast(`Joined group chat: ${group.name}`);
+                            }}
+                            className={`w-full text-left p-4 rounded-2xl border transition-all cursor-pointer ${
+                              isSelected
+                                ? 'border-blue-500 bg-blue-50/20 ring-2 ring-blue-500/10 shadow-sm'
+                                : 'border-slate-100 hover:border-slate-200 bg-slate-50/30'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start">
+                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
+                                group.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-800' :
+                                group.subject === 'Mathematics' ? 'bg-blue-50 text-blue-800' :
+                                'bg-indigo-50 text-indigo-800'
+                              }`}>
+                                {group.subject}
+                              </span>
+                              <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full">
+                                {group.activePeers || 0} online
+                              </span>
+                            </div>
+                            <h4 className="text-xs font-black text-slate-800 mt-2.5">{group.name}</h4>
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-relaxed">{group.description}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                      {/* Chat Messages Log */}
-                      {isOffline ? (
-                        <div className="flex-grow flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-150 p-6 text-center">
-                          <WifiOff className="w-10 h-10 text-rose-500 animate-pulse mb-3" />
-                          <h5 className="text-xs font-black text-slate-800">Peer Chat Unavailable Offline</h5>
-                          <p className="text-[10px] text-slate-400 font-semibold mt-1 max-w-xs">
-                            Please switch your workspace back to online mode in the header to sync live chat rooms.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="flex-grow flex flex-col items-center justify-center p-6 bg-slate-50/40 rounded-3xl border border-slate-100 text-center space-y-5">
-                          <div className="w-14 h-14 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                            <MessageSquare className="w-7 h-7" />
+                  {/* Right Panel: Discussion Panel & Messages */}
+                  {(() => {
+                    const activeGroup = studyGroups.find(g => g.id === activeGroupId) || studyGroups[0];
+                    return (
+                      <div className="w-full lg:w-2/3 flex flex-col justify-between h-[450px] lg:h-auto">
+                        {/* Active Room Header */}
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 mb-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-sm shadow-inner">
+                              {activeGroup?.name?.[0] || 'G'}
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-black text-slate-808 leading-none">{activeGroup?.name}</h4>
+                              <span className="text-[10px] font-semibold text-slate-400 mt-1 block">Discussion room for JEE {activeGroup?.subject} topics</span>
+                            </div>
                           </div>
-                          
-                          <div className="max-w-md space-y-1.5">
-                            <h4 className="text-sm font-black text-slate-800">Direct WhatsApp Group Chat</h4>
-                            <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
-                              To ensure high-fidelity communication, instant notifications, and seamless sharing of study sheets, assignments, and doubts, peer discussions for **{activeGroup?.name}** have been redirected to our official WhatsApp study group channels.
+                          <span className="text-[10px] bg-slate-100 text-slate-500 font-black px-2.5 py-1 rounded-xl uppercase shadow-sm">
+                            Direct Feed
+                          </span>
+                        </div>
+
+                        {/* Chat Messages Log */}
+                        {isOffline ? (
+                          <div className="flex-grow flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-150 p-6 text-center">
+                            <WifiOff className="w-10 h-10 text-rose-500 animate-pulse mb-3" />
+                            <h5 className="text-xs font-black text-slate-808">Peer Chat Unavailable Offline</h5>
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1 max-w-xs">
+                              Please switch your workspace back to online mode in the header to sync live chat rooms.
                             </p>
                           </div>
+                        ) : (
+                          <div className="flex-grow flex flex-col items-center justify-center p-6 bg-slate-50/40 rounded-3xl border border-slate-100 text-center space-y-5">
+                            <div className="w-14 h-14 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                              <MessageSquare className="w-7 h-7" />
+                            </div>
+                            
+                            <div className="max-w-md space-y-1.5">
+                              <h4 className="text-sm font-black text-slate-808">Direct WhatsApp Group Chat</h4>
+                              <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
+                                To ensure high-fidelity communication, instant notifications, and seamless sharing of study sheets, assignments, and doubts, peer discussions for **{activeGroup?.name}** have been redirected to our official WhatsApp study group channels.
+                              </p>
+                            </div>
 
-                          <div className="w-full max-w-xs bg-white border border-slate-100 rounded-xl p-3.5 text-left space-y-2.5 shadow-sm">
-                            <div className="flex items-center gap-2">
-                              <span className="text-emerald-500 text-[10px]">✔</span>
-                              <span className="text-[10px] text-slate-700 font-bold">Daily practice questions shared by mentors</span>
+                            <div className="w-full max-w-xs bg-white border border-slate-100 rounded-xl p-3.5 text-left space-y-2.5 shadow-sm">
+                              <div className="flex items-center gap-2">
+                                <span className="text-emerald-500 text-[10px]">✔</span>
+                                <span className="text-[10px] text-slate-700 font-bold">Daily practice questions shared by mentors</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-emerald-500 text-[10px]">✔</span>
+                                <span className="text-[10px] text-slate-700 font-bold">Collaborative doubt solving with batchmates</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-emerald-500 text-[10px]">✔</span>
+                                <span className="text-[10px] text-slate-700 font-bold">Official updates on curriculum schedules</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-emerald-500 text-[10px]">✔</span>
-                              <span className="text-[10px] text-slate-700 font-bold">Collaborative doubt solving with batchmates</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-emerald-500 text-[10px]">✔</span>
-                              <span className="text-[10px] text-slate-700 font-bold">Official updates on curriculum schedules</span>
-                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                window.open(`https://wa.me/919876543210?text=Hello%2C%20I%20am%20a%20student%20at%20Cograd%20Pathshala%20and%20would%20like%20to%20join%20the%20official%20${encodeURIComponent(activeGroup?.name || 'Study Group')}.`, "_blank");
+                              }}
+                              className="w-full max-w-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-2xl shadow-lg shadow-emerald-600/15 hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                            >
+                              <MessageSquare className="w-4 h-4" />
+                              <span>Join WhatsApp Group Chat</span>
+                            </button>
                           </div>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              window.open(`https://wa.me/919876543210?text=Hello%2C%20I%20am%20a%20student%20at%20Cograd%20Pathshala%20and%20would%20like%20to%20join%20the%20official%20${encodeURIComponent(activeGroup?.name || 'Study Group')}.`, "_blank");
-                            }}
-                            className="w-full max-w-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-2xl shadow-lg shadow-emerald-600/15 hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
-                          >
-                            <MessageSquare className="w-4 h-4" />
-                            <span>Join WhatsApp Group Chat</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
-              </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           )}
 
@@ -3767,7 +3776,7 @@ const StudentDashboard = () => {
 
       {/* Parent Assigned Test Simulator Modal */}
       {showParentTestModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-3xl max-w-lg w-full border border-slate-100 shadow-2xl p-6 relative overflow-hidden animate-slide-up max-h-[90vh] flex flex-col justify-between">
             <button
               onClick={() => setShowParentTestModal(false)}
@@ -3781,7 +3790,7 @@ const StudentDashboard = () => {
                 Parent Homework Assessment
               </span>
               <h3 className="text-lg font-black text-slate-800 mt-2">
-                Taking: {JSON.parse(localStorage.getItem('cograd_assigned_tests_Rahul_Varma'))?.topic || 'Assigned Test'}
+                Taking: {JSON.parse(localStorage.getItem(`cograd_assigned_tests_${profileData.studentId}`))?.topic || 'Assigned Test'}
               </h3>
               <p className="text-xs text-slate-400 font-semibold">
                 Complete this test to show your understanding to your parents!
@@ -3871,10 +3880,23 @@ const StudentDashboard = () => {
                     setParentTestScore(score);
                     setParentTestSubmitted(true);
                     
-                    // Save result in localStorage
-                    localStorage.setItem('cograd_assigned_tests_result_Rahul_Varma', `${score}/3`);
-                    triggerToast(`Test completed! Score: ${score}/3. +100 XP`);
-                    setStudentXp(prev => prev + 100);
+                    // Save result in localStorage and sync with database
+                    const resultScore = `${score}/3`;
+                    localStorage.setItem(`cograd_assigned_tests_result_${profileData.studentId}`, resultScore);
+                    api.put(`/students/${profileData.studentId}`, {
+                      parent_assigned_test_result: resultScore,
+                      xp: studentXp + 100
+                    }).then(() => {
+                      setProfileData(prev => ({
+                        ...prev,
+                        parent_assigned_test_result: resultScore
+                      }));
+                      setStudentXp(prev => prev + 100);
+                      triggerToast(`Test completed! Score: ${resultScore}. +100 XP`);
+                    }).catch(err => {
+                      console.error('Failed to save test result:', err);
+                      triggerToast('Failed to save test result to database.');
+                    });
                   }}
                   className="w-full btn-primary py-3 rounded-2xl text-xs font-bold shadow-md cursor-pointer"
                 >
@@ -3882,7 +3904,7 @@ const StudentDashboard = () => {
                 </button>
               </div>
             ) : (
-              <div className="text-center py-6 space-y-4 font-sans">
+              <div className="empty-state font-sans">
                 <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border-2 border-emerald-100 shadow-inner">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
@@ -3908,17 +3930,110 @@ const StudentDashboard = () => {
           </div>
         </div>
       )}
+
+      {activeTab === 'Help & Support' && (
+        <div className="space-y-6 text-left">
+          <div className="bg-gradient-to-br from-[#10B981]/10 to-[#3B82F6]/10 p-6 rounded-3xl border border-[#10B981]/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-black text-slate-800 tracking-tight">Help & Support Desk</h3>
+              <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Submit query directly to CoGrad corporate team</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+            <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
+              <h3 className="text-base font-black text-slate-800 tracking-tight">Create Support Ticket</h3>
+              <form onSubmit={handleSupportSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Category</label>
+                  <select
+                    required
+                    value={supportForm.category}
+                    onChange={(e) => setSupportForm(p => ({ ...p, category: e.target.value }))}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                  >
+                    <option value="General Support">General Support</option>
+                    <option value="Technical Issue">Technical Issue</option>
+                    <option value="Academic Enquiry">Academic Enquiry</option>
+                    <option value="Billing & Fee">Billing & Fee</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Subject</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="E.g. Book download error"
+                    value={supportForm.title}
+                    onChange={(e) => setSupportForm(p => ({ ...p, title: e.target.value }))}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Description</label>
+                  <textarea
+                    required
+                    rows="4"
+                    placeholder="Please describe your query in detail..."
+                    value={supportForm.description}
+                    onChange={(e) => setSupportForm(p => ({ ...p, description: e.target.value }))}
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 font-semibold"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={supportSubmitting}
+                  className="w-full btn-primary py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {supportSubmitting ? 'Submitting...' : 'Submit Support Ticket'}
+                </button>
+              </form>
+            </div>
+
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
+              <h3 className="text-base font-black text-slate-800 tracking-tight">CoGrad Contact Info</h3>
+              <div className="space-y-4 text-xs font-semibold text-slate-600">
+                <div className="flex items-start gap-3">
+                  <Phone className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-extrabold text-slate-800">+91-9220253001</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Mon–Sat, 10am – 6pm IST</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Mail className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-extrabold text-slate-800">connect@cograd.in</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Reply within 24 hours</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-4 h-4 text-violet-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-extrabold text-slate-800">PI Softek Ltd</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">C-56A/28, Sector 62, Noida 201301</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       </>
       )}
       </div>{/* end tab-content-enter */}
     </DashboardShell>
 
     {/* Floating AI Chatbot Button & Overlay Drawer */}
-    <div className="fixed bottom-20 right-16 z-[9999] flex flex-col items-end">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 md:bottom-8 md:right-8 z-[9999] flex flex-col items-end">
       {/* Chatbot Overlay Card */}
       {showAiChatbot && (
         <div className="mb-4 w-96 max-w-[calc(100vw-2rem)] h-[580px] bg-white border border-slate-150 rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-slide-up text-slate-800 no-glass">
-          {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-750 text-white p-4.5 flex items-center justify-between shadow-md shrink-0">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-inner relative border border-white/15">
@@ -3927,11 +4042,7 @@ const StudentDashboard = () => {
               </div>
               <div>
                 <h3 className="text-xs font-black leading-none">
-                  {doubtMode === 'ai' ? (
-                    tutorPersona === 'chemistry' ? 'Dr. Atoms (Chemistry Tutor)' :
-                    tutorPersona === 'mathematics' ? 'Prof. Vector (Math Tutor)' :
-                    'Dr. Volt (Physics Tutor)'
-                  ) : 'Direct Tutor Connect'}
+                  {doubtMode === 'ai' ? 'CoGrad AI Tutor' : 'Direct Tutor Connect'}
                 </h3>
                 <p className="text-[9px] text-blue-150 font-bold mt-1">
                   {doubtMode === 'ai' ? '24/7 AI Doubt Solver' : 'Direct Teacher Doubt Desk'}
@@ -3976,115 +4087,40 @@ const StudentDashboard = () => {
           </div>
 
           {/* Content Area */}
-          <div className="flex-grow overflow-y-auto p-4 space-y-4 bg-slate-50/20">
+          <div className="flex-grow flex flex-col min-h-0 bg-slate-50/20">
             {doubtMode === 'ai' ? (
               <>
-                {/* Persona Switcher Dropdown */}
-                <div className="space-y-1">
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Tutor Persona</span>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {[
-                      { id: 'chemistry', name: 'Dr. Atoms', color: 'emerald' },
-                      { id: 'mathematics', name: 'Prof. Vector', color: 'blue' },
-                      { id: 'physics', name: 'Dr. Volt', color: 'indigo' }
-                    ].map(persona => (
-                      <button
-                        key={persona.id}
-                        onClick={() => {
-                          setTutorPersona(persona.id);
-                          triggerToast(`Switched Tutor to ${persona.name}`);
-                        }}
-                        className={`py-1.5 px-2 rounded-xl border text-[10px] font-bold text-center transition-all cursor-pointer truncate ${
-                          tutorPersona === persona.id
-                            ? 'bg-blue-50/40 border-blue-500/30 text-blue-700 font-extrabold shadow-sm'
-                            : 'bg-white border-slate-100 hover:bg-slate-50 text-slate-500'
-                        }`}
-                      >
-                        {persona.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* OCR handwriting scanner */}
-                <div className="bg-white border border-slate-100 rounded-2xl p-3 text-center relative overflow-hidden transition-all group shadow-sm">
-                  {isScanning ? (
-                    <div className="space-y-2 relative z-10 py-1">
+                {/* Main Scrollable Chat Logs Area */}
+                <div className="flex-grow overflow-y-auto p-4 space-y-4 min-h-0">
+                  {/* OCR scan overlay inside chat log container */}
+                  {isScanning && (
+                    <div className="p-4 bg-white border border-slate-100 rounded-2xl text-center relative overflow-hidden transition-all shadow-sm animate-pulse">
                       <div className="absolute inset-x-0 top-0 h-0.5 bg-blue-600 shadow-md shadow-emerald-500 animate-bounce"></div>
                       <UploadCloud className="w-6 h-6 text-blue-500 mx-auto animate-pulse" />
-                      <span className="text-[10px] font-black text-blue-800 block">AI OCR scanning notebook page...</span>
-                      <div className="max-w-xs mx-auto">
-                        <div className="h-1 bg-slate-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-blue-600 rounded-full transition-all" style={{ width: `${scannerProgress}%` }}></div>
-                        </div>
-                      </div>
+                      <span className="text-[10px] font-black text-blue-800 block mt-1">AI OCR scanning notebook page... {scannerProgress}%</span>
                     </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={triggerImageScan}
-                      className="w-full text-center cursor-pointer flex items-center justify-center space-x-2 text-[10px] font-bold text-slate-500 hover:text-blue-600 transition-colors"
-                    >
-                      <Camera className="w-4 h-4" />
-                      <span>Scan handwriting or notebook page</span>
-                    </button>
                   )}
-                </div>
 
-                {/* Suggestions list */}
-                <div className="space-y-1">
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Suggested Questions</span>
-                  <div className="flex flex-wrap gap-1 max-h-[85px] overflow-y-auto pr-0.5">
-                    {tutorPersona === 'chemistry' ? (
-                      ['Explain SN1 vs SN2 kinetics', 'Cannizzaro reaction steps', 'Bohr hydrogen energy level'].map(pill => (
-                        <button
-                          key={pill}
-                          onClick={() => setAiQuestion(pill)}
-                          className="text-[9px] bg-white border border-slate-150 text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 px-2 py-0.5 rounded-lg font-semibold transition-all cursor-pointer"
-                        >
-                          {pill}
-                        </button>
-                      ))
-                    ) : tutorPersona === 'mathematics' ? (
-                      ['Derive definite integration formula', 'Derive vector dot product derivation', 'Matrix multiplication rules'].map(pill => (
-                        <button
-                          key={pill}
-                          onClick={() => setAiQuestion(pill)}
-                          className="text-[9px] bg-white border border-slate-150 text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 px-2 py-0.5 rounded-lg font-semibold transition-all cursor-pointer"
-                        >
-                          {pill}
-                        </button>
-                      ))
-                    ) : (
-                      ['Explain Lenz\'s Law induction basis', 'Derive Moment of Inertia for rod', 'State Coulomb\'s Law force'].map(pill => (
-                        <button
-                          key={pill}
-                          onClick={() => setAiQuestion(pill)}
-                          className="text-[9px] bg-white border border-slate-150 text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 px-2 py-0.5 rounded-lg font-semibold transition-all cursor-pointer"
-                        >
-                          {pill}
-                        </button>
-                      ))
-                    )}
+                  {/* Beta notice banner as an introductory bubble */}
+                  <div className="bg-emerald-50/75 border border-emerald-200/30 rounded-2xl p-3 text-left text-[9px] text-emerald-800 font-semibold flex gap-2 shadow-sm shrink-0">
+                    <span className="text-[10px]">✨</span>
+                    <span><strong>AI Solver Connected:</strong> Responses are generated in real-time by the Google DiffusionGemma model via NVIDIA NIM API!</span>
                   </div>
-                </div>
 
-                {/* Beta notice banner */}
-                <div className="bg-amber-50/70 border border-amber-200/50 rounded-xl p-2.5 text-left text-[9px] text-amber-800 font-medium">
-                  <div className="flex gap-2">
-                    <span className="text-[10px]">💡</span>
-                    <span><strong>AI Solver Beta:</strong> Responses are generated from our curated NCERT/JEE syllabus database. Live AI model API integration coming soon!</span>
-                  </div>
-                </div>
+                  {aiHistory.length === 0 && (
+                    <div className="empty-state">
+                      <Sparkles className="w-8 h-8 mx-auto text-blue-300 animate-pulse" />
+                      <p className="text-[10px] font-bold">Ask a question to start the session.</p>
+                    </div>
+                  )}
 
-                {/* Chat logs */}
-                <div className="space-y-3 max-h-[220px] overflow-y-auto pr-0.5 border-t border-slate-100 pt-3">
                   {isAiLoading && (
                     <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl flex items-center space-x-2.5 animate-pulse">
                       <span className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
                       <span className="text-[10px] font-bold text-slate-500">AI Tutor is drafting steps...</span>
                     </div>
                   )}
+
                   {aiHistory.map((item, idx) => (
                     <div key={idx} className="p-3 border border-slate-100 bg-white rounded-2xl shadow-sm space-y-2">
                       <div className="flex items-start justify-between gap-2">
@@ -4102,116 +4138,123 @@ const StudentDashboard = () => {
                 </div>
               </>
             ) : (
-              <div className="space-y-3.5">
-                {/* Teacher selector */}
-                <div className="space-y-1">
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Select Teacher</span>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { name: 'Mr. Rajesh Kumar', subject: 'Chemistry', status: 'Online' },
-                      { name: 'Dr. Priya Sharma', subject: 'Maths', status: 'Online' },
-                      { name: 'Dr. Sarah Johnson', subject: 'Physics', status: 'Away' }
-                    ].map((t) => {
-                      const isSelected = selectedTeacherForDoubt === t.name;
-                      return (
-                        <button
-                          key={t.name}
-                          type="button"
-                          onClick={() => setSelectedTeacherForDoubt(t.name)}
-                          className={`p-2 rounded-xl border text-center transition-all cursor-pointer truncate ${
-                            isSelected
-                              ? 'border-indigo-500 bg-indigo-50/20 ring-2 ring-indigo-500/10 shadow-sm text-indigo-800 font-black'
-                              : 'border-slate-100 hover:border-slate-200 bg-white text-slate-600 text-[9px] font-bold'
-                          }`}
-                        >
-                          <div className="text-[9px] truncate leading-none">{t.name.split(' ')[1]}</div>
-                          <div className="text-[7px] text-slate-400 font-bold mt-1">{t.subject}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Submission form */}
-                <form onSubmit={handleTeacherDoubtSubmit} className="space-y-2">
-                  <textarea
-                    value={teacherDoubtText}
-                    disabled={isOffline}
-                    onChange={(e) => setTeacherDoubtText(e.target.value)}
-                    placeholder="Ask teacher a question..."
-                    rows="3"
-                    className="w-full text-[10px] p-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium resize-none disabled:opacity-50"
-                  />
-                  <div className="flex items-center justify-between bg-white p-1.5 rounded-xl border border-slate-150">
-                    <div>
-                      {isUploadingDoubtFile ? (
-                        <span className="text-[8px] font-bold text-indigo-600 animate-pulse">Uploading {uploadDoubtProgress}%</span>
-                      ) : teacherDoubtAttachment ? (
-                        <div className="flex items-center space-x-1 bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-lg text-[8px] font-bold">
-                          <span className="truncate max-w-[80px]">{teacherDoubtAttachment}</span>
-                          <button type="button" onClick={() => setTeacherDoubtAttachment(null)} className="text-indigo-400 hover:text-indigo-600"><X className="w-2 h-2" /></button>
+              /* Teacher mode just scrolls everything */
+              <div className="flex-grow overflow-y-auto p-4 space-y-4">
+                <div className="space-y-3.5">
+                  {/* Teacher selector */}
+                  <div className="space-y-1">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Select Teacher</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      {!profileData.assigned_teacher_id || !matchedTeacherData ? (
+                        <div className="col-span-3 text-[10px] text-slate-500 font-semibold text-center py-2 bg-slate-50 rounded-xl border border-slate-100">
+                          No matched tutor yet.
                         </div>
                       ) : (
-                        <button
-                          type="button"
-                          disabled={isOffline}
-                          onClick={simulateTeacherDoubtUpload}
-                          className="flex items-center space-x-1 text-slate-500 hover:text-slate-800 text-[8px] font-bold transition-all cursor-pointer"
-                        >
-                          <Camera className="w-3.5 h-3.5" />
-                          <span>Attach Homework Scan</span>
-                        </button>
+                        [
+                          { 
+                            name: matchedTeacherData.name, 
+                            subject: matchedTeacherData.primarySubject || 'Tutor', 
+                            status: 'Online' 
+                          }
+                        ].map((t) => {
+                          const isSelected = selectedTeacherForDoubt === t.name;
+                          return (
+                            <button
+                              key={t.name}
+                              type="button"
+                              onClick={() => setSelectedTeacherForDoubt(t.name)}
+                              className={`col-span-3 p-2 rounded-xl border text-center transition-all cursor-pointer truncate border-indigo-500 bg-indigo-50/20 ring-2 ring-indigo-500/10 shadow-sm text-indigo-800 font-black`}
+                            >
+                              <div className="text-[9px] truncate leading-none">{t.name}</div>
+                              <div className="text-[7px] text-slate-400 font-bold mt-1">{t.subject}</div>
+                            </button>
+                          );
+                        })
                       )}
                     </div>
-                    <button
-                      type="submit"
-                      disabled={isOffline || !teacherDoubtText.trim()}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-[9px] transition-all cursor-pointer disabled:opacity-40"
-                    >
-                      Send
-                    </button>
                   </div>
-                </form>
 
-                {/* Teacher doubts list */}
-                <div className="space-y-2 border-t border-slate-100 pt-3">
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Doubts History</span>
-                  <div className="space-y-2 max-h-[160px] overflow-y-auto pr-0.5">
-                    {teacherDoubts.map((doubt) => {
-                      const isExpanded = expandedTeacherDoubtId === doubt.id;
-                      return (
-                        <div key={doubt.id} className="border border-slate-100 bg-white rounded-2xl overflow-hidden hover:border-slate-200 transition-colors">
-                          <div
-                            onClick={() => setExpandedTeacherDoubtId(isExpanded ? null : doubt.id)}
-                            className="p-2.5 flex items-center justify-between gap-2 cursor-pointer hover:bg-slate-50/50"
-                          >
-                            <div className="min-w-0">
-                              <div className="text-[10px] font-black text-slate-800 flex items-center space-x-1.5">
-                                <span>{doubt.teacher}</span>
-                                <span className="text-[7px] bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded">{doubt.subject}</span>
-                              </div>
-                              <div className="text-[8px] text-slate-500 truncate max-w-[150px] mt-0.5">{doubt.question}</div>
-                            </div>
-                            <div className="flex items-center space-x-1 shrink-0">
-                              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${doubt.status === 'Resolved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{doubt.status}</span>
-                              <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} />
-                            </div>
+                  {/* Submission form */}
+                  <form onSubmit={handleTeacherDoubtSubmit} className="space-y-2">
+                    <textarea
+                      value={teacherDoubtText}
+                      disabled={isOffline}
+                      onChange={(e) => setTeacherDoubtText(e.target.value)}
+                      placeholder="Ask teacher a question..."
+                      rows="3"
+                      className="w-full text-[10px] p-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium resize-none disabled:opacity-50"
+                    />
+                    <div className="flex items-center justify-between bg-white p-1.5 rounded-xl border border-slate-150">
+                      <div>
+                        {isUploadingDoubtFile ? (
+                          <span className="text-[8px] font-bold text-indigo-600 animate-pulse">Uploading {uploadDoubtProgress}%</span>
+                        ) : teacherDoubtAttachment ? (
+                          <div className="flex items-center space-x-1 bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-lg text-[8px] font-bold">
+                            <span className="truncate max-w-[80px]">{teacherDoubtAttachment}</span>
+                            <button type="button" onClick={() => setTeacherDoubtAttachment(null)} className="text-indigo-400 hover:text-indigo-600"><X className="w-2 h-2" /></button>
                           </div>
-                          {isExpanded && (
-                            <div className="px-2.5 pb-2.5 pt-1 border-t border-slate-50 bg-slate-50/20 text-[9px] text-slate-655 space-y-2">
-                              <p className="font-semibold text-slate-700">{doubt.question}</p>
-                              {doubt.status === 'Resolved' ? (
-                                <div className="bg-indigo-50/40 border border-indigo-100/30 rounded-xl p-2 text-slate-700 leading-normal">
-                                  <p className="whitespace-pre-line">{doubt.answer}</p>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={isOffline}
+                            onClick={simulateTeacherDoubtUpload}
+                            className="flex items-center space-x-1 text-slate-500 hover:text-slate-800 text-[8px] font-bold transition-all cursor-pointer"
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>Attach Homework Scan</span>
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={isOffline || !teacherDoubtText.trim()}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-[9px] transition-all cursor-pointer disabled:opacity-40"
+                      >
+                        Send
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Teacher doubts list */}
+                  <div className="space-y-2 border-t border-slate-100 pt-3">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Doubts History</span>
+                    <div className="space-y-2 max-h-[160px] overflow-y-auto pr-0.5">
+                      {teacherDoubts.map((doubt) => {
+                        const isExpanded = expandedTeacherDoubtId === doubt.id;
+                        return (
+                          <div key={doubt.id} className="border border-slate-100 bg-white rounded-2xl overflow-hidden hover:border-slate-200 transition-colors">
+                            <div
+                              onClick={() => setExpandedTeacherDoubtId(isExpanded ? null : doubt.id)}
+                              className="p-2.5 flex items-center justify-between gap-2 cursor-pointer hover:bg-slate-50/50"
+                            >
+                              <div className="min-w-0">
+                                <div className="text-[10px] font-black text-slate-800 flex items-center space-x-1.5">
+                                  <span>{doubt.teacher}</span>
+                                  <span className="text-[7px] bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded">{doubt.subject}</span>
                                 </div>
-                              ) : (
-                                <p className="italic text-slate-450 font-semibold">Teacher is reviewing. Expected soon...</p>
-                              )}
+                                <div className="text-[8px] text-slate-500 truncate max-w-[150px] mt-0.5">{doubt.question}</div>
+                              </div>
+                              <div className="flex items-center space-x-1 shrink-0">
+                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${doubt.status === 'Resolved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{doubt.status}</span>
+                                <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} />
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                            {isExpanded && (
+                              <div className="px-2.5 pb-2.5 pt-1 border-t border-slate-50 bg-slate-50/20 text-[9px] text-slate-655 space-y-2">
+                                <p className="font-semibold text-slate-700">{doubt.question}</p>
+                                {doubt.status === 'Resolved' ? (
+                                  <div className="bg-indigo-50/40 border border-indigo-100/30 rounded-xl p-2 text-slate-700 leading-normal">
+                                    <p className="whitespace-pre-line">{doubt.answer}</p>
+                                  </div>
+                                ) : (
+                                  <p className="italic text-slate-450 font-semibold">Teacher is reviewing. Expected soon...</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -4220,40 +4263,72 @@ const StudentDashboard = () => {
 
           {/* Input Form at Footer (for AI Mode) */}
           {doubtMode === 'ai' && (
-            <form onSubmit={handleAiSubmit} className="relative flex items-center p-3 border-t border-slate-150 bg-white shrink-0">
-              <input
-                type="text"
-                value={aiQuestion}
-                onChange={(e) => setAiQuestion(e.target.value)}
-                placeholder={`Ask ${tutorPersona === 'chemistry' ? 'Dr. Atoms' : tutorPersona === 'mathematics' ? 'Prof. Vector' : 'Dr. Volt'}...`}
-                className="w-full text-[10px] pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-150 rounded-2xl focus:outline-none focus:ring-1 focus:ring-blue-600/20 focus:border-blue-500 font-semibold"
-              />
-              <div className="absolute right-4.5 flex items-center space-x-1">
-                <button
-                  type="button"
-                  onClick={simulateVoiceInput}
-                  className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                    simulatedVoiceState === 'listening'
-                      ? 'bg-rose-50 border-rose-100 text-rose-600 animate-pulse'
-                      : 'bg-white border-slate-100 text-slate-450 hover:text-slate-600'
-                  }`}
-                  title="Simulate Speech"
-                >
-                  <Mic className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="submit"
-                  disabled={isAiLoading || !aiQuestion.trim()}
-                  className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all cursor-pointer disabled:opacity-40"
-                >
-                  {isAiLoading ? (
-                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin block"></span>
-                  ) : (
-                    <Send className="w-3.5 h-3.5" />
-                  )}
-                </button>
+            <div className="flex flex-col bg-white border-t border-slate-150 shrink-0">
+              {/* Horizontal Scroll Suggestions */}
+              <div className="flex items-center space-x-2 px-3 py-1.5 border-b border-slate-100 overflow-x-auto no-scrollbar scroll-smooth">
+                {['Explain SN1 vs SN2 kinetics', 'Derive definite integration formula', 'Explain Lenz\'s Law induction basis', 'Bohr hydrogen energy level'].map(pill => (
+                  <button
+                    key={pill}
+                    type="button"
+                    onClick={() => setAiQuestion(pill)}
+                    className="text-[9px] whitespace-nowrap bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-slate-600 hover:text-blue-700 px-2.5 py-1 rounded-xl font-bold transition-all cursor-pointer shrink-0"
+                  >
+                    {pill}
+                  </button>
+                ))}
               </div>
-            </form>
+
+              {/* Form Input */}
+              <form onSubmit={handleAiSubmit} className="relative flex items-center p-3">
+                <input
+                  type="text"
+                  value={aiQuestion}
+                  onChange={(e) => setAiQuestion(e.target.value)}
+                  placeholder="Ask CoGrad AI..."
+                  className="w-full text-[10px] pl-3 pr-24 py-2.5 bg-slate-50 border border-slate-150 rounded-2xl focus:outline-none focus:ring-1 focus:ring-blue-600/20 focus:border-blue-500 font-semibold"
+                />
+                <div className="absolute right-4.5 flex items-center space-x-1">
+                  {/* Camera Scan Button */}
+                  {isScanning ? (
+                    <span className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin block"></span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={triggerImageScan}
+                      title="Scan handwriting or notebook page"
+                      className="p-1.5 rounded-lg border border-slate-100 bg-white text-slate-450 hover:text-slate-600 cursor-pointer"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {/* Mic Button */}
+                  <button
+                    type="button"
+                    onClick={simulateVoiceInput}
+                    className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                      simulatedVoiceState === 'listening'
+                        ? 'bg-rose-50 border-rose-100 text-rose-600 animate-pulse'
+                        : 'bg-white border-slate-100 text-slate-450 hover:text-slate-600'
+                    }`}
+                    title="Simulate Speech"
+                  >
+                    <Mic className="w-3.5 h-3.5" />
+                  </button>
+                  {/* Send Button */}
+                  <button
+                    type="submit"
+                    disabled={isAiLoading || !aiQuestion.trim()}
+                    className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all cursor-pointer disabled:opacity-40"
+                  >
+                    {isAiLoading ? (
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin block"></span>
+                    ) : (
+                      <Send className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           )}
         </div>
       )}

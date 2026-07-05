@@ -30,13 +30,31 @@ const makeTempPassword = () => {
 const DOC_FIELD_MAP = {
   doc_degree:            { type: 'Academic',    label: 'Degree / Qualification Certificate' },
   doc_id_proof:          { type: 'Identity',    label: 'Government ID Proof' },
-  doc_experience_letter: { type: 'Experience',  label: 'Experience Letter / Reference' },
+  doc_resume:            { type: 'Resume',      label: 'Professional Resume / CV' },
 };
 
 // ── Controller: Register ──────────────────────────────────────────────────────
 
 export const registerUser = async (req, res) => {
   const { name, email, password, phone, role, ...extraFields } = req.body;
+
+  if (role === 'student' || role === 'parent') {
+    if (!password || password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long.' });
+    }
+    if (!/[A-Z]/.test(password)) {
+      return res.status(400).json({ message: 'Password must contain at least 1 uppercase letter.' });
+    }
+    if (!/[a-z]/.test(password)) {
+      return res.status(400).json({ message: 'Password must contain at least 1 lowercase letter.' });
+    }
+    if (!/[0-9]/.test(password)) {
+      return res.status(400).json({ message: 'Password must contain at least 1 number.' });
+    }
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      return res.status(400).json({ message: 'Password must contain at least 1 special character.' });
+    }
+  }
 
   try {
     // Duplicate check
@@ -64,6 +82,24 @@ export const registerUser = async (req, res) => {
     if (role === 'teacher' && !finalPassword) {
       finalPassword = makeTempPassword();
       tempPassword  = finalPassword;
+    }
+
+    // Parse stringified arrays for multipart teacher uploads
+    if (role === 'teacher') {
+      if (typeof extraFields.subjects_taught === 'string') {
+        try {
+          extraFields.subjects_taught = JSON.parse(extraFields.subjects_taught);
+        } catch (e) {
+          console.error('Failed to parse subjects_taught:', e);
+        }
+      }
+      if (typeof extraFields.grade_levels_qualified === 'string') {
+        try {
+          extraFields.grade_levels_qualified = JSON.parse(extraFields.grade_levels_qualified);
+        } catch (e) {
+          console.error('Failed to parse grade_levels_qualified:', e);
+        }
+      }
     }
 
     // Base user data
@@ -143,13 +179,36 @@ export const registerUser = async (req, res) => {
     if (role === 'parent') {
       userData.status           = extraFields.status || 'pending_match';
       userData.relationship     = extraFields.relationship;
-      userData.childName        = extraFields.childName;
-      userData.childDob         = extraFields.childDob;
-      userData.childStandard    = extraFields.childStandard;
-      userData.childSubjects    = extraFields.childSubjects;
-      userData.childCity        = extraFields.childCity;
-      userData.childLocality    = extraFields.childLocality;
-      userData.childTuitionMode = extraFields.childTuitionMode;
+
+      // If parent linked to an existing student account
+      if (extraFields.linkedChildId) {
+        userData.linkedChildId = extraFields.linkedChildId;
+        // Copy child info from the linked student record
+        const linkedStudent = await User.findOne({ id: extraFields.linkedChildId, role: 'student' });
+        if (linkedStudent) {
+          userData.childName        = linkedStudent.name;
+          userData.childStandard    = linkedStudent.standard;
+          userData.childSubjects    = linkedStudent.subjects;
+          userData.childCity        = linkedStudent.city;
+          userData.childLocality    = linkedStudent.locality;
+          userData.test_score       = linkedStudent.test_score;
+          userData.test_completed_at = linkedStudent.test_completed_at;
+          userData.status           = linkedStudent.status || 'pending_match';
+          // Update the student's parentPhone and parentName so /parents/children works
+          linkedStudent.parentPhone = userData.phone;
+          linkedStudent.parentName  = userData.name;
+          await linkedStudent.save();
+        }
+      } else {
+        // Manual child entry (no existing student account)
+        userData.childName        = extraFields.childName;
+        userData.childDob         = extraFields.childDob;
+        userData.childStandard    = extraFields.childStandard;
+        userData.childSubjects    = extraFields.childSubjects;
+        userData.childCity        = extraFields.childCity;
+        userData.childLocality    = extraFields.childLocality;
+        userData.childTuitionMode = extraFields.childTuitionMode;
+      }
 
       if (userData.childCity?.toLowerCase() === 'other') {
         userData.childMatchingEligible = false;

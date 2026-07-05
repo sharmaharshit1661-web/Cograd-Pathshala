@@ -2,6 +2,11 @@ import express from 'express';
 import User from '../models/User.js';
 import Assignment from '../models/Assignment.js';
 import DemoBooking from '../models/DemoBooking.js';
+import SupportTicket from '../models/SupportTicket.js';
+import Payment from '../models/Payment.js';
+import Announcement from '../models/Announcement.js';
+import Enquiry from '../models/Enquiry.js';
+import AdminSettings from '../models/AdminSettings.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -55,6 +60,44 @@ router.get('/teachers/available-slots', async (req, res) => {
 // ==========================================
 // STUDENT ROUTES
 // ==========================================
+
+// @desc    Search for a student by email or phone (for parent linking during registration)
+// @route   GET /api/students/search
+// @access  Public (returns only safe fields)
+router.get('/students/search', async (req, res) => {
+  try {
+    const { email, phone } = req.query;
+    if (!email && !phone) {
+      return res.status(400).json({ message: 'Please provide email or phone to search' });
+    }
+
+    const query = { role: 'student' };
+    if (email) query.email = email.toLowerCase().trim();
+    else if (phone) query.phone = phone.trim();
+
+    const student = await User.findOne(query);
+    if (!student) {
+      return res.status(404).json({ message: 'No student account found with this information' });
+    }
+
+    // Return only safe, non-sensitive fields
+    res.json({
+      id: student.id,
+      name: student.name,
+      email: student.email,
+      phone: student.phone,
+      standard: student.standard,
+      subjects: student.subjects,
+      city: student.city,
+      locality: student.locality,
+      test_score: student.test_score,
+      test_completed_at: student.test_completed_at,
+      status: student.status,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 // @desc    Get all students
 // @route   GET /api/students
@@ -200,35 +243,44 @@ router.post('/teachers', protect, async (req, res) => {
   }
 });
 
-const sendTeacherCredentialsEmail = (name, email, password) => {
+const sendTeacherCredentialsEmail = async (name, email, password) => {
   const frontendUrl = process.env.FRONTEND_URL || 'https://cograd-pathshala-frontend-lovat.vercel.app';
-  console.log(`
-============================================================
-📧 EMAIL SENT (SIMULATED)
-============================================================
-From: admissions@cogradpathshala.com
-To: ${email}
-Subject: Welcome to Cograd Pathshala - Your Teacher Account is Approved!
+  const htmlContent = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #f1f5f9; border-radius: 12px; background-color: #fff;">
+      <h2 style="color: #2563eb; font-weight: 800; margin-bottom: 20px;">Welcome to Cograd Pathshala!</h2>
+      <p>Dear <strong>${name}</strong>,</p>
+      <p>Congratulations! Your application to join Cograd Pathshala as a teacher has been verified and approved by our admin team.</p>
+      <p>Here are your login credentials:</p>
+      <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; font-family: monospace; border: 1px solid #e2e8f0; margin: 15px 0; line-height: 1.6;">
+        <strong>Login URL:</strong> <a href="${frontendUrl}/login" style="color: #2563eb; text-decoration: none;">${frontendUrl}/login</a><br/>
+        <strong>Email:</strong> ${email}<br/>
+        <strong>Password:</strong> ${password}
+      </div>
+      <p>Please log in to your dashboard to set up your profile, manage your slots, and view student requests.</p>
+      <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 20px 0;"/>
+      <p style="color: #64748b; font-size: 12px; line-height: 1.5;">Best regards,<br/>Cograd Pathshala Admin Team</p>
+    </div>
+  `;
 
-Dear ${name},
-
-Congratulations! Your application to join Cograd Pathshala as a
-teacher has been verified and approved by our admin team.
-
-Here are your login credentials:
-------------------------------------------
-Login URL: ${frontendUrl}/login
-Email:     ${email}
-Password:  ${password}
-------------------------------------------
-
-Please log in to your dashboard to set up your profile, manage
-your slots, and view student requests.
-
-Best regards,
-Cograd Pathshala Admin Team
-============================================================
-`);
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer re_VcRTuqUC_4KVDYJK1FujUzyziyPx4bsyv'
+      },
+      body: JSON.stringify({
+        from: 'onboarding@resend.dev',
+        to: 'sharmaharshit1661@gmail.com',
+        subject: `Welcome to Cograd Pathshala - Approved Account: ${name}`,
+        html: htmlContent
+      })
+    });
+    const result = await response.json();
+    console.log('Resend email sent:', result);
+  } catch (err) {
+    console.error('Failed to send approved credentials email via Resend:', err);
+  }
 };
 
 // @desc    Update a teacher
@@ -465,8 +517,18 @@ router.get('/teachers/suggested/:studentId', protect, async (req, res) => {
       score += availabilityScore;
       reasons.push(`High availability (${openSlots} slots open)`);
 
+      // Locality Match (max 30 points)
+      if (student.locality && t.locality && student.locality.trim().toLowerCase() === t.locality.trim().toLowerCase()) {
+        score += 30;
+        reasons.push(`Mutual Location Match: Same locality (${student.locality})`);
+      } else {
+        const studentLoc = student.locality || 'N/A';
+        const teacherLoc = t.locality || 'N/A';
+        reasons.push(`Same City (${student.city}) but different locality (Student: ${studentLoc}, Tutor: ${teacherLoc})`);
+      }
+
       // Match percentage (max 100%)
-      const compatibilityPercent = Math.min(100, Math.round((score / 20) * 100));
+      const compatibilityPercent = Math.min(100, Math.round((score / 50) * 100));
 
       return {
         teacher: t,
@@ -851,4 +913,387 @@ router.post('/attendance', protect, async (req, res) => {
   }
 });
 
+// @desc    Call AI Chat completions (using Nvidia API Key)
+// @route   POST /api/ai/chat
+// @access  Private
+router.post('/ai/chat', protect, async (req, res) => {
+  const { question, history } = req.body;
+  if (!question) {
+    return res.status(400).json({ message: 'Question is required' });
+  }
+
+  try {
+    const invokeUrl = "https://integrate.api.nvidia.com/v1/chat/completions";
+    const bearerToken = process.env.NVIDIA_API_KEY || "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";
+
+    // Format chat message history for Nvidia completions API
+    const messages = [
+      {
+        role: "system",
+        content: "You are a helpful, expert AI tutor for school students preparing for exams like NCERT/JEE. Explain concepts clearly with derivations if necessary. Support markdown formatting."
+      }
+    ];
+
+    if (history && Array.isArray(history)) {
+      history.forEach((h) => {
+        if (h.question) messages.push({ role: "user", content: h.question });
+        if (h.answer) messages.push({ role: "assistant", content: h.answer });
+      });
+    }
+
+    messages.push({ role: "user", content: question });
+
+    const payload = {
+      model: "google/diffusiongemma-26b-a4b-it",
+      messages: messages,
+      max_tokens: 4096,
+      temperature: 1.00,
+      top_p: 0.95,
+      stream: false,
+      chat_template_kwargs: { enable_thinking: true }
+    };
+
+    const response = await fetch(invokeUrl, {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${bearerToken}`,
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Nvidia API failure response:', data);
+      throw new Error(data.message || `API error (status ${response.status})`);
+    }
+
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      const answer = data.choices[0].message.content;
+      res.json({ answer });
+    } else {
+      throw new Error('Invalid response structure from Nvidia API');
+    }
+  } catch (error) {
+    console.error('AI chat endpoint error:', error.message);
+    res.status(500).json({ message: error.message || 'AI service is currently offline. Please try again later.' });
+  }
+});
+
+// @desc    Submit a new support ticket (Student, Teacher, Parent)
+// @route   POST /api/support-tickets
+router.post('/support-tickets', async (req, res) => {
+  try {
+    const { userId, userName, userRole, title, description, category } = req.body;
+    if (!userId || !userName || !userRole || !title || !description) {
+      return res.status(400).json({ message: 'All fields (userId, userName, userRole, title, description) are required.' });
+    }
+
+    const ticketId = 'TCK-' + Math.floor(100000 + Math.random() * 900000);
+    const ticket = new SupportTicket({
+      id: ticketId,
+      userId,
+      userName,
+      userRole,
+      title,
+      description,
+      category: category || 'General Support',
+      status: 'Pending'
+    });
+
+    await ticket.save();
+    res.status(201).json({ message: 'Support ticket submitted successfully.', ticket });
+  } catch (error) {
+    console.error('Submit ticket error:', error);
+    res.status(500).json({ message: 'Server error while submitting support ticket.' });
+  }
+});
+
+// @desc    Get all support tickets
+// @route   GET /api/support-tickets
+router.get('/support-tickets', async (req, res) => {
+  try {
+    const tickets = await SupportTicket.find({}).sort({ createdAt: -1 });
+    res.json(tickets);
+  } catch (error) {
+    console.error('Fetch tickets error:', error);
+    res.status(500).json({ message: 'Server error while fetching support tickets.' });
+  }
+});
+
+// @desc    Resolve a support ticket
+// @route   POST /api/support-tickets/:id/resolve
+router.post('/support-tickets/:id/resolve', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ticket = await SupportTicket.findOne({ id });
+    if (!ticket) {
+      return res.status(404).json({ message: 'Support ticket not found.' });
+    }
+    ticket.status = 'Resolved';
+    await ticket.save();
+    res.json({ message: 'Support ticket resolved successfully.', ticket });
+  } catch (error) {
+    console.error('Resolve ticket error:', error);
+    res.status(500).json({ message: 'Server error while resolving support ticket.' });
+  }
+});
+
+// ==========================================
+// PAYMENT ROUTES
+// ==========================================
+
+// @desc    Get all payment records
+// @route   GET /api/payments
+// @access  Private
+router.get('/payments', protect, async (req, res) => {
+  try {
+    const payments = await Payment.find({}).sort({ createdAt: -1 });
+    res.json(payments);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Record a new payment
+// @route   POST /api/payments
+// @access  Private
+router.post('/payments', protect, async (req, res) => {
+  try {
+    const { studentId, studentName, amount, method } = req.body;
+    if (!studentId || !studentName || !amount) {
+      return res.status(400).json({ message: 'studentId, studentName, and amount are required.' });
+    }
+    const paymentId = 'PAY-' + Math.floor(100000 + Math.random() * 900000);
+    const payment = await Payment.create({
+      id: paymentId,
+      studentId,
+      studentName,
+      amount,
+      method: method || 'Cash / Manual',
+      status: 'Paid',
+      date: new Date().toISOString().split('T')[0],
+      recordedBy: 'admin',
+    });
+    res.status(201).json(payment);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Delete a payment record
+// @route   DELETE /api/payments/:id
+// @access  Private
+router.delete('/payments/:id', protect, async (req, res) => {
+  try {
+    const payment = await Payment.findOneAndDelete({ id: req.params.id });
+    if (!payment) {
+      return res.status(404).json({ message: 'Payment not found' });
+    }
+    res.json({ message: 'Payment record deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ==========================================
+// ANNOUNCEMENT ROUTES
+// ==========================================
+
+// @desc    Get all announcements
+// @route   GET /api/announcements
+// @access  Private
+router.get('/announcements', protect, async (req, res) => {
+  try {
+    const announcements = await Announcement.find({}).sort({ createdAt: -1 });
+    res.json(announcements);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Create an announcement
+// @route   POST /api/announcements
+// @access  Private
+router.post('/announcements', protect, async (req, res) => {
+  try {
+    const { title, text, target, priority } = req.body;
+    if (!title || !text) {
+      return res.status(400).json({ message: 'title and text are required.' });
+    }
+    const announcementId = 'ANN-' + Math.floor(100000 + Math.random() * 900000);
+    const announcement = await Announcement.create({
+      id: announcementId,
+      title,
+      text,
+      target: target || 'All Students & Teachers',
+      priority: priority || 'Medium',
+      date: new Date().toISOString().split('T')[0],
+    });
+    res.status(201).json(announcement);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Delete an announcement
+// @route   DELETE /api/announcements/:id
+// @access  Private
+router.delete('/announcements/:id', protect, async (req, res) => {
+  try {
+    const announcement = await Announcement.findOneAndDelete({ id: req.params.id });
+    if (!announcement) {
+      return res.status(404).json({ message: 'Announcement not found' });
+    }
+    res.json({ message: 'Announcement deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ==========================================
+// ENQUIRY / CRM ROUTES
+// ==========================================
+
+// @desc    Get all enquiries
+// @route   GET /api/enquiries
+// @access  Private
+router.get('/enquiries', protect, async (req, res) => {
+  try {
+    const enquiries = await Enquiry.find({}).sort({ createdAt: -1 });
+    res.json(enquiries);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Create an enquiry
+// @route   POST /api/enquiries
+// @access  Private
+router.post('/enquiries', protect, async (req, res) => {
+  try {
+    const { name, course, phone, email } = req.body;
+    if (!name || !course) {
+      return res.status(400).json({ message: 'name and course are required.' });
+    }
+    const enquiryId = 'ENQ-' + Math.floor(100000 + Math.random() * 900000);
+    const enquiry = await Enquiry.create({
+      id: enquiryId,
+      name,
+      course,
+      phone: phone || '',
+      email: email || '',
+      type: 'New',
+    });
+    res.status(201).json(enquiry);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Update enquiry stage
+// @route   PUT /api/enquiries/:id
+// @access  Private
+router.put('/enquiries/:id', protect, async (req, res) => {
+  try {
+    const enquiry = await Enquiry.findOne({ id: req.params.id });
+    if (!enquiry) {
+      return res.status(404).json({ message: 'Enquiry not found' });
+    }
+    Object.keys(req.body).forEach((key) => {
+      enquiry[key] = req.body[key];
+    });
+    const updated = await enquiry.save();
+    res.json(updated);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Delete an enquiry
+// @route   DELETE /api/enquiries/:id
+// @access  Private
+router.delete('/enquiries/:id', protect, async (req, res) => {
+  try {
+    const enquiry = await Enquiry.findOneAndDelete({ id: req.params.id });
+    if (!enquiry) {
+      return res.status(404).json({ message: 'Enquiry not found' });
+    }
+    res.json({ message: 'Enquiry deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ==========================================
+// ADMIN SETTINGS ROUTES
+// ==========================================
+
+// @desc    Get admin settings
+// @route   GET /api/admin/settings
+// @access  Private
+router.get('/admin/settings', protect, async (req, res) => {
+  try {
+    let settings = await AdminSettings.findOne({ key: 'main' });
+    if (!settings) {
+      settings = await AdminSettings.create({ key: 'main' });
+    }
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Update admin settings
+// @route   PUT /api/admin/settings
+// @access  Private
+router.put('/admin/settings', protect, async (req, res) => {
+  try {
+    let settings = await AdminSettings.findOne({ key: 'main' });
+    if (!settings) {
+      settings = await AdminSettings.create({ key: 'main' });
+    }
+    const allowedFields = ['centreName', 'contactEmail', 'contactPhone', 'address', 'session', 'currency', 'autoReminders', 'emailAlerts', 'whatsappSync'];
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        settings[field] = req.body[field];
+      }
+    });
+    const updated = await settings.save();
+    res.json(updated);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Get daily reports for a specific student
+// @route   GET /api/students/:studentId/daily-reports
+// @access  Private
+router.get('/students/:studentId/daily-reports', protect, async (req, res) => {
+  try {
+    const teachers = await User.find({
+      role: 'teacher',
+      'daily_reports.studentId': req.params.studentId
+    });
+    
+    let reports = [];
+    teachers.forEach((t) => {
+      if (t.daily_reports) {
+        const studentReports = t.daily_reports.filter((r) => r.studentId === req.params.studentId);
+        reports = reports.concat(studentReports);
+      }
+    });
+
+    // Sort by date or submittedAt descending
+    reports.sort((a, b) => new Date(b.submittedAt || b.date) - new Date(a.submittedAt || a.date));
+
+    res.json(reports);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
+

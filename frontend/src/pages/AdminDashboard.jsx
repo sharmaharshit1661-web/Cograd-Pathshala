@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardShell from '../components/DashboardShell';
 import {
-  getStudents,
-  saveStudents,
   getTeachers,
   findSuggestedTeachers,
   allotTutor,
@@ -38,7 +36,11 @@ import {
   Clock,
   User,
   Map,
-  List
+  List,
+  Phone,
+  Mail,
+  MapPin,
+  Pencil
 } from 'lucide-react';
 
 const InlineGoogleMap = ({ address, label }) => {
@@ -107,14 +109,17 @@ const AdminDashboard = () => {
   useEffect(() => {
     localStorage.setItem('cograd_admin_reminders_sent', JSON.stringify(remindersSent));
   }, [remindersSent]);
-  // Enquiries List state
-  const [enquiries, setEnquiries] = useState(() => {
-    return JSON.parse(localStorage.getItem('cograd_admin_enquiries') || '[]');
-  });
+  // Enquiries List state — fetched from backend
+  const [enquiries, setEnquiries] = useState([]);
 
-  useEffect(() => {
-    localStorage.setItem('cograd_admin_enquiries', JSON.stringify(enquiries));
-  }, [enquiries]);
+  const fetchEnquiries = async () => {
+    try {
+      const data = await api.get('/enquiries');
+      setEnquiries(data || []);
+    } catch (err) {
+      console.error('Failed to fetch enquiries:', err);
+    }
+  };
 
   // Student roster state - starts empty, populated from backend via syncWithBackend
   const [students, setStudents] = useState([]);
@@ -138,73 +143,60 @@ const AdminDashboard = () => {
     }
   };
 
-  const loadAdminData = () => {
-    const raw = getStudents();
-    const normalized = raw.map(s => ({
-      ...s,
-      batch: s.standard || 'Class 10',
-      date: s.joinDate || '2026-06-19',
-      status: s.status === 'active' ? 'Active' : s.status === 'matched' ? 'Active' : s.status === 'pending_test' ? 'Pending Test' : s.status === 'pending_match' ? 'Pending Match' : s.status
-    }));
-    setStudents(normalized);
+  const loadAdminData = async () => {
+    try {
+      const raw = await api.get('/students');
+      const normalized = (raw || []).map(s => ({
+        ...s,
+        batch: s.standard || 'Class 10',
+        date: s.joinDate || '2026-06-19',
+        status: s.status === 'active' ? 'Active' : s.status === 'matched' ? 'Active' : s.status === 'pending_test' ? 'Pending Test' : s.status === 'pending_match' ? 'Pending Match' : s.status
+      }));
+      setStudents(normalized);
+    } catch (err) {
+      console.error('Failed to fetch students:', err);
+    }
 
-    const rawTeachers = getTeachers();
-    const normalizedTeachers = rawTeachers.map(t => ({
-      ...t,
-      subject: t.subjects_taught ? t.subjects_taught[0] : 'General',
-      rate: t.hourly_rate || '₹500/hr',
-      batches: t.grade_levels_qualified || ['Class 9'],
-      status: t.verification_status || 'Pending'
-    }));
-    setTeachers(normalizedTeachers);
+    try {
+      const rawTeachers = await api.get('/teachers');
+      const normalizedTeachers = (rawTeachers || []).map(t => ({
+        ...t,
+        subject: t.subjects_taught ? t.subjects_taught[0] : 'General',
+        rate: t.hourly_rate || '₹500/hr',
+        batches: t.grade_levels_qualified || ['Class 9'],
+        status: t.verification_status || 'Pending'
+      }));
+      setTeachers(normalizedTeachers);
+    } catch (err) {
+      console.error('Failed to fetch teachers:', err);
+    }
   };
 
   const fetchParents = async () => {
     try {
       const parentsData = await api.get('/parents');
       setParents(parentsData);
-    } catch (error) {
+    } catch {
       // Silent fail
     }
   };
 
   useEffect(() => {
     const init = async () => {
-      const isCleared = localStorage.getItem('cograd_dashboards_cleared_mock');
-      if (!isCleared) {
-        localStorage.removeItem('cograd_admin_defaulters');
-        localStorage.removeItem('cograd_admin_enquiries');
-        localStorage.removeItem('cograd_admin_payments');
-        localStorage.removeItem('cograd_admin_announcements');
-        localStorage.removeItem('cograd_admin_tests');
-        localStorage.removeItem('cograd_admin_tickets');
-        localStorage.removeItem('cograd_admin_reminders_sent');
-        localStorage.removeItem('cograd_admin_notifications');
-        for (let i = 1; i <= 10; i++) {
-          localStorage.removeItem(`cograd_teacher_timetable_${i}`);
-          localStorage.removeItem(`cograd_teacher_assignments_${i}`);
-          localStorage.removeItem(`cograd_teacher_submissions_${i}`);
-          localStorage.removeItem(`cograd_teacher_earnings_${i}`);
-        }
-        localStorage.setItem('cograd_dashboards_cleared_mock', 'true');
-        
-        // Clear react states to keep them empty initially
-        setRecentPayments([]);
-        setAnnouncements([]);
-        setTests([]);
-        setTickets([]);
-        setEnquiries([]);
-      }
-      await syncWithBackend();
-      loadAdminData();
+      await loadAdminData();
       await fetchDemoBookings();
       await fetchParents();
+      await fetchPayments();
+      await fetchAnnouncements();
+      await fetchEnquiries();
+      await fetchSettingsFromBackend();
     };
     init();
   }, []);
 
   // Teachers state - populated from backend via syncWithBackend
   const [teachers, setTeachers] = useState([]);
+  const [previewDoc, setPreviewDoc] = useState(null);
 
   // Per-teacher document verification state (keyed by teacher id)
   const [teacherDocStatus, setTeacherDocStatus] = useState(() => {
@@ -232,7 +224,7 @@ const AdminDashboard = () => {
             next[t.id] = {
               degree: docs.find(d => d.type === 'Academic' || d.name.includes('Degree'))?.status === 'Approved' ? 'Approved' : 'Under Review',
               aadhar: docs.find(d => d.type === 'Identity' || d.name.includes('Aadhaar'))?.status === 'Approved' ? 'Approved' : 'Under Review',
-              experience: docs.find(d => d.type === 'Experience' || d.name.includes('Experience'))?.status === 'Approved' ? 'Approved' : 'Under Review'
+              resume: docs.find(d => d.type === 'Resume' || d.name.toLowerCase().includes('resume') || d.name.toLowerCase().includes('cv'))?.status === 'Approved' ? 'Approved' : 'Under Review'
             };
             updated = true;
           }
@@ -250,7 +242,7 @@ const AdminDashboard = () => {
     setTeacherDocStatus(prev => ({
       ...prev,
       [teacherId]: {
-        ...(prev[teacherId] || { degree: 'Under Review', aadhar: 'Under Review', experience: 'Under Review' }),
+        ...(prev[teacherId] || { degree: 'Under Review', aadhar: 'Under Review', resume: 'Under Review' }),
         [docKey]: nextVal
       }
     }));
@@ -261,7 +253,7 @@ const AdminDashboard = () => {
         let matches = false;
         if (docKey === 'degree' && (d.type === 'Academic' || d.name.includes('Degree'))) matches = true;
         if (docKey === 'aadhar' && (d.type === 'Identity' || d.name.includes('Aadhaar'))) matches = true;
-        if (docKey === 'experience' && (d.type === 'Experience' || d.name.includes('Experience'))) matches = true;
+        if (docKey === 'resume' && (d.type === 'Resume' || d.name.toLowerCase().includes('resume') || d.name.toLowerCase().includes('cv'))) matches = true;
         
         if (matches) {
           return { ...d, status: nextVal === 'Approved' ? 'Approved' : 'Under Review' };
@@ -286,52 +278,104 @@ const AdminDashboard = () => {
     return Object.values(docs).every(v => v === 'Approved');
   };
 
-  // Recent payments state
-  const [recentPayments, setRecentPayments] = useState(() => {
-    return JSON.parse(localStorage.getItem('cograd_admin_payments') || '[]');
+  // Recent payments state — fetched from backend
+  const [recentPayments, setRecentPayments] = useState([]);
+
+  const fetchPayments = async () => {
+    try {
+      const data = await api.get('/payments');
+      setRecentPayments(data || []);
+    } catch (err) {
+      console.error('Failed to fetch payments:', err);
+    }
+  };
+
+  // Announcements state — fetched from backend
+  const [announcements, setAnnouncements] = useState([]);
+
+  const fetchAnnouncements = async () => {
+    try {
+      const data = await api.get('/announcements');
+      setAnnouncements(data || []);
+    } catch (err) {
+      console.error('Failed to fetch announcements:', err);
+    }
+  };
+
+  // Settings state — fetched from backend
+  const [settings, setSettings] = useState({
+    centreName: 'CoGrad',
+    contactEmail: 'connect@cograd.in',
+    contactPhone: '+91-9220253001',
+    address: 'C-56A/28, Sector 62, Noida 201301',
+    session: '2026-2027',
+    currency: '₹ (INR)',
+    autoReminders: true,
+    emailAlerts: true,
+    whatsappSync: false
   });
 
+  const fetchSettingsFromBackend = async () => {
+    try {
+      const data = await api.get('/admin/settings');
+      if (data) {
+        setSettings({
+          centreName: data.centreName || 'CoGrad',
+          contactEmail: data.contactEmail || 'connect@cograd.in',
+          contactPhone: data.contactPhone || '+91-9220253001',
+          address: data.address || 'C-56A/28, Sector 62, Noida 201301',
+          session: data.session || '2026-2027',
+          currency: data.currency || '₹ (INR)',
+          autoReminders: data.autoReminders !== undefined ? data.autoReminders : true,
+          emailAlerts: data.emailAlerts !== undefined ? data.emailAlerts : true,
+          whatsappSync: data.whatsappSync !== undefined ? data.whatsappSync : false
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch settings:', err);
+    }
+  };
+
+  const [isEditingSettings, setIsEditingSettings] = useState(false);
+
+  const [supportTickets, setSupportTickets] = useState([]);
+  const [loadingTickets, setLoadingTickets] = useState(false);
+
+  const fetchSupportTickets = async () => {
+    setLoadingTickets(true);
+    try {
+      const data = await api.get('/support-tickets');
+      setSupportTickets(data || []);
+    } catch (err) {
+      console.error('Failed to fetch support tickets:', err);
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
+  const handleResolveTicket = async (ticketId) => {
+    try {
+      await api.post(`/support-tickets/${ticketId}/resolve`);
+      setSupportTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: 'Resolved' } : t));
+      setToastMessage('Support ticket resolved successfully!');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (err) {
+      console.error('Failed to resolve support ticket:', err);
+      setToastMessage('Failed to resolve support ticket.');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }
+  };
+
   useEffect(() => {
-    localStorage.setItem('cograd_admin_payments', JSON.stringify(recentPayments));
-  }, [recentPayments]);
+    if (activeTab === 'Support') {
+      fetchSupportTickets();
+    }
+  }, [activeTab]);
 
-  // Announcements state
-  const [announcements, setAnnouncements] = useState(() => {
-    return JSON.parse(localStorage.getItem('cograd_admin_announcements') || '[]');
-  });
-
-  useEffect(() => {
-    localStorage.setItem('cograd_admin_announcements', JSON.stringify(announcements));
-  }, [announcements]);
-
-  // Settings state
-  const [settings, setSettings] = useState(() => {
-    const saved = localStorage.getItem('cograd_admin_settings');
-    return saved ? JSON.parse(saved) : {
-      centreName: 'Sharma Classes',
-      contactEmail: 'admin@sharmaclasses.edu.in',
-      contactPhone: '+91 98765 43210',
-      address: 'Sector 15, Dwarka, New Delhi',
-      session: '2026-2027',
-      currency: '₹ (INR)',
-      autoReminders: true,
-      emailAlerts: true,
-      whatsappSync: false
-    };
-  });
-
-  useEffect(() => {
-    localStorage.setItem('cograd_admin_settings', JSON.stringify(settings));
-  }, [settings]);
-
-  // Tests & Results state
-  const [tests, setTests] = useState(() => {
-    return JSON.parse(localStorage.getItem('cograd_admin_tests') || '[]');
-  });
-
-  useEffect(() => {
-    localStorage.setItem('cograd_admin_tests', JSON.stringify(tests));
-  }, [tests]);
+  // Tests & Results state (dead — tab removed, kept minimal for compatibility)
+  const [tests, setTests] = useState([]);
 
   // Modal open states
   const [showAddStudent, setShowAddStudent] = useState(false);
@@ -373,14 +417,8 @@ const AdminDashboard = () => {
   const [exportingPDF, setExportingPDF] = useState(false);
   const [exportingCSV, setExportingCSV] = useState(false);
 
-  // Help Center states
-  const [tickets, setTickets] = useState(() => {
-    return JSON.parse(localStorage.getItem('cograd_admin_tickets') || '[]');
-  });
-
-  useEffect(() => {
-    localStorage.setItem('cograd_admin_tickets', JSON.stringify(tickets));
-  }, [tickets]);
+  // Help Center states (old local tickets — superseded by supportTickets backend)
+  const [tickets, setTickets] = useState([]);
 
   const [newTicket, setNewTicket] = useState({ title: '', category: 'General Support', description: '' });
 
@@ -533,121 +571,104 @@ const AdminDashboard = () => {
   };
 
   // Fee actions
-  const handleRecordPayment = (defaulterId, name, amount) => {
-    const newTx = {
-      id: recentPayments.length + 1,
-      name,
-      amount,
-      date: new Date().toISOString().split('T')[0],
-      status: 'Paid',
-      method: 'Cash / Manual'
-    };
-    setRecentPayments(prev => [newTx, ...prev]);
-
-    // Update parent's local storage data for cross-dashboard sync
+  const handleRecordPayment = async (defaulterId, name, amount) => {
     try {
-      const parentDataRaw = localStorage.getItem('cograd_parent_students_data');
-      if (parentDataRaw) {
-        const parentData = JSON.parse(parentDataRaw);
-        let updated = false;
-        Object.keys(parentData).forEach(key => {
-          if (parentData[key].name === name || parentData[key].id === defaulterId) {
-            parentData[key].feeDue = 0;
-            parentData[key].feeStatus = 'Paid';
-            updated = true;
-          }
-        });
-        if (updated) {
-          localStorage.setItem('cograd_parent_students_data', JSON.stringify(parentData));
-        }
-      }
-    } catch (e) {
-      console.error('Failed to sync payment to parent local storage:', e);
+      await api.post('/payments', {
+        studentId: defaulterId,
+        studentName: name,
+        amount,
+        method: 'Cash / Manual'
+      });
+      await fetchPayments();
+      triggerToast(`Payment of ${amount} recorded for ${name}!`);
+    } catch (err) {
+      triggerToast(err.message || 'Failed to record payment');
     }
-
-    triggerToast(`Payment of ${amount} recorded for ${name}!`);
   };
 
   // CRM actions
-  const handleMoveEnquiry = (id, name, currentStatus, course, email) => {
+  const handleMoveEnquiry = async (id, name, currentStatus, course, email) => {
     let nextStatus = 'Follow-up';
-    let nextColor = 'bg-amber-100 text-amber-800';
     if (currentStatus === 'Follow-up') {
       nextStatus = 'Enrolled';
-      nextColor = 'bg-emerald-100 text-emerald-800';
     }
 
-    setEnquiries(prev => prev.map(e => e.id === id ? { ...e, type: nextStatus, color: nextColor } : e));
+    try {
+      await api.put(`/enquiries/${id}`, { type: nextStatus });
+      await fetchEnquiries();
 
-    if (nextStatus === 'Enrolled') {
-      const newStudentEntry = {
-        id: students.length + 1,
-        name,
-        email: email || `${name.toLowerCase().replace(/\s+/g, '.')}@gmail.com`,
-        parentName: 'TBD',
-        batch: course.includes('Class 11') || course.includes('Class 12') ? 'Class 11-12 Senior D1' : course.includes('Class 9') || course.includes('Class 10') ? 'Class 9-10 Secondary C1' : course.includes('Class 6') || course.includes('Class 7') || course.includes('Class 8') ? 'Class 6-8 Middle B1' : 'Class 1-5 Primary A1',
-        date: new Date().toISOString().split('T')[0],
-        status: 'Active'
-      };
-      setStudents(prev => [newStudentEntry, ...prev]);
-      triggerToast(`Enquiry enrolled! Student ${name} added to ${newStudentEntry.batch}.`);
-    } else {
-      triggerToast(`Enquiry ${name} moved to Follow-up.`);
+      if (nextStatus === 'Enrolled') {
+        triggerToast(`Enquiry enrolled! ${name} moved to Enrolled stage.`);
+      } else {
+        triggerToast(`Enquiry ${name} moved to Follow-up.`);
+      }
+    } catch (err) {
+      triggerToast(err.message || 'Failed to update enquiry');
     }
   };
 
-  const handleAddEnquirySubmit = (e) => {
+  const handleAddEnquirySubmit = async (e) => {
     e.preventDefault();
     if (!newEnquiry.name || !newEnquiry.phone) {
       triggerToast('Please provide a name and contact number!');
       return;
     }
-    const id = enquiries.length + 1;
-    const newEntry = {
-      id,
-      name: newEnquiry.name,
-      course: newEnquiry.course,
-      type: 'New',
-      color: 'bg-blue-100 text-blue-800',
-      phone: newEnquiry.phone,
-      email: newEnquiry.email || 'N/A'
-    };
-    setEnquiries(prev => [newEntry, ...prev]);
-    setShowAddEnquiry(false);
-    setNewEnquiry({ name: '', course: 'Class 9 — All Subjects', phone: '', email: '' });
-    triggerToast(`Enquiry for ${newEntry.name} added to pipeline.`);
+    try {
+      await api.post('/enquiries', {
+        name: newEnquiry.name,
+        course: newEnquiry.course,
+        phone: newEnquiry.phone,
+        email: newEnquiry.email || ''
+      });
+      await fetchEnquiries();
+      setShowAddEnquiry(false);
+      setNewEnquiry({ name: '', course: 'Class 9 — All Subjects', phone: '', email: '' });
+      triggerToast(`Enquiry for ${newEnquiry.name} added to pipeline.`);
+    } catch (err) {
+      triggerToast(err.message || 'Failed to add enquiry');
+    }
   };
 
   // Communication Actions
-  const handlePublishAnnouncement = (e) => {
+  const handlePublishAnnouncement = async (e) => {
     e.preventDefault();
     if (!announceInput.title || !announceInput.text) {
       triggerToast('Please enter a title and message!');
       return;
     }
-    const id = announcements.length + 1;
-    const newAnn = {
-      ...announceInput,
-      id,
-      date: new Date().toISOString().split('T')[0]
-    };
-    setAnnouncements(prev => [newAnn, ...prev]);
-    
-    const newAlert = {
-      id: notifications.length + 1,
-      text: `Announcement: ${newAnn.title}`,
-      time: 'Just now',
-      isNew: true
-    };
-    setNotifications(prev => [newAlert, ...prev]);
-    setAnnounceInput({ title: '', target: 'All Students & Teachers', priority: 'Medium', text: '' });
-    triggerToast('Broadcast announcement published!');
+    try {
+      await api.post('/announcements', {
+        title: announceInput.title,
+        text: announceInput.text,
+        target: announceInput.target,
+        priority: announceInput.priority
+      });
+      await fetchAnnouncements();
+      
+      const newAlert = {
+        id: notifications.length + 1,
+        text: `Announcement: ${announceInput.title}`,
+        time: 'Just now',
+        isNew: true
+      };
+      setNotifications(prev => [newAlert, ...prev]);
+      setAnnounceInput({ title: '', target: 'All Students & Teachers', priority: 'Medium', text: '' });
+      triggerToast('Broadcast announcement published!');
+    } catch (err) {
+      triggerToast(err.message || 'Failed to publish announcement');
+    }
   };
 
   // Settings Actions
-  const handleSaveSettings = (e) => {
+  const handleSaveSettings = async (e) => {
     e.preventDefault();
-    triggerToast('Centre configurations saved successfully.');
+    try {
+      await api.put('/admin/settings', settings);
+      setIsEditingSettings(false);
+      triggerToast('Centre configurations saved successfully.');
+    } catch (err) {
+      triggerToast(err.message || 'Failed to save settings');
+    }
   };
 
   // Reports Actions
@@ -911,13 +932,6 @@ const AdminDashboard = () => {
               <option value="Suspended">Suspended</option>
             </select>
           </div>
-          <button
-            onClick={() => setShowAddStudent(true)}
-            className="btn-primary py-2 px-4 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer shrink-0 self-start sm:self-auto"
-          >
-            <Plus className="w-4.5 h-4.5" />
-            <span>Add Student</span>
-          </button>
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -936,7 +950,13 @@ const AdminDashboard = () => {
               <tbody className="divide-y divide-slate-50 text-xs font-semibold text-slate-700">
                 {filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="py-10 text-center text-slate-400 font-bold">No students found matching criteria.</td>
+                    <td colSpan="6" className="py-12 text-center">
+                      <div className="empty-state">
+                        <div className="empty-state-icon mx-auto"><Users className="w-5 h-5" /></div>
+                        <p className="empty-state-title">No students found</p>
+                        <p className="empty-state-desc">Try adjusting your search or filter.</p>
+                      </div>
+                    </td>
                   </tr>
                 ) : (
                   filteredStudents.map(student => (
@@ -1026,100 +1046,108 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredTeachers.map(teacher => {
-            const allDocsOk = areAllDocsApproved(teacher.id);
-            return (
-            <div key={teacher.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 hover:shadow-md transition-shadow text-left min-w-0 overflow-hidden flex flex-col justify-between">
-              <div className="flex justify-between items-start gap-2 min-w-0">
-                <div className="flex items-center space-x-3 min-w-0">
-                  <div className="relative w-10 h-10 rounded-full bg-slate-100 overflow-hidden shrink-0">
-                    <img 
-                      src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80"
-                      alt={teacher.name}
-                      className="w-full h-full object-cover"
-                    />
-                    {allDocsOk && teacher.status === 'Verified' && (
-                      <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
-                        <CheckCircle2 className="w-2.5 h-2.5 text-white" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="font-extrabold text-slate-800 text-sm flex items-center gap-1.5 truncate">
-                      {teacher.name}
+        {filteredTeachers.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredTeachers.map(teacher => {
+              const allDocsOk = areAllDocsApproved(teacher.id);
+              return (
+              <div key={teacher.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 hover:shadow-md transition-shadow text-left min-w-0 overflow-hidden flex flex-col justify-between">
+                <div className="flex justify-between items-start gap-2 min-w-0">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div className="relative w-10 h-10 rounded-full bg-slate-100 overflow-hidden shrink-0">
+                      <img 
+                        src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80"
+                        alt={teacher.name}
+                        className="w-full h-full object-cover"
+                      />
                       {allDocsOk && teacher.status === 'Verified' && (
-                        <span className="text-[8px] bg-emerald-50 border border-emerald-100 text-emerald-600 font-black px-1.5 py-0.5 rounded tracking-wide shrink-0">✓ VERIFIED</span>
+                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
+                          <CheckCircle2 className="w-2.5 h-2.5 text-white" />
+                        </div>
                       )}
-                    </h4>
-                    <p className="text-[10px] text-slate-400 font-bold truncate">{teacher.subject} Specialist</p>
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-extrabold text-slate-800 text-sm flex items-center gap-1.5 truncate">
+                        {teacher.name}
+                        {allDocsOk && teacher.status === 'Verified' && (
+                          <span className="text-[8px] bg-emerald-50 border border-emerald-100 text-emerald-600 font-black px-1.5 py-0.5 rounded tracking-wide shrink-0">✓ VERIFIED</span>
+                        )}
+                      </h4>
+                      <p className="text-[10px] text-slate-400 font-bold truncate">{teacher.subject} Specialist</p>
+                    </div>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 ${
+                    teacher.status === 'Verified' && allDocsOk ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                  }`}>
+                    {teacher.status === 'Verified' && allDocsOk ? 'Verified' : 'Pending Docs'}
+                  </span>
+                </div>
+
+                {/* Doc status mini pills */}
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(teacherDocStatus[teacher.id] || {}).map(([key, val]) => (
+                    <span key={key} className={`text-[8px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider shrink-0 ${
+                      val === 'Approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100 animate-pulse'
+                    }`}>
+                      {key === 'degree' ? '🎓 Degree' : key === 'aadhar' ? '🪪 Aadhar' : '📄 Resume'}: {val === 'Approved' ? '✓' : '⏳'}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="border-t border-b border-slate-50 py-3 text-[11px] font-semibold text-slate-500 space-y-2 min-w-0">
+                  <div className="flex justify-between gap-2 min-w-0">
+                    <span className="shrink-0">Email:</span>
+                    <span className="text-slate-700 font-bold truncate" title={teacher.email}>{teacher.email}</span>
+                  </div>
+                  <div className="flex justify-between gap-2 min-w-0">
+                    <span className="shrink-0">Hourly Billing:</span>
+                    <span className="text-slate-700 font-bold truncate">{teacher.rate}</span>
+                  </div>
+                  <div className="flex justify-between gap-2 min-w-0">
+                    <span className="shrink-0">Rating:</span>
+                    <span className="text-slate-800 font-extrabold shrink-0">★ {teacher.rating}</span>
+                  </div>
+                  <div className="flex justify-between gap-2 min-w-0">
+                    <span className="shrink-0">Active Batches:</span>
+                    <span className="text-slate-700 font-bold truncate" title={teacher.batches.join(', ')}>{teacher.batches.join(', ')}</span>
+                  </div>
+                  <div className="flex justify-between gap-2 min-w-0">
+                    <span className="shrink-0">Base Location:</span>
+                    <span className="text-slate-700 font-bold truncate">{teacher.city || 'Meerut'}</span>
+                  </div>
+                  <div>
+                    <InlineGoogleMap address={teacher.city || 'Meerut'} label="Tutor Location" />
                   </div>
                 </div>
-                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 ${
-                  teacher.status === 'Verified' && allDocsOk ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
-                }`}>
-                  {teacher.status === 'Verified' && allDocsOk ? 'Verified' : 'Pending Docs'}
-                </span>
-              </div>
 
-              {/* Doc status mini pills */}
-              <div className="flex flex-wrap gap-1.5">
-                {Object.entries(teacherDocStatus[teacher.id] || {}).map(([key, val]) => (
-                  <span key={key} className={`text-[8px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider shrink-0 ${
-                    val === 'Approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100 animate-pulse'
-                  }`}>
-                    {key === 'degree' ? '🎓 Degree' : key === 'aadhar' ? '🪪 Aadhar' : '📄 Exp. Letter'}: {val === 'Approved' ? '✓' : '⏳'}
-                  </span>
-                ))}
-              </div>
-
-              <div className="border-t border-b border-slate-50 py-3 text-[11px] font-semibold text-slate-500 space-y-2 min-w-0">
-                <div className="flex justify-between gap-2 min-w-0">
-                  <span className="shrink-0">Email:</span>
-                  <span className="text-slate-700 font-bold truncate" title={teacher.email}>{teacher.email}</span>
-                </div>
-                <div className="flex justify-between gap-2 min-w-0">
-                  <span className="shrink-0">Hourly Billing:</span>
-                  <span className="text-slate-700 font-bold truncate">{teacher.rate}</span>
-                </div>
-                <div className="flex justify-between gap-2 min-w-0">
-                  <span className="shrink-0">Rating:</span>
-                  <span className="text-slate-800 font-extrabold shrink-0">★ {teacher.rating}</span>
-                </div>
-                <div className="flex justify-between gap-2 min-w-0">
-                  <span className="shrink-0">Active Batches:</span>
-                  <span className="text-slate-700 font-bold truncate" title={teacher.batches.join(', ')}>{teacher.batches.join(', ')}</span>
-                </div>
-                <div className="flex justify-between gap-2 min-w-0">
-                  <span className="shrink-0">Base Location:</span>
-                  <span className="text-slate-700 font-bold truncate">{teacher.city || 'Meerut'}</span>
-                </div>
-                <div>
-                  <InlineGoogleMap address={teacher.city || 'Meerut'} label="Tutor Location" />
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => toggleTeacherVerification(teacher.id, teacher.name)}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center border ${
+                      teacher.status === 'Verified'
+                        ? 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        : 'border-emerald-500 bg-emerald-50 text-emerald-600 hover:bg-emerald-100/30'
+                    }`}
+                  >
+                    {teacher.status === 'Verified' ? 'Revoke Verify' : 'Verify Partner'}
+                  </button>
+                  <button
+                    onClick={() => setSelectedTeacherDocs(teacher)}
+                    className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-600 hover:text-blue-800 font-bold rounded-xl text-xs transition-all cursor-pointer"
+                  >
+                    Review Docs
+                  </button>
                 </div>
               </div>
-
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => toggleTeacherVerification(teacher.id, teacher.name)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center border ${
-                    teacher.status === 'Verified'
-                      ? 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                      : 'border-emerald-500 bg-emerald-50 text-emerald-600 hover:bg-emerald-100/30'
-                  }`}
-                >
-                  {teacher.status === 'Verified' ? 'Revoke Verify' : 'Verify Partner'}
-                </button>
-                <button
-                  onClick={() => setSelectedTeacherDocs(teacher)}
-                  className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-600 hover:text-blue-800 font-bold rounded-xl text-xs transition-all cursor-pointer"
-                >
-                  Review Docs
-                </button>
-              </div>
-            </div>
-          )})}
-        </div>
+            )})}
+          </div>
+        ) : (
+          <div className="empty-state py-12">
+            <div className="empty-state-icon mx-auto"><GraduationCap className="w-5 h-5 text-slate-400" /></div>
+            <p className="empty-state-title">No Teachers Found</p>
+            <p className="empty-state-desc">There are no registered teachers or none matching your filter criteria.</p>
+          </div>
+        )}
       </div>
     );
   };
@@ -1185,7 +1213,7 @@ const AdminDashboard = () => {
 
         <div className="divide-y divide-slate-100">
           {activeBatchStudents.length === 0 ? (
-            <div className="py-10 text-center text-slate-400 font-bold text-xs">No active students registered under this batch.</div>
+            <div className="empty-state"><div className="empty-state-icon"><Users className="w-5 h-5" /></div><p className="empty-state-title">No Students</p><p className="empty-state-desc">No active students in this batch yet.</p></div>
           ) : (
             activeBatchStudents.map(student => {
               const status = attendanceLogs[student.id] || 'Present';
@@ -1340,8 +1368,8 @@ const AdminDashboard = () => {
           <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
             <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Transaction Success</span>
             <div>
-              <h3 className="text-2xl font-black text-emerald-500">97.8%</h3>
-              <p className="text-[10px] text-slate-400 font-bold mt-1">4 failures logged this cycle</p>
+              <h3 className="text-2xl font-black text-emerald-500">{recentPayments.length > 0 ? '100%' : 'N/A'}</h3>
+              <p className="text-[10px] text-slate-400 font-bold mt-1">{recentPayments.length} transactions logged</p>
             </div>
           </div>
         </div>
@@ -1352,7 +1380,7 @@ const AdminDashboard = () => {
             
             <div className="divide-y divide-slate-100">
               {activeDefaulters.length === 0 ? (
-                <div className="py-10 text-center text-slate-400 font-bold text-xs">All center students are fully paid!</div>
+                <div className="empty-state"><div className="empty-state-icon"><CreditCard className="w-5 h-5" /></div><p className="empty-state-title">All Fees Cleared!</p><p className="empty-state-desc">No outstanding fee defaulters.</p></div>
               ) : (
                 activeDefaulters.map(d => (
                   <div key={d.id} className="py-3 flex items-center justify-between gap-4">
@@ -1455,7 +1483,7 @@ const AdminDashboard = () => {
 
                 <div className="space-y-3 min-h-[300px] overflow-y-auto max-h-[500px]">
                   {stageItems.length === 0 ? (
-                    <div className="text-center text-[10px] text-slate-400 py-10 font-bold">No leads in this stage.</div>
+                    <div className="empty-state py-6"><div className="empty-state-icon"><Users className="w-5 h-5" /></div><p className="empty-state-title">No Leads Here</p><p className="empty-state-desc">No enquiries in this stage.</p></div>
                   ) : (
                     stageItems.map(item => (
                       <div key={item.id} className="bg-white p-4 rounded-2xl border border-slate-100/80 shadow-sm space-y-3 hover:shadow-md transition-shadow relative">
@@ -1697,155 +1725,259 @@ const AdminDashboard = () => {
   const renderSettings = () => {
     return (
       <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-6 max-w-3xl mx-auto text-left">
-        <div>
-          <h3 className="text-base font-black text-slate-800 tracking-tight">System configuration settings</h3>
-          <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Configure general center profile details</p>
+        <div className="flex items-center justify-between pb-3 border-b border-slate-50">
+          <div>
+            <h3 className="text-base font-black text-slate-800 tracking-tight">System configuration settings</h3>
+            <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Configure general center profile details</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsEditingSettings(!isEditingSettings)}
+            className={`px-3 py-1.5 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${
+              isEditingSettings
+                ? 'bg-rose-50 border-rose-100 text-rose-600 hover:bg-rose-100/70'
+                : 'bg-slate-50 border-slate-150 text-slate-600 hover:bg-slate-100'
+            }`}
+            title={isEditingSettings ? 'Cancel Editing' : 'Edit Settings'}
+          >
+            {isEditingSettings ? <X className="w-4 h-4" /> : <Pencil className="w-3.5 h-3.5" />}
+            <span>{isEditingSettings ? 'Cancel' : 'Edit'}</span>
+          </button>
         </div>
 
-        <form onSubmit={handleSaveSettings} className="space-y-5 text-left">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Centre Brand Name</label>
-              <input
-                type="text"
-                required
-                value={settings.centreName}
-                onChange={(e) => setSettings(prev => ({ ...prev, centreName: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Contact Email address</label>
-              <input
-                type="email"
-                required
-                value={settings.contactEmail}
-                onChange={(e) => setSettings(prev => ({ ...prev, contactEmail: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Contact Phone number</label>
-              <input
-                type="text"
-                required
-                value={settings.contactPhone}
-                onChange={(e) => setSettings(prev => ({ ...prev, contactPhone: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Academic Session</label>
-              <input
-                type="text"
-                required
-                value={settings.session}
-                onChange={(e) => setSettings(prev => ({ ...prev, session: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Physical address</label>
-            <input
-              type="text"
-              required
-              value={settings.address}
-              onChange={(e) => setSettings(prev => ({ ...prev, address: e.target.value }))}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
-            />
-          </div>
-
-          <div className="border-t border-slate-50 pt-5 space-y-4">
-            <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Automation & parameters</h4>
-            
-            {[
-              { key: 'autoReminders', label: 'Auto-dispatch overdue fee reminders', desc: 'Sends notifications to parent handles on balance thresholds.' },
-              { key: 'emailAlerts', label: 'Email notification dispatches', desc: 'Allows the system to broadcast notices to teacher/student inbox.' },
-              { key: 'whatsappSync', label: 'WhatsApp messaging synchronization', desc: 'Syncs enquiry pipeline updates to registered numbers.' }
-            ].map(toggle => (
-              <div key={toggle.key} className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-100/50">
-                <div className="max-w-[75%]">
-                  <h5 className="font-extrabold text-xs text-slate-800">{toggle.label}</h5>
-                  <p className="text-[10px] text-slate-400 font-medium leading-normal mt-0.5">{toggle.desc}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSettings(prev => ({ ...prev, [toggle.key]: !prev[toggle.key] }))}
-                  className="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors duration-200 cursor-pointer shrink-0 text-[10px] font-black uppercase tracking-wider"
-                >
-                  {settings[toggle.key] ? (
-                    <span className="text-emerald-600">Active</span>
-                  ) : (
-                    <span className="text-slate-500">Disabled</span>
-                  )}
-                </button>
+        {!isEditingSettings ? (
+          /* Presentation (fixed) view mode */
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="p-4 bg-slate-50/50 border border-slate-100/50 rounded-2xl">
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Centre Brand Name</span>
+                <p className="text-sm font-extrabold text-slate-800">{settings.centreName}</p>
               </div>
-            ))}
-          </div>
 
-          <div className="text-right pt-2">
-            <button
-              type="submit"
-              className="btn-primary py-2 px-5 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer ml-auto"
-            >
-              <Save className="w-4 h-4" />
-              <span>Save Configurations</span>
-            </button>
+              <div className="p-4 bg-slate-50/50 border border-slate-100/50 rounded-2xl">
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Contact Email Address</span>
+                <p className="text-sm font-extrabold text-slate-800 truncate" title={settings.contactEmail}>{settings.contactEmail}</p>
+              </div>
+
+              <div className="p-4 bg-slate-50/50 border border-slate-100/50 rounded-2xl">
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Contact Phone Number</span>
+                <p className="text-sm font-extrabold text-slate-800">{settings.contactPhone}</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50/50 border border-slate-100/50 rounded-2xl">
+              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Physical Address</span>
+              <p className="text-sm font-extrabold text-slate-800">{settings.address}</p>
+            </div>
+
+            <div className="border-t border-slate-50 pt-5 space-y-4">
+              <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Automation & parameters</h4>
+              
+              {[
+                { key: 'autoReminders', label: 'Auto-dispatch overdue fee reminders', desc: 'Sends notifications to parent handles on balance thresholds.' },
+                { key: 'emailAlerts', label: 'Email notification dispatches', desc: 'Allows the system to broadcast notices to teacher/student inbox.' },
+                { key: 'whatsappSync', label: 'WhatsApp messaging synchronization', desc: 'Syncs enquiry pipeline updates to registered numbers.' }
+              ].map(toggle => (
+                <div key={toggle.key} className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-100/50">
+                  <div className="max-w-[75%]">
+                    <h5 className="font-extrabold text-xs text-slate-800">{toggle.label}</h5>
+                    <p className="text-[10px] text-slate-400 font-medium leading-normal mt-0.5">{toggle.desc}</p>
+                  </div>
+                  <div className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black uppercase tracking-wider text-slate-600">
+                    {settings[toggle.key] ? (
+                      <span className="text-emerald-600">Active</span>
+                    ) : (
+                      <span className="text-slate-500">Disabled</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </form>
+        ) : (
+          /* Form edit mode */
+          <form onSubmit={handleSaveSettings} className="space-y-5 text-left">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Centre Brand Name</label>
+                <input
+                  type="text"
+                  required
+                  value={settings.centreName}
+                  onChange={(e) => setSettings(prev => ({ ...prev, centreName: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Contact Email address</label>
+                <input
+                  type="email"
+                  required
+                  value={settings.contactEmail}
+                  onChange={(e) => setSettings(prev => ({ ...prev, contactEmail: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Contact Phone number</label>
+                <input
+                  type="text"
+                  required
+                  value={settings.contactPhone}
+                  onChange={(e) => setSettings(prev => ({ ...prev, contactPhone: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Physical address</label>
+              <input
+                type="text"
+                required
+                value={settings.address}
+                onChange={(e) => setSettings(prev => ({ ...prev, address: e.target.value }))}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
+              />
+            </div>
+
+            <div className="border-t border-slate-50 pt-5 space-y-4">
+              <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Automation & parameters</h4>
+              
+              {[
+                { key: 'autoReminders', label: 'Auto-dispatch overdue fee reminders', desc: 'Sends notifications to parent handles on balance thresholds.' },
+                { key: 'emailAlerts', label: 'Email notification dispatches', desc: 'Allows the system to broadcast notices to teacher/student inbox.' },
+                { key: 'whatsappSync', label: 'WhatsApp messaging synchronization', desc: 'Syncs enquiry pipeline updates to registered numbers.' }
+              ].map(toggle => (
+                <div key={toggle.key} className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-100/50">
+                  <div className="max-w-[75%]">
+                    <h5 className="font-extrabold text-xs text-slate-800">{toggle.label}</h5>
+                    <p className="text-[10px] text-slate-400 font-medium leading-normal mt-0.5">{toggle.desc}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSettings(prev => ({ ...prev, [toggle.key]: !prev[toggle.key] }))}
+                    className="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors duration-200 cursor-pointer shrink-0 text-[10px] font-black uppercase tracking-wider"
+                  >
+                    {settings[toggle.key] ? (
+                      <span className="text-emerald-600">Active</span>
+                    ) : (
+                      <span className="text-slate-500">Disabled</span>
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-right pt-2">
+              <button
+                type="submit"
+                className="btn-primary py-2 px-5 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer ml-auto"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save Configurations</span>
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     );
   };
 
   const renderHelp = () => {
     return (
-      <div className="space-y-6 text-left">
-        {/* Header and Search */}
+      <div className="space-y-6 text-left animate-fade-in">
+        {/* Header */}
         <div className="bg-gradient-to-br from-primary-500/10 to-secondary-500/10 p-6 rounded-3xl border border-primary-500/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h3 className="text-base font-black text-slate-800 tracking-tight">Cograd Pathshala Help Center</h3>
-            <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Access system guides, FAQs, and submit developer tickets</p>
+            <h3 className="text-base font-black text-slate-800 tracking-tight">CoGrad Help & Support Center</h3>
+            <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Manage incoming student, teacher, and parent queries</p>
           </div>
         </div>
 
-        {/* Quick Topics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {[
-            { title: 'Student Onboarding', desc: 'Manage profiles, change status, and update active batch counts.', icon: Users },
-            { title: 'Teacher Verification', desc: 'Vetting credential documents, approving profiles, and billing configurations.', icon: GraduationCap },
-            { title: 'Batch Scheduling', desc: 'Creating courses, scheduling class slots, and assigning verified teachers.', icon: BookOpen },
-            { title: 'Ledger & Defaulters', desc: 'Manual payment recordings, balance tracking, and auto-reminders.', icon: CreditCard }
-          ].map((topic, i) => (
-            <div key={i} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3 hover:shadow-md transition-shadow">
-              <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center">
-                <topic.icon className="w-5 h-5 text-primary-500" />
-              </div>
-              <h4 className="font-extrabold text-xs text-slate-800">{topic.title}</h4>
-              <p className="text-[10px] text-slate-400 font-medium leading-relaxed">{topic.desc}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* FAQ and Ticket form split */}
+        {/* FAQ and Ticket Desk split */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* FAQs Accordion */}
+          {/* User Support Tickets Queue */}
           <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-black text-slate-800 tracking-tight">Incoming Support Queries ({supportTickets.length})</h3>
+              <button 
+                onClick={fetchSupportTickets} 
+                className="text-[10px] font-black text-primary-600 hover:text-primary-700 bg-primary-50 px-3 py-1 rounded-lg border border-primary-100 cursor-pointer"
+              >
+                Refresh Queue
+              </button>
+            </div>
+            
+            {loadingTickets ? (
+              <div className="py-12 flex flex-col items-center gap-3">
+                <div className="spinner" aria-label="Loading tickets" />
+                <p className="text-xs font-semibold text-slate-400">Loading support tickets…</p>
+              </div>
+            ) : supportTickets.length === 0 ? (
+              <div className="empty-state border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                <div className="empty-state-icon">
+                  <HelpCircle className="w-6 h-6" />
+                </div>
+                <p className="empty-state-title">No Open Tickets</p>
+                <p className="empty-state-desc">No active support queries from students, teachers, or parents.</p>
+              </div>
+            ) : (
+              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+                {supportTickets.map((t) => (
+                  <div key={t.id} className="p-4 bg-slate-50/50 hover:bg-slate-50 border border-slate-100 rounded-2xl transition-all space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 rounded text-[9px] font-black uppercase tracking-wider">{t.id}</span>
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded text-[9px] font-black uppercase tracking-wider">{t.category}</span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border ${
+                        t.status === 'Resolved' 
+                          ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                          : 'bg-amber-50 text-amber-600 border-amber-100'
+                      }`}>
+                        {t.status}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <h4 className="font-extrabold text-xs text-slate-800">{t.title}</h4>
+                      <p className="text-xs text-slate-500 font-medium leading-relaxed bg-white border border-slate-100 rounded-xl p-3">{t.description}</p>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] font-bold text-slate-400">
+                      <div>
+                        Submitted by: <span className="text-slate-700 font-extrabold">{t.userName}</span> ({t.userRole})
+                      </div>
+                      
+                      {t.status !== 'Resolved' && (
+                        <button
+                          onClick={() => handleResolveTicket(t.id)}
+                          className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all cursor-pointer font-black text-[9px] uppercase tracking-wider shadow-sm active:scale-95"
+                        >
+                          Resolve Ticket
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* FAQs Accordion */}
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-5">
             <h3 className="text-base font-black text-slate-800 tracking-tight">Frequently Asked Questions</h3>
             
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
               {[
                 { q: 'How do I verify a new teacher partner?', a: 'Navigate to the Teachers tab, click on "Docs" next to the teacher\'s name to review their credentials, and then click "Verify Partner" to activate their portal access.' },
                 { q: 'What happens when I complete enrollment for a CRM enquiry lead?', a: 'The lead is marked as Enrolled. The system automatically registers a new student record in the Students portal.' },
                 { q: 'Can I disable automatic fee reminders?', a: 'Yes. Go to the Settings tab, scroll down to Automation & parameters, toggle off the "Auto-dispatch overdue fee reminders" option, and save configurations.' }
               ].map((faq, idx) => (
-                <div key={idx} className="p-4 bg-slate-50/50 hover:bg-slate-50 border border-slate-100/50 rounded-2xl transition-all space-y-2">
+                <div key={idx} className="p-4 bg-slate-50/50 hover:bg-slate-50 border border-slate-100/50 rounded-2xl transition-all space-y-2 text-left">
                   <h4 className="font-extrabold text-xs text-slate-800 flex items-start space-x-2">
                     <span className="text-primary-500 shrink-0">Q.</span>
                     <span>{faq.q}</span>
@@ -1857,81 +1989,55 @@ const AdminDashboard = () => {
               ))}
             </div>
           </div>
+        </div>
 
-          {/* Raise Support Ticket Form */}
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4 flex flex-col justify-between">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-base font-black text-slate-800 tracking-tight">Submit Help Ticket</h3>
-                <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Get developer assistance</p>
+        {/* Official CoGrad Contact Details */}
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-5">
+          <div>
+            <h3 className="text-base font-black text-slate-800 tracking-tight">CoGrad Corporate Support & Office Details</h3>
+            <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Official business and help desk contact details</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Phone */}
+            <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <Phone className="w-5 h-5 text-blue-600" />
               </div>
-
-              <form onSubmit={handleRaiseTicketSubmit} className="space-y-3.5">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Ticket Title</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="E.g. Error exporting CSV data"
-                    value={newTicket.title}
-                    onChange={(e) => setNewTicket(prev => ({ ...prev, title: e.target.value }))}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Category</label>
-                  <select
-                    value={newTicket.category}
-                    onChange={(e) => setNewTicket(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
-                  >
-                    <option value="General Support">General Support</option>
-                    <option value="Billing & Invoicing">Billing & Invoicing</option>
-                    <option value="Portal Bug / Defect">Portal Bug / Defect</option>
-                    <option value="Feature Request">Feature Request</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Description</label>
-                  <textarea
-                    required
-                    value={newTicket.description}
-                    onChange={(e) => setNewTicket(prev => ({ ...prev, description: e.target.value }))}
-                    className="w-full h-20 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 font-semibold"
-                    placeholder="Describe your issue..."
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full btn-primary py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                >
-                  Submit Ticket
-                </button>
-              </form>
+              <div className="space-y-1">
+                <span className="text-[9px] uppercase font-black text-slate-400">Call Support</span>
+                <p className="text-xs font-black text-slate-800">+91-9220253001</p>
+                <p className="text-[9px] text-slate-400 font-bold">Mon–Sat, 10am – 6pm IST</p>
+              </div>
             </div>
 
-            {/* Raised Tickets Log */}
-            {tickets.length > 0 && (
-              <div className="border-t border-slate-50 pt-4 mt-2 space-y-2 max-h-[150px] overflow-y-auto">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-left">Your open tickets ({tickets.length})</span>
-                <div className="space-y-2">
-                  {tickets.map(t => (
-                    <div key={t.id} className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex justify-between items-center text-[10px] font-bold">
-                      <div className="text-left">
-                        <span className="text-slate-800 block truncate max-w-[120px]">{t.title}</span>
-                        <span className="text-slate-400 text-[9px] font-medium">{t.category}</span>
-                      </div>
-                      <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 text-[8px] font-black uppercase tracking-wider">
-                        {t.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+            {/* Email */}
+            <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <Mail className="w-5 h-5 text-emerald-600" />
               </div>
-            )}
+              <div className="space-y-1">
+                <span className="text-[9px] uppercase font-black text-slate-400">Email Address</span>
+                <p className="text-xs font-black text-slate-800">
+                  <a href="mailto:connect@cograd.in" className="hover:underline text-emerald-700">connect@cograd.in</a>
+                </p>
+                <p className="text-[9px] text-slate-400 font-bold">We reply within 24 hours</p>
+              </div>
+            </div>
+
+            {/* Office */}
+            <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                <MapPin className="w-5 h-5 text-violet-600" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[9px] uppercase font-black text-slate-400">Corporate Office</span>
+                <p className="text-xs font-black text-slate-800">PI Softek Ltd</p>
+                <p className="text-[9px] text-slate-500 font-medium leading-tight">
+                  C-56A/28, Sector 62, Noida 201301
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2035,7 +2141,7 @@ const AdminDashboard = () => {
                                 <span className="bg-emerald-50 text-emerald-700 text-[9px] font-black px-1.5 py-0.5 rounded-lg border border-emerald-100">{sug.score}% Match</span>
                               </div>
                               <p className="text-[10px] text-slate-500 font-semibold mt-1">
-                                {t.experience} | {t.qualification}
+                                {t.experience} | {t.qualification} | Locality: {t.locality || 'N/A'}, {t.city || 'N/A'}
                               </p>
                               <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                                 {sug.reasons.map((r, ri) => (
@@ -2114,7 +2220,7 @@ const AdminDashboard = () => {
         {demoBookings.length === 0 ? (
           <div className="glow-card p-8 text-center max-w-xl mx-auto">
             <span className="text-4xl">🗓️</span>
-            <h3 className="text-lg font-black text-slate-800 mt-4">No Demo Bookings Found</h3>
+            <p className="empty-state-title mt-3">No Demo Bookings Yet</p>
             <p className="text-xs text-slate-400 mt-2">
               There are no demo bookings recorded in the system yet.
             </p>
@@ -2502,13 +2608,9 @@ const AdminDashboard = () => {
       case 'Students': return renderStudents();
       case 'Teachers': return renderTeachers();
       case 'Demo Bookings': return renderDemoBookings();
-      case 'Match Queue': return renderMatchQueue();
-      case 'Waitlist': return renderWaitlist();
-      case 'Attendance': return renderAttendance();
-      case 'Tests & Results': return renderTestsAndResults();
       case 'Fee Management': return renderFeeManagement();
       case 'Settings': return renderSettings();
-      case 'Help': return renderHelp();
+      case 'Support': return renderHelp();
       default:
         return renderPlaceholder(activeTab);
     }
@@ -2521,8 +2623,8 @@ const AdminDashboard = () => {
 
       {/* Manual Override Modal */}
       {showOverrideModal && selectedMatchStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-lg w-full space-y-4 animate-scale-up text-left">
+        <div className="modal-overlay">
+          <div className="modal-panel p-6 space-y-4 text-left">
             <div className="flex items-center justify-between pb-2 border-b border-slate-50">
               <h3 className="text-base font-black text-slate-800 tracking-tight">
                 Manual Tutor Allotment: {selectedMatchStudent.name}
@@ -2552,17 +2654,25 @@ const AdminDashboard = () => {
                   ))
                   .map(teacher => {
                     const isWithinCapacity = teacher.current_student_count < teacher.max_student_capacity;
+                    const isLocalityMatch = selectedMatchStudent && teacher.locality && selectedMatchStudent.locality &&
+                      teacher.locality.trim().toLowerCase() === selectedMatchStudent.locality.trim().toLowerCase();
+
                     return (
                       <div key={teacher.id} className="p-3 border border-slate-100 rounded-2xl flex items-center justify-between gap-4 bg-slate-50/50 hover:bg-white transition-all">
-                        <div>
-                          <h4 className="text-xs font-black text-slate-800">{teacher.name}</h4>
-                          <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
-                            Subjects: {teacher.subjects_taught.join(', ')} | Qualified: {teacher.grade_levels_qualified.join(', ')}
-                          </p>
-                          <p className="text-[9px] text-slate-400 mt-1">
-                            City: {teacher.city} | Capacity: {teacher.current_student_count}/{teacher.max_student_capacity}
-                          </p>
-                        </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-xs font-black text-slate-800">{teacher.name}</h4>
+                              {isLocalityMatch && (
+                                <span className="bg-emerald-100 text-emerald-800 text-[8px] font-black px-1.5 py-0.5 rounded-full border border-emerald-200">📍 Locality Match</span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                              Subjects: {teacher.subjects_taught.join(', ')} | Qualified: {teacher.grade_levels_qualified.join(', ')}
+                            </p>
+                            <p className="text-[9px] text-slate-400 mt-1">
+                              Location: {teacher.locality ? `${teacher.locality}, ` : ''}{teacher.city} | Capacity: {teacher.current_student_count}/{teacher.max_student_capacity}
+                            </p>
+                          </div>
                         <button
                           disabled={!isWithinCapacity}
                           onClick={() => {
@@ -2580,7 +2690,7 @@ const AdminDashboard = () => {
                     );
                   })}
                 {getTeachers().filter(t => t.verification_status === 'Verified').length === 0 && (
-                  <p className="text-center text-xs text-slate-400 font-semibold py-4">No verified teachers available.</p>
+                  <div className="empty-state py-4"><p className="empty-state-desc">No verified teachers available.</p></div>
                 )}
               </div>
             </div>
@@ -2599,8 +2709,8 @@ const AdminDashboard = () => {
 
       {/* Student Form Modal */}
       {showAddStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-md w-full space-y-4 animate-scale-up">
+        <div className="modal-overlay">
+          <div className="modal-panel p-6 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-50">
               <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
                 <Users className="w-5 h-5 text-primary-600" />
@@ -2676,8 +2786,8 @@ const AdminDashboard = () => {
 
       {/* Enquiry Form Modal */}
       {showAddEnquiry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-md w-full space-y-4 animate-scale-up">
+        <div className="modal-overlay">
+          <div className="modal-panel p-6 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-50">
               <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
                 <MessageSquare className="w-5 h-5 text-primary-600" />
@@ -2764,8 +2874,8 @@ const AdminDashboard = () => {
 
       {/* Publish Test Results Modal */}
       {showPublishTest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-md w-full space-y-4 animate-scale-up">
+        <div className="modal-overlay">
+          <div className="modal-panel p-6 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-50">
               <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
                 <CheckSquare className="w-5 h-5 text-primary-600" />
@@ -2867,8 +2977,8 @@ const AdminDashboard = () => {
 
       {/* Leaderboard Details Modal */}
       {selectedTest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-md w-full space-y-4 animate-scale-up">
+        <div className="modal-overlay">
+          <div className="modal-panel p-6 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-50">
               <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
                 <BarChart3 className="w-5 h-5 text-primary-600" />
@@ -2907,8 +3017,8 @@ const AdminDashboard = () => {
 
       {/* Teacher Verification Documents Modal — Full Per-Doc Control */}
       {selectedTeacherDocs && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-lg w-full space-y-4 animate-scale-up">
+        <div className="modal-overlay">
+          <div className="modal-panel p-6 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-50">
               <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
                 <GraduationCap className="w-5 h-5 text-primary-600" />
@@ -2947,14 +3057,14 @@ const AdminDashboard = () => {
                   const TYPE_MAP = {
                     degree:     (d) => d.type === 'Academic'   || d.name?.toLowerCase().includes('degree'),
                     aadhar:     (d) => d.type === 'Identity'   || d.name?.toLowerCase().includes('aadhaar') || d.name?.toLowerCase().includes('aadhar'),
-                    experience: (d) => d.type === 'Experience' || d.name?.toLowerCase().includes('experience'),
+                    resume:     (d) => d.type === 'Resume'     || d.name?.toLowerCase().includes('resume') || d.name?.toLowerCase().includes('cv'),
                   };
                   const uploadedDocs = selectedTeacherDocs.documents || [];
 
                   return [
                     { key: 'degree',     label: 'Academic Degree Certificate', icon: '🎓', info: 'M.Sc / B.Ed / Graduation proof from university' },
                     { key: 'aadhar',     label: 'Aadhaar Identity Card',       icon: '🪪', info: 'UIDAI 12-digit unique ID verification' },
-                    { key: 'experience', label: 'Experience Letter',            icon: '📄', info: 'Letter from previous institute or employer' },
+                    { key: 'resume',     label: 'Professional Resume / CV',     icon: '📄', info: 'Curriculum Vitae containing details of teaching history' },
                   ].map((doc) => {
                     const status      = (teacherDocStatus[selectedTeacherDocs.id] || {})[doc.key] || 'Under Review';
                     const isApproved  = status === 'Approved';
@@ -2995,14 +3105,13 @@ const AdminDashboard = () => {
                         {/* View / Download row */}
                         {fileUrl && (
                           <div className="mt-2 flex gap-2">
-                            <a
-                              href={fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDoc({ url: fileUrl, name: uploadedDoc.name, isPdf: isPdf })}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer"
                             >
-                              👁 View File
-                            </a>
+                              👁 Preview
+                            </button>
                             <a
                               href={fileUrl}
                               download={uploadedDoc.name}
@@ -3043,7 +3152,7 @@ const AdminDashboard = () => {
                       // Approve all docs at once
                       setTeacherDocStatus(prev => ({
                         ...prev,
-                        [selectedTeacherDocs.id]: { degree: 'Approved', aadhar: 'Approved', experience: 'Approved' }
+                        [selectedTeacherDocs.id]: { degree: 'Approved', aadhar: 'Approved', resume: 'Approved' }
                       }));
                       triggerToast('All documents approved! You can now grant the Verified badge.');
                     }}
@@ -3061,19 +3170,65 @@ const AdminDashboard = () => {
         </div>
       )}
 
+      {/* Document Preview Modal */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-fade-in">
+          <div className="modal-panel max-w-4xl p-6 flex flex-col space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="text-left">
+                <h3 className="text-sm font-black text-slate-800 truncate max-w-xs sm:max-w-md">{previewDoc.name}</h3>
+                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Vetting Document Preview</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={previewDoc.url}
+                  download={previewDoc.name}
+                  className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-sm"
+                >
+                  ⬇ Download File
+                </a>
+                <button
+                  onClick={() => setPreviewDoc(null)}
+                  className="p-2 text-slate-400 hover:text-slate-650 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors border-0 bg-transparent"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 bg-slate-50 rounded-2xl border border-slate-150 p-2 flex items-center justify-center overflow-auto min-h-[50vh] max-h-[70vh]">
+              {previewDoc.isPdf ? (
+                <div className="flex flex-col items-center justify-center w-full p-4 space-y-2">
+                  <img
+                    src={previewDoc.url.replace(/\.pdf$/i, '.jpg')}
+                    alt={previewDoc.name}
+                    className="max-h-[60vh] max-w-full rounded-xl object-contain shadow-sm border border-slate-100"
+                  />
+                  <p className="text-[10px] text-slate-400 font-bold italic tracking-wide">
+                    📄 Page 1 Preview. Enable PDF delivery in Cloudinary Settings to download original PDF.
+                  </p>
+                </div>
+              ) : (
+                <img
+                  src={previewDoc.url}
+                  alt={previewDoc.name}
+                  className="max-h-[65vh] max-w-full rounded-xl object-contain shadow-sm"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <DashboardShell
         navItems={[
           { name: 'Dashboard', icon: LayoutDashboard },
           { name: 'Students', icon: Users },
           { name: 'Teachers', icon: GraduationCap },
           { name: 'Demo Bookings', icon: BookOpen },
-          { name: 'Match Queue', icon: Sliders },
-          { name: 'Waitlist', icon: List },
-          { name: 'Attendance', icon: UserCheck },
-          { name: 'Tests & Results', icon: CheckSquare },
           { name: 'Fee Management', icon: CreditCard },
           { name: 'Settings', icon: Settings },
-          { name: 'Help', icon: HelpCircle }
+          { name: 'Support', icon: HelpCircle }
         ]}
         activeTab={activeTab}
         onTabChange={setActiveTab}
