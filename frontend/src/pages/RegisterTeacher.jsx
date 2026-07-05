@@ -298,7 +298,7 @@ const RegisterTeacher = () => {
         if (fieldName && file) fd.append(fieldName, file, file.name);
       }
 
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://cograd-pathshala-ygyi.onrender.com/api';
       const response = await fetch(`${baseUrl}/auth/register`, {
         method: 'POST',
         body: fd,
