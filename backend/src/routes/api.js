@@ -244,7 +244,7 @@ router.post('/teachers', protect, async (req, res) => {
 });
 
 const sendTeacherCredentialsEmail = async (name, email, password) => {
-  const frontendUrl = process.env.FRONTEND_URL || 'https://cograd-pathshala-frontend-lovat.vercel.app';
+  const frontendUrl = process.env.FRONTEND_URL || 'https://cograd-pathshala-frontend.vercel.app';
   const htmlContent = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #f1f5f9; border-radius: 12px; background-color: #fff;">
       <h2 style="color: #2563eb; font-weight: 800; margin-bottom: 20px;">Welcome to Cograd Pathshala!</h2>
