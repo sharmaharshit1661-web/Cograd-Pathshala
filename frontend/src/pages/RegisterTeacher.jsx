@@ -298,11 +298,30 @@ const RegisterTeacher = () => {
         if (fieldName && file) fd.append(fieldName, file, file.name);
       }
 
-      const baseUrl = import.meta.env.VITE_API_URL || 'https://cograd-pathshala-ygyi.onrender.com/api';
-      const response = await fetch(`${baseUrl}/auth/register`, {
-        method: 'POST',
-        body: fd,
-      });
+      let baseUrl = import.meta.env.VITE_API_URL || 'https://cograd-pathshala-ygyi.onrender.com/api';
+      let response;
+      try {
+        response = await fetch(`${baseUrl}/auth/register`, {
+          method: 'POST',
+          body: fd,
+        });
+      } catch (error) {
+        const localPrefix = 'http://127.0.0.1:4000/api';
+        const localhostPrefix = 'http://localhost:4000/api';
+        if (
+          (baseUrl.startsWith(localPrefix) || baseUrl.startsWith(localhostPrefix)) &&
+          (error.message === 'Failed to fetch' || error.name === 'TypeError')
+        ) {
+          console.warn('Local backend is unreachable for registration. Falling back to production Render backend:', error.message);
+          const prodBaseUrl = 'https://cograd-pathshala-ygyi.onrender.com/api';
+          response = await fetch(`${prodBaseUrl}/auth/register`, {
+            method: 'POST',
+            body: fd,
+          });
+        } else {
+          throw error;
+        }
+      }
 
       let data = {};
       const responseText = await response.text();
