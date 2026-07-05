@@ -150,8 +150,20 @@ const seedData = async () => {
 // Start server
 const startServer = async () => {
   // Start listening on port immediately to prevent net::ERR_CONNECTION_REFUSED on frontend
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error('================================================================');
+      console.error(`FATAL ERROR: Port ${PORT} is already in use by another process!`);
+      console.error(`Please free port ${PORT} or configure a different PORT in backend/.env.`);
+      console.error('================================================================');
+      process.exit(1);
+    } else {
+      console.error('Server error:', err.message);
+    }
   });
 
   // Connect to database and seed data asynchronously
