@@ -4,6 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { connectDB } from './config/db.js';
+import mongoose from 'mongoose';
 import User from './models/User.js';
 import Admin from './models/Admin.js';
 import Assignment from './models/Assignment.js';
@@ -40,6 +41,25 @@ app.use('/uploads', (req, res, next) => {
   res.header('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
 }, express.static(UPLOADS_ROOT));
+
+// Database connection status middleware (prevents API hanging when DB is offline)
+app.use((req, res, next) => {
+  if (
+    req.path === '/' ||
+    req.path === '/api/health' ||
+    req.path === '/api/debug-cloudinary' ||
+    req.path.startsWith('/uploads')
+  ) {
+    return next();
+  }
+
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({
+      message: 'Database connection is not established. Please check backend logs and verify your MongoDB connection/URI.'
+    });
+  }
+  next();
+});
 
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
@@ -129,12 +149,20 @@ const seedData = async () => {
 
 // Start server
 const startServer = async () => {
-  await connectDB();
-  await seedData();
-
+  // Start listening on port immediately to prevent net::ERR_CONNECTION_REFUSED on frontend
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });
+
+  // Connect to database and seed data asynchronously
+  try {
+    await connectDB();
+    if (mongoose.connection.readyState === 1) {
+      await seedData();
+    }
+  } catch (err) {
+    console.error('Failed to initialize database on startup:', err.message);
+  }
 };
 
 startServer();

@@ -22,6 +22,5 @@ export const connectDB = async () => {
       console.error('2. Verify if MongoDB is running on port 27017.');
     }
     console.error('================================================================');
-    process.exit(1);
   }
 };
