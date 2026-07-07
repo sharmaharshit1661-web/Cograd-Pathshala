@@ -514,7 +514,7 @@ const Home = () => {
 
                   {/* Dropdown panel */}
                   {dropdownOpen && (
-                    <div className="absolute left-0 right-0 mt-1.5 bg-white border border-neutral-100 rounded-2xl shadow-xl z-50 overflow-hidden min-w-[280px]">
+                    <div className="absolute left-0 right-0 mt-1.5 bg-white border border-neutral-100 rounded-2xl shadow-xl z-50 overflow-hidden w-full sm:min-w-[280px]">
                       {/* Search Bar */}
                       <div className="p-2.5 border-b border-neutral-100 flex items-center gap-2">
                         <Search className="w-4 h-4 text-neutral-400 shrink-0" />
@@ -597,11 +597,11 @@ const Home = () => {
                 ))}
                 <span className="ml-1 font-semibold text-neutral-700">4.9/5 Parent Rating</span>
               </span>
-              <span className="w-px h-4 bg-neutral-200" />
+              <span className="hidden sm:inline-block w-px h-4 bg-neutral-200" />
               <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-primary-400" /> 2,500+ students matched</span>
-              <span className="w-px h-4 bg-neutral-200" />
+              <span className="hidden sm:inline-block w-px h-4 bg-neutral-200" />
               <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-500" /> 500+ verified home tutors</span>
-              <span className="w-px h-4 bg-neutral-200" />
+              <span className="hidden sm:inline-block w-px h-4 bg-neutral-200" />
               <span className="flex items-center gap-1.5 font-semibold text-neutral-600"><MapPin className="w-4 h-4 text-rose-500" /> Serving Meerut, Allahabad & beyond</span>
             </div>
           </div>
@@ -970,12 +970,12 @@ const Home = () => {
             {/* Right Side: Interactive Details Panel */}
             <div className="lg:col-span-7 flex flex-col justify-between gap-6">
               {/* Tab Selector */}
-              <div className="flex flex-wrap sm:flex-nowrap bg-slate-100/85 p-1.5 rounded-xl border border-slate-200/50 gap-1">
+              <div className="flex flex-row overflow-x-auto scrollbar-none sm:flex-nowrap bg-slate-100/85 p-1.5 rounded-xl border border-slate-200/50 gap-1 select-none">
                 {DISTRICTS.map((d, index) => (
                   <button
                     key={d.city}
                     onClick={() => setSelectedDistrict(index)}
-                    className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 cursor-pointer ${
+                    className={`flex-1 py-2.5 px-4 text-xs font-bold rounded-lg transition-all duration-300 cursor-pointer shrink-0 ${
                       selectedDistrict === index
                         ? 'bg-white text-neutral-900 shadow-sm border border-neutral-200/40'
                         : 'text-neutral-500 hover:text-neutral-800'

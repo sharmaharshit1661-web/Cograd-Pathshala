@@ -12,7 +12,18 @@
 import express from 'express';
 import { protect }                          from '../middleware/auth.js';
 import { uploadTeacherDocs }                from '../middleware/upload.js';
-import { registerUser, loginUser, getMe }   from '../controllers/authController.js';
+import { 
+  registerUser, 
+  loginUser, 
+  getMe,
+  verifyEmail,
+  resendVerification,
+  googleLogin,
+  sendLoginOTP,
+  verifyLoginOTP,
+  forgotPasswordOTP,
+  resetPasswordOTP
+} from '../controllers/authController.js';
 
 const router = express.Router();
 
@@ -38,6 +49,34 @@ router.post('/register', assignTeacherId, registerUser);
 // @route   POST /api/auth/login
 // @access  Public
 router.post('/login', loginUser);
+
+// @route   POST /api/auth/verify-email
+// @access  Public
+router.post('/verify-email', verifyEmail);
+
+// @route   POST /api/auth/resend-verification
+// @access  Public
+router.post('/resend-verification', resendVerification);
+
+// @route   POST /api/auth/google-login
+// @access  Public
+router.post('/google-login', googleLogin);
+
+// @route   POST /api/auth/send-login-otp
+// @access  Public
+router.post('/send-login-otp', sendLoginOTP);
+
+// @route   POST /api/auth/verify-login-otp
+// @access  Public
+router.post('/verify-login-otp', verifyLoginOTP);
+
+// @route   POST /api/auth/forgot-password-otp
+// @access  Public
+router.post('/forgot-password-otp', forgotPasswordOTP);
+
+// @route   POST /api/auth/reset-password-otp
+// @access  Public
+router.post('/reset-password-otp', resetPasswordOTP);
 
 // @route   GET /api/auth/me
 // @access  Private

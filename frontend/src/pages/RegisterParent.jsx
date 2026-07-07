@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   User, Mail, Phone, Lock, Eye, EyeOff, CheckCircle,
   ArrowLeft, ArrowRight, BookOpen, MapPin, Heart,
@@ -66,22 +66,99 @@ const getPasswordRequirements = (password) => {
 
 const RegisterParent = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const googleUser = location.state?.googleUser || null;
+  const googleToken = localStorage.getItem('cograd_pending_google_token') || null;
 
   // Step: 1 = Your Details, 2 = Link Your Child, 3 = Diagnostic Test, 4 = Success
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState((googleUser || googleToken) ? 2 : 1);
   const [showPw, setShowPw] = useState(false);
   const [showCPw, setShowCPw] = useState(false);
   const [isOtherCity, setIsOtherCity] = useState(false);
 
   // Parent form state
   const [parentForm, setParentForm] = useState({
-    name: '',
+    name: googleUser?.name || localStorage.getItem('cograd_pending_google_name') || '',
     relationship: '',
-    email: '',
+    email: googleUser?.email || localStorage.getItem('cograd_pending_google_email') || '',
     phone: '',
     password: '',
     confirmPassword: '',
   });
+
+  const handleGoogleSignupCallback = async (response) => {
+    try {
+      const data = await api.post('/auth/google-login', {
+        credentialToken: response.credential,
+        role: 'parent'
+      });
+
+      if (data.require_registration) {
+        localStorage.setItem('cograd_pending_google_email', data.email);
+        localStorage.setItem('cograd_pending_google_name', data.name);
+        localStorage.setItem('cograd_pending_google_avatar', data.avatar);
+        localStorage.setItem('cograd_pending_google_token', response.credential);
+
+        setParentForm(prev => ({
+          ...prev,
+          name: data.name,
+          email: data.email,
+        }));
+        setStep(2);
+      } else {
+        localStorage.setItem('cograd_token',           data.token);
+        localStorage.setItem('cograd_logged_in',       'true');
+        localStorage.setItem('cograd_role',            'parent');
+        localStorage.setItem('cograd_logged_in_email', data.user.email);
+        localStorage.setItem('cograd_parent_name',     data.user.name);
+        
+        localStorage.removeItem('cograd_pending_google_email');
+        localStorage.removeItem('cograd_pending_google_name');
+        localStorage.removeItem('cograd_pending_google_avatar');
+        localStorage.removeItem('cograd_pending_google_token');
+        
+        navigate('/parent/dashboard');
+      }
+    } catch (err) {
+      alert(err.message || 'Google Sign-Up failed.');
+    }
+  };
+
+  useEffect(() => {
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+    const initializeGoogleSignIn = () => {
+      if (window.google && window.google.accounts) {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId || '123456-dummy-client-id.apps.googleusercontent.com',
+          callback: handleGoogleSignupCallback,
+        });
+      }
+    };
+
+    const checkInterval = setInterval(() => {
+      if (window.google) {
+        initializeGoogleSignIn();
+        clearInterval(checkInterval);
+      }
+    }, 100);
+
+    return () => clearInterval(checkInterval);
+  }, []);
+
+  const handleGoogleSignupClick = async () => {
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!googleClientId) {
+      const mockEmail = 'mockparent_' + Math.floor(Math.random() * 1000) + '@gmail.com';
+      await handleGoogleSignupCallback({ credential: `mock-google-token-${mockEmail}` });
+      return;
+    }
+    try {
+      window.google.accounts.id.prompt();
+    } catch (e) {
+      alert('Google library not loaded yet. Try again.');
+    }
+  };
 
   // Child search / link state
   const [childSearchQuery, setChildSearchQuery] = useState('');
@@ -214,28 +291,61 @@ const RegisterParent = () => {
   const handleLinkedRegistration = async () => {
     setIsRegistering(true);
     try {
-      const registrationData = {
-        name: parentForm.name,
-        email: parentForm.email,
-        phone: parentForm.phone,
-        password: parentForm.password,
-        role: 'parent',
-        relationship: parentForm.relationship,
-        linkedChildId: linkedChild.id,
-        status: linkedChild.test_score ? 'pending_match' : 'pending_test',
-      };
+      if (googleToken) {
+        const registrationData = {
+          credentialToken: googleToken,
+          role: 'parent',
+          extraFields: {
+            relationship: parentForm.relationship,
+            linkedChildId: linkedChild.id,
+            status: linkedChild.test_score ? 'pending_match' : 'pending_test',
+            phone: parentForm.phone,
+          }
+        };
+        const data = await api.post('/auth/google-login', registrationData);
+        localStorage.setItem('cograd_token',           data.token);
+        localStorage.setItem('cograd_logged_in',       'true');
+        localStorage.setItem('cograd_role',            'parent');
+        localStorage.setItem('cograd_logged_in_email', data.user.email);
+        localStorage.setItem('cograd_parent_name',     data.user.name);
 
-      const data = await api.post('/auth/register', registrationData);
+        localStorage.removeItem('cograd_pending_google_email');
+        localStorage.removeItem('cograd_pending_google_name');
+        localStorage.removeItem('cograd_pending_google_avatar');
+        localStorage.removeItem('cograd_pending_google_token');
 
-      localStorage.setItem('cograd_token', data.token);
-      localStorage.setItem('cograd_logged_in', 'true');
-      localStorage.setItem('cograd_role', 'parent');
-      localStorage.setItem('cograd_logged_in_email', parentForm.email);
-      localStorage.setItem('cograd_parent_name', parentForm.name);
+        setIsOtherCity(false);
+        setTestResult(linkedChild.test_score || null);
+        setStep(4);
+      } else {
+        const registrationData = {
+          name: parentForm.name,
+          email: parentForm.email,
+          phone: parentForm.phone,
+          password: parentForm.password,
+          role: 'parent',
+          relationship: parentForm.relationship,
+          linkedChildId: linkedChild.id,
+          status: linkedChild.test_score ? 'pending_match' : 'pending_test',
+        };
 
-      setIsOtherCity(false);
-      setTestResult(linkedChild.test_score || null);
-      setStep(4);
+        const data = await api.post('/auth/register', registrationData);
+
+        if (data.requiresVerification) {
+          localStorage.setItem('cograd_pending_verify_email', data.email);
+          navigate('/verify-email', { state: { email: data.email } });
+        } else {
+          localStorage.setItem('cograd_token', data.token);
+          localStorage.setItem('cograd_logged_in', 'true');
+          localStorage.setItem('cograd_role', 'parent');
+          localStorage.setItem('cograd_logged_in_email', parentForm.email);
+          localStorage.setItem('cograd_parent_name', parentForm.name);
+
+          setIsOtherCity(false);
+          setTestResult(linkedChild.test_score || null);
+          setStep(4);
+        }
+      }
     } catch (error) {
       alert(error.message || 'Registration failed. Please try again.');
     } finally {
@@ -266,32 +376,70 @@ const RegisterParent = () => {
     if (childForm.city === 'Other') {
       setIsOtherCity(true);
       try {
-        const registrationData = {
-          name: parentForm.name,
-          email: parentForm.email,
-          phone: parentForm.phone,
-          password: parentForm.password,
-          role: 'parent',
-          relationship: parentForm.relationship,
-          childName: childForm.name,
-          childDob: childForm.dob,
-          childStandard: childForm.standard,
-          childSubjects: childForm.subjects,
-          childCity: childForm.city,
-          childLocality: childForm.locality,
-          childTuitionMode: childForm.tuitionMode,
-          status: 'waitlist',
-        };
+        if (googleToken) {
+          const registrationData = {
+            credentialToken: googleToken,
+            role: 'parent',
+            extraFields: {
+              relationship: parentForm.relationship,
+              childName: childForm.name,
+              childDob: childForm.dob,
+              childStandard: childForm.standard,
+              childSubjects: childForm.subjects,
+              childCity: childForm.city,
+              childLocality: childForm.locality,
+              childTuitionMode: childForm.tuitionMode,
+              status: 'waitlist',
+              phone: parentForm.phone,
+            }
+          };
 
-        const data = await api.post('/auth/register', registrationData);
+          const data = await api.post('/auth/google-login', registrationData);
+          localStorage.setItem('cograd_token',           data.token);
+          localStorage.setItem('cograd_logged_in',       'true');
+          localStorage.setItem('cograd_role',            'parent');
+          localStorage.setItem('cograd_logged_in_email', data.user.email);
+          localStorage.setItem('cograd_parent_name',     data.user.name);
 
-        localStorage.setItem('cograd_token', data.token);
-        localStorage.setItem('cograd_logged_in', 'true');
-        localStorage.setItem('cograd_role', 'parent');
-        localStorage.setItem('cograd_logged_in_email', parentForm.email);
-        localStorage.setItem('cograd_parent_name', parentForm.name);
+          localStorage.removeItem('cograd_pending_google_email');
+          localStorage.removeItem('cograd_pending_google_name');
+          localStorage.removeItem('cograd_pending_google_avatar');
+          localStorage.removeItem('cograd_pending_google_token');
 
-        setStep(4);
+          setStep(4);
+        } else {
+          const registrationData = {
+            name: parentForm.name,
+            email: parentForm.email,
+            phone: parentForm.phone,
+            password: parentForm.password,
+            role: 'parent',
+            relationship: parentForm.relationship,
+            childName: childForm.name,
+            childDob: childForm.dob,
+            childStandard: childForm.standard,
+            childSubjects: childForm.subjects,
+            childCity: childForm.city,
+            childLocality: childForm.locality,
+            childTuitionMode: childForm.tuitionMode,
+            status: 'waitlist',
+          };
+
+          const data = await api.post('/auth/register', registrationData);
+
+          if (data.requiresVerification) {
+            localStorage.setItem('cograd_pending_verify_email', data.email);
+            navigate('/verify-email', { state: { email: data.email } });
+          } else {
+            localStorage.setItem('cograd_token', data.token);
+            localStorage.setItem('cograd_logged_in', 'true');
+            localStorage.setItem('cograd_role', 'parent');
+            localStorage.setItem('cograd_logged_in_email', parentForm.email);
+            localStorage.setItem('cograd_parent_name', parentForm.name);
+
+            setStep(4);
+          }
+        }
       } catch (error) {
         alert(error.message || 'Registration failed. Please try again.');
       }
@@ -333,34 +481,74 @@ const RegisterParent = () => {
     setTestResult(scores);
 
     try {
-      const registrationData = {
-        name: parentForm.name,
-        email: parentForm.email,
-        phone: parentForm.phone,
-        password: parentForm.password,
-        role: 'parent',
-        relationship: parentForm.relationship,
-        childName: childForm.name,
-        childDob: childForm.dob,
-        childStandard: childForm.standard,
-        childSubjects: childForm.subjects,
-        childCity: childForm.city,
-        childLocality: childForm.locality,
-        childTuitionMode: childForm.tuitionMode,
-        test_score: scores,
-        test_completed_at: new Date().toISOString(),
-        status: 'pending_match',
-      };
+      if (googleToken) {
+        const registrationData = {
+          credentialToken: googleToken,
+          role: 'parent',
+          extraFields: {
+            relationship: parentForm.relationship,
+            childName: childForm.name,
+            childDob: childForm.dob,
+            childStandard: childForm.standard,
+            childSubjects: childForm.subjects,
+            childCity: childForm.city,
+            childLocality: childForm.locality,
+            childTuitionMode: childForm.tuitionMode,
+            test_score: scores,
+            test_completed_at: new Date().toISOString(),
+            status: 'pending_match',
+            phone: parentForm.phone,
+          }
+        };
 
-      const data = await api.post('/auth/register', registrationData);
+        const data = await api.post('/auth/google-login', registrationData);
+        localStorage.setItem('cograd_token',           data.token);
+        localStorage.setItem('cograd_logged_in',       'true');
+        localStorage.setItem('cograd_role',            'parent');
+        localStorage.setItem('cograd_logged_in_email', data.user.email);
+        localStorage.setItem('cograd_parent_name',     data.user.name);
 
-      localStorage.setItem('cograd_token', data.token);
-      localStorage.setItem('cograd_logged_in', 'true');
-      localStorage.setItem('cograd_role', 'parent');
-      localStorage.setItem('cograd_logged_in_email', parentForm.email);
-      localStorage.setItem('cograd_parent_name', parentForm.name);
+        localStorage.removeItem('cograd_pending_google_email');
+        localStorage.removeItem('cograd_pending_google_name');
+        localStorage.removeItem('cograd_pending_google_avatar');
+        localStorage.removeItem('cograd_pending_google_token');
 
-      setStep(4);
+        setStep(4);
+      } else {
+        const registrationData = {
+          name: parentForm.name,
+          email: parentForm.email,
+          phone: parentForm.phone,
+          password: parentForm.password,
+          role: 'parent',
+          relationship: parentForm.relationship,
+          childName: childForm.name,
+          childDob: childForm.dob,
+          childStandard: childForm.standard,
+          childSubjects: childForm.subjects,
+          childCity: childForm.city,
+          childLocality: childForm.locality,
+          childTuitionMode: childForm.tuitionMode,
+          test_score: scores,
+          test_completed_at: new Date().toISOString(),
+          status: 'pending_match',
+        };
+
+        const data = await api.post('/auth/register', registrationData);
+
+        if (data.requiresVerification) {
+          localStorage.setItem('cograd_pending_verify_email', data.email);
+          navigate('/verify-email', { state: { email: data.email } });
+        } else {
+          localStorage.setItem('cograd_token', data.token);
+          localStorage.setItem('cograd_logged_in', 'true');
+          localStorage.setItem('cograd_role', 'parent');
+          localStorage.setItem('cograd_logged_in_email', parentForm.email);
+          localStorage.setItem('cograd_parent_name', parentForm.name);
+
+          setStep(4);
+        }
+      }
     } catch (error) {
       alert(error.message || 'Registration failed. Please try again.');
     }
@@ -552,6 +740,26 @@ const RegisterParent = () => {
               <button type="submit" className="w-full btn-primary py-3.5 text-sm mt-3 flex items-center justify-center gap-1.5">
                 Continue to Link Your Child
                 <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <div className="relative flex items-center py-1">
+                <div className="flex-1 border-t border-slate-200" />
+                <span className="px-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider">or</span>
+                <div className="flex-1 border-t border-slate-200" />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGoogleSignupClick}
+                className="w-full flex items-center justify-center gap-2 py-3 text-neutral-600 text-sm font-semibold border border-neutral-200 rounded-full bg-white hover:bg-neutral-50 hover:border-neutral-300 transition-all duration-150 cursor-pointer shadow-sm hover:shadow"
+              >
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+                </svg>
+                Sign up with Google
               </button>
             </form>
           )}

@@ -7,6 +7,10 @@ import Payment from '../models/Payment.js';
 import Announcement from '../models/Announcement.js';
 import Enquiry from '../models/Enquiry.js';
 import AdminSettings from '../models/AdminSettings.js';
+import Notification from '../models/Notification.js';
+import razorpay from '../config/razorpay.js';
+import crypto from 'crypto';
+import { sendSMS, sendWhatsApp } from '../utils/sms.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -267,11 +271,11 @@ const sendTeacherCredentialsEmail = async (name, email, password) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer re_VcRTuqUC_4KVDYJK1FujUzyziyPx4bsyv'
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY || 're_VcRTuqUC_4KVDYJK1FujUzyziyPx4bsyv'}`
       },
       body: JSON.stringify({
-        from: 'onboarding@resend.dev',
-        to: 'sharmaharshit1661@gmail.com',
+        from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+        to: email,
         subject: `Welcome to Cograd Pathshala - Approved Account: ${name}`,
         html: htmlContent
       })
@@ -778,6 +782,25 @@ router.post('/demo-bookings', async (req, res) => {
       status: 'pending_admin_confirmation',
     });
 
+    // 1. Create Admin Notification
+    await Notification.create({
+      id: 'ntf_' + Date.now(),
+      text: `New Demo Booking Request (${refCode}) submitted for student: ${studentName}`,
+      time: 'Just now',
+      isNew: true
+    });
+
+    // 2. Dispatch SMS / WhatsApp reminder if configured
+    const settings = await AdminSettings.findOne({ key: 'main' });
+    if (settings && settings.autoReminders && parentPhone) {
+      const msgText = `Hello! We have received your demo booking request (Ref: ${refCode}) for ${studentName} (${studentClass}). Our team will confirm the timing shortly. Thank you!`;
+      if (settings.whatsappSync) {
+        await sendWhatsApp(parentPhone, msgText);
+      } else {
+        await sendSMS(parentPhone, msgText);
+      }
+    }
+
     res.status(201).json(demoBooking);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -852,6 +875,30 @@ router.put('/demo-bookings/:id/status', protect, async (req, res) => {
     }
 
     await booking.save();
+
+    // 1. Create Admin Notification
+    await Notification.create({
+      id: 'ntf_' + Date.now(),
+      text: `Demo Booking (${booking.id}) status updated to ${booking.status.toUpperCase()} by teacher for student: ${booking.studentName}`,
+      time: 'Just now',
+      isNew: true
+    });
+
+    // 2. Dispatch SMS / WhatsApp reminder if confirmed and configured
+    const settings = await AdminSettings.findOne({ key: 'main' });
+    if (settings && settings.autoReminders && booking.parentPhone) {
+      const isConfirmed = booking.status === 'confirmed';
+      const msgText = isConfirmed 
+        ? `Hello! Your demo class for student ${booking.studentName} has been CONFIRMED by the tutor for ${booking.preferredDate} at ${booking.preferredTime}. Thank you!`
+        : `Hello. The demo booking request for student ${booking.studentName} was declined or updated by the tutor (Status: ${booking.status}). Our admin team will reach out to reschedule.`;
+      
+      if (settings.whatsappSync) {
+        await sendWhatsApp(booking.parentPhone, msgText);
+      } else {
+        await sendSMS(booking.parentPhone, msgText);
+      }
+    }
+
     res.json(booking);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -1004,6 +1051,15 @@ router.post('/support-tickets', async (req, res) => {
     });
 
     await ticket.save();
+
+    // 1. Create Admin Notification
+    await Notification.create({
+      id: 'ntf_' + Date.now(),
+      text: `Support Ticket (${ticketId}) created by ${userName} (${userRole}): "${title}"`,
+      time: 'Just now',
+      isNew: true
+    });
+
     res.status(201).json({ message: 'Support ticket submitted successfully.', ticket });
   } catch (error) {
     console.error('Submit ticket error:', error);
@@ -1077,9 +1133,156 @@ router.post('/payments', protect, async (req, res) => {
       date: new Date().toISOString().split('T')[0],
       recordedBy: 'admin',
     });
+
+    // 1. Create Admin Notification
+    await Notification.create({
+      id: 'ntf_' + Date.now(),
+      text: `Payment of ₹${parseFloat(amount).toLocaleString('en-IN')} recorded for student: ${studentName}`,
+      time: 'Just now',
+      isNew: true
+    });
+
+    // 2. Dispatch SMS / WhatsApp reminder if configured
+    const studentUser = await User.findOne({ id: studentId });
+    const phone = studentUser ? studentUser.phone : null;
+    const settings = await AdminSettings.findOne({ key: 'main' });
+    if (settings && settings.autoReminders && phone) {
+      const msgText = `Hello! A tuition payment of ₹${parseFloat(amount).toLocaleString('en-IN')} has been recorded successfully for ${studentName} via ${method || 'Cash / Manual'}. Thank you!`;
+      if (settings.whatsappSync) {
+        await sendWhatsApp(phone, msgText);
+      } else {
+        await sendSMS(phone, msgText);
+      }
+    }
+
     res.status(201).json(payment);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Create Razorpay Order
+// @route   POST /api/payments/razorpay-order
+// @access  Private
+router.post('/payments/razorpay-order', protect, async (req, res) => {
+  try {
+    const { studentId, amount } = req.body;
+    if (!studentId || !amount) {
+      return res.status(400).json({ message: 'studentId and amount are required' });
+    }
+
+    const student = await User.findOne({ id: studentId, role: 'student' });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    const orderAmount = Math.round(parseFloat(amount) * 100); // Razorpay expects amount in paisa
+
+    const options = {
+      amount: orderAmount,
+      currency: 'INR',
+      receipt: 'receipt_' + Date.now(),
+      notes: {
+        studentId: studentId,
+        studentName: student.name,
+      }
+    };
+
+    const order = await razorpay.orders.create(options);
+    res.json(order);
+  } catch (error) {
+    console.error('[Razorpay Order Creation Error]', error);
+    res.status(500).json({ message: error.message || 'Failed to create Razorpay order' });
+  }
+});
+
+// @desc    Verify Razorpay Payment Signature
+// @route   POST /api/payments/razorpay-verify
+// @access  Private
+router.post('/payments/razorpay-verify', protect, async (req, res) => {
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      studentId,
+      amount
+    } = req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !studentId || !amount) {
+      return res.status(400).json({ message: 'Missing required parameters for verification' });
+    }
+
+    // Verify signature
+    const keySecret = process.env.RAZORPAY_KEY_SECRET || 'mockKeySecret12345';
+    const shasum = crypto.createHmac('sha256', keySecret);
+    shasum.update(`${razorpay_order_id}|${razorpay_payment_id}`);
+    const digest = shasum.digest('hex');
+
+    if (digest !== razorpay_signature) {
+      return res.status(400).json({ message: 'Payment verification failed: Signature mismatch.' });
+    }
+
+    // Signature verified! Process payment updates
+    const student = await User.findOne({ id: studentId, role: 'student' });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    // 1. Create a Payment record
+    const paymentId = 'PAY-' + Math.floor(100000 + Math.random() * 900000);
+    await Payment.create({
+      id: paymentId,
+      studentId,
+      studentName: student.name,
+      amount: String(amount),
+      method: 'Card / UPI (Razorpay)',
+      status: 'Paid',
+      date: new Date().toISOString().split('T')[0],
+      recordedBy: 'Razorpay Verification'
+    });
+
+    // 2. Update Student fee details
+    student.feeDue = 0;
+    student.feeStatus = 'Paid';
+    student.feeDueDate = 'Paid on ' + new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    
+    const updatedActivities = [
+      {
+        id: 'pay_' + Date.now(),
+        text: `Paid Tuition fee of ₹${parseFloat(amount).toLocaleString('en-IN')} successfully via Razorpay (Ref: ${razorpay_payment_id})`,
+        time: 'Just now',
+        tag: 'Billing',
+        type: 'success'
+      },
+      ...(student.activities || [])
+    ];
+    student.activities = updatedActivities;
+    await student.save();
+
+    // 3. Create Admin Notification
+    await Notification.create({
+      id: 'ntf_' + Date.now(),
+      text: `Fee payment of ₹${parseFloat(amount).toLocaleString('en-IN')} received via Razorpay for student: ${student.name}`,
+      time: 'Just now',
+      isNew: true
+    });
+
+    // 4. Dispatch SMS / WhatsApp reminder if configured
+    const settings = await AdminSettings.findOne({ key: 'main' });
+    if (settings && settings.autoReminders && student.phone) {
+      const msgText = `Hello! A tuition payment of ₹${parseFloat(amount).toLocaleString('en-IN')} has been received successfully for ${student.name} via Razorpay. Thank you!`;
+      if (settings.whatsappSync) {
+        await sendWhatsApp(student.phone, msgText);
+      } else {
+        await sendSMS(student.phone, msgText);
+      }
+    }
+
+    res.json({ verified: true, message: 'Payment successfully verified and recorded.' });
+  } catch (error) {
+    console.error('[Razorpay Verification Error]', error);
+    res.status(500).json({ message: error.message || 'Internal server error during verification' });
   }
 });
 
@@ -1290,6 +1493,61 @@ router.get('/students/:studentId/daily-reports', protect, async (req, res) => {
     reports.sort((a, b) => new Date(b.submittedAt || b.date) - new Date(a.submittedAt || a.date));
 
     res.json(reports);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ── NOTIFICATION ROUTES ───────────────────────────────────────────────────────
+
+// @desc    Get all notifications
+// @route   GET /api/notifications
+// @access  Private (Admin)
+router.get('/notifications', protect, async (req, res) => {
+  try {
+    const notifications = await Notification.find({}).sort({ createdAt: -1 });
+    res.json(notifications);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Create a new notification
+// @route   POST /api/notifications
+// @access  Private (Admin)
+router.post('/notifications', protect, async (req, res) => {
+  try {
+    const { text, time } = req.body;
+    const id = 'ntf_' + Date.now();
+    const notification = await Notification.create({ id, text, time, isNew: true });
+    res.status(201).json(notification);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Mark all notifications as read
+// @route   PUT /api/notifications/read-all
+// @access  Private (Admin)
+router.put('/notifications/read-all', protect, async (req, res) => {
+  try {
+    await Notification.updateMany({ isNew: true }, { $set: { isNew: false } });
+    res.json({ message: 'All notifications marked as read' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Delete a notification
+// @route   DELETE /api/notifications/:id
+// @access  Private (Admin)
+router.delete('/notifications/:id', protect, async (req, res) => {
+  try {
+    const deleted = await Notification.findOneAndDelete({ id: req.params.id });
+    if (!deleted) {
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+    res.json({ message: 'Notification deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

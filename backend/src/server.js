@@ -17,6 +17,7 @@ import AdminSettings from './models/AdminSettings.js';
 import authRoutes from './routes/auth.js';
 import apiRoutes from './routes/api.js';
 import { UPLOADS_ROOT } from './utils/paths.js';
+import Notification from './models/Notification.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -26,9 +27,10 @@ const PORT = process.env.PORT || 4000;
 
 // ── Core middleware ───────────────────────────────────────────────────────────
 app.use(cors({
-  origin: '*',            // tighten to your Vercel domain in production
+  origin: process.env.FRONTEND_URL || '*',
   exposedHeaders: ['Content-Disposition'],
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -82,6 +84,9 @@ app.get('/api/health', (req, res) => {
 
 // Cloudinary env check endpoint for debugging
 app.get('/api/debug-cloudinary', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ message: 'Access denied in production mode.' });
+  }
   res.json({
     hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
     hasApiKey: !!process.env.CLOUDINARY_API_KEY,

@@ -60,6 +60,18 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationCode: {
+      type: String,
+      default: null,
+    },
+    emailVerificationExpires: {
+      type: Date,
+      default: null,
+    },
     avatar: String,
     parentName: String,
     parentPhone: String,
@@ -284,6 +296,22 @@ const UserSchema = new mongoose.Schema(
       default: 0,
     },
     lock_until: {
+      type: Date,
+      default: null,
+    },
+    otp_code: {
+      type: String,
+      default: null,
+    },
+    otp_expires_at: {
+      type: Date,
+      default: null,
+    },
+    reset_otp_code: {
+      type: String,
+      default: null,
+    },
+    reset_otp_expires_at: {
       type: Date,
       default: null,
     },

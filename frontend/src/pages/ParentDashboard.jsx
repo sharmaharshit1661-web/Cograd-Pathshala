@@ -272,6 +272,8 @@ const ParentDashboard = () => {
     loadParentData();
   }, []);
 
+
+
   // Dynamic Notifications Effect
   useEffect(() => {
     if (!selectedStudentKey || !studentsData[selectedStudentKey]) return;
@@ -447,6 +449,20 @@ const ParentDashboard = () => {
     }
   };
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   // Fee Payment handler
   const handlePayFeeSubmit = async (e) => {
     e.preventDefault();
@@ -465,12 +481,98 @@ const ParentDashboard = () => {
 
     setPayLoading(true);
     try {
-      // 1. Record payment record
+      if (payMethod === 'card') {
+        const scriptLoaded = await loadRazorpayScript();
+        if (!scriptLoaded) {
+          throw new Error('Razorpay SDK failed to load. Are you offline?');
+        }
+
+        const orderData = await api.post('/payments/razorpay-order', {
+          studentId: activeStudent.id,
+          amount: String(activeStudent.feeDue)
+        });
+
+        if (!orderData || !orderData.id) {
+          throw new Error('Failed to initiate Razorpay order.');
+        }
+
+        const options = {
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_mockKeyId12345',
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name: 'Cograd Pathshala',
+          description: `Tuition Fee for ${activeStudent.name}`,
+          order_id: orderData.id,
+          handler: async (response) => {
+            try {
+              setPayLoading(true);
+              const verifyRes = await api.post('/payments/razorpay-verify', {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                studentId: activeStudent.id,
+                amount: String(activeStudent.feeDue)
+              });
+
+              if (verifyRes && verifyRes.verified) {
+                const oldDue = activeStudent.feeDue;
+                const updatedActivities = [
+                  {
+                    id: 'pay_' + Date.now(),
+                    text: `Paid Tuition fee of ₹${oldDue.toLocaleString('en-IN')} successfully via Card / UPI (Razorpay)`,
+                    time: 'Just now',
+                    tag: 'Billing',
+                    type: 'success'
+                  },
+                  ...(activeStudent.activities || [])
+                ];
+
+                const updatedFields = {
+                  feeDue: 0,
+                  feeStatus: 'Paid',
+                  feeDueDate: 'Paid on ' + new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+                  activities: updatedActivities
+                };
+
+                setStudentsData(prev => {
+                  const studentCopy = { ...prev[selectedStudentKey], ...updatedFields };
+                  return { ...prev, [selectedStudentKey]: studentCopy };
+                });
+
+                setShowPayModal(false);
+                triggerToast(`Payment of ₹${oldDue.toLocaleString('en-IN')} was processed successfully!`);
+              } else {
+                throw new Error('Payment verification failed.');
+              }
+            } catch (err) {
+              console.error('Razorpay verification error:', err);
+              triggerToast('Payment verification failed: ' + err.message);
+            } finally {
+              setPayLoading(false);
+            }
+          },
+          prefill: {
+            name: parentName,
+            email: parentUser?.email || '',
+            contact: parentUser?.phone || '',
+          },
+          theme: {
+            color: '#4F46E5',
+          },
+        };
+
+        const paymentObject = new window.Razorpay(options);
+        paymentObject.open();
+        setPayLoading(false);
+        return;
+      }
+
+      // 1. Record payment record (Fallback UPI simulation)
       await api.post('/payments', {
         studentId: activeStudent.id,
         studentName: activeStudent.name,
         amount: String(activeStudent.feeDue),
-        method: payMethod === 'card' ? 'Card' : 'UPI'
+        method: 'UPI'
       });
 
       // 2. Prepare updated fields

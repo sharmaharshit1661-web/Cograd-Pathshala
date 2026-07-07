@@ -255,7 +255,7 @@ const Contact = () => {
                   <label className="form-label text-xs font-semibold block mb-2 text-slate-700">
                     I am a...
                   </label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
                       { role: 'Student', icon: GraduationCap, label: 'Student', activeClass: 'border-blue-500 text-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20' },
                       { role: 'Parent', icon: Users, label: 'Parent', activeClass: 'border-amber-500 text-amber-600 bg-amber-50/50 ring-2 ring-amber-500/20' },

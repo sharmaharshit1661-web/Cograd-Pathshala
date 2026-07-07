@@ -78,7 +78,7 @@ const Teacher = () => {
       <section className="py-16 bg-neutral-50 border-b border-neutral-100">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-neutral-900 text-center mb-8">Experience Modern Teaching</h2>
-          <div className="relative rounded-2xl overflow-hidden shadow-xl h-80 lg:h-[440px] reveal-on-scroll">
+          <div className="relative rounded-2xl overflow-hidden shadow-xl h-96 sm:h-[400px] lg:h-[440px] reveal-on-scroll">
             {SLIDES.map((s, i) => (
               <div
                 key={s.id}
@@ -86,11 +86,11 @@ const Teacher = () => {
               >
                 <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url("${s.image}")` }}>
                   <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/85 via-neutral-900/50 to-transparent flex items-center">
-                    <div className="text-white px-10 md:px-16 max-w-lg">
-                      <h3 className={`text-3xl lg:text-4xl font-extrabold mb-3 tracking-tight transition-all duration-500 ${i === slide ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                    <div className="text-white px-8 sm:px-14 md:px-16 max-w-lg">
+                      <h3 className={`text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-3 tracking-tight transition-all duration-500 ${i === slide ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
                         {s.title}
                       </h3>
-                      <p className={`text-white/80 text-base leading-relaxed transition-all duration-500 delay-100 ${i === slide ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                      <p className={`text-white/80 text-sm sm:text-base leading-relaxed transition-all duration-500 delay-100 ${i === slide ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
                         {s.subtitle}
                       </p>
                     </div>
@@ -99,10 +99,10 @@ const Teacher = () => {
               </div>
             ))}
 
-            <button onClick={() => setSlide((p) => (p === 0 ? SLIDES.length - 1 : p - 1))} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-white/35 transition-all z-20 cursor-pointer">
+            <button onClick={() => setSlide((p) => (p === 0 ? SLIDES.length - 1 : p - 1))} className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-white/35 transition-all z-20 cursor-pointer">
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <button onClick={() => setSlide((p) => (p + 1) % SLIDES.length)} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-white/35 transition-all z-20 cursor-pointer">
+            <button onClick={() => setSlide((p) => (p + 1) % SLIDES.length)} className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-white/35 transition-all z-20 cursor-pointer">
               <ChevronRight className="w-5 h-5" />
             </button>
 

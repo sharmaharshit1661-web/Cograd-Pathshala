@@ -282,12 +282,12 @@ const Student = () => {
             <p className="text-gray-600 text-sm">Filter tutors by subject and find the perfect match for your child</p>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex flex-row overflow-x-auto scrollbar-none pb-2.5 px-4 justify-start sm:justify-center gap-3 whitespace-nowrap select-none">
             {SUBJECTS.map((subject) => (
               <button
                 key={subject}
                 onClick={() => setSelectedSubject(subject)}
-                className={`px-5 py-2.5 rounded-xl border font-semibold transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:shadow-md active:scale-95 ${
+                className={`px-5 py-2.5 rounded-xl border font-semibold transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:shadow-md active:scale-95 shrink-0 ${
                   selectedSubject === subject
                     ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white border-transparent shadow-md scale-[1.015]'
                     : 'bg-gradient-to-r from-primary-50 to-purple-50 text-gray-700 border-primary-200/60 hover:bg-white hover:border-primary-300'

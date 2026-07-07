@@ -2603,3 +2603,13 @@ hr, .divider {
 .dashboard-container input.pl-8 {
   padding-left: 2rem !important;
 }
+
+/* Custom utility to hide scrollbars for horizontal swipes */
+.scrollbar-none {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+

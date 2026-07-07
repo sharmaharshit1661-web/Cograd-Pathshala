@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../utils/api';
 import {
@@ -32,6 +32,205 @@ export default function Login() {
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState('');
 
+  // OTP Login states
+  const [loginType, setLoginType] = useState('password'); // 'password' or 'otp'
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVal, setOtpVal] = useState('');
+  const [countdown, setCountdown] = useState(0);
+
+  // Forgot password modal states
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotIdentifier, setForgotIdentifier] = useState('');
+  const [forgotOtpSent, setForgotOtpSent] = useState(false);
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [newPasswordText, setNewPasswordText] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState('');
+
+  // Timer Effect
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
+
+  const handleGoogleLoginCallback = async (response) => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await api.post('/auth/google-login', {
+        credentialToken: response.credential,
+        role: role
+      });
+
+      if (data.require_registration) {
+        localStorage.setItem('cograd_pending_google_email', data.email);
+        localStorage.setItem('cograd_pending_google_name', data.name);
+        localStorage.setItem('cograd_pending_google_avatar', data.avatar);
+        localStorage.setItem('cograd_pending_google_token', response.credential);
+
+        if (role === 'parent') {
+          navigate('/register/parent', { state: { googleUser: data } });
+        } else if (role === 'teacher') {
+          navigate('/register/teacher', { state: { googleUser: data } });
+        } else {
+          navigate('/register/student', { state: { googleUser: data } });
+        }
+      } else {
+        localStorage.setItem('cograd_token',           data.token);
+        localStorage.setItem('cograd_logged_in',       'true');
+        localStorage.setItem('cograd_role',            data.user.role);
+        localStorage.setItem('cograd_logged_in_email', data.user.email);
+        if (data.user.role === 'teacher') localStorage.setItem('cograd_teacher_name', data.user.name);
+        if (data.user.role === 'student') localStorage.setItem('cograd_student_name', data.user.name);
+        if (data.user.role === 'parent')  localStorage.setItem('cograd_parent_name',  data.user.name);
+        navigate(DASHBOARD_MAP[data.user.role] || '/');
+      }
+    } catch (err) {
+      setError(err.message || 'Google Sign-In failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+    const initializeGoogleSignIn = () => {
+      if (window.google && window.google.accounts) {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId || '123456-dummy-client-id.apps.googleusercontent.com',
+          callback: handleGoogleLoginCallback,
+        });
+
+        const container = document.getElementById('google-signin-btn');
+        if (container) {
+          window.google.accounts.id.renderButton(container, {
+            theme: 'outline',
+            size: 'large',
+            width: 370,
+            text: 'continue_with',
+            shape: 'pill'
+          });
+        }
+      }
+    };
+
+    const checkInterval = setInterval(() => {
+      if (window.google) {
+        initializeGoogleSignIn();
+        const container = document.getElementById('google-signin-btn');
+        if (container || !googleClientId) {
+          clearInterval(checkInterval);
+        }
+      }
+    }, 200);
+
+    return () => clearInterval(checkInterval);
+  }, [role]);
+
+  const handleSendOTP = async () => {
+    setError('');
+    const identifier = email.trim();
+    if (!identifier) {
+      setError('Please enter your email or phone number.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await api.post('/auth/send-login-otp', { identifier, role });
+      setOtpSent(true);
+      setCountdown(60);
+      setError(''); // Clear error on success
+      alert(data.message || 'OTP sent successfully!');
+    } catch (err) {
+      setError(err.message || 'Failed to send OTP.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e) => {
+    if (e) e.preventDefault();
+    setError('');
+    const identifier = email.trim();
+    if (!identifier || !otpVal) {
+      setError('Please enter your email/phone and OTP.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await api.post('/auth/verify-login-otp', { identifier, role, otp: otpVal });
+      
+      localStorage.setItem('cograd_token',           data.token);
+      localStorage.setItem('cograd_logged_in',       'true');
+      localStorage.setItem('cograd_role',            data.user.role);
+      localStorage.setItem('cograd_logged_in_email', data.user.email);
+      if (data.user.role === 'teacher') localStorage.setItem('cograd_teacher_name', data.user.name);
+      if (data.user.role === 'student') localStorage.setItem('cograd_student_name', data.user.name);
+      if (data.user.role === 'parent')  localStorage.setItem('cograd_parent_name',  data.user.name);
+      navigate(DASHBOARD_MAP[data.user.role] || '/');
+    } catch (err) {
+      setError(err.message || 'Invalid or expired OTP.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotSendOTP = async () => {
+    setForgotError('');
+    setForgotSuccess('');
+    const identifier = forgotIdentifier.trim();
+    if (!identifier) {
+      setForgotError('Please enter your email or phone number.');
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const data = await api.post('/auth/forgot-password-otp', { identifier, role });
+      setForgotOtpSent(true);
+      setForgotSuccess(data.message || 'Reset OTP sent successfully!');
+    } catch (err) {
+      setForgotError(err.message || 'Failed to send reset OTP.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleForgotReset = async (e) => {
+    if (e) e.preventDefault();
+    setForgotError('');
+    setForgotSuccess('');
+    const identifier = forgotIdentifier.trim();
+    if (!identifier || !forgotOtp || !newPasswordText) {
+      setForgotError('Please fill in all fields.');
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const data = await api.post('/auth/reset-password-otp', {
+        identifier,
+        role,
+        otp: forgotOtp,
+        newPassword: newPasswordText
+      });
+      setForgotSuccess(data.message || 'Password reset successfully!');
+      setTimeout(() => {
+        setShowForgotModal(false);
+        // Reset modal fields
+        setForgotIdentifier('');
+        setForgotOtpSent(false);
+        setForgotOtp('');
+        setNewPasswordText('');
+      }, 2000);
+    } catch (err) {
+      setForgotError(err.message || 'Failed to reset password.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -54,26 +253,41 @@ export default function Login() {
       if (data.user.role === 'parent')  localStorage.setItem('cograd_parent_name',  data.user.name);
       navigate(DASHBOARD_MAP[data.user.role] || '/');
     } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      if (err.requiresVerification) {
+        localStorage.setItem('cograd_pending_verify_email', err.email);
+        navigate('/verify-email', { state: { email: err.email } });
+      } else {
+        setError(err.message || 'Login failed. Please check your credentials.');
+      }
     } finally { setLoading(false); }
   };
 
   const handleOauth = async (provider) => {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await api.post('/auth/login', {
-        email: 'student@cograd.com', password: 'password', role: 'student',
-      });
-      localStorage.setItem('cograd_token',           data.token);
-      localStorage.setItem('cograd_logged_in',       'true');
-      localStorage.setItem('cograd_role',            'student');
-      localStorage.setItem('cograd_logged_in_email', data.user.email);
-      localStorage.setItem('cograd_student_name',    data.user.name);
-      navigate('/student/dashboard');
-    } catch (err) {
-      setError(err.message || 'OAuth sign-in failed.');
-    } finally { setLoading(false); }
+    if (provider === 'Google') {
+      const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (!googleClientId) {
+        // Fallback/Mock mode for developer experience
+        setLoading(true);
+        setError('');
+        try {
+          const mockEmail = role === 'student' ? 'student@gmail.com' : role === 'parent' ? 'parent@gmail.com' : 'teacher@gmail.com';
+          const mockToken = `mock-google-token-${mockEmail}`;
+          await handleGoogleLoginCallback({ credential: mockToken });
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+      try {
+        window.google.accounts.id.prompt();
+      } catch (e) {
+        setError('Google Sign-In library error. Please ensure Google Client ID is configured.');
+      }
+    } else {
+      alert(`${provider} sign-in is not supported. Use Google instead.`);
+    }
   };
 
   const activeRole = ROLES.find((r) => r.id === role);
@@ -160,8 +374,34 @@ export default function Login() {
             </div>
           </div>
 
+          {/* Login Type Selector */}
+          <div className="flex border-b border-neutral-200 px-6">
+            <button
+              type="button"
+              onClick={() => { setLoginType('password'); setError(''); }}
+              className={`flex-1 py-3 text-sm font-semibold text-center border-b-2 cursor-pointer transition-colors ${
+                loginType === 'password'
+                  ? 'border-primary-600 text-primary-600'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-700'
+              }`}
+            >
+              Password Login
+            </button>
+            <button
+              type="button"
+              onClick={() => { setLoginType('otp'); setError(''); }}
+              className={`flex-1 py-3 text-sm font-semibold text-center border-b-2 cursor-pointer transition-colors ${
+                loginType === 'otp'
+                  ? 'border-primary-600 text-primary-600'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-700'
+              }`}
+            >
+              OTP Login
+            </button>
+          </div>
+
           {/* ── Form ── */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <form onSubmit={loginType === 'password' ? handleSubmit : handleVerifyOTP} className="p-6 space-y-4">
 
             {/* Global error banner */}
             {error && (
@@ -180,100 +420,175 @@ export default function Login() {
                 <Mail className="w-3.5 h-3.5 text-neutral-400 mr-1.5" aria-hidden="true" />
                 Email or Phone Number
               </label>
-              <input
-                id="login-email"
-                type="text"
-                required
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                className={`form-input ${error && !email ? 'form-error' : ''}`}
-                placeholder="you@example.com or 9876543210"
-                autoComplete="username"
-                aria-describedby={error ? 'login-error' : undefined}
-              />
+              <div className="relative">
+                <input
+                  id="login-email"
+                  type="text"
+                  required
+                  disabled={loginType === 'otp' && otpSent}
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setError(''); }}
+                  className={`form-input ${(loginType === 'otp' && otpSent) ? 'bg-neutral-100 cursor-not-allowed' : ''} ${error && !email ? 'form-error' : ''}`}
+                  placeholder="you@example.com or 9876543210"
+                  autoComplete="username"
+                  aria-describedby={error ? 'login-error' : undefined}
+                />
+                {loginType === 'otp' && otpSent && (
+                  <button
+                    type="button"
+                    onClick={() => { setOtpSent(false); setOtpVal(''); }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-primary-600 hover:text-primary-800 cursor-pointer border-0 bg-transparent"
+                  >
+                    Change
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Password */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="login-password" className="form-label mb-0">
-                  <Lock className="w-3.5 h-3.5 text-neutral-400 mr-1.5" aria-hidden="true" />
-                  Password
-                </label>
-                <button
-                  type="button"
-                  onClick={() => alert('Password reset link would be sent to your email.')}
-                  className="text-[11px] font-semibold text-primary-600 hover:text-primary-800 transition-colors cursor-pointer"
-                >
-                  Forgot password?
-                </button>
+            {loginType === 'password' && (
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label htmlFor="login-password" className="form-label mb-0">
+                    <Lock className="w-3.5 h-3.5 text-neutral-400 mr-1.5" aria-hidden="true" />
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotIdentifier(email);
+                      setShowForgotModal(true);
+                      setForgotError('');
+                      setForgotSuccess('');
+                    }}
+                    className="text-[11px] font-semibold text-primary-600 hover:text-primary-800 transition-colors cursor-pointer border-0 bg-transparent"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    id="login-password"
+                    type={showPass ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                    className="form-input pr-11"
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    aria-label={showPass ? 'Hide password' : 'Show password'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-neutral-600 transition-colors rounded cursor-pointer border-0 bg-transparent"
+                  >
+                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
-              <div className="relative">
+            )}
+
+            {/* OTP Verification Input */}
+            {loginType === 'otp' && otpSent && (
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label htmlFor="login-otp" className="form-label mb-0">
+                    <ShieldCheck className="w-3.5 h-3.5 text-neutral-400 mr-1.5" aria-hidden="true" />
+                    Enter 6-Digit OTP
+                  </label>
+                  <div className="text-[11px] font-semibold text-neutral-500">
+                    {countdown > 0 ? (
+                      `Resend in ${countdown}s`
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleSendOTP}
+                        className="text-primary-600 hover:text-primary-800 font-semibold cursor-pointer border-0 bg-transparent"
+                      >
+                        Resend OTP
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <input
-                  id="login-password"
-                  type={showPass ? 'text' : 'password'}
+                  id="login-otp"
+                  type="text"
                   required
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                  className="form-input pr-11"
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
+                  maxLength={6}
+                  value={otpVal}
+                  onChange={(e) => { setOtpVal(e.target.value.replace(/\D/g, '')); setError(''); }}
+                  className="form-input text-center text-lg tracking-[8px] font-bold"
+                  placeholder="000000"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  aria-label={showPass ? 'Hide password' : 'Show password'}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-neutral-600 transition-colors rounded cursor-pointer"
-                >
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
               </div>
-            </div>
+            )}
 
             {/* Remember me */}
-            <label className="flex items-center gap-2.5 cursor-pointer select-none group">
-              <input
-                type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="w-4 h-4 rounded border-neutral-300 accent-primary-600 cursor-pointer"
-              />
-              <span className="text-sm text-neutral-500 group-hover:text-neutral-700 transition-colors">
-                Keep me signed in
-              </span>
-            </label>
+            {loginType === 'password' && (
+              <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="w-4 h-4 rounded border-neutral-300 accent-primary-600 cursor-pointer"
+                />
+                <span className="text-sm text-neutral-500 group-hover:text-neutral-700 transition-colors">
+                  Keep me signed in
+                </span>
+              </label>
+            )}
 
             {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className={`
-                relative overflow-hidden w-full flex items-center justify-center gap-2
-                py-3 rounded-full text-white text-sm font-semibold
-                transition-all duration-200 cursor-pointer
-                ${loading
-                  ? 'bg-primary-400 cursor-not-allowed'
-                  : 'bg-primary-600 hover:bg-primary-700 hover:-translate-y-0.5 active:translate-y-0 shadow-md hover:shadow-lg shadow-primary-600/25'
-                }
-              `}
-              aria-busy={loading}
-            >
-              {loading ? (
-                <>
-                  <span className="spinner-sm" aria-hidden="true" />
-                  Signing in…
-                </>
-              ) : (
-                `Sign in as ${activeRole?.label}`
-              )}
-              {/* Shine sweep */}
-              {!loading && (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-500 pointer-events-none"
-                />
-              )}
-            </button>
+            {loginType === 'otp' && !otpSent ? (
+              <button
+                type="button"
+                onClick={handleSendOTP}
+                disabled={loading}
+                className={`
+                  relative overflow-hidden w-full flex items-center justify-center gap-2
+                  py-3 rounded-full text-white text-sm font-semibold
+                  transition-all duration-200 cursor-pointer border-0
+                  ${loading
+                    ? 'bg-primary-400 cursor-not-allowed'
+                    : 'bg-primary-600 hover:bg-primary-700 hover:-translate-y-0.5 active:translate-y-0 shadow-md hover:shadow-lg shadow-primary-600/25'
+                  }
+                `}
+              >
+                {loading ? 'Sending OTP…' : 'Send OTP via Email / SMS'}
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={loading}
+                className={`
+                  relative overflow-hidden w-full flex items-center justify-center gap-2
+                  py-3 rounded-full text-white text-sm font-semibold
+                  transition-all duration-200 cursor-pointer border-0
+                  ${loading
+                    ? 'bg-primary-400 cursor-not-allowed'
+                    : 'bg-primary-600 hover:bg-primary-700 hover:-translate-y-0.5 active:translate-y-0 shadow-md hover:shadow-lg shadow-primary-600/25'
+                  }
+                `}
+                aria-busy={loading}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-sm" aria-hidden="true" />
+                    Signing in…
+                  </>
+                ) : (
+                  loginType === 'password' ? `Sign in as ${activeRole?.label}` : 'Verify & Sign In'
+                )}
+                {!loading && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-500 pointer-events-none"
+                  />
+                )}
+              </button>
+            )}
+
 
             {/* OAuth (students only) */}
             {role === 'student' && (
@@ -284,39 +599,8 @@ export default function Login() {
                   <div className="flex-1 border-t border-neutral-200" />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5">
-                  {[
-                    {
-                      name: 'Google',
-                      svg: (
-                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-                        </svg>
-                      ),
-                    },
-                    {
-                      name: 'Apple',
-                      svg: (
-                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="#111" aria-hidden="true">
-                          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.21.67-2.93 1.49-.62.69-1.16 1.84-1.01 2.96 1.12.09 2.27-.58 2.95-1.39z"/>
-                        </svg>
-                      ),
-                    },
-                  ].map(({ name, svg }) => (
-                    <button
-                      key={name}
-                      type="button"
-                      onClick={() => handleOauth(name)}
-                      disabled={loading}
-                      className="flex items-center justify-center gap-2 py-2.5 text-neutral-600 text-xs font-medium border border-neutral-200 rounded-full bg-white hover:bg-neutral-50 hover:border-neutral-300 hover:-translate-y-0.5 transition-all duration-150 cursor-pointer disabled:opacity-50"
-                    >
-                      {svg}
-                      <span className="hidden sm:inline">Continue with </span>{name}
-                    </button>
-                  ))}
+                <div className="flex flex-col items-center gap-3 py-1">
+                  <div id="google-signin-btn" className="w-full flex justify-center"></div>
                 </div>
               </>
             )}
@@ -353,6 +637,113 @@ export default function Login() {
             )}
           </div>
         </div>
+      {/* Forgot Password Modal */}
+      {showForgotModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/60 backdrop-blur-sm animate-fade-in p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-neutral-100 animate-slide-up">
+            <div className="px-6 py-5 bg-neutral-50/80 border-b border-neutral-100 flex items-center justify-between">
+              <h3 className="text-base font-bold text-neutral-800 flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-primary-600" />
+                Reset Your Password
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(false)}
+                className="p-1 rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-colors cursor-pointer border-0 bg-transparent"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleForgotReset} className="p-6 space-y-4">
+              {forgotError && (
+                <div role="alert" className="flex items-start gap-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-3.5 py-2.5 text-xs font-medium">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{forgotError}</span>
+                </div>
+              )}
+              {forgotSuccess && (
+                <div role="alert" className="flex items-start gap-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-3.5 py-2.5 text-xs font-medium">
+                  <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{forgotSuccess}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="form-label">Email or Phone Number</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    disabled={forgotOtpSent}
+                    value={forgotIdentifier}
+                    onChange={(e) => setForgotIdentifier(e.target.value)}
+                    placeholder="Enter registered email or phone"
+                    className={`form-input ${forgotOtpSent ? 'bg-neutral-100 cursor-not-allowed' : ''}`}
+                  />
+                  {forgotOtpSent && (
+                    <button
+                      type="button"
+                      onClick={() => { setForgotOtpSent(false); setForgotOtp(''); }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-primary-600 hover:text-primary-800 cursor-pointer border-0 bg-transparent"
+                    >
+                      Change
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {forgotOtpSent && (
+                <>
+                  <div>
+                    <label className="form-label">6-Digit Reset OTP</label>
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      value={forgotOtp}
+                      onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, ''))}
+                      placeholder="000000"
+                      className="form-input text-center text-lg tracking-[8px] font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">New Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={newPasswordText}
+                      onChange={(e) => setNewPasswordText(e.target.value)}
+                      placeholder="Enter new password"
+                      className="form-input"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Action Buttons */}
+              {!forgotOtpSent ? (
+                <button
+                  type="button"
+                  onClick={handleForgotSendOTP}
+                  disabled={forgotLoading}
+                  className="w-full py-3 rounded-full bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-all shadow-md cursor-pointer border-0"
+                >
+                  {forgotLoading ? 'Sending Reset OTP…' : 'Send Reset OTP'}
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={forgotLoading}
+                  className="w-full py-3 rounded-full bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-all shadow-md cursor-pointer border-0"
+                >
+                  {forgotLoading ? 'Resetting Password…' : 'Verify & Update Password'}
+                </button>
+              )}
+            </form>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

@@ -40,7 +40,10 @@ export const apiCall = async (endpoint, options = {}) => {
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
+      const err = new Error(errorData.message || `HTTP error! status: ${res.status}`);
+      err.requiresVerification = errorData.requiresVerification;
+      err.email = errorData.email;
+      throw err;
     }
 
     return res.json();

@@ -224,10 +224,13 @@ const Navbar = () => {
               aria-expanded={mobileOpen}
               aria-controls="mobile-drawer"
             >
-              {mobileOpen
-                ? <X className="w-5 h-5" />
-                : <Menu className="w-5 h-5" />
-              }
+              <div className={`transition-transform duration-300 ${mobileOpen ? 'rotate-90' : ''}`}>
+                {mobileOpen ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <Menu className="w-5 h-5" />
+                )}
+              </div>
             </button>
           </div>
         </div>
@@ -249,18 +252,18 @@ const Navbar = () => {
           aria-modal="true"
           className={`lg:hidden absolute inset-x-0 top-full bg-white border-b border-neutral-100 z-50
             shadow-[0_16px_48px_rgba(15,23,42,0.12)]
-            transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
-            overflow-y-auto ${mobileOpen ? 'max-h-[80dvh] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}
+            transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]
+            overflow-y-auto ${mobileOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : '-translate-y-2 opacity-0 pointer-events-none'}`}
         >
           <div className="px-5 pt-4 pb-6 space-y-1">
             {NAV_LINKS.map(({ label, to }) => (
               <Link
                 key={to}
                 to={to}
-                className={`flex items-center justify-between px-4 py-3.5 rounded-xl text-[14.5px] font-medium transition-all ${
+                className={`flex items-center justify-between px-4 py-3.5 rounded-xl text-[14.5px] font-medium transition-all border-l-2 ${
                   isActive(to)
-                    ? 'text-primary-600 bg-primary-50 font-semibold'
-                    : 'text-neutral-700 hover:bg-neutral-50'
+                    ? 'text-primary-600 bg-gradient-to-r from-primary-50 to-primary-50/10 border-primary-500 font-semibold shadow-sm shadow-primary-500/5'
+                    : 'text-neutral-700 hover:bg-neutral-50 border-transparent'
                 }`}
               >
                 <span>{label}</span>

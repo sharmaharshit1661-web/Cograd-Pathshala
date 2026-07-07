@@ -89,13 +89,16 @@ const AdminDashboard = () => {
 
   
   // Notification center
-  const [notifications, setNotifications] = useState(() => {
-    return JSON.parse(localStorage.getItem('cograd_admin_notifications') || '[]');
-  });
+  const [notifications, setNotifications] = useState([]);
 
-  useEffect(() => {
-    localStorage.setItem('cograd_admin_notifications', JSON.stringify(notifications));
-  }, [notifications]);
+  const fetchNotifications = async () => {
+    try {
+      const data = await api.get('/notifications');
+      setNotifications(data || []);
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+    }
+  };
 
   // Reminders sent tracking
   const [remindersSent, setRemindersSent] = useState(() => {
@@ -190,6 +193,7 @@ const AdminDashboard = () => {
       await fetchAnnouncements();
       await fetchEnquiries();
       await fetchSettingsFromBackend();
+      await fetchNotifications();
     };
     init();
   }, []);
@@ -645,13 +649,11 @@ const AdminDashboard = () => {
       });
       await fetchAnnouncements();
       
-      const newAlert = {
-        id: notifications.length + 1,
+      const createdNotif = await api.post('/notifications', {
         text: `Announcement: ${announceInput.title}`,
-        time: 'Just now',
-        isNew: true
-      };
-      setNotifications(prev => [newAlert, ...prev]);
+        time: 'Just now'
+      });
+      setNotifications(prev => [createdNotif, ...prev]);
       setAnnounceInput({ title: '', target: 'All Students & Teachers', priority: 'Medium', text: '' });
       triggerToast('Broadcast announcement published!');
     } catch (err) {
@@ -2739,7 +2741,7 @@ const AdminDashboard = () => {
                 <input
                   type="email"
                   required
-                  placeholder="E.g. sid@gmail.com"
+                  placeholder="E.g. sid@gmail.com or sid@yahoo.com"
                   value={newStudent.email}
                   onChange={(e) => setNewStudent(prev => ({ ...prev, email: e.target.value }))}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
@@ -2827,7 +2829,7 @@ const AdminDashboard = () => {
                 <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Email Address</label>
                 <input
                   type="email"
-                  placeholder="E.g. priya.sh@gmail.com"
+                  placeholder="E.g. priya.sh@gmail.com or priya.sh@yahoo.com"
                   value={newEnquiry.email}
                   onChange={(e) => setNewEnquiry(prev => ({ ...prev, email: e.target.value }))}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
@@ -3236,10 +3238,15 @@ const AdminDashboard = () => {
         roleColor="violet"
         userName="Admin"
         notifications={notifications}
-        onClearNotifs={() => {
-          setNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
-          setToastMessage('All notifications read.');
-          setShowToast(true);
+        onClearNotifs={async () => {
+          try {
+            await api.put('/notifications/read-all');
+            setNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
+            setToastMessage('All notifications read.');
+            setShowToast(true);
+          } catch (err) {
+            console.error('Failed to mark notifications read:', err);
+          }
         }}
         onLogout={handleLogout}
         toast={{ show: showToast, message: toastMessage }}
