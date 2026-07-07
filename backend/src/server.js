@@ -26,8 +26,36 @@ const app  = express();
 const PORT = process.env.PORT || 4000;
 
 // ── Core middleware ───────────────────────────────────────────────────────────
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://cograd-pathshala-frontend.vercel.app',
+  'https://cograd-pathshala-frontend-lovat.vercel.app',
+];
+
+if (process.env.FRONTEND_URL) {
+  const envOrigins = process.env.FRONTEND_URL.split(',').map(o => o.trim().replace(/\/$/, ''));
+  allowedOrigins.push(...envOrigins);
+  envOrigins.forEach(o => {
+    if (o.startsWith('ttps://')) {
+      allowedOrigins.push(o.replace('ttps://', 'https://'));
+    }
+  });
+}
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    const isAllowed = allowedOrigins.some(allowed => normalizedOrigin === allowed);
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS Blocked] Origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
   exposedHeaders: ['Content-Disposition'],
 }));
 
