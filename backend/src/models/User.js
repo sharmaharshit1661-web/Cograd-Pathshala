@@ -184,6 +184,7 @@ const UserSchema = new mongoose.Schema(
     childSubjects: [String],
     childCity: String,
     childLocality: String,
+    childAddress: String,
     childMatchingEligible: {
       type: Boolean,
       default: true,

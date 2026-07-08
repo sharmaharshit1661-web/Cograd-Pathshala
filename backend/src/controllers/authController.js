@@ -9,6 +9,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Admin from '../models/Admin.js';
 import { sendSMS } from '../utils/sms.js';
+import TempOtp from '../models/TempOtp.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -165,14 +166,12 @@ export const registerUser = async (req, res) => {
       userData.current_student_count = 0;
       userData.max_student_capacity  = 5;
       userData.rating                = 5.0;
-      userData.avatar                = extraFields.avatar ||
-        'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
+      const uploadedFiles = req.files || {};
+      userData.avatar = (uploadedFiles.avatar && uploadedFiles.avatar.length > 0)
+        ? uploadedFiles.avatar[0].path
+        : (extraFields.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80');
 
       // Build documents array from Cloudinary-uploaded files
-      // multer-storage-cloudinary sets:
-      //   f.path     → permanent Cloudinary CDN URL  (e.g. https://res.cloudinary.com/...)
-      //   f.filename → Cloudinary public_id          (used to delete/transform later)
-      const uploadedFiles = req.files || {};
       const processedDocs = [];
       let docIndex = 1;
 
@@ -232,6 +231,7 @@ export const registerUser = async (req, res) => {
           userData.childSubjects    = linkedStudent.subjects;
           userData.childCity        = linkedStudent.city;
           userData.childLocality    = linkedStudent.locality;
+          userData.childAddress     = linkedStudent.address;
           userData.test_score       = linkedStudent.test_score;
           userData.test_completed_at = linkedStudent.test_completed_at;
           userData.status           = linkedStudent.status || 'pending_match';
@@ -588,6 +588,7 @@ export const googleLogin = async (req, res) => {
           userData.childSubjects = linkedStudent.subjects;
           userData.childCity = linkedStudent.city;
           userData.childLocality = linkedStudent.locality;
+          userData.childAddress = linkedStudent.address;
           userData.status = linkedStudent.status || 'pending_match';
           
           linkedStudent.parentPhone = userData.phone;
@@ -867,5 +868,57 @@ export const resetPasswordOTP = async (req, res) => {
   } catch (error) {
     console.error('[resetPasswordOTP]', error);
     return res.status(500).json({ message: 'Server error while resetting password.' });
+  }
+};
+
+export const sendRegistrationOtps = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required.' });
+  }
+
+  try {
+    const emailOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // 1. Save or update temp verification record
+    await TempOtp.findOneAndUpdate(
+      { email: email.toLowerCase().trim() },
+      { emailOtp, createdAt: new Date() },
+      { upsert: true, new: true }
+    );
+
+    // 2. Dispatch Email OTP via Resend
+    await sendVerificationEmail('Tutor', email, emailOtp);
+
+    return res.json({ message: 'Verification code successfully sent to email.' });
+  } catch (error) {
+    console.error('[sendRegistrationOtps]', error);
+    return res.status(500).json({ message: 'Server error while sending verification code.' });
+  }
+};
+
+export const verifyRegistrationOtps = async (req, res) => {
+  const { email, emailOtp } = req.body;
+  if (!email || !emailOtp) {
+    return res.status(400).json({ message: 'All parameters (email, emailOtp) are required.' });
+  }
+
+  try {
+    const record = await TempOtp.findOne({ email: email.toLowerCase().trim() });
+    if (!record) {
+      return res.status(400).json({ message: 'Verification record not found or expired.' });
+    }
+
+    if (record.emailOtp !== emailOtp.trim()) {
+      return res.status(400).json({ message: 'Invalid Email OTP code.' });
+    }
+
+    // Success! Clear the temp verification code
+    await TempOtp.deleteOne({ _id: record._id });
+
+    return res.json({ success: true, message: 'Email verified successfully.' });
+  } catch (error) {
+    console.error('[verifyRegistrationOtps]', error);
+    return res.status(500).json({ message: 'Server error while verifying email code.' });
   }
 };

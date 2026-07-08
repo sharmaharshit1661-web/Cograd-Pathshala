@@ -177,6 +177,7 @@ const RegisterParent = () => {
     subjects: ['Mathematics', 'Science'],
     city: '',
     locality: '',
+    address: '',
     tuitionMode: 'home',
   });
 
@@ -389,6 +390,7 @@ const RegisterParent = () => {
               childSubjects: childForm.subjects,
               childCity: childForm.city,
               childLocality: childForm.locality,
+              childAddress: childForm.address,
               childTuitionMode: childForm.tuitionMode,
               status: 'waitlist',
               phone: parentForm.phone,
@@ -422,6 +424,7 @@ const RegisterParent = () => {
             childSubjects: childForm.subjects,
             childCity: childForm.city,
             childLocality: childForm.locality,
+            childAddress: childForm.address,
             childTuitionMode: childForm.tuitionMode,
             status: 'waitlist',
           };
@@ -494,6 +497,7 @@ const RegisterParent = () => {
             childSubjects: childForm.subjects,
             childCity: childForm.city,
             childLocality: childForm.locality,
+            childAddress: childForm.address,
             childTuitionMode: childForm.tuitionMode,
             test_score: scores,
             test_completed_at: new Date().toISOString(),
@@ -529,6 +533,7 @@ const RegisterParent = () => {
           childSubjects: childForm.subjects,
           childCity: childForm.city,
           childLocality: childForm.locality,
+          childAddress: childForm.address,
           childTuitionMode: childForm.tuitionMode,
           test_score: scores,
           test_completed_at: new Date().toISOString(),
@@ -1034,6 +1039,23 @@ const RegisterParent = () => {
                       }}
                     />
                     <p className="text-[9px] text-slate-400 font-medium mt-1">Helps us match you with a teacher nearby</p>
+                  </div>
+
+                  {/* Specific Address — optional */}
+                  <div className="text-left">
+                    <label className="form-label">
+                      <Home className="w-3.5 h-3.5 text-slate-400 mr-1.5 inline" />Specific Address / House No. / Landmark
+                    </label>
+                    <input
+                      type="text"
+                      name="address"
+                      value={childForm.address}
+                      onChange={handleChildChange}
+                      className="form-input"
+                      placeholder="e.g. House No. 42, Sector 15, Near Ram Mandir"
+                      maxLength={200}
+                    />
+                    <p className="text-[9px] text-slate-400 font-medium mt-1">Provide specific landmarks for the tutor to navigate</p>
                   </div>
 
                   <div className="text-left">

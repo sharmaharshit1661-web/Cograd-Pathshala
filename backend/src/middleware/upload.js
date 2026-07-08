@@ -27,6 +27,7 @@ const FIELD_PREFIX = {
   doc_degree:            'degree',
   doc_id_proof:          'id_proof',
   doc_resume:            'resume',
+  avatar:                'avatar',
 };
 
 const ALLOWED_FORMATS = ['pdf', 'jpg', 'jpeg', 'png'];
@@ -78,4 +79,5 @@ export const uploadTeacherDocs = upload.fields([
   { name: 'doc_degree',            maxCount: 1 },
   { name: 'doc_id_proof',          maxCount: 1 },
   { name: 'doc_resume',            maxCount: 1 },
+  { name: 'avatar',                maxCount: 1 },
 ]);

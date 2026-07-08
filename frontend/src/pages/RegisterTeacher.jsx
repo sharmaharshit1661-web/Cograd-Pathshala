@@ -7,12 +7,20 @@ import {
   MapPin, Briefcase, FileUp, Sparkles, ShieldCheck, ArrowRight
 } from 'lucide-react';
 import LocalityAutocomplete from '../components/LocalityAutocomplete';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { auth } from '../utils/firebase';
 const SUBJECTS = [
   'Mathematics', 'Science', 'English', 'Hindi', 'Physics', 'Chemistry', 'Biology',
   'History', 'Geography', 'Computer Science', 'Economics', 'Accountancy', 'Business Studies',
 ];
 
 const EXPERIENCE_OPTIONS = ['0–1 years', '1–3 years', '3–5 years', '5–10 years', '10+ years'];
+
+const GRADE_OPTIONS = [
+  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+  'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
+  'Class 11', 'Class 12',
+];
 
 const INDIAN_CITIES = [
   'Agra', 'Ahmedabad', 'Ajmer', 'Akola', 'Aligarh', 'Allahabad', 'Amravati', 'Amritsar', 'Aurangabad',
@@ -37,6 +45,13 @@ const INDIAN_CITIES = [
 ];
 
 const DOC_TYPES = [
+  {
+    id: 'avatar',
+    label: 'Profile Picture / Avatar',
+    hint: 'Upload a professional headshot image (JPG, PNG)',
+    required: true,
+    accept: '.jpg,.jpeg,.png',
+  },
   {
     id: 'degree',
     label: 'Degree / Qualification Certificate',
@@ -179,13 +194,33 @@ const RegisterTeacher = () => {
     primarySubject: '',
     city: '',
     locality: '',
+    address: '',
     travelRange: '5 km radius'
   });
   
   const [subjects, setSubjects] = useState([]);
+  const [gradeLevels, setGradeLevels] = useState(['Class 9', 'Class 10']);
   const [docs, setDocs] = useState({});
+
+  const handleGradeToggle = (grade) => {
+    setGradeLevels(prev => {
+      if (prev.includes(grade)) {
+        if (prev.length > 1) {
+          return prev.filter(g => g !== grade);
+        }
+        return prev;
+      }
+      return [...prev, grade];
+    });
+  };
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [verifyForm, setVerifyForm] = useState({ emailOtp: '', phoneOtp: '' });
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyError, setVerifyError] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState(null);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
 
@@ -250,9 +285,136 @@ const RegisterTeacher = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => {
+  const sendPostRequest = async (endpoint, payload) => {
+    let baseUrl = import.meta.env.VITE_API_URL || 'https://cograd-pathshala-ygyi.onrender.com/api';
+    let response;
+    try {
+      response = await fetch(`${baseUrl}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      const localPrefix = 'http://127.0.0.1:4000/api';
+      const localhostPrefix = 'http://localhost:4000/api';
+      if (
+        (baseUrl.startsWith(localPrefix) || baseUrl.startsWith(localhostPrefix)) &&
+        (error.message === 'Failed to fetch' || error.name === 'TypeError')
+      ) {
+        const prodBaseUrl = 'https://cograd-pathshala-ygyi.onrender.com/api';
+        response = await fetch(`${prodBaseUrl}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        throw error;
+      }
+    }
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Request failed');
+    }
+    return data;
+  };
+
+  const handleNext = async () => {
     if (validateStep(step)) {
-      setStep(prev => prev + 1);
+      if (step === 1 && !isVerified) {
+        setVerifyError('');
+        setVerifyLoading(true);
+        try {
+          // 1. Send Email OTP from backend
+          await sendPostRequest('/auth/send-registration-otps', {
+            email: form.email
+          });
+
+          // 2. Setup Invisible Recaptcha Verifier
+          if (!window.recaptchaVerifier) {
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+              size: 'invisible',
+              callback: (response) => {
+                // reCAPTCHA solved
+              }
+            });
+          }
+
+          // 3. Trigger Firebase Phone Auth SMS
+          let formattedPhone = form.phone.trim();
+          if (!formattedPhone.startsWith('+')) {
+            formattedPhone = '+91' + formattedPhone;
+          }
+
+          const result = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier);
+          setConfirmationResult(result);
+          setShowVerifyModal(true);
+        } catch (err) {
+          console.error('Verification initiation error:', err);
+          alert(err.message || 'Failed to send verification codes. Please try again.');
+        } finally {
+          setVerifyLoading(false);
+        }
+      } else {
+        setStep(prev => prev + 1);
+      }
+    }
+  };
+
+  const handleVerifySubmit = async (e) => {
+    e.preventDefault();
+    setVerifyError('');
+    setVerifyLoading(true);
+    try {
+      // 1. Verify Email OTP on our backend
+      await sendPostRequest('/auth/verify-registration-otps', {
+        email: form.email,
+        emailOtp: verifyForm.emailOtp
+      });
+
+      // 2. Verify Phone OTP via Firebase confirmationResult
+      if (!confirmationResult) {
+        throw new Error('Phone verification session has expired. Please resend code.');
+      }
+      await confirmationResult.confirm(verifyForm.phoneOtp.trim());
+
+      setIsVerified(true);
+      setShowVerifyModal(false);
+      setStep(2);
+    } catch (err) {
+      console.error('Verification verification error:', err);
+      let errMsg = err.message || 'Invalid verification codes. Please try again.';
+      if (err.code === 'auth/invalid-verification-code') {
+        errMsg = 'Invalid Phone verification code. Please check your SMS and try again.';
+      }
+      setVerifyError(errMsg);
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const handleResendCodes = async () => {
+    setVerifyError('');
+    setVerifyLoading(true);
+    try {
+      // 1. Resend Email OTP
+      await sendPostRequest('/auth/send-registration-otps', {
+        email: form.email
+      });
+
+      // 2. Resend Phone OTP via Firebase
+      let formattedPhone = form.phone.trim();
+      if (!formattedPhone.startsWith('+')) {
+        formattedPhone = '+91' + formattedPhone;
+      }
+      const result = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier);
+      setConfirmationResult(result);
+
+      alert('Verification codes resent successfully!');
+    } catch (err) {
+      console.error('Verification resend error:', err);
+      setVerifyError(err.message || 'Failed to resend codes.');
+    } finally {
+      setVerifyLoading(false);
     }
   };
 
@@ -284,9 +446,10 @@ const RegisterTeacher = () => {
       fd.append('primarySubject',   form.primarySubject);
       fd.append('city',            form.city);
       fd.append('locality',        form.locality);
+      fd.append('address',         form.address);
       fd.append('travelRange',     form.travelRange);
       fd.append('subjects_taught', JSON.stringify(subjects));
-      fd.append('grade_levels_qualified', JSON.stringify(['Class 9', 'Class 10', 'Class 8', 'Class 7']));
+      fd.append('grade_levels_qualified', JSON.stringify(gradeLevels));
 
       const FIELD_MAP = {
         degree:    'doc_degree',
@@ -294,8 +457,12 @@ const RegisterTeacher = () => {
         resume:    'doc_resume',
       };
       for (const [docId, file] of Object.entries(docs)) {
-        const fieldName = FIELD_MAP[docId];
-        if (fieldName && file) fd.append(fieldName, file, file.name);
+        if (docId === 'avatar') {
+          fd.append('avatar', file, file.name);
+        } else {
+          const fieldName = FIELD_MAP[docId];
+          if (fieldName && file) fd.append(fieldName, file, file.name);
+        }
       }
 
       let baseUrl = import.meta.env.VITE_API_URL || 'https://cograd-pathshala-ygyi.onrender.com/api';
@@ -501,6 +668,21 @@ const RegisterTeacher = () => {
                   </div>
                 </div>
 
+                <div className="text-left">
+                  <label className="form-label">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 mr-1.5 inline" />Specific Address / House No. / Landmark
+                  </label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={form.address}
+                    onChange={handleChange}
+                    placeholder="e.g. House No 42, Near Ram Mandir, Sector 15"
+                    className="form-input"
+                  />
+                  <p className="text-[9px] text-slate-400 font-medium mt-1">Provide specific house numbers or landmarks for easier navigation</p>
+                </div>
+
                 <div>
                   <label className="form-label">
                     <Briefcase className="w-3.5 h-3.5 text-slate-400 mr-1.5 inline" />Travel / Teaching Radius
@@ -567,6 +749,30 @@ const RegisterTeacher = () => {
                     })}
                   </div>
                   {errors.subjects && <p className="text-[10px] text-red-500 font-semibold mt-1">{errors.subjects}</p>}
+                </div>
+
+                <div>
+                  <label className="form-label">
+                    <BookOpen className="w-3.5 h-3.5 text-slate-400 mr-1.5 inline" />Classes You Can Teach (Select all that apply)
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-4 border border-slate-200 rounded-2xl bg-slate-50 max-h-48 overflow-y-auto">
+                    {GRADE_OPTIONS.map((g) => {
+                      const selected = gradeLevels.includes(g);
+                      return (
+                        <label key={g} className="flex items-center gap-2 cursor-pointer py-1 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={() => handleGradeToggle(g)}
+                            className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                          />
+                          <span className={`font-semibold select-none transition-colors ${selected ? 'text-indigo-700 font-bold' : 'text-slate-600'}`}>
+                            {g}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -715,8 +921,7 @@ const RegisterTeacher = () => {
           </div>
         </div>
       </div>
-
-      {/* ── Success Modal ── */}
+            {/* ── Success Modal ── */}
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
           <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center border border-slate-100 animate-scale-up relative">
@@ -727,7 +932,7 @@ const RegisterTeacher = () => {
               <CheckCircle className="w-8 h-8 text-emerald-600" />
             </div>
             <h3 className="text-xl font-black text-slate-800 mb-2">Vetting Application Submitted!</h3>
-            <p className="text-xs text-slate-500 leading-relaxed mb-6">
+            <p className="text-xs text-slate-505 leading-relaxed mb-6">
               Thank you, <strong className="text-slate-800">{form.name}</strong>! Your application has been successfully logged. The Cograd Pathshala administrative team will review your uploads. Credentials will be shared at <strong className="text-slate-800">{form.email}</strong> once approved.
             </p>
 
@@ -736,7 +941,7 @@ const RegisterTeacher = () => {
                 <p className="font-extrabold text-slate-400 uppercase tracking-widest mb-2.5 text-[9px]">Verified Documents Submitted</p>
                 <ul className="space-y-1.5">
                   {Object.entries(docs).map(([id, f]) => (
-                    <li key={id} className="flex items-center gap-2 text-xs text-slate-600 font-semibold">
+                    <li key={id} className="flex items-center gap-2 text-xs text-slate-605 font-semibold">
                       <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
                       <span className="truncate">{f.name}</span>
                     </li>
@@ -751,6 +956,80 @@ const RegisterTeacher = () => {
           </div>
         </div>
       )}
+
+      {/* ── Verification Modal ── */}
+      {showVerifyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-slate-100 animate-scale-up relative">
+            <button
+              onClick={() => setShowVerifyModal(false)}
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-lg cursor-pointer border-0 bg-transparent"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm shadow-indigo-500/15">
+              <ShieldCheck className="w-8 h-8 text-indigo-600" />
+            </div>
+            <h3 className="text-xl font-black text-slate-800 text-center mb-2">Verify Email & Phone</h3>
+            <p className="text-xs text-slate-500 text-center leading-relaxed mb-6">
+              We have sent a verification code to your email <strong className="text-slate-800">{form.email}</strong> and SMS to <strong className="text-slate-800">{form.phone}</strong>.
+            </p>
+
+            <form onSubmit={handleVerifySubmit} className="space-y-4">
+              <div>
+                <label className="form-label text-left block mb-1.5">Email Verification Code</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Enter 6-digit email OTP"
+                  value={verifyForm.emailOtp}
+                  onChange={(e) => setVerifyForm(prev => ({ ...prev, emailOtp: e.target.value }))}
+                  className="form-input text-center tracking-widest text-lg font-bold"
+                  maxLength={6}
+                />
+              </div>
+
+              <div>
+                <label className="form-label text-left block mb-1.5">Phone Verification Code</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Enter 6-digit phone OTP"
+                  value={verifyForm.phoneOtp}
+                  onChange={(e) => setVerifyForm(prev => ({ ...prev, phoneOtp: e.target.value }))}
+                  className="form-input text-center tracking-widest text-lg font-bold"
+                  maxLength={6}
+                />
+              </div>
+
+              {verifyError && (
+                <p className="text-xs text-red-500 font-semibold text-center mt-1">{verifyError}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={verifyLoading}
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer border-0 flex items-center justify-center gap-1.5"
+              >
+                {verifyLoading ? 'Verifying...' : 'Verify & Continue'}
+              </button>
+
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={handleResendCodes}
+                  disabled={verifyLoading}
+                  className="text-xs text-indigo-600 hover:underline font-black bg-transparent border-0 cursor-pointer"
+                >
+                  Resend Verification Codes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Firebase reCAPTCHA container */}
+      <div id="recaptcha-container" className="hidden"></div>
     </div>
   );
 };

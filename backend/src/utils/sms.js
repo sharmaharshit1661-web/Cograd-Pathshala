@@ -1,68 +1,69 @@
-import twilio from 'twilio';
+/**
+ * utils/sms.js
+ *
+ * Sends SMS via smsmode REST API.
+ * Falls back to simulation logging in development if key is missing.
+ */
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken  = process.env.TWILIO_AUTH_TOKEN;
-const twilioNumber = process.env.TWILIO_PHONE_NUMBER || '+1234567890';
-
-let client = null;
-if (accountSid && authToken) {
-  try {
-    client = twilio(accountSid, authToken);
-    console.log('Twilio client initialized successfully for production.');
-  } catch (err) {
-    console.error('Failed to initialize Twilio client:', err.message);
-  }
-}
+const smsmodeApiKey = process.env.SMSMODE_API_KEY;
 
 /**
- * Sends a production SMS via Twilio, falls back to logging in development/testing.
- * @param {string} to - Destination phone number
+ * Sends an SMS via smsmode API.
+ * @param {string} to - Destination phone number (e.g. +917042294029)
  * @param {string} body - SMS message content
  */
 export const sendSMS = async (to, body) => {
-  if (client) {
+  if (!to || !body) return null;
+
+  // Format destination number: strip "+" and ensure international prefix (e.g. 91 for India)
+  let normalizedTo = to.trim().replace('+', '').replace(/\s+/g, '');
+  if (normalizedTo.length === 10) {
+    normalizedTo = '91' + normalizedTo;
+  }
+
+  if (smsmodeApiKey) {
     try {
-      const message = await client.messages.create({
-        body,
-        to,
-        from: twilioNumber,
+      const response = await fetch('https://rest.smsmode.com/sms/v1/messages', {
+        method: 'POST',
+        headers: {
+          'X-Api-Key': smsmodeApiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          recipient: {
+            to: normalizedTo
+          },
+          body: {
+            text: body
+          }
+        })
       });
-      console.log(`SMS successfully dispatched via Twilio to ${to}. Message SID: ${message.sid}`);
-      return message;
+
+      const data = await response.json();
+      if (!response.ok) {
+        console.error(`smsmode API error (status ${response.status}):`, data);
+        return null;
+      }
+
+      console.log(`SMS successfully dispatched via smsmode to ${normalizedTo}. Response:`, data);
+      return data;
     } catch (err) {
-      console.error(`Twilio SMS dispatch failed to ${to}:`, err.message);
+      console.error(`smsmode SMS dispatch failed to ${normalizedTo}:`, err.message);
       return null;
     }
   } else {
-    console.log(`[Twilio SMS Simulation] To: ${to} | Body: ${body}`);
-    return { sid: 'mock_sms_sid_' + Date.now(), simulated: true };
+    console.log(`[smsmode SMS Simulation] To: ${normalizedTo} | Body: ${body}`);
+    return { id: 'mock_smsmode_sid_' + Date.now(), simulated: true };
   }
 };
 
 /**
  * Sends a WhatsApp notification via Twilio (expects WhatsApp sandbox/enabled numbers).
- * @param {string} to - Destination WhatsApp number (e.g. 'whatsapp:+919876543210')
- * @param {string} body - Message body
+ * Kept as placeholder/simulation since smsmode is used for SMS.
  */
 export const sendWhatsApp = async (to, body) => {
   const formattedTo = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
-  const whatsappFrom = process.env.TWILIO_WHATSAPP_FROM || `whatsapp:${twilioNumber}`;
-
-  if (client) {
-    try {
-      const message = await client.messages.create({
-        body,
-        to: formattedTo,
-        from: whatsappFrom,
-      });
-      console.log(`WhatsApp message dispatched via Twilio to ${formattedTo}. SID: ${message.sid}`);
-      return message;
-    } catch (err) {
-      console.error(`Twilio WhatsApp dispatch failed to ${formattedTo}:`, err.message);
-      return null;
-    }
-  } else {
-    console.log(`[Twilio WhatsApp Simulation] To: ${formattedTo} | Body: ${body}`);
-    return { sid: 'mock_wa_sid_' + Date.now(), simulated: true };
-  }
+  console.log(`[WhatsApp Simulation] To: ${formattedTo} | Body: ${body}`);
+  return { sid: 'mock_wa_sid_' + Date.now(), simulated: true };
 };

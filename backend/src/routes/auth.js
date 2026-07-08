@@ -22,7 +22,9 @@ import {
   sendLoginOTP,
   verifyLoginOTP,
   forgotPasswordOTP,
-  resetPasswordOTP
+  resetPasswordOTP,
+  sendRegistrationOtps,
+  verifyRegistrationOtps
 } from '../controllers/authController.js';
 
 const router = express.Router();
@@ -77,6 +79,14 @@ router.post('/forgot-password-otp', forgotPasswordOTP);
 // @route   POST /api/auth/reset-password-otp
 // @access  Public
 router.post('/reset-password-otp', resetPasswordOTP);
+
+// @route   POST /api/auth/send-registration-otps
+// @access  Public
+router.post('/send-registration-otps', sendRegistrationOtps);
+
+// @route   POST /api/auth/verify-registration-otps
+// @access  Public
+router.post('/verify-registration-otps', verifyRegistrationOtps);
 
 // @route   GET /api/auth/me
 // @access  Private
