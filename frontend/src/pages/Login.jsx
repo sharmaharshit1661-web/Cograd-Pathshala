@@ -95,14 +95,22 @@ export default function Login() {
     }
   };
 
+  const handleGoogleCallbackRef = useRef(handleGoogleLoginCallback);
+  useEffect(() => {
+    handleGoogleCallbackRef.current = handleGoogleLoginCallback;
+  }, [handleGoogleLoginCallback]);
+
   useEffect(() => {
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
     const initializeGoogleSignIn = () => {
       if (window.google && window.google.accounts) {
-        window.google.accounts.id.initialize({
-          client_id: googleClientId || '123456-dummy-client-id.apps.googleusercontent.com',
-          callback: handleGoogleLoginCallback,
-        });
+        if (!window.google_initialized) {
+          window.google.accounts.id.initialize({
+            client_id: googleClientId || '123456-dummy-client-id.apps.googleusercontent.com',
+            callback: (res) => handleGoogleCallbackRef.current(res),
+          });
+          window.google_initialized = true;
+        }
 
         const container = document.getElementById('google-signin-btn');
         if (container) {

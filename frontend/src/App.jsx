@@ -5,23 +5,38 @@ import { Analytics } from '@vercel/analytics/react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
-// Pages loaded dynamically using Code Splitting (React.lazy)
-const Home = lazy(() => import('./pages/Home'));
-const Student = lazy(() => import('./pages/Student'));
-const Teacher = lazy(() => import('./pages/Teacher'));
-const DemoBooking = lazy(() => import('./pages/DemoBooking'));
-const About = lazy(() => import('./pages/About'));
-const Contact = lazy(() => import('./pages/Contact'));
-const Login = lazy(() => import('./pages/Login'));
-const RegisterStudent = lazy(() => import('./pages/RegisterStudent'));
-const RegisterTeacher = lazy(() => import('./pages/RegisterTeacher'));
-const RoleSelector = lazy(() => import('./pages/RoleSelector'));
-const RegisterParent = lazy(() => import('./pages/RegisterParent'));
-const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'));
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
-const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
-const ParentDashboard = lazy(() => import('./pages/ParentDashboard'));
-const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+// Safe dynamic import to handle chunk loading failures (e.g. cached deployment hashes)
+const safeLazy = (importFn) => {
+  return lazy(() =>
+    importFn().catch((err) => {
+      console.warn("Chunk load failed, forcing page reload...", err);
+      const hasReloaded = window.sessionStorage.getItem('chunk_load_reloaded');
+      if (!hasReloaded) {
+        window.sessionStorage.setItem('chunk_load_reloaded', 'true');
+        window.location.reload();
+      }
+      return { default: () => <PageLoader /> };
+    })
+  );
+};
+
+// Pages loaded dynamically using Code Splitting
+const Home = safeLazy(() => import('./pages/Home'));
+const Student = safeLazy(() => import('./pages/Student'));
+const Teacher = safeLazy(() => import('./pages/Teacher'));
+const DemoBooking = safeLazy(() => import('./pages/DemoBooking'));
+const About = safeLazy(() => import('./pages/About'));
+const Contact = safeLazy(() => import('./pages/Contact'));
+const Login = safeLazy(() => import('./pages/Login'));
+const RegisterStudent = safeLazy(() => import('./pages/RegisterStudent'));
+const RegisterTeacher = safeLazy(() => import('./pages/RegisterTeacher'));
+const RoleSelector = safeLazy(() => import('./pages/RoleSelector'));
+const RegisterParent = safeLazy(() => import('./pages/RegisterParent'));
+const TeacherDashboard = safeLazy(() => import('./pages/TeacherDashboard'));
+const AdminDashboard = safeLazy(() => import('./pages/AdminDashboard'));
+const StudentDashboard = safeLazy(() => import('./pages/StudentDashboard'));
+const ParentDashboard = safeLazy(() => import('./pages/ParentDashboard'));
+const VerifyEmail = safeLazy(() => import('./pages/VerifyEmail'));
 
 // Premium loading spinner fallback for dynamic routes
 const PageLoader = () => (
@@ -96,6 +111,10 @@ const LayoutWrapper = ({ children }) => {
 };
 
 function App() {
+  useEffect(() => {
+    window.sessionStorage.removeItem('chunk_load_reloaded');
+  }, []);
+
   return (
     <Router>
       <ScrollToTop />
