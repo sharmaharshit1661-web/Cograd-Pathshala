@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { getDiagnosticQuestions } from '../utils/mockDb';
 import { api } from '../utils/api';
+import LocalityAutocomplete from '../components/LocalityAutocomplete';
 
 const CLASSES = [
   'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
@@ -1010,14 +1011,27 @@ const RegisterParent = () => {
                   {/* Area / Locality — optional */}
                   <div className="text-left">
                     <label className="form-label"><MapPin className="w-3.5 h-3.5 text-slate-400 mr-1.5" />Area / Locality</label>
-                    <input
-                      type="text"
-                      name="locality"
+                    <LocalityAutocomplete
                       value={childForm.locality}
-                      onChange={handleChildChange}
-                      className="form-input"
-                      placeholder="e.g. Civil Lines, Sadar, Shastri Nagar"
-                      maxLength={100}
+                      onChange={(location) => {
+                        setChildForm(prev => {
+                          const updated = {
+                            ...prev,
+                            locality: location.locality || location.display_name,
+                          };
+                          if (location.city) {
+                            const matchedCity = CITIES.find(c => c.toLowerCase() === location.city.toLowerCase());
+                            if (matchedCity) {
+                              updated.city = matchedCity;
+                              setCityError('');
+                            } else {
+                              updated.city = 'Other';
+                            }
+                          }
+                          return updated;
+                        });
+                        setCityTouched(true);
+                      }}
                     />
                     <p className="text-[9px] text-slate-400 font-medium mt-1">Helps us match you with a teacher nearby</p>
                   </div>

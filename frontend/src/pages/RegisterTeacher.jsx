@@ -6,7 +6,7 @@ import {
   BookOpen, Calendar, X, Upload, FileText, Trash2, AlertCircle,
   MapPin, Briefcase, FileUp, Sparkles, ShieldCheck, ArrowRight
 } from 'lucide-react';
-
+import LocalityAutocomplete from '../components/LocalityAutocomplete';
 const SUBJECTS = [
   'Mathematics', 'Science', 'English', 'Hindi', 'Physics', 'Chemistry', 'Biology',
   'History', 'Geography', 'Computer Science', 'Economics', 'Accountancy', 'Business Studies',
@@ -478,14 +478,24 @@ const RegisterTeacher = () => {
                     <label className="form-label">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 mr-1.5 inline" />Area / Locality
                     </label>
-                    <input
-                      type="text"
-                      name="locality"
-                      required
+                    <LocalityAutocomplete
                       value={form.locality}
-                      onChange={handleChange}
-                      placeholder="e.g. Shastri Nagar, Civil Lines"
-                      className={`form-input ${errors.locality ? 'border-red-400' : ''}`}
+                      onChange={(location) => {
+                        setForm(prev => {
+                          const updated = {
+                            ...prev,
+                            locality: location.locality || location.display_name,
+                          };
+                          if (location.city) {
+                            const matchedCity = INDIAN_CITIES.find(c => c.toLowerCase() === location.city.toLowerCase());
+                            if (matchedCity) {
+                              updated.city = matchedCity;
+                            }
+                          }
+                          return updated;
+                        });
+                        setErrors(prev => ({ ...prev, locality: '', city: '' }));
+                      }}
                     />
                     {errors.locality && <p className="text-[10px] text-red-500 font-semibold mt-1">{errors.locality}</p>}
                   </div>
