@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://cograd-pathshala-ygyi.onrender.com/api';
+const API_BASE_URL = 'https://cograd-pathshala-ygyi.onrender.com/api';
 
 export const apiCall = async (endpoint, options = {}) => {
   const token = localStorage.getItem('cograd_token');
@@ -49,23 +49,8 @@ export const apiCall = async (endpoint, options = {}) => {
     return res.json();
   };
 
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-    return await handleResponse(response);
-  } catch (error) {
-    const localPrefix = 'http://127.0.0.1:4000/api';
-    const localhostPrefix = 'http://localhost:4000/api';
-    if (
-      (API_BASE_URL.startsWith(localPrefix) || API_BASE_URL.startsWith(localhostPrefix)) &&
-      (error.message === 'Failed to fetch' || error.name === 'TypeError')
-    ) {
-      console.warn('Local backend is unreachable. Falling back to production Render backend:', error.message);
-      const prodBaseUrl = 'https://cograd-pathshala-ygyi.onrender.com/api';
-      const response = await fetch(`${prodBaseUrl}${endpoint}`, config);
-      return await handleResponse(response);
-    }
-    throw error;
-  }
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+  return await handleResponse(response);
 };
 
 export const api = {
