@@ -186,32 +186,12 @@ export default function Login() {
     }
   };
 
-  const handleForgotSendOTP = async () => {
-    setForgotError('');
-    setForgotSuccess('');
-    const identifier = forgotIdentifier.trim();
-    if (!identifier) {
-      setForgotError('Please enter your email or phone number.');
-      return;
-    }
-    setForgotLoading(true);
-    try {
-      const data = await api.post('/auth/forgot-password-otp', { identifier, role });
-      setForgotOtpSent(true);
-      setForgotSuccess(data.message || 'Reset OTP sent successfully!');
-    } catch (err) {
-      setForgotError(err.message || 'Failed to send reset OTP.');
-    } finally {
-      setForgotLoading(false);
-    }
-  };
-
-  const handleForgotReset = async (e) => {
+  const handleDirectResetPassword = async (e) => {
     if (e) e.preventDefault();
     setForgotError('');
     setForgotSuccess('');
     const identifier = forgotIdentifier.trim();
-    if (!identifier || !forgotOtp || !newPasswordText) {
+    if (!identifier || !newPasswordText) {
       setForgotError('Please fill in all fields.');
       return;
     }
@@ -220,7 +200,7 @@ export default function Login() {
       const data = await api.post('/auth/reset-password-otp', {
         identifier,
         role,
-        otp: forgotOtp,
+        otp: '123456', // Dummy code (bypassed on backend)
         newPassword: newPasswordText
       });
       setForgotSuccess(data.message || 'Password reset successfully!');
@@ -228,8 +208,6 @@ export default function Login() {
         setShowForgotModal(false);
         // Reset modal fields
         setForgotIdentifier('');
-        setForgotOtpSent(false);
-        setForgotOtp('');
         setNewPasswordText('');
       }, 2000);
     } catch (err) {
@@ -382,34 +360,8 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Login Type Selector */}
-          <div className="flex border-b border-neutral-200 px-6">
-            <button
-              type="button"
-              onClick={() => { setLoginType('password'); setError(''); }}
-              className={`flex-1 py-3 text-sm font-semibold text-center border-b-2 cursor-pointer transition-colors ${
-                loginType === 'password'
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-700'
-              }`}
-            >
-              Password Login
-            </button>
-            <button
-              type="button"
-              onClick={() => { setLoginType('otp'); setError(''); }}
-              className={`flex-1 py-3 text-sm font-semibold text-center border-b-2 cursor-pointer transition-colors ${
-                loginType === 'otp'
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-700'
-              }`}
-            >
-              OTP Login
-            </button>
-          </div>
-
           {/* ── Form ── */}
-          <form onSubmit={loginType === 'password' ? handleSubmit : handleVerifyOTP} className="p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
 
             {/* Global error banner */}
             {error && (
@@ -433,161 +385,94 @@ export default function Login() {
                   id="login-email"
                   type="text"
                   required
-                  disabled={loginType === 'otp' && otpSent}
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                  className={`form-input ${(loginType === 'otp' && otpSent) ? 'bg-neutral-100 cursor-not-allowed' : ''} ${error && !email ? 'form-error' : ''}`}
+                  className="form-input"
                   placeholder="you@example.com or 9876543210"
                   autoComplete="username"
                   aria-describedby={error ? 'login-error' : undefined}
                 />
-                {loginType === 'otp' && otpSent && (
-                  <button
-                    type="button"
-                    onClick={() => { setOtpSent(false); setOtpVal(''); }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-primary-600 hover:text-primary-800 cursor-pointer border-0 bg-transparent"
-                  >
-                    Change
-                  </button>
-                )}
               </div>
             </div>
 
             {/* Password */}
-            {loginType === 'password' && (
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label htmlFor="login-password" className="form-label mb-0">
-                    <Lock className="w-3.5 h-3.5 text-neutral-400 mr-1.5" aria-hidden="true" />
-                    Password
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setForgotIdentifier(email);
-                      setShowForgotModal(true);
-                      setForgotError('');
-                      setForgotSuccess('');
-                    }}
-                    className="text-[11px] font-semibold text-primary-600 hover:text-primary-800 transition-colors cursor-pointer border-0 bg-transparent"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-                <div className="relative">
-                  <input
-                    id="login-password"
-                    type={showPass ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                    className="form-input pr-11"
-                    placeholder="Enter your password"
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPass(!showPass)}
-                    aria-label={showPass ? 'Hide password' : 'Show password'}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-neutral-600 transition-colors rounded cursor-pointer border-0 bg-transparent"
-                  >
-                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="login-password" className="form-label mb-0">
+                  <Lock className="w-3.5 h-3.5 text-neutral-400 mr-1.5" aria-hidden="true" />
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotIdentifier(email);
+                    setShowForgotModal(true);
+                    setForgotError('');
+                    setForgotSuccess('');
+                  }}
+                  className="text-[11px] font-semibold text-primary-600 hover:text-primary-800 transition-colors cursor-pointer border-0 bg-transparent"
+                >
+                  Forgot password?
+                </button>
               </div>
-            )}
-
-            {/* OTP Verification Input */}
-            {loginType === 'otp' && otpSent && (
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label htmlFor="login-otp" className="form-label mb-0">
-                    <ShieldCheck className="w-3.5 h-3.5 text-neutral-400 mr-1.5" aria-hidden="true" />
-                    Enter 6-Digit OTP
-                  </label>
-                  <div className="text-[11px] font-semibold text-neutral-500">
-                    {countdown > 0 ? (
-                      `Resend in ${countdown}s`
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleSendOTP}
-                        className="text-primary-600 hover:text-primary-800 font-semibold cursor-pointer border-0 bg-transparent"
-                      >
-                        Resend OTP
-                      </button>
-                    )}
-                  </div>
-                </div>
+              <div className="relative">
                 <input
-                  id="login-otp"
-                  type="text"
+                  id="login-password"
+                  type={showPass ? 'text' : 'password'}
                   required
-                  maxLength={6}
-                  value={otpVal}
-                  onChange={(e) => { setOtpVal(e.target.value.replace(/\D/g, '')); setError(''); }}
-                  className="form-input text-center text-lg tracking-[8px] font-bold"
-                  placeholder="000000"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                  className="form-input pr-11"
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  aria-label={showPass ? 'Hide password' : 'Show password'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-neutral-600 transition-colors rounded cursor-pointer border-0 bg-transparent"
+                >
+                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
-            )}
+            </div>
 
             {/* Remember me */}
-            {loginType === 'password' && (
-              <label className="flex items-center gap-2.5 cursor-pointer select-none group">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  className="w-4 h-4 rounded border-neutral-300 accent-primary-600 cursor-pointer"
-                />
-                <span className="text-sm text-neutral-500 group-hover:text-neutral-700 transition-colors">
-                  Keep me signed in
-                </span>
-              </label>
-            )}
+            <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="w-4 h-4 rounded border-neutral-300 accent-primary-600 cursor-pointer"
+              />
+              <span className="text-sm text-neutral-500 group-hover:text-neutral-700 transition-colors">
+                Keep me signed in
+              </span>
+            </label>
 
             {/* Submit */}
-            {loginType === 'otp' && !otpSent ? (
-              <button
-                type="button"
-                onClick={handleSendOTP}
-                disabled={loading}
-                className={`
-                  relative overflow-hidden w-full flex items-center justify-center gap-2
-                  py-3 rounded-full text-white text-sm font-semibold
-                  transition-all duration-200 cursor-pointer border-0
-                  ${loading
-                    ? 'bg-primary-400 cursor-not-allowed'
-                    : 'bg-primary-600 hover:bg-primary-700 hover:-translate-y-0.5 active:translate-y-0 shadow-md hover:shadow-lg shadow-primary-600/25'
-                  }
-                `}
-              >
-                {loading ? 'Sending OTP…' : 'Send OTP via Email / SMS'}
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={loading}
-                className={`
-                  relative overflow-hidden w-full flex items-center justify-center gap-2
-                  py-3 rounded-full text-white text-sm font-semibold
-                  transition-all duration-200 cursor-pointer border-0
-                  ${loading
-                    ? 'bg-primary-400 cursor-not-allowed'
-                    : 'bg-primary-600 hover:bg-primary-700 hover:-translate-y-0.5 active:translate-y-0 shadow-md hover:shadow-lg shadow-primary-600/25'
-                  }
-                `}
-                aria-busy={loading}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner-sm" aria-hidden="true" />
-                    Signing in…
-                  </>
-                ) : (
-                  loginType === 'password' ? `Sign in as ${activeRole?.label}` : 'Verify & Sign In'
-                )}
+            <button
+              type="submit"
+              disabled={loading}
+              className={`
+                relative overflow-hidden w-full flex items-center justify-center gap-2
+                py-3 rounded-full text-white text-sm font-semibold
+                transition-all duration-200 cursor-pointer border-0
+                ${loading
+                  ? 'bg-primary-400 cursor-not-allowed'
+                  : 'bg-primary-600 hover:bg-primary-700 hover:-translate-y-0.5 active:translate-y-0 shadow-md hover:shadow-lg shadow-primary-600/25'
+                }
+              `}
+              aria-busy={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="spinner-sm" aria-hidden="true" />
+                  Signing in…
+                </>
+              ) : (
+                `Sign in as ${activeRole?.label}`
+              )}
                 {!loading && (
                   <span
                     aria-hidden="true"
@@ -595,7 +480,6 @@ export default function Login() {
                   />
                 )}
               </button>
-            )}
 
 
             {/* OAuth (students only) */}
@@ -663,7 +547,7 @@ export default function Login() {
               </button>
             </div>
 
-            <form onSubmit={handleForgotReset} className="p-6 space-y-4">
+            <form onSubmit={handleDirectResetPassword} className="p-6 space-y-4">
               {forgotError && (
                 <div role="alert" className="flex items-start gap-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-3.5 py-2.5 text-xs font-medium">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -679,75 +563,36 @@ export default function Login() {
 
               <div>
                 <label className="form-label">Email or Phone Number</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    required
-                    disabled={forgotOtpSent}
-                    value={forgotIdentifier}
-                    onChange={(e) => setForgotIdentifier(e.target.value)}
-                    placeholder="Enter registered email or phone"
-                    className={`form-input ${forgotOtpSent ? 'bg-neutral-100 cursor-not-allowed' : ''}`}
-                  />
-                  {forgotOtpSent && (
-                    <button
-                      type="button"
-                      onClick={() => { setForgotOtpSent(false); setForgotOtp(''); }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-primary-600 hover:text-primary-800 cursor-pointer border-0 bg-transparent"
-                    >
-                      Change
-                    </button>
-                  )}
-                </div>
+                <input
+                  type="text"
+                  required
+                  value={forgotIdentifier}
+                  onChange={(e) => setForgotIdentifier(e.target.value)}
+                  placeholder="Enter registered email or phone"
+                  className="form-input"
+                />
               </div>
 
-              {forgotOtpSent && (
-                <>
-                  <div>
-                    <label className="form-label">6-Digit Reset OTP</label>
-                    <input
-                      type="text"
-                      required
-                      maxLength={6}
-                      value={forgotOtp}
-                      onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, ''))}
-                      placeholder="000000"
-                      className="form-input text-center text-lg tracking-[8px] font-bold"
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">New Password</label>
-                    <input
-                      type="password"
-                      required
-                      value={newPasswordText}
-                      onChange={(e) => setNewPasswordText(e.target.value)}
-                      placeholder="Enter new password"
-                      className="form-input"
-                    />
-                  </div>
-                </>
-              )}
+              <div>
+                <label className="form-label">New Password</label>
+                <input
+                  type="password"
+                  required
+                  value={newPasswordText}
+                  onChange={(e) => setNewPasswordText(e.target.value)}
+                  placeholder="Enter new password"
+                  className="form-input"
+                />
+              </div>
 
               {/* Action Buttons */}
-              {!forgotOtpSent ? (
-                <button
-                  type="button"
-                  onClick={handleForgotSendOTP}
-                  disabled={forgotLoading}
-                  className="w-full py-3 rounded-full bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-all shadow-md cursor-pointer border-0"
-                >
-                  {forgotLoading ? 'Sending Reset OTP…' : 'Send Reset OTP'}
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={forgotLoading}
-                  className="w-full py-3 rounded-full bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-all shadow-md cursor-pointer border-0"
-                >
-                  {forgotLoading ? 'Resetting Password…' : 'Verify & Update Password'}
-                </button>
-              )}
+              <button
+                type="submit"
+                disabled={forgotLoading}
+                className="w-full py-3 rounded-full bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-all shadow-md cursor-pointer border-0"
+              >
+                {forgotLoading ? 'Resetting Password…' : 'Reset Password'}
+              </button>
             </form>
           </div>
         </div>

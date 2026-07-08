@@ -1,4 +1,6 @@
-const API_BASE_URL = 'https://cograd-pathshala-ygyi.onrender.com/api';
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:4000/api'
+  : 'https://cograd-pathshala-ygyi.onrender.com/api';
 
 export const apiCall = async (endpoint, options = {}) => {
   const token = localStorage.getItem('cograd_token');

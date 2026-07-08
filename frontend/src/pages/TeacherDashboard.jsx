@@ -303,122 +303,9 @@ const TeacherDashboard = () => {
     }
   }, [teacherId, activeTab]);
 
-  // 1. Timetable Sync
-  useEffect(() => {
-    if (!teacherId || Object.keys(timetableSessions).length === 0) return;
-    const syncTimetable = async () => {
-      try {
-        await api.put(`/teachers/${teacherId}`, { timetable: [timetableSessions] });
-      } catch (e) {
-        console.error('Failed to sync timetable:', e);
-      }
-    };
-    syncTimetable();
-  }, [timetableSessions, teacherId]);
 
-  // 2. Study Materials Sync
-  useEffect(() => {
-    if (!teacherId || resources.length === 0) return;
-    const syncResources = async () => {
-      try {
-        await api.put(`/teachers/${teacherId}`, { study_materials: resources });
-      } catch (e) {
-        console.error('Failed to sync study materials:', e);
-      }
-    };
-    syncResources();
-  }, [resources, teacherId]);
 
-  // 3. Daily Reports Sync
-  useEffect(() => {
-    if (!teacherId || dailyReports.length === 0) return;
-    const syncDailyReports = async () => {
-      try {
-        await api.put(`/teachers/${teacherId}`, { daily_reports: dailyReports });
-      } catch (e) {
-        console.error('Failed to sync daily reports:', e);
-      }
-    };
-    syncDailyReports();
-  }, [dailyReports, teacherId]);
 
-  // 3.5 Content Schedule Sync
-  useEffect(() => {
-    if (!teacherId || contentSchedule.length === 0) return;
-    const syncContentSchedule = async () => {
-      try {
-        await api.put(`/teachers/${teacherId}`, { content_schedule: contentSchedule });
-      } catch (e) {
-        console.error('Failed to sync content schedule:', e);
-      }
-    };
-    syncContentSchedule();
-  }, [contentSchedule, teacherId]);
-
-  // 4. Assignments Sync
-  useEffect(() => {
-    if (!teacherId || assignments.length === 0) return;
-    const syncAssignments = async () => {
-      try {
-        await api.put(`/teachers/${teacherId}`, { assignments: assignments });
-      } catch (e) {
-        console.error('Failed to sync assignments:', e);
-      }
-    };
-    syncAssignments();
-  }, [assignments, teacherId]);
-
-  // 5. Submissions Sync
-  useEffect(() => {
-    if (!teacherId || gradingSubmissions.length === 0) return;
-    const syncSubmissions = async () => {
-      try {
-        await api.put(`/teachers/${teacherId}`, { submissions: gradingSubmissions });
-      } catch (e) {
-        console.error('Failed to sync submissions:', e);
-      }
-    };
-    syncSubmissions();
-  }, [gradingSubmissions, teacherId]);
-
-  // 6. Reviews Sync
-  useEffect(() => {
-    if (!teacherId || reviewsList.length === 0) return;
-    const syncReviews = async () => {
-      try {
-        await api.put(`/teachers/${teacherId}`, { reviews: reviewsList });
-      } catch (e) {
-        console.error('Failed to sync reviews:', e);
-      }
-    };
-    syncReviews();
-  }, [reviewsList, teacherId]);
-
-  // 7. Earnings Sync
-  useEffect(() => {
-    if (!teacherId || billingLogs.length === 0) return;
-    const syncEarnings = async () => {
-      try {
-        await api.put(`/teachers/${teacherId}`, { earnings_log: billingLogs });
-      } catch (e) {
-        console.error('Failed to sync earnings:', e);
-      }
-    };
-    syncEarnings();
-  }, [billingLogs, teacherId]);
-
-  // 8. Tests Sync
-  useEffect(() => {
-    if (!teacherId || tests.length === 0) return;
-    const syncTests = async () => {
-      try {
-        await api.put(`/teachers/${teacherId}`, { tests: tests });
-      } catch (e) {
-        console.error('Failed to sync tests:', e);
-      }
-    };
-    syncTests();
-  }, [tests, teacherId]);
 
   // 2. Shared Data States
   const [batches, setBatches] = useState([]);
@@ -748,9 +635,122 @@ const TeacherDashboard = () => {
   const [gradingConfetti, setGradingConfetti] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // 1. Timetable Sync
+  useEffect(() => {
+    if (!teacherId || Object.keys(timetableSessions).length === 0) return;
+    const syncTimetable = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { timetable: [timetableSessions] });
+      } catch (e) {
+        console.error('Failed to sync timetable:', e);
+      }
+    };
+    syncTimetable();
+  }, [timetableSessions, teacherId]);
 
+  // 2. Study Materials Sync
+  useEffect(() => {
+    if (!teacherId || resources.length === 0) return;
+    const syncResources = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { study_materials: resources });
+      } catch (e) {
+        console.error('Failed to sync study materials:', e);
+      }
+    };
+    syncResources();
+  }, [resources, teacherId]);
 
+  // 3. Daily Reports Sync
+  useEffect(() => {
+    if (!teacherId || dailyReports.length === 0) return;
+    const syncDailyReports = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { daily_reports: dailyReports });
+      } catch (e) {
+        console.error('Failed to sync daily reports:', e);
+      }
+    };
+    syncDailyReports();
+  }, [dailyReports, teacherId]);
 
+  // 3.5 Content Schedule Sync
+  useEffect(() => {
+    if (!teacherId || contentSchedule.length === 0) return;
+    const syncContentSchedule = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { content_schedule: contentSchedule });
+      } catch (e) {
+        console.error('Failed to sync content schedule:', e);
+      }
+    };
+    syncContentSchedule();
+  }, [contentSchedule, teacherId]);
+
+  // 4. Assignments Sync
+  useEffect(() => {
+    if (!teacherId || assignments.length === 0) return;
+    const syncAssignments = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { assignments: assignments });
+      } catch (e) {
+        console.error('Failed to sync assignments:', e);
+      }
+    };
+    syncAssignments();
+  }, [assignments, teacherId]);
+
+  // 5. Submissions Sync
+  useEffect(() => {
+    if (!teacherId || gradingSubmissions.length === 0) return;
+    const syncSubmissions = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { submissions: gradingSubmissions });
+      } catch (e) {
+        console.error('Failed to sync submissions:', e);
+      }
+    };
+    syncSubmissions();
+  }, [gradingSubmissions, teacherId]);
+
+  // 6. Reviews Sync
+  useEffect(() => {
+    if (!teacherId || reviewsList.length === 0) return;
+    const syncReviews = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { reviews: reviewsList });
+      } catch (e) {
+        console.error('Failed to sync reviews:', e);
+      }
+    };
+    syncReviews();
+  }, [reviewsList, teacherId]);
+
+  // 7. Earnings Sync
+  useEffect(() => {
+    if (!teacherId || billingLogs.length === 0) return;
+    const syncEarnings = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { earnings_log: billingLogs });
+      } catch (e) {
+        console.error('Failed to sync earnings:', e);
+      }
+    };
+    syncEarnings();
+  }, [billingLogs, teacherId]);
+
+  // 8. Tests Sync
+  useEffect(() => {
+    if (!teacherId || tests.length === 0) return;
+    const syncTests = async () => {
+      try {
+        await api.put(`/teachers/${teacherId}`, { tests: tests });
+      } catch (e) {
+        console.error('Failed to sync tests:', e);
+      }
+    };
+    syncTests();
+  }, [tests, teacherId]);
 
   // ----------------------------------------------------
   // EVENT HANDLERS

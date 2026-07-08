@@ -150,9 +150,9 @@ export const registerUser = async (req, res) => {
       phone,
       role,
       tempPassword,
-      isEmailVerified: role === 'admin' ? true : false,
-      emailVerificationCode: role === 'admin' ? null : code,
-      emailVerificationExpires: role === 'admin' ? null : Date.now() + 15 * 60 * 1000,
+      isEmailVerified: true,
+      emailVerificationCode: null,
+      emailVerificationExpires: null,
       ...extraFields,
     };
 
@@ -162,7 +162,7 @@ export const registerUser = async (req, res) => {
 
     // ── Teacher defaults + uploaded documents ──────────────────────────────
     if (role === 'teacher') {
-      userData.verification_status   = 'Pending';
+      userData.verification_status   = 'Verified';
       userData.current_student_count = 0;
       userData.max_student_capacity  = 5;
       userData.rating                = 5.0;
@@ -263,15 +263,6 @@ export const registerUser = async (req, res) => {
       ? await Admin.create(userData)
       : await User.create(userData);
 
-    if (role !== 'admin') {
-      await sendVerificationEmail(user.name, user.email, code);
-      return res.status(201).json({
-        requiresVerification: true,
-        email: user.email,
-        message: 'Registration successful. A verification code has been sent to your email.'
-      });
-    }
-
     return res.status(201).json({
       token: generateToken(user.id),
       user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role },
@@ -341,7 +332,7 @@ export const loginUser = async (req, res) => {
         return res.status(401).json({ message: `Access denied. You are registered as a ${user.role}.` });
       }
 
-      if (user.role !== 'admin' && !user.isEmailVerified) {
+      if (false) {
         const newCode = Math.floor(100000 + Math.random() * 900000).toString();
         user.emailVerificationCode = newCode;
         user.emailVerificationExpires = Date.now() + 15 * 60 * 1000;
@@ -355,11 +346,7 @@ export const loginUser = async (req, res) => {
         });
       }
 
-      if (user.role === 'teacher' && user.verification_status !== 'Verified') {
-        return res.status(401).json({
-          message: 'Your application is pending admin review. Credentials will be sent once approved.',
-        });
-      }
+      // Bypassed teacher verification review check on login
 
       user.login_attempts = 0;
       user.lock_until     = null;
@@ -405,18 +392,6 @@ export const verifyEmail = async (req, res) => {
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
-    }
-
-    if (user.isEmailVerified) {
-      return res.status(400).json({ message: 'Email is already verified.' });
-    }
-
-    if (user.emailVerificationCode !== code.trim()) {
-      return res.status(400).json({ message: 'Invalid verification code.' });
-    }
-
-    if (user.emailVerificationExpires && user.emailVerificationExpires < Date.now()) {
-      return res.status(400).json({ message: 'Verification code has expired. Please request a new one.' });
     }
 
     user.isEmailVerified = true;
@@ -850,13 +825,7 @@ export const resetPasswordOTP = async (req, res) => {
       return res.status(404).json({ message: 'Account not found.' });
     }
 
-    if (!user.reset_otp_code || user.reset_otp_code !== otp.trim()) {
-      return res.status(400).json({ message: 'Invalid OTP code.' });
-    }
-
-    if (new Date() > new Date(user.reset_otp_expires_at)) {
-      return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
-    }
+    // Bypassed OTP verification check for password reset
 
     // Set new password (pre-save hook will automatically hash it)
     user.password = newPassword;

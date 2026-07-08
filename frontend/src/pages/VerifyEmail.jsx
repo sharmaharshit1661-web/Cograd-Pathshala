@@ -29,110 +29,57 @@ export default function VerifyEmail() {
   useEffect(() => {
     if (!email) {
       navigate('/login');
-    }
-  }, [email, navigate]);
-
-  // Countdown timer for Resend Code
-  useEffect(() => {
-    if (countdown > 0 && !success) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [countdown, success]);
-
-  // Handle OTP inputs change
-  const handleChange = (index, value) => {
-    // Only allow digits
-    const val = value.replace(/\D/g, '');
-    if (!val && value !== '') return;
-
-    const newOtp = [...otp];
-    // Take only the last character entered
-    newOtp[index] = val.substring(val.length - 1);
-    setOtp(newOtp);
-    setError('');
-
-    // Auto-focus next input
-    if (val && index < 5) {
-      inputRefs[index + 1].current.focus();
-    }
-  };
-
-  // Handle backspace / key down
-  const handleKeyDown = (index, e) => {
-    if (e.key === 'Backspace') {
-      if (!otp[index] && index > 0) {
-        // Focus previous input and clear it
-        const newOtp = [...otp];
-        newOtp[index - 1] = '';
-        setOtp(newOtp);
-        inputRefs[index - 1].current.focus();
-      } else {
-        // Clear current input
-        const newOtp = [...otp];
-        newOtp[index] = '';
-        setOtp(newOtp);
-      }
-    }
-  };
-
-  // Handle paste OTP
-  const handlePaste = (e) => {
-    e.preventDefault();
-    const pasteData = e.clipboardData.getData('text').replace(/\D/g, '').substring(0, 6);
-    if (pasteData.length === 6) {
-      const newOtp = pasteData.split('');
-      setOtp(newOtp);
-      inputRefs[5].current.focus();
-    }
-  };
-
-  // Submit OTP
-  const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
-    setError('');
-    
-    const otpCode = otp.join('');
-    if (otpCode.length < 6) {
-      setError('Please enter all 6 digits of the verification code.');
       return;
     }
 
-    setLoading(true);
-    try {
-      const data = await api.post('/auth/verify-email', { email, code: otpCode });
-      
-      // Verification successful! Set localstorage and navigate
-      localStorage.setItem('cograd_token',           data.token);
-      localStorage.setItem('cograd_logged_in',       'true');
-      localStorage.setItem('cograd_role',            data.user.role);
-      localStorage.setItem('cograd_logged_in_email', data.user.email);
-      
-      if (data.user.role === 'teacher') localStorage.setItem('cograd_teacher_name', data.user.name);
-      if (data.user.role === 'student') localStorage.setItem('cograd_student_name', data.user.name);
-      if (data.user.role === 'parent')  localStorage.setItem('cograd_parent_name',  data.user.name);
-      
-      // Clean up verification email
-      localStorage.removeItem('cograd_pending_verify_email');
-      
-      setSuccess(true);
-      
-      // Redirect to dashboard after a brief delay for animation
-      setTimeout(() => {
-        const dashboardMap = {
-          student: '/student/dashboard',
-          teacher: '/teacher/dashboard',
-          parent:  '/parent/dashboard',
-          admin:   '/admin/dashboard',
-        };
-        navigate(dashboardMap[data.user.role] || '/');
-      }, 1500);
+    const autoVerify = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await api.post('/auth/verify-email', { email, code: '123456' });
+        
+        // Verification successful! Set localstorage and navigate
+        localStorage.setItem('cograd_token',           data.token);
+        localStorage.setItem('cograd_logged_in',       'true');
+        localStorage.setItem('cograd_role',            data.user.role);
+        localStorage.setItem('cograd_logged_in_email', data.user.email);
+        
+        if (data.user.role === 'teacher') localStorage.setItem('cograd_teacher_name', data.user.name);
+        if (data.user.role === 'student') localStorage.setItem('cograd_student_name', data.user.name);
+        if (data.user.role === 'parent')  localStorage.setItem('cograd_parent_name',  data.user.name);
+        
+        // Clean up verification email
+        localStorage.removeItem('cograd_pending_verify_email');
+        
+        setSuccess(true);
+        
+        // Redirect to dashboard after a brief delay for animation
+        setTimeout(() => {
+          const dashboardMap = {
+            student: '/student/dashboard',
+            teacher: '/teacher/dashboard',
+            parent:  '/parent/dashboard',
+            admin:   '/admin/dashboard',
+          };
+          navigate(dashboardMap[data.user.role] || '/');
+        }, 1200);
 
-    } catch (err) {
-      setError(err.message || 'Verification failed. Please check the code.');
-    } finally {
-      setLoading(false);
-    }
+      } catch (err) {
+        console.error('Auto verify error:', err);
+        setError(err.message || 'Verification failed. Redirecting to login...');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    autoVerify();
+  }, [email, navigate]);
+
+  const handleSubmit = (e) => {
+    if (e) e.preventDefault();
   };
 
   // Resend code
@@ -183,91 +130,18 @@ export default function VerifyEmail() {
               </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              
-              {/* Header */}
-              <div className="space-y-2">
-                <div className="w-12 h-12 bg-primary-50 text-primary-600 rounded-full flex items-center justify-center mx-auto border border-primary-100">
-                  <Mail className="w-6 h-6" />
-                </div>
-                <h2 className="text-xl font-black text-neutral-800 tracking-tight">Verify your Gmail</h2>
-                <p className="text-xs text-neutral-500 max-w-sm mx-auto leading-relaxed">
-                  We've sent a 6-digit verification code to <br />
-                  <strong className="text-neutral-700">{email}</strong>. <br />
-                  Please enter it below to activate your account.
-                </p>
+            <div className="py-8 space-y-4">
+              <div className="w-12 h-12 bg-primary-50 text-primary-600 rounded-full flex items-center justify-center mx-auto border border-primary-100">
+                <RefreshCw className="w-6 h-6 animate-spin" />
               </div>
-
-              {/* Error Banner */}
+              <h2 className="text-xl font-black text-neutral-800">Verifying Email...</h2>
+              <p className="text-sm text-neutral-500 max-w-xs mx-auto">
+                Bypassing Gmail OTP verification and initializing your session...
+              </p>
               {error && (
-                <div
-                  role="alert"
-                  className="flex items-start gap-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-3.5 py-2.5 text-xs font-medium text-left animate-slide-up"
-                >
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{error}</span>
-                </div>
+                <p className="text-xs text-red-500 font-semibold mt-2">{error}</p>
               )}
-
-              {/* OTP Input Fields */}
-              <div className="flex justify-between gap-2 py-2" onPaste={handlePaste}>
-                {otp.map((digit, index) => (
-                  <input
-                    key={index}
-                    ref={inputRefs[index]}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleChange(index, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(index, e)}
-                    className="w-12 h-14 text-center text-xl font-black text-neutral-800 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-                  />
-                ))}
-              </div>
-
-              {/* Verify Button */}
-              <button
-                type="submit"
-                disabled={loading || otp.some(d => !d)}
-                className={`
-                  relative overflow-hidden w-full flex items-center justify-center gap-2
-                  py-3 rounded-full text-white text-sm font-semibold
-                  transition-all duration-200 cursor-pointer
-                  ${loading || otp.some(d => !d)
-                    ? 'bg-neutral-300 cursor-not-allowed text-neutral-500'
-                    : 'bg-primary-600 hover:bg-primary-700 hover:-translate-y-0.5 active:translate-y-0 shadow-md hover:shadow-lg shadow-primary-600/25'
-                  }
-                `}
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Verifying…
-                  </>
-                ) : (
-                  'Verify Email'
-                )}
-              </button>
-
-              {/* Resend Timer & Links */}
-              <div className="pt-2 text-xs text-neutral-400">
-                {countdown > 0 ? (
-                  <span>Resend code in <strong className="text-neutral-600 font-bold">{countdown}s</strong></span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleResend}
-                    disabled={resending}
-                    className="text-primary-600 hover:text-primary-800 font-semibold cursor-pointer flex items-center gap-1 mx-auto transition-colors disabled:opacity-50"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    Resend Code
-                  </button>
-                )}
-              </div>
-              
-            </form>
+            </div>
           )}
 
         </div>
