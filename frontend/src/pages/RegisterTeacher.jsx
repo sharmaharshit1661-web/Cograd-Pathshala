@@ -4,11 +4,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   User, Mail, Phone, CheckCircle, ArrowLeft, GraduationCap,
   BookOpen, Calendar, X, Upload, FileText, Trash2, AlertCircle,
-  MapPin, Briefcase, FileUp, Sparkles, ShieldCheck, ArrowRight
+  MapPin, Briefcase, ShieldCheck, ArrowRight
 } from 'lucide-react';
 import LocalityAutocomplete from '../components/LocalityAutocomplete';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
-import { auth } from '../utils/firebase';
 const SUBJECTS = [
   'Mathematics', 'Science', 'English', 'Hindi', 'Physics', 'Chemistry', 'Biology',
   'History', 'Geography', 'Computer Science', 'Economics', 'Accountancy', 'Business Studies',
@@ -48,28 +46,28 @@ const DOC_TYPES = [
   {
     id: 'avatar',
     label: 'Profile Picture / Avatar',
-    hint: 'Upload a professional headshot image (JPG, PNG)',
+    hint: 'Upload a professional headshot image (JPG, PNG) · Max 150 KB',
     required: true,
     accept: '.jpg,.jpeg,.png',
   },
   {
     id: 'degree',
     label: 'Degree / Qualification Certificate',
-    hint: 'Upload your highest academic certificate (PDF, JPG, PNG)',
+    hint: 'Upload your highest academic certificate (PDF, JPG, PNG) · Max 10 MB',
     required: true,
     accept: '.pdf,.jpg,.jpeg,.png',
   },
   {
     id: 'id_proof',
     label: 'Government ID Proof',
-    hint: 'Aadhar Card, PAN Card, or Passport (PDF, JPG, PNG)',
+    hint: 'Aadhar Card, PAN Card, or Passport (PDF, JPG, PNG) · Max 10 MB',
     required: true,
     accept: '.pdf,.jpg,.jpeg,.png',
   },
   {
     id: 'resume',
     label: 'Professional Resume / CV',
-    hint: 'Upload your latest Resume/CV (PDF, JPG, PNG)',
+    hint: 'Upload your latest Resume/CV (PDF, JPG, PNG) · Max 10 MB',
     required: true,
     accept: '.pdf,.jpg,.jpeg,.png',
   },
@@ -94,7 +92,12 @@ const UploadZone = ({ doc, file, onFile, onRemove }) => {
     const ext = f.name.split('.').pop().toLowerCase();
     const allowed = doc.accept.replace(/\./g, '').split(',');
     if (!allowed.includes(ext)) return `Invalid type. Allowed: ${doc.accept}`;
-    if (f.size > MAX_FILE_SIZE_MB * 1024 * 1024) return `File too large (max ${MAX_FILE_SIZE_MB} MB)`;
+    
+    const isImage = doc.id === 'avatar' || doc.id === 'selfie';
+    const maxSize = isImage ? 150 * 1024 : 10 * 1024 * 1024;
+    const maxSizeLabel = isImage ? '150 KB' : '10 MB';
+    
+    if (f.size > maxSize) return `File too large (max ${maxSizeLabel})`;
     return '';
   };
 
@@ -160,7 +163,9 @@ const UploadZone = ({ doc, file, onFile, onRemove }) => {
             <p className="text-xs font-bold text-slate-600">
               Drag & drop or <span className="text-indigo-600 hover:underline">browse</span>
             </p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Max {MAX_FILE_SIZE_MB} MB · {doc.accept}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              Max {doc.id === 'avatar' ? '150 KB' : '10 MB'} · {doc.accept}
+            </p>
           </div>
           <input
             ref={inputRef}
@@ -181,9 +186,24 @@ const UploadZone = ({ doc, file, onFile, onRemove }) => {
   );
 };
 
+/* ── Email domain restriction ── */
+const ALLOWED_EMAIL_DOMAINS = ['gmail.com', 'yahoo.com'];
+const isAllowedEmail = (email) => {
+  if (!email || !email.includes('@')) return false;
+  const domain = email.split('@').pop().toLowerCase();
+  return ALLOWED_EMAIL_DOMAINS.includes(domain);
+};
+
+const QUALIFICATION_SUGGESTIONS = [
+  "B.Ed", "B.Tech", "B.Sc", "B.A", "B.Com", "BCA", "BBA", "B.El.Ed", "B.P.Ed", "B.E", "B.Pharm",
+  "M.Ed", "M.Tech", "M.Sc", "M.A", "M.Com", "MCA", "MBA", "M.E", "M.Phil",
+  "Ph.D", "D.El.Ed", "D.Ed", "NTT", "CTET", "TET"
+];
+
 /* ── Main Component ── */
 const RegisterTeacher = () => {
   const [step, setStep] = useState(1);
+  const [showQualDropdown, setShowQualDropdown] = useState(false);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -202,6 +222,13 @@ const RegisterTeacher = () => {
   const [gradeLevels, setGradeLevels] = useState(['Class 9', 'Class 10']);
   const [docs, setDocs] = useState({});
 
+  const filteredQuals = form.qualifications.trim() === "" 
+    ? [] 
+    : QUALIFICATION_SUGGESTIONS.filter(q => 
+        q.toLowerCase().startsWith(form.qualifications.toLowerCase()) || 
+        q.toLowerCase().includes(form.qualifications.toLowerCase())
+      );
+
   const handleGradeToggle = (grade) => {
     setGradeLevels(prev => {
       if (prev.includes(grade)) {
@@ -215,12 +242,7 @@ const RegisterTeacher = () => {
   };
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [verifyForm, setVerifyForm] = useState({ emailOtp: '', phoneOtp: '' });
-  const [verifyLoading, setVerifyLoading] = useState(false);
-  const [verifyError, setVerifyError] = useState('');
-  const [isVerified, setIsVerified] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState(null);
+
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
 
@@ -231,6 +253,15 @@ const RegisterTeacher = () => {
       if (numeric.length <= 10) {
         setForm((p) => ({ ...p, phone: numeric }));
         setErrors(prev => ({ ...prev, phone: '' }));
+      }
+      return;
+    }
+    if (name === 'email') {
+      setForm((p) => ({ ...p, email: value }));
+      if (value && value.includes('@') && !isAllowedEmail(value)) {
+        setErrors(prev => ({ ...prev, email: 'Only @gmail.com and @yahoo.com emails are allowed.' }));
+      } else {
+        setErrors(prev => ({ ...prev, email: '' }));
       }
       return;
     }
@@ -264,6 +295,8 @@ const RegisterTeacher = () => {
         newErrors.email = 'Email address is required';
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
         newErrors.email = 'Please enter a valid email';
+      } else if (!isAllowedEmail(form.email)) {
+        newErrors.email = 'Only @gmail.com and @yahoo.com emails are allowed.';
       }
       if (!form.phone.trim()) {
         newErrors.phone = 'Phone number is required';
@@ -285,38 +318,7 @@ const RegisterTeacher = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const sendPostRequest = async (endpoint, payload) => {
-    let baseUrl = import.meta.env.VITE_API_URL || 'https://cograd-pathshala-ygyi.onrender.com/api';
-    let response;
-    try {
-      response = await fetch(`${baseUrl}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-    } catch (error) {
-      const localPrefix = 'http://127.0.0.1:4000/api';
-      const localhostPrefix = 'http://localhost:4000/api';
-      if (
-        (baseUrl.startsWith(localPrefix) || baseUrl.startsWith(localhostPrefix)) &&
-        (error.message === 'Failed to fetch' || error.name === 'TypeError')
-      ) {
-        const prodBaseUrl = 'https://cograd-pathshala-ygyi.onrender.com/api';
-        response = await fetch(`${prodBaseUrl}${endpoint}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        throw error;
-      }
-    }
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || 'Request failed');
-    }
-    return data;
-  };
+
 
   const handleNext = () => {
     if (validateStep(step)) {
@@ -504,7 +506,7 @@ const RegisterTeacher = () => {
                       required
                       value={form.email}
                       onChange={handleChange}
-                      placeholder="e.g. priya@example.com"
+                      placeholder="e.g. priya@gmail.com"
                       className={`form-input ${errors.email ? 'border-red-400' : ''}`}
                     />
                     {errors.email && <p className="text-[10px] text-red-500 font-semibold mt-1">{errors.email}</p>}
@@ -616,21 +618,43 @@ const RegisterTeacher = () => {
                   2. Teaching Credentials
                 </h3>
 
-                <div>
-                  <label className="form-label">
-                    <GraduationCap className="w-3.5 h-3.5 text-slate-400 mr-1.5 inline" />Qualifications
-                  </label>
-                  <input
-                    type="text"
-                    name="qualifications"
-                    required
-                    value={form.qualifications}
-                    onChange={handleChange}
-                    placeholder="e.g. M.Sc Mathematics, B.Ed"
-                    className={`form-input ${errors.qualifications ? 'border-red-400' : ''}`}
-                  />
-                  {errors.qualifications && <p className="text-[10px] text-red-500 font-semibold mt-1">{errors.qualifications}</p>}
-                </div>
+                 <div>
+                   <label className="form-label">
+                     <GraduationCap className="w-3.5 h-3.5 text-slate-400 mr-1.5 inline" />Qualifications
+                   </label>
+                   <div className="relative">
+                     <input
+                       type="text"
+                       name="qualifications"
+                       required
+                       value={form.qualifications}
+                       onChange={handleChange}
+                       onFocus={() => setShowQualDropdown(true)}
+                       onBlur={() => setTimeout(() => setShowQualDropdown(false), 200)}
+                       placeholder="e.g. M.Sc Mathematics, B.Ed"
+                       className={`form-input ${errors.qualifications ? 'border-red-400' : ''}`}
+                     />
+                     {showQualDropdown && filteredQuals.length > 0 && (
+                       <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                         {filteredQuals.map((q) => (
+                           <button
+                             key={q}
+                             type="button"
+                             onMouseDown={() => {
+                               setForm(prev => ({ ...prev, qualifications: q }));
+                               setShowQualDropdown(false);
+                             }}
+                             className="w-full px-4 py-2.5 text-xs text-left hover:bg-slate-50 text-slate-700 hover:text-slate-900 font-semibold border-none cursor-pointer flex items-center gap-2"
+                           >
+                             <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                             <span>{q}</span>
+                           </button>
+                         ))}
+                       </div>
+                     )}
+                   </div>
+                   {errors.qualifications && <p className="text-[10px] text-red-500 font-semibold mt-1">{errors.qualifications}</p>}
+                 </div>
 
                 <div>
                   <label className="form-label">

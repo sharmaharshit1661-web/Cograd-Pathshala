@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../utils/api';
 import {
@@ -20,6 +20,13 @@ const DASHBOARD_MAP = {
   admin:   '/admin/dashboard',
 };
 
+const ALLOWED_EMAIL_DOMAINS = ['gmail.com', 'yahoo.com', 'cograd.com', 'cograd.in', 'admin.in'];
+const isAllowedEmail = (email) => {
+  if (!email || !email.includes('@')) return false;
+  const domain = email.split('@').pop().toLowerCase();
+  return ALLOWED_EMAIL_DOMAINS.includes(domain);
+};
+
 export default function Login() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -31,32 +38,17 @@ export default function Login() {
   const [remember,  setRemember]  = useState(false);
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState('');
-
-  // OTP Login states
-  const [loginType, setLoginType] = useState('password'); // 'password' or 'otp'
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpVal, setOtpVal] = useState('');
-  const [countdown, setCountdown] = useState(0);
+  const [emailError, setEmailError] = useState('');
 
   // Forgot password modal states
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotIdentifier, setForgotIdentifier] = useState('');
-  const [forgotOtpSent, setForgotOtpSent] = useState(false);
-  const [forgotOtp, setForgotOtp] = useState('');
   const [newPasswordText, setNewPasswordText] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotError, setForgotError] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState('');
 
-  // Timer Effect
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [countdown]);
-
-  const handleGoogleLoginCallback = async (response) => {
+  const handleGoogleLoginCallback = useCallback(async (response) => {
     setLoading(true);
     setError('');
     try {
@@ -93,7 +85,7 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [role, navigate]);
 
   const handleGoogleCallbackRef = useRef(handleGoogleLoginCallback);
   useEffect(() => {
@@ -138,53 +130,9 @@ export default function Login() {
     return () => clearInterval(checkInterval);
   }, [role]);
 
-  const handleSendOTP = async () => {
-    setError('');
-    const identifier = email.trim();
-    if (!identifier) {
-      setError('Please enter your email or phone number.');
-      return;
-    }
-    setLoading(true);
-    try {
-      const data = await api.post('/auth/send-login-otp', { identifier, role });
-      setOtpSent(true);
-      setCountdown(60);
-      setError(''); // Clear error on success
-      alert(data.message || 'OTP sent successfully!');
-    } catch (err) {
-      setError(err.message || 'Failed to send OTP.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleVerifyOTP = async (e) => {
-    if (e) e.preventDefault();
-    setError('');
-    const identifier = email.trim();
-    if (!identifier || !otpVal) {
-      setError('Please enter your email/phone and OTP.');
-      return;
-    }
-    setLoading(true);
-    try {
-      const data = await api.post('/auth/verify-login-otp', { identifier, role, otp: otpVal });
-      
-      localStorage.setItem('cograd_token',           data.token);
-      localStorage.setItem('cograd_logged_in',       'true');
-      localStorage.setItem('cograd_role',            data.user.role);
-      localStorage.setItem('cograd_logged_in_email', data.user.email);
-      if (data.user.role === 'teacher') localStorage.setItem('cograd_teacher_name', data.user.name);
-      if (data.user.role === 'student') localStorage.setItem('cograd_student_name', data.user.name);
-      if (data.user.role === 'parent')  localStorage.setItem('cograd_parent_name',  data.user.name);
-      navigate(DASHBOARD_MAP[data.user.role] || '/');
-    } catch (err) {
-      setError(err.message || 'Invalid or expired OTP.');
-    } finally {
-      setLoading(false);
-    }
-  };
+
+
 
   const handleDirectResetPassword = async (e) => {
     if (e) e.preventDefault();
@@ -227,6 +175,10 @@ export default function Login() {
       setError('Enter a valid email address or 10-digit phone number.');
       return;
     }
+    if (!isPhone && !isAllowedEmail(identifier)) {
+      setEmailError('Only @gmail.com and @yahoo.com emails are allowed.');
+      return;
+    }
     setLoading(true);
     try {
       const data = await api.post('/auth/login', { email: identifier, password, role });
@@ -248,33 +200,7 @@ export default function Login() {
     } finally { setLoading(false); }
   };
 
-  const handleOauth = async (provider) => {
-    if (provider === 'Google') {
-      const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      if (!googleClientId) {
-        // Fallback/Mock mode for developer experience
-        setLoading(true);
-        setError('');
-        try {
-          const mockEmail = role === 'student' ? 'student@gmail.com' : role === 'parent' ? 'parent@gmail.com' : 'teacher@gmail.com';
-          const mockToken = `mock-google-token-${mockEmail}`;
-          await handleGoogleLoginCallback({ credential: mockToken });
-        } catch (err) {
-          setError(err.message);
-        } finally {
-          setLoading(false);
-        }
-        return;
-      }
-      try {
-        window.google.accounts.id.prompt();
-      } catch (e) {
-        setError('Google Sign-In library error. Please ensure Google Client ID is configured.');
-      }
-    } else {
-      alert(`${provider} sign-in is not supported. Use Google instead.`);
-    }
-  };
+
 
   const activeRole = ROLES.find((r) => r.id === role);
 
@@ -386,13 +312,23 @@ export default function Login() {
                   type="text"
                   required
                   value={email}
-                  onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                  className="form-input"
-                  placeholder="you@example.com or 9876543210"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEmail(val);
+                    setError('');
+                    if (val.includes('@') && !isAllowedEmail(val)) {
+                      setEmailError('Only @gmail.com and @yahoo.com emails are allowed.');
+                    } else {
+                      setEmailError('');
+                    }
+                  }}
+                  className={`form-input ${emailError ? 'border-red-400' : ''}`}
+                  placeholder="you@gmail.com or 9876543210"
                   autoComplete="username"
                   aria-describedby={error ? 'login-error' : undefined}
                 />
               </div>
+              {emailError && <p className="text-[10px] text-red-500 font-semibold mt-1">{emailError}</p>}
             </div>
 
             {/* Password */}

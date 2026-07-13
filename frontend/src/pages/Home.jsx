@@ -308,44 +308,179 @@ function useReveal() {
 const Home = () => {
   const pageRef = useReveal();
   const [selectedDistrict, setSelectedDistrict] = useState(0);
-  const [selectedCity, setSelectedCity] = useState("Meerut");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const dropdownRef = useRef(null);
+  const [locationInput, setLocationInput] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const searchBarRef = useRef(null);
+  const debounceTimeoutRef = useRef(null);
+
+  // Flatten the cities for fallback local suggestions
+  const FLAT_CITIES = CITY_GROUPS.flatMap(g => 
+    g.cities.map(c => ({ name: c.name, value: c.value, state: g.label }))
+  );
+
+  // Popular cities shown by default when input is empty but focused
+  const POPULAR_CITIES = [
+    { name: "Delhi NCR", value: "Delhi NCR", state: "Delhi NCR" },
+    { name: "Lucknow", value: "Lucknow", state: "Uttar Pradesh" },
+    { name: "Meerut", value: "Meerut", state: "Uttar Pradesh" },
+    { name: "Allahabad", value: "Allahabad", state: "Uttar Pradesh" },
+    { name: "Jaipur", value: "Jaipur", state: "Rajasthan" },
+    { name: "Dehradun", value: "Dehradun", state: "Uttarakhand" }
+  ];
+
+  // Initialize suggestions with popular cities on mount
+  useEffect(() => {
+    setSuggestions(POPULAR_CITIES);
+  }, []);
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
+      if (searchBarRef.current && !searchBarRef.current.contains(e.target)) {
+        setShowSuggestions(false);
       }
     };
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
-  const handleSelectCity = (cityVal) => {
-    let matchedVal = cityVal;
-    for (const group of CITY_GROUPS) {
-      const match = group.cities.find(c => c.name.toLowerCase() === cityVal.toLowerCase() || c.value.toLowerCase() === cityVal.toLowerCase());
-      if (match) {
-        matchedVal = match.value;
-        break;
-      }
+  const handleInputChange = (value) => {
+    setLocationInput(value);
+    
+    if (value.trim() === "") {
+      setSuggestions(POPULAR_CITIES);
+      return;
     }
-    setSelectedCity(matchedVal);
-    setDropdownOpen(false);
-    const areaInput = document.getElementById('area-input');
-    if (areaInput) areaInput.focus();
-    window.scrollTo({ top: 250, behavior: 'smooth' });
+
+    if (value.trim().length < 2) {
+      return;
+    }
+
+    // Debounce the Nominatim Geocoding API request
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    setLoadingSuggestions(true);
+    debounceTimeoutRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&countrycodes=in&addressdetails=1&limit=6`,
+          {
+            headers: {
+              "Accept-Language": "en"
+            }
+          }
+        );
+        const data = await res.json();
+        
+        if (data && data.length > 0) {
+          const formatted = data.map(item => {
+            const address = item.address || {};
+            // Determine name
+            const name = address.suburb || address.neighbourhood || address.village || address.city_district || address.city || address.town || item.name;
+            
+            // Build non-repetitive clean visual representation
+            const details = item.display_name.split(",");
+            const titleLabel = details[0].trim();
+            const subtitleLabel = details.slice(1).map(d => d.trim()).filter(d => d && d !== titleLabel).slice(0, 3).join(", ");
+
+            // Check if this location is in/near one of our served cities
+            let matchedCityValue = "All";
+            for (const city of FLAT_CITIES) {
+              if (
+                item.display_name.toLowerCase().includes(city.name.toLowerCase()) || 
+                item.display_name.toLowerCase().includes(city.value.toLowerCase())
+              ) {
+                matchedCityValue = city.value;
+                break;
+              }
+            }
+
+            return {
+              name: titleLabel,
+              value: matchedCityValue,
+              area: name,
+              state: subtitleLabel
+            };
+          });
+          setSuggestions(formatted);
+        } else {
+          // No Nominatim results, fall back to local cities
+          const localMatches = FLAT_CITIES.filter(city => 
+            city.name.toLowerCase().includes(value.toLowerCase()) ||
+            city.state.toLowerCase().includes(value.toLowerCase())
+          ).map(city => ({
+            name: city.name,
+            value: city.value,
+            area: "",
+            state: city.state
+          }));
+          setSuggestions(localMatches);
+        }
+      } catch (err) {
+        console.error("Geocoding lookup failed, using local cities fallback:", err);
+        const localMatches = FLAT_CITIES.filter(city => 
+          city.name.toLowerCase().includes(value.toLowerCase()) ||
+          city.state.toLowerCase().includes(value.toLowerCase())
+        ).map(city => ({
+          name: city.name,
+          value: city.value,
+          area: "",
+          state: city.state
+        }));
+        setSuggestions(localMatches);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    }, 350);
   };
 
-  const filteredCityGroups = CITY_GROUPS.map(group => {
-    const matching = group.cities.filter(c => 
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      group.label.toLowerCase().includes(searchQuery.toLowerCase())
+  const handleSelectSuggestion = (city) => {
+    setLocationInput(city.name);
+    setShowSuggestions(false);
+    // Proceed to search page
+    const locParam = city.value || "All";
+    const areaParam = city.area || "";
+    window.location.href = `/student?location=${encodeURIComponent(locParam)}&area=${encodeURIComponent(areaParam)}`;
+  };
+
+  const handleSearch = () => {
+    const query = locationInput.trim();
+    if (!query) return;
+
+    // Check if query matches a local city name exactly
+    const matchedCity = FLAT_CITIES.find(c => 
+      c.name.toLowerCase() === query.toLowerCase() || 
+      c.value.toLowerCase() === query.toLowerCase()
     );
-    return { ...group, cities: matching };
-  }).filter(group => group.cities.length > 0);
+
+    if (matchedCity) {
+      window.location.href = `/student?location=${encodeURIComponent(matchedCity.value)}`;
+    } else {
+      // Split into city and area if input is "City Area" e.g., "Meerut Shastri Nagar"
+      const words = query.split(/\s+/);
+      let cityFound = null;
+      let areaWords = [];
+      
+      for (let i = 0; i < words.length; i++) {
+        const potentialCity = words.slice(0, i + 1).join(" ");
+        const match = FLAT_CITIES.find(c => c.name.toLowerCase() === potentialCity.toLowerCase());
+        if (match) {
+          cityFound = match;
+          areaWords = words.slice(i + 1);
+        }
+      }
+
+      if (cityFound) {
+        window.location.href = `/student?location=${encodeURIComponent(cityFound.value)}&area=${encodeURIComponent(areaWords.join(" "))}`;
+      } else {
+        // Search globally (location: All, area: input query)
+        window.location.href = `/student?location=All&area=${encodeURIComponent(query)}`;
+      }
+    }
+  };
 
   return (
     <div ref={pageRef} className="min-h-screen bg-neutral-50">
@@ -480,113 +615,73 @@ const Home = () => {
             </p>
 
             <div
-              className="max-w-2xl mx-auto bg-white border border-neutral-200/80 rounded-2xl p-3.5 mb-6 animate-slide-up transition-all duration-300 focus-within:shadow-[0_8px_32px_rgba(37,99,235,0.12)] focus-within:border-primary-200 relative z-30"
+              ref={searchBarRef}
+              className="max-w-2xl mx-auto bg-white border border-neutral-200/80 rounded-2xl p-2 mb-6 animate-slide-up transition-all duration-300 focus-within:shadow-[0_8px_32px_rgba(37,99,235,0.12)] focus-within:border-primary-300 relative z-30"
               style={{ animationDelay: '220ms', boxShadow: '0 4px 24px rgba(15,23,42,0.06)' }}
             >
-              <div className="text-left text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2.5 px-1 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-primary-500" aria-hidden="true" />
-                <span>Find a verified home tutor in your area</span>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2.5">
-                {/* Custom City Dropdown */}
-                <div className="flex-grow sm:flex-1 relative" ref={dropdownRef}>
-                  <button
-                    type="button"
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="w-full h-12 px-4 bg-slate-50 hover:bg-slate-100/70 border border-neutral-200 rounded-xl text-sm font-semibold text-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-400 transition-all cursor-pointer flex items-center justify-between text-left"
-                  >
-                    <span className="truncate">
-                      📍 {
-                        (() => {
-                          for (const g of CITY_GROUPS) {
-                            const match = g.cities.find(c => c.value === selectedCity);
-                            if (match) return match.name;
-                          }
-                          return selectedCity;
-                        })()
-                      }
-                    </span>
-                    <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform duration-200 shrink-0 ${dropdownOpen ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {/* Hidden input to preserve city value for backwards compatibility */}
-                  <input type="hidden" id="city-select" value={selectedCity} readOnly />
-
-                  {/* Dropdown panel */}
-                  {dropdownOpen && (
-                    <div className="absolute left-0 right-0 mt-1.5 bg-white border border-neutral-100 rounded-2xl shadow-xl z-50 overflow-hidden w-full sm:min-w-[280px]">
-                      {/* Search Bar */}
-                      <div className="p-2.5 border-b border-neutral-100 flex items-center gap-2">
-                        <Search className="w-4 h-4 text-neutral-400 shrink-0" />
-                        <input
-                          type="text"
-                          placeholder="Search city or state..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full text-xs font-semibold placeholder-neutral-400 bg-transparent outline-none focus:ring-0 focus:border-0 border-0 p-0"
-                          autoFocus
-                        />
-                      </div>
-
-                      {/* List options */}
-                      <div className="max-h-64 overflow-y-auto py-1">
-                        {filteredCityGroups.length > 0 ? (
-                          filteredCityGroups.map((group) => (
-                            <div key={group.label}>
-                              <div className="px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-neutral-400 bg-slate-50/50">
-                                {group.label}
-                              </div>
-                              {group.cities.map((city) => {
-                                const isSelected = city.value === selectedCity;
-                                return (
-                                  <button
-                                    key={city.value}
-                                    type="button"
-                                    onClick={() => handleSelectCity(city.value)}
-                                    className={`w-full px-4 py-2 text-xs text-left transition-colors flex items-center justify-between border-0 cursor-pointer ${
-                                      isSelected
-                                        ? 'bg-primary-50 text-primary-700 font-bold'
-                                        : 'bg-white hover:bg-slate-50 text-neutral-600 hover:text-neutral-900 font-medium'
-                                    }`}
-                                  >
-                                    <span>📍 {city.name}</span>
-                                    {isSelected && <span className="text-[10px] font-black uppercase text-primary-600">Selected</span>}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="px-4 py-6 text-xs text-center text-neutral-400 font-medium">
-                            No cities found matching "{searchQuery}"
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {/* Area Input */}
-                <div className="flex-[2] relative">
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <div className="flex items-center flex-1 w-full gap-2 px-3 py-2">
+                  <MapPin className="w-5 h-5 text-primary-500 shrink-0 animate-pulse" aria-hidden="true" />
                   <input
                     type="text"
-                    id="area-input"
-                    aria-label="Enter your area"
-                    placeholder="Your area or sector, e.g. Shastri Nagar…"
-                    className="w-full h-12 px-4 bg-slate-50 border border-neutral-200 rounded-xl text-sm font-medium text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-400 focus:bg-white transition-all"
+                    value={locationInput}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    onFocus={() => setShowSuggestions(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSearch();
+                      }
+                    }}
+                    placeholder="Enter your city or area (e.g. Noida, Meerut, Shastri Nagar)..."
+                    className="w-full text-sm font-semibold placeholder-neutral-400 bg-transparent border-0 outline-none focus:ring-0 p-0 text-neutral-800"
                   />
                 </div>
-                {/* Search Button */}
                 <button
-                  onClick={() => {
-                    const area = document.getElementById('area-input').value;
-                    window.location.href = `/student?location=${encodeURIComponent(selectedCity)}&area=${encodeURIComponent(area)}`;
-                  }}
-                  className="btn-primary h-12 px-7 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-primary-500/20 active:scale-[0.97] transition-all cursor-pointer whitespace-nowrap"
+                  onClick={handleSearch}
+                  className="w-full sm:w-auto btn-primary h-11 px-7 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-primary-500/20 active:scale-[0.97] transition-all cursor-pointer whitespace-nowrap"
                 >
                   <Search className="w-4 h-4" aria-hidden="true" />
                   <span>Find Tutors</span>
                 </button>
               </div>
+
+              {/* Suggestions Dropdown panel */}
+              {showSuggestions && (
+                <div className="absolute left-0 right-0 mt-3 bg-white border border-neutral-100 rounded-2xl shadow-xl z-50 overflow-hidden text-left max-h-72 overflow-y-auto">
+                  <div className="px-3.5 py-2.5 text-[10px] font-black uppercase tracking-wider text-neutral-400 bg-slate-50/50 flex items-center justify-between">
+                    <span>{locationInput.trim() === "" ? "⚡ Popular Locations" : "📍 Location Matches"}</span>
+                    {loadingSuggestions && (
+                      <span className="animate-pulse text-[9px] text-primary-500 font-bold">Searching...</span>
+                    )}
+                  </div>
+                  <div className="py-1">
+                    {suggestions.map((city, idx) => (
+                      <button
+                        key={`${city.value}-${idx}`}
+                        type="button"
+                        onClick={() => handleSelectSuggestion(city)}
+                        className="w-full px-4 py-2.5 text-xs text-left transition-colors flex items-center gap-2.5 border-0 hover:bg-slate-50 text-neutral-600 hover:text-neutral-900 font-medium cursor-pointer"
+                      >
+                        <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" aria-hidden="true" />
+                        <div className="flex flex-col">
+                          <span className="font-bold text-neutral-800">{city.name}</span>
+                          <span className="text-[10px] text-neutral-400">{city.state}</span>
+                        </div>
+                      </button>
+                    ))}
+                    {locationInput.trim() !== "" && suggestions.length === 0 && !loadingSuggestions && (
+                      <button
+                        type="button"
+                        onClick={handleSearch}
+                        className="w-full px-4 py-3 text-xs text-left transition-colors flex items-center gap-2.5 border-0 hover:bg-slate-50 text-primary-600 font-semibold cursor-pointer"
+                      >
+                        <Search className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                        <span>Search custom area "{locationInput}"</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Social proof / Trust Signals row */}

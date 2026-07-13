@@ -118,8 +118,10 @@ export default function LocalityAutocomplete({ value, onChange, placeholder = "S
           type="text"
           value={query}
           onChange={(e) => {
-            setQuery(e.target.value);
+            const val = e.target.value;
+            setQuery(val);
             setShowDropdown(true);
+            onChange({ display_name: val, locality: val });
           }}
           onFocus={() => setShowDropdown(true)}
           placeholder={placeholder}

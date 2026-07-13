@@ -347,16 +347,7 @@ const ParentDashboard = () => {
   const activeStudent = studentsData[selectedStudentKey] || null;
 
 
-  const getChildNameHash = (name) => {
-    if (!name) return 0;
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash += name.charCodeAt(i);
-    }
-    return hash;
-  };
 
-  const baseMonthlyFee = activeStudent ? ((getChildNameHash(activeStudent.name) % 3) * 1500 + 1500) : 3000;
 
   // Modals Visibility
   const [showPayModal, setShowPayModal] = useState(false);
@@ -386,20 +377,13 @@ const ParentDashboard = () => {
     return localStorage.getItem(`cograd_parent_message_to_${selectedStudentKey}`) || '';
   });
 
-  // Chat States
-  const [chatInput, setChatInput] = useState('');
-  const [selectedChatTeacherState, setSelectedChatTeacherState] = useState('');
   const [lastStudentKey, setLastStudentKey] = useState(selectedStudentKey);
 
-  // If active student changed, reset the teacher state to default
+  // If active student changed, reset the support message input state
   if (selectedStudentKey !== lastStudentKey) {
     setLastStudentKey(selectedStudentKey);
-    setSelectedChatTeacherState('');
     setSupportMessageInput(localStorage.getItem(`cograd_parent_message_to_${selectedStudentKey}`) || '');
   }
-
-  // Derive the active chat teacher name
-  const selectedChatTeacher = selectedChatTeacherState || (activeStudent ? activeStudent.primaryTeacher : '');
 
   // Report Card Download State
   const [downloadLoading, setDownloadLoading] = useState(false);
@@ -857,7 +841,6 @@ const ParentDashboard = () => {
           { name: 'Progress', icon: BookOpen },
           { name: 'Daily Learning', icon: Eye },
           { name: 'Fee Manager', icon: CreditCard },
-          { name: 'PTM & Support', icon: Calendar },
           { name: 'Help & Support', icon: HelpCircle }
         ]}
         activeTab={activeTab}
@@ -1223,7 +1206,7 @@ const ParentDashboard = () => {
                               return { ...prev, [selectedStudentKey]: studentCopy };
                             });
                             triggerToast(`Counselor meeting scheduled with ${activeStudent.primaryTeacher}!`);
-                          } catch (err) {
+                          } catch {
                             triggerToast('Failed to schedule sync.');
                           }
                         }}
@@ -1817,134 +1800,139 @@ const ParentDashboard = () => {
 
 
           {/* ================================== FEES TAB ================================== */}
+          {/* ================================== FEES TAB ================================== */}
           {activeTab === 'Fee Manager' && (
-            <div className="space-y-6">
+            <div className="space-y-6 text-left tab-content-enter">
               
-              {/* Top Banner billing totals */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                
-                {/* Due Invoice Summary */}
-                <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
-                  <div className="flex items-center space-x-3 mb-3 text-slate-400">
-                    <AlertCircle className="w-5 h-5 text-amber-500" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Pending Balance</span>
-                  </div>
-                  <div className="text-3xl font-black text-slate-800">
-                    ₹{activeStudent.feeDue > 0 ? activeStudent.feeDue.toLocaleString('en-IN') : '0'}
-                  </div>
-                  <p className="text-xs text-slate-400 font-semibold mt-1">
-                    {activeStudent.feeDue > 0 ? `Invoice due by: ${activeStudent.feeDueDate}` : 'No outstanding balances'}
-                  </p>
-                </div>
-
-                {/* Paid total summary */}
-                <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
-                  <div className="flex items-center space-x-3 mb-3 text-slate-400">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Total Paid</span>
-                  </div>
-                  <div className="text-3xl font-black text-slate-800">
-                    ₹{paymentsList
-                      .filter(p => p.studentId === activeStudent.id)
-                      .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
-                      .toLocaleString('en-IN')}
-                  </div>
-                  <p className="text-xs text-slate-400 font-semibold mt-1">
-                    Sum of processed backend tuition receipts
-                  </p>
-                </div>
-
-                {/* Payment Methods */}
-                <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center space-x-3 mb-1 text-slate-400">
-                    <DollarSign className="w-5 h-5 text-blue-500" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Active Gateways</span>
-                  </div>
-                  <div className="text-[11px] font-bold text-slate-705 py-1 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span>Credit/Debit Card</span>
-                      <span className="text-[9px] text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md">Active</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>UPI Payment ID</span>
-                      <span className="text-[9px] text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md">Active</span>
+              {/* Simplified Tuition Billing Stepper */}
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-3xl p-6 shadow-sm">
+                <h4 className="text-xs font-black text-amber-800 uppercase tracking-wider mb-4">How Tuition Billing Works</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+                  <div className="flex gap-3 items-start">
+                    <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-extrabold text-sm shrink-0">1</div>
+                    <div>
+                      <h5 className="text-xs font-black text-slate-805">Tutor Records Hours</h5>
+                      <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed font-semibold">Tutor marks lesson topic and duration after each daily home tuition class.</p>
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 font-medium">Sandbox environment simulation active</p>
+                  <div className="flex gap-3 items-start">
+                    <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-extrabold text-sm shrink-0">2</div>
+                    <div>
+                      <h5 className="text-xs font-black text-slate-805">Monthly Invoice Compiled</h5>
+                      <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed font-semibold">Cograd automatically tallies the logged session hours at your standard rate on the 1st of each month.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 items-start">
+                    <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-extrabold text-sm shrink-0">3</div>
+                    <div>
+                      <h5 className="text-xs font-black text-slate-805">Easy 1-Click Payment</h5>
+                      <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed font-semibold">Review your transparent bill summary and clear your due balance securely here using UPI or Card.</p>
+                    </div>
+                  </div>
                 </div>
-
               </div>
 
-              {/* Invoices list */}
-              <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
+              {/* Status & Quick Pay Card */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Main Billing Card */}
+                <div className="lg:col-span-8 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-4">
                   <div>
-                    <h3 className="font-black text-slate-800 text-base">Invoices & Receipts</h3>
-                    <p className="text-xs text-slate-400 font-semibold">Track historical tuition receipts and active monthly invoices.</p>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wide">Tuition Status</span>
+                        <h3 className="text-lg font-black text-slate-800 tracking-tight mt-0.5">Current Billing Cycle</h3>
+                      </div>
+                      <span className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider ${
+                        activeStudent.feeDue > 0 
+                          ? 'bg-rose-50 text-rose-600 border border-rose-100' 
+                          : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                      }`}>
+                        {activeStudent.feeDue > 0 ? 'Payment Pending' : 'All Fees Paid'}
+                      </span>
+                    </div>
+
+                    <div className="mt-6 flex items-baseline gap-2">
+                      <span className="text-4xl font-black text-slate-850">
+                        ₹{activeStudent.feeDue > 0 ? activeStudent.feeDue.toLocaleString('en-IN') : '0'}
+                      </span>
+                      {activeStudent.feeDue > 0 && (
+                        <span className="text-xs font-semibold text-slate-400">due by {activeStudent.feeDueDate}</span>
+                      )}
+                    </div>
+                    
+                    <p className="text-xs text-slate-400 font-semibold mt-2 leading-relaxed">
+                      {activeStudent.feeDue > 0 
+                        ? 'Your regular monthly tuition invoice is ready for checkout. Please complete payment to avoid tutoring sessions suspension.' 
+                        : 'Awesome! Your account is fully paid and up to date. Next billing invoice will compile on the 1st of next month.'}
+                    </p>
                   </div>
+
                   {activeStudent.feeDue > 0 && (
                     <button 
                       onClick={() => setShowPayModal(true)}
-                      className="btn-primary py-2.5 px-4 rounded-xl text-xs font-bold shadow-md cursor-pointer active:scale-98"
+                      className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-98"
                     >
-                      Pay Due Invoice
+                      <CreditCard className="w-4 h-4" /> Pay Due Tuition Balance Now
                     </button>
                   )}
                 </div>
 
-                <div className="overflow-x-auto">
+                {/* Billing Breakdown / Transparency details */}
+                <div className="lg:col-span-4 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-4">
+                  <div>
+                    <h4 className="font-black text-slate-805 text-sm">Transparent Cost Breakdown</h4>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Billing rates calibrated for your locality matches</p>
+                  </div>
+                  
+                  <div className="space-y-2.5 py-2">
+                    <div className="flex justify-between items-center text-xs font-bold text-slate-650">
+                      <span>Base Tuition Hours</span>
+                      <span className="text-slate-850">₹{activeStudent.feeDue > 0 ? (activeStudent.feeDue - 150).toLocaleString('en-IN') : 'Included'}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs font-bold text-slate-655">
+                      <span>Platform/Support Charges</span>
+                      <span className="text-slate-850">₹{activeStudent.feeDue > 0 ? '150' : 'Included'}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs font-bold text-slate-650">
+                      <span>Tutor matching guarantee</span>
+                      <span className="text-emerald-600 font-black">FREE / Included</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-black text-slate-800">
+                    <span>Total Due Rate</span>
+                    <span>₹{activeStudent.feeDue > 0 ? activeStudent.feeDue.toLocaleString('en-IN') : '0'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Simplified Receipts table */}
+              <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
+                <div>
+                  <h3 className="font-black text-slate-800 text-base">Payment Receipts History</h3>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">Download your historical tuition fee receipt documents.</p>
+                </div>
+
+                <div className="overflow-x-auto mt-4">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider">
-                        <th className="pb-3 font-extrabold">Invoice ID</th>
-                        <th className="pb-3 font-extrabold">Bill description</th>
-                        <th className="pb-3 font-extrabold">Due Date</th>
-                        <th className="pb-3 font-extrabold">Amount</th>
+                        <th className="pb-3 font-extrabold">Billing Date</th>
+                        <th className="pb-3 font-extrabold">Amount Paid</th>
+                        <th className="pb-3 font-extrabold">Payment Method</th>
                         <th className="pb-3 font-extrabold">Status</th>
-                        <th className="pb-3 text-right font-extrabold">Action</th>
+                        <th className="pb-3 text-right font-extrabold">Receipt</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-                      
-                      {/* Current monthly invoice if unpaid */}
-                      {activeStudent.feeDue > 0 && (
-                        <tr className="hover:bg-slate-50/50 transition-colors">
-                          <td className="py-4 text-blue-600 font-bold">INV-{new Date().getFullYear()}-M{String(new Date().getMonth() + 1).padStart(2, '0')}</td>
-                          <td className="py-4">
-                            <div>Tuition Fee - {new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</div>
-                            <span className="text-[10px] text-slate-400 font-medium">Regular monthly mentorship class fees</span>
-                          </td>
-                          <td className="py-4">{activeStudent.feeDueDate}</td>
-                          <td className="py-4 font-black">₹{activeStudent.feeDue.toLocaleString('en-IN')}</td>
-                          <td className="py-4">
-                            <span className="px-2.5 py-0.5 text-[9px] font-extrabold uppercase rounded-lg border bg-amber-50 text-amber-700 border-amber-100">
-                              Unpaid
-                            </span>
-                          </td>
-                          <td className="py-4 text-right">
-                            <button 
-                              onClick={() => setShowPayModal(true)}
-                              className="text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
-                            >
-                              Pay Now
-                            </button>
-                          </td>
-                        </tr>
-                      )}
-
-                      {/* Real payments loaded from backend */}
                       {paymentsList.filter(p => p.studentId === activeStudent.id).map((pay) => (
                         <tr key={pay.id || pay._id} className="hover:bg-slate-50/50 transition-colors text-slate-500">
-                          <td className="py-4">{pay.id || 'INV-PAY'}</td>
-                          <td className="py-4">
-                            <div>Tuition Fee Payment</div>
-                            <span className="text-[10px] text-slate-400 font-medium">Paid via {pay.method}</span>
-                          </td>
-                          <td className="py-4">{pay.date}</td>
-                          <td className="py-4 font-bold">₹{parseFloat(pay.amount).toLocaleString('en-IN')}</td>
+                          <td className="py-4 font-bold text-slate-600">{pay.date}</td>
+                          <td className="py-4 font-black text-slate-850">₹{parseFloat(pay.amount).toLocaleString('en-IN')}</td>
+                          <td className="py-4 text-xs font-semibold">Paid via {pay.method.toUpperCase()}</td>
                           <td className="py-4">
                             <span className="px-2.5 py-0.5 text-[9px] font-extrabold uppercase rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-100">
-                              Paid
+                              Paid Success
                             </span>
                           </td>
                           <td className="py-4 text-right">
@@ -1972,136 +1960,25 @@ const ParentDashboard = () => {
                                 element.click();
                                 document.body.removeChild(element);
                               }}
-                              className="text-slate-400 hover:text-slate-700 font-semibold cursor-pointer"
+                              className="text-amber-600 hover:text-amber-700 font-extrabold cursor-pointer"
                             >
-                              Receipt PDF
+                              Download Receipt (.TXT)
                             </button>
                           </td>
                         </tr>
                       ))}
 
-                      {/* If no invoices and no payments */}
-                      {activeStudent.feeDue <= 0 && paymentsList.filter(p => p.studentId === activeStudent.id).length === 0 && (
+                      {paymentsList.filter(p => p.studentId === activeStudent.id).length === 0 && (
                         <tr>
-                          <td colSpan={6} className="py-4 text-center text-xs text-slate-400 font-medium">
-                            No billing records or invoices found for this student.
+                          <td colSpan={5} className="py-4 text-center text-xs text-slate-400 font-medium">
+                            No payment records found for this student.
                           </td>
                         </tr>
                       )}
                     </tbody>
                   </table>
                 </div>
-              </div>
-
-            </div>
-          )}
-
-
-          {/* ================================== PTM & SUPPORT TAB ================================== */}
-          {activeTab === 'PTM & Support' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* Left Side: Teacher Directory list and scheduler trigger */}
-              <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm flex flex-col justify-between">
-                <div>
-                  <h3 className="font-black text-slate-800 text-base mb-2">Subject Mentors</h3>
-                  <p className="text-xs text-slate-400 font-semibold mb-4">Click a teacher profile card to launch a direct WhatsApp chat.</p>
-
-                  <div className="space-y-3">
-                    {activeStudent.teachers.map((teacher, index) => {
-                      return (
-                        <div 
-                          key={index}
-                          onClick={() => window.open(`https://wa.me/919876543210?text=Hello%20${teacher.name}%2C%20I%20am%20the%20parent%20of%20${activeStudent.name}.`, "_blank")}
-                          className="p-3 rounded-2xl border bg-slate-50 border-slate-100 hover:bg-slate-100 transition-all cursor-pointer flex items-center justify-between group active:scale-[0.98]"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <img
-                              src={teacher.avatar}
-                              alt={teacher.name}
-                              className="w-10 h-10 rounded-full object-cover border border-slate-200"
-                            />
-                            <div>
-                              <h4 className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{teacher.name}</h4>
-                              <p className="text-[10px] text-slate-400 font-semibold">{teacher.subject}</p>
-                            </div>
-                          </div>
-
-                          <div className="w-2 h-2 rounded-full bg-emerald-500" title="Online"></div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="pt-6 border-t border-slate-100 mt-6">
-                  <button 
-                    onClick={() => {
-                      setSelectedTeacher(activeStudent.primaryTeacher);
-                      setShowPTMModal(true);
-                    }}
-                    className="w-full btn-outline-primary flex items-center justify-center space-x-2 py-3 rounded-2xl text-xs font-bold cursor-pointer"
-                  >
-                    <Calendar className="w-4 h-4" />
-                    <span>Book Calendar PTM Slot</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Right Side: WhatsApp Info Card */}
-              <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-8 flex flex-col justify-between h-[520px]">
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-16 h-16 bg-emerald-500 text-white rounded-3xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                      <MessageSquare className="w-8 h-8" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-black text-slate-800">Direct WhatsApp Communications</h3>
-                      <p className="text-emerald-600 text-xs font-bold mt-1">Active Coordination • Vetted Safety</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4">
-                    <p className="text-slate-600 text-xs leading-relaxed font-medium">
-                      At Cograd Pathshala, we value direct, secure, and immediate parent-teacher contact. To ensure transparency, we redirect all conversations directly to **official WhatsApp chats** instead of hosting isolated in-app messaging.
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="p-4 bg-white border border-slate-100 rounded-xl space-y-1.5">
-                        <div className="text-xs font-bold text-slate-800">For Parents</div>
-                        <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">Instantly reach home tutors, check homework completion updates, or receive check-in confirmations directly on your phone.</p>
                       </div>
-                      <div className="p-4 bg-white border border-slate-100 rounded-xl space-y-1.5">
-                        <div className="text-xs font-bold text-slate-800">For Mentors</div>
-                        <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">Tutors provide daily learning reports, request pre-schedules, and solve specific student doubt worksheets via WhatsApp.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 text-xs text-slate-400">
-                    <span className="text-emerald-500 mt-0.5">✔</span>
-                    <p className="leading-relaxed font-semibold">Clicking on any tutor card on the left will immediately launch a WhatsApp chat pre-filled with your student's details.</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-slate-50">
-                  <button 
-                    onClick={() => window.open("https://wa.me/919876543210?text=Hello%2C%20I%20need%20help%20coordinating%20my%20child's%20tuition%20schedule.", "_blank")}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3.5 rounded-2xl shadow-lg shadow-emerald-600/15 hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
-                  >
-                    <MessageSquare className="w-4.5 h-4.5" />
-                    <span>Chat with Support Coordinator</span>
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setSelectedTeacher(activeStudent.primaryTeacher);
-                      setShowPTMModal(true);
-                    }}
-                    className="sm:w-max px-6 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs py-3.5 rounded-2xl transition-all cursor-pointer active:scale-[0.98]"
-                  >
-                    Schedule PTM Visit
-                  </button>
-                </div>
-              </div>
             </div>
           )}
           {/* ============================================================ */}
@@ -2258,7 +2135,7 @@ const ParentDashboard = () => {
               <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-6 rounded-3xl border border-amber-500/10 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in">
                 <div>
                   <h3 className="text-base font-black text-slate-800 tracking-tight">Help & Support Desk</h3>
-                  <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Submit query directly to CoGrad corporate team</p>
+                  <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Submit query directly to CoGrad Admin Team</p>
                 </div>
               </div>
 
@@ -2286,7 +2163,7 @@ const ParentDashboard = () => {
                       <input
                         type="text"
                         required
-                        placeholder="E.g. Student fee invoice issue"
+                        placeholder="E.g. Book download error"
                         value={supportForm.title}
                         onChange={(e) => setSupportForm(p => ({ ...p, title: e.target.value }))}
                         className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
@@ -2316,12 +2193,12 @@ const ParentDashboard = () => {
                 </div>
 
                 <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
-                  <h3 className="text-base font-black text-slate-800 tracking-tight">CoGrad Contact Info</h3>
+                  <h3 className="text-base font-black text-slate-800 tracking-tight">CoGrad Admin Support</h3>
                   <div className="space-y-4 text-xs font-semibold text-slate-600">
                     <div className="flex items-start gap-3">
                       <Phone className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
                       <div>
-                        <p className="font-extrabold text-slate-800">+91-9220253001</p>
+                        <p className="font-extrabold text-slate-800">+91-9876500000</p>
                         <p className="text-[10px] text-slate-400 mt-0.5">Mon–Sat, 10am – 6pm IST</p>
                       </div>
                     </div>
@@ -2329,7 +2206,7 @@ const ParentDashboard = () => {
                     <div className="flex items-start gap-3">
                       <Mail className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
                       <div>
-                        <p className="font-extrabold text-slate-800">connect@cograd.in</p>
+                        <p className="font-extrabold text-slate-800">admin@cograd.com</p>
                         <p className="text-[10px] text-slate-400 mt-0.5">Reply within 24 hours</p>
                       </div>
                     </div>
@@ -2337,8 +2214,8 @@ const ParentDashboard = () => {
                     <div className="flex items-start gap-3">
                       <MapPin className="w-4 h-4 text-violet-600 mt-0.5 shrink-0" />
                       <div>
-                        <p className="font-extrabold text-slate-800">PI Softek Ltd</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">C-56A/28, Sector 62, Noida 201301</p>
+                        <p className="font-extrabold text-slate-800">CoGrad Admin Support Desk</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Direct Administration Team</p>
                       </div>
                     </div>
                   </div>
@@ -2593,106 +2470,7 @@ const ParentDashboard = () => {
       )}
 
 
-      {/* 4. BOOK PTM MODAL */}
-      {showPTMModal && (
-        <div className="modal-overlay">
-          <div className="modal-panel p-6">
-            
-            <button 
-              onClick={() => setShowPTMModal(false)}
-              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-50 cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
 
-            <div className="mb-4">
-              <span className="text-[10px] text-purple-600 bg-purple-50 border border-purple-100 font-extrabold uppercase px-2.5 py-1 rounded-full">PTM Calendar Hub</span>
-              <h3 className="text-lg font-black text-slate-800 mt-2">Book Parent-Teacher Meeting</h3>
-              <p className="text-xs text-slate-400 font-semibold">Select a time slot for personal discussion about {activeStudent.name}.</p>
-            </div>
-
-            <form onSubmit={handleBookPTMSubmit} className="space-y-4">
-              
-              {/* Select Mentor */}
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1">Select Mentor Teacher</label>
-                <select 
-                  required
-                  value={selectedTeacher}
-                  onChange={(e) => setSelectedTeacher(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
-                >
-                  <option value="">-- Choose teacher --</option>
-                  {activeStudent.teachers.map((t, idx) => (
-                    <option key={idx} value={t.name}>{t.name} ({t.subject})</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Mode */}
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1">Meeting Mode</label>
-                <div className="flex border border-slate-100 bg-slate-50 p-1 rounded-xl shadow-inner">
-                  <button
-                    type="button"
-                    onClick={() => setPtmMode('In-Home')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${ptmMode === 'In-Home' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-700'}`}
-                  >
-                    Home Visit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPtmMode('Call')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${ptmMode === 'Call' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-700'}`}
-                  >
-                    Telephonic Call
-                  </button>
-                </div>
-              </div>
-
-              {/* Date & Time */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 mb-1">Meeting Date</label>
-                  <input
-                    type="date"
-                    required
-                    value={bookingDate}
-                    onChange={(e) => setBookingDate(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none cursor-pointer"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 mb-1">Time Slot</label>
-                  <input
-                    type="time"
-                    required
-                    value={bookingTime}
-                    onChange={(e) => setBookingTime(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={ptmLoading}
-                className="w-full btn-primary py-3 rounded-2xl text-xs font-bold text-center flex items-center justify-center space-x-2 mt-2 cursor-pointer"
-              >
-                {ptmLoading ? (
-                  <>
-                    <span className="w-4.5 h-4.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    <span>Booking Meeting Slot...</span>
-                  </>
-                ) : (
-                  <span>Schedule PTM Session</span>
-                )}
-              </button>
-
-            </form>
-          </div>
-        </div>
-      )}
 
     </>
   );

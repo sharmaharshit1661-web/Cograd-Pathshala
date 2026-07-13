@@ -168,15 +168,15 @@ const DemoBooking = () => {
       </section>
 
       {/* Main */}
-      <section className="pt-28 pb-16">
+      <section className="pt-12 pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
 
             {/* Form card */}
-            <div className={`bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden transition-all ${shake ? 'animate-shake' : ''}`}>
+            <div className={`bg-white rounded-2xl border border-neutral-100 shadow-sm transition-all ${shake ? 'animate-shake' : ''}`}>
 
               {/* Progress header */}
-              <div className="bg-gradient-to-r from-primary-600 to-secondary-600 p-5 text-white">
+              <div className="bg-gradient-to-r from-primary-600 to-secondary-600 p-5 text-white rounded-t-2xl">
                 <div className="flex items-center gap-2 mb-4">
                   {STEPS.map((s, i) => (
                     <div key={s.n} className="flex items-center gap-2 flex-1 last:flex-none">
@@ -206,7 +206,7 @@ const DemoBooking = () => {
 
               <div className="p-7">
                 <form onSubmit={handleSubmit}>
-                  <div key={step} className={dir === 'next' ? 'step-enter-next' : 'step-enter-prev'}>
+                  <div key={step} className={`relative z-20 ${dir === 'next' ? 'step-enter-next' : 'step-enter-prev'}`}>
 
                     {/* Step 1 */}
                     {step === 1 && (
@@ -232,7 +232,7 @@ const DemoBooking = () => {
                             ))}
                           </div>
                         </div>
-                        <div className="relative">
+                        <div className="relative z-10">
                           <label className="form-label mb-2">
                             <MapPin className="w-3.5 h-3.5 text-neutral-400 mr-1.5" aria-hidden="true" />
                             Search and Select Your District / City
@@ -428,7 +428,7 @@ const DemoBooking = () => {
                   </div>
 
                   {/* Navigation */}
-                  <div className="flex gap-3 mt-7">
+                  <div className="flex gap-3 mt-7 relative z-0">
                     {step > 1 && (
                       <button type="button" onClick={goPrev} className="flex-1 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-medium rounded-xl cursor-pointer transition-all">
                         Back

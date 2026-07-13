@@ -173,12 +173,12 @@ const Contact = () => {
       </section>
 
       {/* Form and Quick Actions */}
-      <section className="py-16 bg-slate-50 relative overflow-hidden bg-dot-subtle">
+      <section className="py-16 bg-slate-50 relative bg-dot-subtle">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
             
             {/* Form card - Takes 7 columns of 12 */}
-            <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-gray-100 lg:col-span-7 reveal-on-scroll slide-left">
+            <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-gray-100 lg:col-span-7 reveal-on-scroll slide-left relative z-[1]">
               <h3 className="text-3xl font-extrabold text-gray-900 mb-6 tracking-tight">
                 Send us a <span className="color-blend-text">Message</span>
               </h3>
@@ -314,7 +314,7 @@ const Contact = () => {
             </div>
 
             {/* Quick Actions & FAQ overview - Takes 5 columns of 12 */}
-            <div className="space-y-6 lg:col-span-5 lg:sticky lg:top-24">
+            <div className="space-y-6 lg:col-span-5 lg:sticky lg:top-20 relative z-0">
               
               {/* Location details card */}
               <div 

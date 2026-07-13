@@ -65,6 +65,13 @@ const getPasswordRequirements = (password) => {
   ];
 };
 
+const ALLOWED_EMAIL_DOMAINS = ['gmail.com', 'yahoo.com'];
+const isAllowedEmail = (email) => {
+  if (!email || !email.includes('@')) return false;
+  const domain = email.split('@').pop().toLowerCase();
+  return ALLOWED_EMAIL_DOMAINS.includes(domain);
+};
+
 const RegisterParent = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -87,6 +94,7 @@ const RegisterParent = () => {
     password: '',
     confirmPassword: '',
   });
+  const [emailError, setEmailError] = useState('');
 
   const handleGoogleSignupCallback = async (response) => {
     try {
@@ -145,6 +153,7 @@ const RegisterParent = () => {
     }, 100);
 
     return () => clearInterval(checkInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleGoogleSignupClick = async () => {
@@ -156,7 +165,7 @@ const RegisterParent = () => {
     }
     try {
       window.google.accounts.id.prompt();
-    } catch (e) {
+    } catch {
       alert('Google library not loaded yet. Try again.');
     }
   };
@@ -194,6 +203,15 @@ const RegisterParent = () => {
 
   const handleParentChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'email') {
+      setParentForm((prev) => ({ ...prev, email: value }));
+      if (value && value.includes('@') && !isAllowedEmail(value)) {
+        setEmailError('Only @gmail.com and @yahoo.com emails are allowed.');
+      } else {
+        setEmailError('');
+      }
+      return;
+    }
     setParentForm((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -252,6 +270,10 @@ const RegisterParent = () => {
   // ── Step 1 → Step 2 ────────────────────────────────────────────────
   const handleParentSubmit = (e) => {
     e.preventDefault();
+    if (!isAllowedEmail(parentForm.email)) {
+      setEmailError('Only @gmail.com and @yahoo.com emails are allowed.');
+      return;
+    }
     const requirements = getPasswordRequirements(parentForm.password);
     const unmet = requirements.filter(r => !r.met);
     if (unmet.length > 0) {
@@ -677,9 +699,10 @@ const RegisterParent = () => {
                   required
                   value={parentForm.email}
                   onChange={handleParentChange}
-                  className="form-input"
-                  placeholder="your@email.com"
+                  className={`form-input ${emailError ? 'border-red-400' : ''}`}
+                  placeholder="your@gmail.com or your@yahoo.com"
                 />
+                {emailError && <p className="text-[10px] text-red-500 font-semibold mt-1">{emailError}</p>}
               </div>
 
               <div>

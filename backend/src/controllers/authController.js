@@ -64,6 +64,46 @@ const sendVerificationEmail = async (name, email, code) => {
   }
 };
 
+const sendOnboardingTeacherCredentialsEmail = async (name, email, password) => {
+  const frontendUrl = process.env.FRONTEND_URL || 'https://cograd-pathshala-frontend.vercel.app';
+  const htmlContent = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #f1f5f9; border-radius: 12px; background-color: #fff;">
+      <h2 style="color: #2563eb; font-weight: 800; margin-bottom: 20px; text-align: center;">Welcome to Cograd Pathshala!</h2>
+      <p>Dear <strong>${name}</strong>,</p>
+      <p>Your registration as a teacher has been successfully received. To complete your joining verification, please log in and follow the onboarding steps (Identity checks, Competency quiz, and Demo video upload).</p>
+      <p>Here are your temporary login credentials:</p>
+      <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; font-family: monospace; border: 1px solid #e2e8f0; margin: 15px 0; line-height: 1.6;">
+        <strong>Login URL:</strong> <a href="${frontendUrl}/login" style="color: #2563eb; text-decoration: none;">${frontendUrl}/login</a><br/>
+        <strong>Email:</strong> ${email}<br/>
+        <strong>Password:</strong> ${password}
+      </div>
+      <p>Log in now to complete your 4-step onboarding process so you can start teaching and getting matched with students!</p>
+      <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 20px 0;"/>
+      <p style="color: #64748b; font-size: 12px; line-height: 1.5; text-align: center;">Best regards,<br/>Cograd Pathshala Admin Team</p>
+    </div>
+  `;
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY || 're_VcRTuqUC_4KVDYJK1FujUzyziyPx4bsyv'}`
+      },
+      body: JSON.stringify({
+        from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+        to: email,
+        subject: `Teacher Onboarding - Cograd Pathshala Account: ${name}`,
+        html: htmlContent
+      })
+    });
+    const result = await response.json();
+    console.log('Onboarding credentials email sent via Resend:', result);
+  } catch (err) {
+    console.error('Failed to send onboarding credentials email:', err);
+  }
+};
+
 // Maps form field name → document metadata
 const DOC_FIELD_MAP = {
   doc_degree:            { type: 'Academic',    label: 'Degree / Qualification Certificate' },
@@ -71,10 +111,23 @@ const DOC_FIELD_MAP = {
   doc_resume:            { type: 'Resume',      label: 'Professional Resume / CV' },
 };
 
+// ── Email domain restriction ──────────────────────────────────────────────────
+const ALLOWED_EMAIL_DOMAINS = ['gmail.com', 'yahoo.com', 'cograd.com', 'cograd.in', 'admin.in'];
+const isAllowedEmailDomain = (email) => {
+  if (!email || !email.includes('@')) return false;
+  const domain = email.split('@').pop().toLowerCase();
+  return ALLOWED_EMAIL_DOMAINS.includes(domain);
+};
+
 // ── Controller: Register ──────────────────────────────────────────────────────
 
 export const registerUser = async (req, res) => {
   const { name, email, password, phone, role, ...extraFields } = req.body;
+
+  // Email domain restriction
+  if (email && !isAllowedEmailDomain(email)) {
+    return res.status(400).json({ message: 'Only @gmail.com and @yahoo.com email addresses are allowed.' });
+  }
 
   if (role === 'student' || role === 'parent') {
     if (!password || password.length < 8) {
@@ -162,10 +215,45 @@ export const registerUser = async (req, res) => {
 
     // ── Teacher defaults + uploaded documents ──────────────────────────────
     if (role === 'teacher') {
-      userData.verification_status   = 'Verified';
+      userData.verification_status   = 'Onboarding';
       userData.current_student_count = 0;
       userData.max_student_capacity  = 5;
       userData.rating                = 5.0;
+      userData.onboarding_progress   = {
+        current_step: 1,
+        step_1_identity: {
+          status: 'Pending',
+          aadhaarNumber: '',
+          panNumber: '',
+          selfieUrl: '',
+          aadhaarFileUrl: '',
+          panFileUrl: '',
+          isMobileVerified: false,
+          isEmailVerified: false,
+          rejectionReason: ''
+        },
+        step_2_qualification: {
+          status: 'Pending',
+          degreeName: '',
+          degreeUrl: '',
+          professionalCertName: '',
+          professionalCertUrl: '',
+          universityName: '',
+          graduationYear: '',
+          rejectionReason: ''
+        },
+        step_3_competency: {
+          status: 'Pending',
+          testAttempts: []
+        },
+        step_4_demo: {
+          status: 'Pending',
+          targetGrade: '',
+          topic: '',
+          demoVideoUrl: '',
+          feedback: ''
+        }
+      };
       const uploadedFiles = req.files || {};
       userData.avatar = (uploadedFiles.avatar && uploadedFiles.avatar.length > 0)
         ? uploadedFiles.avatar[0].path
@@ -193,6 +281,18 @@ export const registerUser = async (req, res) => {
       }
 
       userData.documents = processedDocs;
+
+      // Map initial registration files to onboarding progress
+      if (uploadedFiles.avatar && uploadedFiles.avatar.length > 0) {
+        userData.onboarding_progress.step_1_identity.selfieUrl = uploadedFiles.avatar[0].path;
+      }
+      if (uploadedFiles.doc_id_proof && uploadedFiles.doc_id_proof.length > 0) {
+        userData.onboarding_progress.step_1_identity.aadhaarFileUrl = uploadedFiles.doc_id_proof[0].path;
+      }
+      if (uploadedFiles.doc_degree && uploadedFiles.doc_degree.length > 0) {
+        userData.onboarding_progress.step_2_qualification.degreeUrl = uploadedFiles.doc_degree[0].path;
+        userData.onboarding_progress.step_2_qualification.degreeName = extraFields.qualifications || '';
+      }
     }
 
     // ── Student defaults ───────────────────────────────────────────────────
@@ -263,6 +363,10 @@ export const registerUser = async (req, res) => {
       ? await Admin.create(userData)
       : await User.create(userData);
 
+    if (role === 'teacher' && tempPassword) {
+      await sendOnboardingTeacherCredentialsEmail(name, email, tempPassword);
+    }
+
     return res.status(201).json({
       token: generateToken(user.id),
       user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role },
@@ -300,6 +404,9 @@ export const loginUser = async (req, res) => {
     } else {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginUser)) {
         return res.status(400).json({ message: 'Please enter a valid email address or phone number.' });
+      }
+      if (!isAllowedEmailDomain(loginUser)) {
+        return res.status(400).json({ message: 'Only @gmail.com and @yahoo.com email addresses are allowed.' });
       }
       query = { email: loginUser };
     }
@@ -486,6 +593,11 @@ export const googleLogin = async (req, res) => {
     }
 
     const email = payload.email.toLowerCase().trim();
+
+    // Email domain restriction for Google sign-in
+    if (!isAllowedEmailDomain(email)) {
+      return res.status(400).json({ message: 'Only @gmail.com and @yahoo.com email addresses are allowed.' });
+    }
 
     // 2. Check if user exists
     let user = await User.findOne({ email });

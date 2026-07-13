@@ -160,6 +160,24 @@ const seedData = async () => {
       }
       console.log('Admins seeded successfully.');
     }
+    
+    // Seed or update admin settings to match admin contact details
+    let settings = await AdminSettings.findOne({ key: 'main' });
+    if (!settings) {
+      await AdminSettings.create({
+        key: 'main',
+        contactEmail: 'admin@cograd.com',
+        contactPhone: '+91-9876500000',
+        address: 'CoGrad Admin Support Desk'
+      });
+    } else {
+      settings.contactEmail = 'admin@cograd.com';
+      settings.contactPhone = '+91-9876500000';
+      settings.address = 'CoGrad Admin Support Desk';
+      await settings.save();
+    }
+
+    console.log('Admin check complete.');
 
     // Ensure the specific admin user exists
     const specificAdmin = await Admin.findOne({ email: 'cograd@admin.in' });

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { getDiagnosticQuestions } from '../utils/mockDb';
 import { api } from '../utils/api';
+import LocalityAutocomplete from '../components/LocalityAutocomplete';
 
 const CITIES = [
   'Adoni', 'Agartala', 'Agra', 'Ahmedabad', 'Ahmednagar', 'Aizawl', 'Ajmer', 'Akola', 'Alappuzha', 'Aligarh', 'Allahabad', 'Alwar', 'Ambala', 'Ambattur', 'Ambikapur', 'Amravati', 'Amreli', 'Amritsar', 'Amroha', 'Anand', 'Anantapur', 'Arrah', 'Asansol', 'Aurangabad', 'Avadi', 'Azamgarh',
@@ -56,6 +57,13 @@ const getPasswordRequirements = (password) => {
   ];
 };
 
+const ALLOWED_EMAIL_DOMAINS = ['gmail.com', 'yahoo.com'];
+const isAllowedEmail = (email) => {
+  if (!email || !email.includes('@')) return false;
+  const domain = email.split('@').pop().toLowerCase();
+  return ALLOWED_EMAIL_DOMAINS.includes(domain);
+};
+
 const RegisterStudent = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -82,6 +90,7 @@ const RegisterStudent = () => {
     parentName: '',
     parentPhone: ''
   });
+  const [emailError, setEmailError] = useState('');
 
   const handleGoogleSignupCallback = async (response) => {
     try {
@@ -140,6 +149,7 @@ const RegisterStudent = () => {
     }, 100);
 
     return () => clearInterval(checkInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleGoogleSignupClick = async () => {
@@ -151,7 +161,7 @@ const RegisterStudent = () => {
     }
     try {
       window.google.accounts.id.prompt();
-    } catch (e) {
+    } catch {
       alert('Google library not loaded yet. Try again.');
     }
   };
@@ -171,6 +181,15 @@ const RegisterStudent = () => {
     if (name === 'phone' || name === 'parentPhone') {
       const digitsOnly = value.replace(/\D/g, '');
       setForm(prev => ({ ...prev, [name]: digitsOnly }));
+      return;
+    }
+    if (name === 'email') {
+      setForm(prev => ({ ...prev, email: value }));
+      if (value && value.includes('@') && !isAllowedEmail(value)) {
+        setEmailError('Only @gmail.com and @yahoo.com emails are allowed.');
+      } else {
+        setEmailError('');
+      }
       return;
     }
     setForm(prev => ({ ...prev, [name]: value }));
@@ -212,6 +231,10 @@ const RegisterStudent = () => {
 
   const handleCredentialsSubmit = (e) => {
     e.preventDefault();
+    if (!isAllowedEmail(form.email)) {
+      setEmailError('Only @gmail.com and @yahoo.com emails are allowed.');
+      return;
+    }
     const requirements = getPasswordRequirements(form.password);
     const unmet = requirements.filter(r => !r.met);
     if (unmet.length > 0) {
@@ -227,6 +250,95 @@ const RegisterStudent = () => {
 
   const handleAcademicSubmit = async (e) => {
     e.preventDefault();
+    setCityTouched(true);
+
+    if (!form.city) {
+      setCityError('Please select your city to find nearby teachers');
+      return;
+    }
+
+    if (form.subjects.length === 0) {
+      alert('Please select at least one subject.');
+      return;
+    }
+
+    if (form.city === 'Other') {
+      setIsOtherCity(true);
+      try {
+        if (googleToken) {
+          const registrationData = {
+            credentialToken: googleToken,
+            role: 'student',
+            extraFields: {
+              standard: form.standard,
+              subjects: form.subjects,
+              test_score: null,
+              test_completed_at: null,
+              assigned_teacher_id: null,
+              status: 'waitlist',
+              city: form.city,
+              locality: form.locality,
+              parentName: form.parentName,
+              parentPhone: form.parentPhone,
+              phone: form.phone,
+              address: `House No. 101, Near Main Chowk, ${form.city}`,
+            }
+          };
+
+          const data = await api.post('/auth/google-login', registrationData);
+          localStorage.setItem('cograd_token',           data.token);
+          localStorage.setItem('cograd_logged_in',       'true');
+          localStorage.setItem('cograd_role',            'student');
+          localStorage.setItem('cograd_logged_in_email', data.user.email);
+          localStorage.setItem('cograd_student_name',    data.user.name);
+
+          localStorage.removeItem('cograd_pending_google_email');
+          localStorage.removeItem('cograd_pending_google_name');
+          localStorage.removeItem('cograd_pending_google_avatar');
+          localStorage.removeItem('cograd_pending_google_token');
+
+          setStep(4);
+        } else {
+          const registrationData = {
+            name: form.name,
+            email: form.email,
+            phone: form.phone,
+            password: form.password,
+            role: 'student',
+            standard: form.standard,
+            subjects: form.subjects,
+            test_score: null,
+            test_completed_at: null,
+            assigned_teacher_id: null,
+            status: 'waitlist',
+            city: form.city,
+            locality: form.locality,
+            parentName: form.parentName,
+            parentPhone: form.parentPhone,
+            address: `House No. 101, Near Main Chowk, ${form.city}`,
+          };
+
+          const data = await api.post('/auth/register', registrationData);
+
+          if (data.requiresVerification) {
+            localStorage.setItem('cograd_pending_verify_email', data.email);
+            navigate('/verify-email', { state: { email: data.email } });
+          } else {
+            localStorage.setItem('cograd_token', data.token);
+            localStorage.setItem('cograd_logged_in', 'true');
+            localStorage.setItem('cograd_role', 'student');
+            localStorage.setItem('cograd_logged_in_email', form.email);
+            localStorage.setItem('cograd_student_name', form.name);
+
+            setStep(4);
+          }
+        }
+      } catch (error) {
+        alert(error.message || 'Registration failed. Please try again.');
+      }
+      return;
+    }
+
     setStep(3);
     setPlacementAnswers({});
     setIsOtherCity(false);
@@ -421,9 +533,10 @@ const RegisterStudent = () => {
                   required 
                   value={form.email} 
                   onChange={handleChange} 
-                  className="form-input" 
-                  placeholder="your@email.com" 
+                  className={`form-input ${emailError ? 'border-red-400' : ''}`}
+                  placeholder="your@gmail.com or your@yahoo.com" 
                 />
+                {emailError && <p className="text-[10px] text-red-500 font-semibold mt-1">{emailError}</p>}
               </div>
 
               <div>
@@ -601,8 +714,65 @@ const RegisterStudent = () => {
                 </div>
               </div>
 
+              {/* City — required dropdown */}
+              <div className="text-left">
+                <label className="form-label"><MapPin className="w-3.5 h-3.5 text-slate-400 mr-1.5" />City</label>
+                <select
+                  name="city"
+                  value={form.city}
+                  onChange={handleCityChange}
+                  onBlur={handleCityBlur}
+                  className={`form-input pr-8 ${cityError && cityTouched ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : ''}`}
+                >
+                  <option value="" disabled>Select your city</option>
+                  {CITIES.map((ct) => (
+                    <option key={ct} value={ct}>{ct}</option>
+                  ))}
+                </select>
+                {cityError && cityTouched && (
+                  <p className="text-[10px] text-red-500 font-semibold mt-1">{cityError}</p>
+                )}
+                {form.city === 'Other' && (
+                  <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-amber-700 font-medium leading-relaxed">
+                      Cograd Pathshala currently operates in Meerut and Allahabad. 
+                      We'll notify you when we expand to your city.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Area / Locality — optional */}
+              <div className="text-left">
+                <label className="form-label"><MapPin className="w-3.5 h-3.5 text-slate-400 mr-1.5" />Area / Locality</label>
+                <LocalityAutocomplete
+                  value={form.locality}
+                  onChange={(location) => {
+                    setForm(prev => {
+                      const updated = {
+                        ...prev,
+                        locality: location.locality || location.display_name,
+                      };
+                      if (location.city) {
+                        const matchedCity = CITIES.find(c => c.toLowerCase() === location.city.toLowerCase());
+                        if (matchedCity) {
+                          updated.city = matchedCity;
+                          setCityError('');
+                        } else {
+                          updated.city = 'Other';
+                        }
+                      }
+                      return updated;
+                    });
+                    setCityTouched(true);
+                  }}
+                />
+                <p className="text-[9px] text-slate-400 font-medium mt-1">Helps us match you with a teacher nearby</p>
+              </div>
+
               <button type="submit" className="w-full btn-primary py-3.5 text-sm mt-3 flex items-center justify-center gap-1.5">
-                Proceed to Diagnostic Placement Test
+                {form.city === 'Other' ? 'Complete Registration' : 'Proceed to Diagnostic Placement Test'}
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>

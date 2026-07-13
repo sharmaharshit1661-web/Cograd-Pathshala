@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../utils/api';
-import { Mail, ArrowLeft, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 export default function VerifyEmail() {
   const navigate = useNavigate();
@@ -10,21 +10,8 @@ export default function VerifyEmail() {
   // Extract email from location state
   const email = location.state?.email || localStorage.getItem('cograd_pending_verify_email') || '';
   
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [countdown, setCountdown] = useState(60); // 1-minute countdown
-  
-  const inputRefs = [
-    useRef(null),
-    useRef(null),
-    useRef(null),
-    useRef(null),
-    useRef(null),
-    useRef(null),
-  ];
 
   useEffect(() => {
     if (!email) {
@@ -33,7 +20,6 @@ export default function VerifyEmail() {
     }
 
     const autoVerify = async () => {
-      setLoading(true);
       setError('');
       try {
         const data = await api.post('/auth/verify-email', { email, code: '123456' });
@@ -70,33 +56,13 @@ export default function VerifyEmail() {
         setTimeout(() => {
           navigate('/login');
         }, 2000);
-      } finally {
-        setLoading(false);
       }
     };
 
     autoVerify();
   }, [email, navigate]);
 
-  const handleSubmit = (e) => {
-    if (e) e.preventDefault();
-  };
 
-  // Resend code
-  const handleResend = async () => {
-    if (countdown > 0 || resending) return;
-    setResending(true);
-    setError('');
-    try {
-      await api.post('/auth/resend-verification', { email });
-      setCountdown(60);
-      alert('A new verification code has been sent to your email.');
-    } catch (err) {
-      setError(err.message || 'Failed to resend verification code.');
-    } finally {
-      setResending(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-neutral-50 bg-dot-subtle flex items-center justify-center px-4 py-12">

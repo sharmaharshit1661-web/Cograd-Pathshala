@@ -12,12 +12,38 @@ import razorpay from '../config/razorpay.js';
 import crypto from 'crypto';
 import { sendSMS, sendWhatsApp } from '../utils/sms.js';
 import { protect } from '../middleware/auth.js';
+import { uploadIdentityDocs, uploadQualificationDocs, uploadDemoVideo, validateUploadSizes } from '../middleware/upload.js';
 
 const router = express.Router();
 
 const mapDistrictToCity = (district) => {
   if (!district) return '';
   return district.toLowerCase().trim();
+};
+
+const addEarningToTeacher = async (studentId, studentName, amount, method) => {
+  try {
+    const studentUser = await User.findOne({ id: studentId });
+    if (studentUser && studentUser.assigned_teacher_id) {
+      const teacher = await User.findOne({ id: studentUser.assigned_teacher_id });
+      if (teacher) {
+        const parsedAmount = typeof amount === 'string' ? parseFloat(amount.replace(/[^\d]/g, '')) : parseFloat(amount);
+        const newEarning = {
+          id: 'INV-' + Math.floor(100000 + Math.random() * 900000),
+          studentName: studentName,
+          date: new Date().toISOString().split('T')[0],
+          amount: parsedAmount || 3000,
+          status: 'Paid',
+          method: method || 'Cash / Manual'
+        };
+        teacher.earnings_log = [newEarning, ...(teacher.earnings_log || [])];
+        await teacher.save();
+        console.log(`Automatically logged ₹${parsedAmount} earning for teacher ${teacher.name} assigned to student ${studentName}`);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to automatically log teacher earning:', err);
+  }
 };
 
 // @desc    Get available slots for teachers in a district
@@ -197,6 +223,385 @@ router.delete('/students/:id', protect, async (req, res) => {
 // ==========================================
 // TEACHER ROUTES
 // ==========================================
+
+// @desc    Get onboarding status for teachers
+// @route   GET /api/teachers/onboarding/status
+// @access  Private
+router.get('/teachers/onboarding/status', protect, async (req, res) => {
+  try {
+    const user = await User.findOne({ id: req.user.id });
+    if (!user || user.role !== 'teacher') {
+      return res.status(404).json({ message: 'Teacher profile not found' });
+    }
+    res.json({
+      verification_status: user.verification_status,
+      onboarding_progress: user.onboarding_progress
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+const mapUserToTeacherId = (req, res, next) => {
+  if (req.user) {
+    req._teacherId = req.user.id;
+  }
+  next();
+};
+
+// @desc    Submit Step 1: Identity Verification
+// @route   POST /api/teachers/onboarding/identity
+// @access  Private
+router.post('/teachers/onboarding/identity', protect, mapUserToTeacherId, uploadIdentityDocs, validateUploadSizes({
+  selfie: 150 * 1024,
+  doc_aadhaar: 10 * 1024 * 1024,
+  doc_pan: 10 * 1024 * 1024
+}), async (req, res) => {
+  try {
+    const user = await User.findOne({ id: req.user.id });
+    if (!user || user.role !== 'teacher') {
+      return res.status(404).json({ message: 'Teacher profile not found' });
+    }
+
+    const { aadhaarNumber, panNumber } = req.body;
+    if (!aadhaarNumber || aadhaarNumber.length !== 12) {
+      return res.status(400).json({ message: 'Aadhaar number must be exactly 12 digits' });
+    }
+    if (!panNumber || panNumber.length !== 10) {
+      return res.status(400).json({ message: 'PAN number must be exactly 10 alphanumeric characters' });
+    }
+
+    const files = req.files || {};
+    if (!files.selfie && (!user.onboarding_progress?.step_1_identity?.selfieUrl || user.onboarding_progress?.step_1_identity?.selfieUrl === '')) {
+      return res.status(400).json({ message: 'Selfie upload is required' });
+    }
+    if (!files.doc_aadhaar && (!user.onboarding_progress?.step_1_identity?.aadhaarFileUrl || user.onboarding_progress?.step_1_identity?.aadhaarFileUrl === '')) {
+      return res.status(400).json({ message: 'Aadhaar card upload is required' });
+    }
+    if (!files.doc_pan && (!user.onboarding_progress?.step_1_identity?.panFileUrl || user.onboarding_progress?.step_1_identity?.panFileUrl === '')) {
+      return res.status(400).json({ message: 'PAN card upload is required' });
+    }
+
+    const step1 = user.onboarding_progress?.step_1_identity || {};
+    
+    const updatedStep1 = {
+      status: 'Submitted',
+      aadhaarNumber,
+      panNumber,
+      selfieUrl: files.selfie ? files.selfie[0].path : step1.selfieUrl,
+      aadhaarFileUrl: files.doc_aadhaar ? files.doc_aadhaar[0].path : step1.aadhaarFileUrl,
+      panFileUrl: files.doc_pan ? files.doc_pan[0].path : step1.panFileUrl,
+      isMobileVerified: true,
+      isEmailVerified: user.isEmailVerified || true,
+      rejectionReason: ''
+    };
+
+    user.onboarding_progress.step_1_identity = updatedStep1;
+
+    // Push to standard documents array for backward compatibility
+    if (files.doc_aadhaar) {
+      user.documents.push({
+        id: user.documents.length + 1,
+        name: files.doc_aadhaar[0].originalname,
+        type: 'Identity',
+        status: 'Under Review',
+        fileUrl: files.doc_aadhaar[0].path,
+        publicId: files.doc_aadhaar[0].filename,
+        mimetype: files.doc_aadhaar[0].mimetype,
+        uploadedAt: new Date()
+      });
+    }
+    if (files.doc_pan) {
+      user.documents.push({
+        id: user.documents.length + 1,
+        name: files.doc_pan[0].originalname,
+        type: 'Identity',
+        status: 'Under Review',
+        fileUrl: files.doc_pan[0].path,
+        publicId: files.doc_pan[0].filename,
+        mimetype: files.doc_pan[0].mimetype,
+        uploadedAt: new Date()
+      });
+    }
+
+    if (files.selfie) {
+      user.avatar = files.selfie[0].path;
+    }
+
+    user.onboarding_progress.current_step = 2;
+    await user.save();
+
+    res.json({ message: 'Step 1: Identity verification submitted successfully', onboarding_progress: user.onboarding_progress });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Submit Step 2: Qualification Verification
+// @route   POST /api/teachers/onboarding/qualification
+// @access  Private
+router.post('/teachers/onboarding/qualification', protect, mapUserToTeacherId, uploadQualificationDocs, validateUploadSizes({
+  doc_degree: 10 * 1024 * 1024,
+  doc_professional: 10 * 1024 * 1024
+}), async (req, res) => {
+  try {
+    const user = await User.findOne({ id: req.user.id });
+    if (!user || user.role !== 'teacher') {
+      return res.status(404).json({ message: 'Teacher profile not found' });
+    }
+
+    const { degreeName, universityName, graduationYear, professionalCertName } = req.body;
+    if (!degreeName || !universityName || !graduationYear) {
+      return res.status(400).json({ message: 'Degree, University and Graduation Year are required' });
+    }
+
+    const files = req.files || {};
+    if (!files.doc_degree && (!user.onboarding_progress?.step_2_qualification?.degreeUrl || user.onboarding_progress?.step_2_qualification?.degreeUrl === '')) {
+      return res.status(400).json({ message: 'Degree certificate upload is required' });
+    }
+
+    const step2 = user.onboarding_progress?.step_2_qualification || {};
+    const updatedStep2 = {
+      status: 'Submitted',
+      degreeName,
+      universityName,
+      graduationYear,
+      degreeUrl: files.doc_degree ? files.doc_degree[0].path : step2.degreeUrl,
+      professionalCertName: professionalCertName || step2.professionalCertName || '',
+      professionalCertUrl: files.doc_professional ? files.doc_professional[0].path : step2.professionalCertUrl || '',
+      rejectionReason: ''
+    };
+
+    if (files.doc_degree) {
+      user.documents.push({
+        id: user.documents.length + 1,
+        name: files.doc_degree[0].originalname,
+        type: 'Academic',
+        status: 'Under Review',
+        fileUrl: files.doc_degree[0].path,
+        publicId: files.doc_degree[0].filename,
+        mimetype: files.doc_degree[0].mimetype,
+        uploadedAt: new Date()
+      });
+    }
+    if (files.doc_professional) {
+      user.documents.push({
+        id: user.documents.length + 1,
+        name: files.doc_professional[0].originalname,
+        type: 'Academic',
+        status: 'Under Review',
+        fileUrl: files.doc_professional[0].path,
+        publicId: files.doc_professional[0].filename,
+        mimetype: files.doc_professional[0].mimetype,
+        uploadedAt: new Date()
+      });
+    }
+
+    user.onboarding_progress.step_2_qualification = updatedStep2;
+    user.onboarding_progress.current_step = 3;
+    user.qualifications = `${degreeName} from ${universityName} (${graduationYear})`;
+    await user.save();
+
+    res.json({ message: 'Step 2: Qualifications submitted successfully', onboarding_progress: user.onboarding_progress });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Submit Step 3: Competency Test Score
+// @route   POST /api/teachers/onboarding/competency-test/submit
+// @access  Private
+router.post('/teachers/onboarding/competency-test/submit', protect, async (req, res) => {
+  try {
+    const user = await User.findOne({ id: req.user.id });
+    if (!user || user.role !== 'teacher') {
+      return res.status(404).json({ message: 'Teacher profile not found' });
+    }
+
+    if (user.onboarding_progress && 
+        (user.onboarding_progress.step_1_identity.status !== 'Verified' ||
+         user.onboarding_progress.step_2_qualification.status !== 'Verified')) {
+      return res.status(400).json({ message: 'Access denied: Step 3 (Test) and Step 4 (Video) are locked until Step 1 and Step 2 are verified by the admin.' });
+    }
+
+    const { subject, scorePercentage } = req.body;
+    if (!subject || scorePercentage === undefined) {
+      return res.status(400).json({ message: 'Subject and scorePercentage are required' });
+    }
+
+    const passingScore = 75;
+    const passed = scorePercentage >= passingScore;
+
+    const attempt = {
+      subject,
+      scorePercentage,
+      passed,
+      attemptedAt: new Date()
+    };
+
+    if (!user.onboarding_progress.step_3_competency) {
+      user.onboarding_progress.step_3_competency = { status: 'Pending', testAttempts: [] };
+    }
+
+    user.onboarding_progress.step_3_competency.testAttempts.push(attempt);
+    
+    if (passed) {
+      user.onboarding_progress.step_3_competency.status = 'Passed';
+      user.onboarding_progress.current_step = 4;
+      if (!user.subjects_taught.includes(subject)) {
+        user.subjects_taught.push(subject);
+      }
+    } else {
+      user.onboarding_progress.step_3_competency.status = 'Failed';
+    }
+
+    await user.save();
+
+    res.json({
+      message: passed ? 'Passed competency test! Step 4 unlocked.' : 'Did not meet passing score of 75%. Please try again.',
+      passed,
+      onboarding_progress: user.onboarding_progress
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Submit Step 4: Demo Class
+// @route   POST /api/teachers/onboarding/demo-class
+// @access  Private
+router.post('/teachers/onboarding/demo-class', protect, mapUserToTeacherId, uploadDemoVideo, validateUploadSizes({
+  demo_video: 50 * 1024 * 1024
+}), async (req, res) => {
+  try {
+    const user = await User.findOne({ id: req.user.id });
+    if (!user || user.role !== 'teacher') {
+      return res.status(404).json({ message: 'Teacher profile not found' });
+    }
+
+    if (user.onboarding_progress && 
+        (user.onboarding_progress.step_1_identity.status !== 'Verified' ||
+         user.onboarding_progress.step_2_qualification.status !== 'Verified')) {
+      return res.status(400).json({ message: 'Access denied: Step 3 (Test) and Step 4 (Video) are locked until Step 1 and Step 2 are verified by the admin.' });
+    }
+
+    const { targetGrade, topic, demoVideoUrl } = req.body;
+    if (!targetGrade || !topic) {
+      return res.status(400).json({ message: 'Target Grade and Topic are required' });
+    }
+
+    const files = req.files || {};
+    let finalVideoUrl = demoVideoUrl || '';
+
+    if (files.demo_video) {
+      finalVideoUrl = files.demo_video[0].path;
+    }
+
+    if (!finalVideoUrl && (!user.onboarding_progress?.step_4_demo?.demoVideoUrl || user.onboarding_progress?.step_4_demo?.demoVideoUrl === '')) {
+      return res.status(400).json({ message: 'A demo video upload or public video URL is required' });
+    }
+
+    user.onboarding_progress.step_4_demo = {
+      status: 'Submitted',
+      targetGrade,
+      topic,
+      demoVideoUrl: finalVideoUrl,
+      feedback: ''
+    };
+
+    user.verification_status = 'Pending';
+    await user.save();
+
+    res.json({
+      message: 'Demo class submitted! Your application is now under final administrative review.',
+      onboarding_progress: user.onboarding_progress,
+      verification_status: user.verification_status
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Verify Step by Admin
+// @route   POST /api/admin/teachers/:id/verify-step
+// @access  Private (Admin)
+router.post('/admin/teachers/:id/verify-step', protect, async (req, res) => {
+  try {
+    const { step, action, feedback } = req.body;
+    const teacher = await User.findOne({ id: req.params.id, role: 'teacher' });
+    if (!teacher) {
+      return res.status(404).json({ message: 'Teacher not found' });
+    }
+
+    if (!teacher.onboarding_progress) {
+      return res.status(400).json({ message: 'Teacher onboarding progress not initialized' });
+    }
+
+    const newStatus = action === 'verify' ? 'Verified' : 'Rejected';
+
+    if (step === 1) {
+      teacher.onboarding_progress.step_1_identity.status = newStatus;
+      teacher.onboarding_progress.step_1_identity.rejectionReason = feedback || '';
+      if (action === 'reject') {
+        teacher.onboarding_progress.current_step = 1;
+        teacher.verification_status = 'Onboarding';
+      }
+    } else if (step === 2) {
+      teacher.onboarding_progress.step_2_qualification.status = newStatus;
+      teacher.onboarding_progress.step_2_qualification.rejectionReason = feedback || '';
+      if (action === 'reject') {
+        teacher.onboarding_progress.current_step = 2;
+        teacher.verification_status = 'Onboarding';
+      }
+    } else if (step === 4) {
+      teacher.onboarding_progress.step_4_demo.status = action === 'verify' ? 'Approved' : 'Rejected';
+      teacher.onboarding_progress.step_4_demo.feedback = feedback || '';
+      if (action === 'reject') {
+        teacher.onboarding_progress.current_step = 4;
+        teacher.verification_status = 'Onboarding';
+      }
+    }
+
+    await teacher.save();
+    res.json({ message: `Step ${step} status updated successfully`, onboarding_progress: teacher.onboarding_progress, verification_status: teacher.verification_status });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Approve Teacher by Admin
+// @route   POST /api/admin/teachers/:id/approve
+// @access  Private (Admin)
+router.post('/admin/teachers/:id/approve', protect, async (req, res) => {
+  try {
+    const teacher = await User.findOne({ id: req.params.id, role: 'teacher' });
+    if (!teacher) {
+      return res.status(404).json({ message: 'Teacher not found' });
+    }
+
+    teacher.verification_status = 'Verified';
+    if (teacher.onboarding_progress) {
+      teacher.onboarding_progress.step_1_identity.status = 'Verified';
+      teacher.onboarding_progress.step_2_qualification.status = 'Verified';
+      teacher.onboarding_progress.step_3_competency.status = 'Passed';
+      teacher.onboarding_progress.step_4_demo.status = 'Approved';
+    }
+
+    if (teacher.tempPassword) {
+      try {
+        await sendTeacherCredentialsEmail(teacher.name, teacher.email, teacher.tempPassword);
+      } catch (e) {
+        console.error('Credentials email error:', e);
+      }
+      teacher.tempPassword = null;
+    }
+
+    await teacher.save();
+    res.json({ message: 'Teacher fully approved and verified successfully', teacher });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 // @desc    Get all teachers
 // @route   GET /api/teachers
@@ -546,7 +951,7 @@ router.get('/teachers/suggested/:studentId', protect, async (req, res) => {
 
     res.json(rankedTeachers);
   } catch (error) {
-    res.status(550).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -1144,6 +1549,27 @@ router.post('/payments', protect, async (req, res) => {
 
     // 2. Dispatch SMS / WhatsApp reminder if configured
     const studentUser = await User.findOne({ id: studentId });
+    if (studentUser) {
+      studentUser.feeDue = 0;
+      studentUser.feeStatus = 'Paid';
+      studentUser.feeDueDate = 'Paid on ' + new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+      const updatedActivities = [
+        {
+          id: 'pay_' + Date.now(),
+          text: `Tuition fee payment of ₹${parseFloat(amount).toLocaleString('en-IN')} recorded by Admin via ${method || 'Cash / Manual'}`,
+          time: 'Just now',
+          tag: 'Billing',
+          type: 'success'
+        },
+        ...(studentUser.activities || [])
+      ];
+      studentUser.activities = updatedActivities;
+      await studentUser.save();
+
+      // Automatically log earning for assigned teacher
+      await addEarningToTeacher(studentId, studentName, amount, method);
+    }
+
     const phone = studentUser ? studentUser.phone : null;
     const settings = await AdminSettings.findOne({ key: 'main' });
     if (settings && settings.autoReminders && phone) {
@@ -1259,6 +1685,9 @@ router.post('/payments/razorpay-verify', protect, async (req, res) => {
     ];
     student.activities = updatedActivities;
     await student.save();
+
+    // Automatically log earning for assigned teacher
+    await addEarningToTeacher(studentId, student.name, amount, 'Razorpay');
 
     // 3. Create Admin Notification
     await Notification.create({

@@ -14,7 +14,6 @@ import {
   Users, 
   GraduationCap, 
   BookOpen, 
-  UserCheck, 
   CheckSquare, 
   CreditCard, 
   MessageSquare, 
@@ -36,11 +35,11 @@ import {
   Clock,
   User,
   Map,
-  List,
   Phone,
   Mail,
   MapPin,
-  Pencil
+  Pencil,
+  DollarSign
 } from 'lucide-react';
 
 const InlineGoogleMap = ({ address, label }) => {
@@ -127,7 +126,6 @@ const AdminDashboard = () => {
   // Student roster state - starts empty, populated from backend via syncWithBackend
   const [students, setStudents] = useState([]);
   const [demoBookings, setDemoBookings] = useState([]);
-  const [parents, setParents] = useState([]);
   const [selectedTeachers, setSelectedTeachers] = useState({});
 
   const handleTeacherChange = (bookingId, teacherId) => {
@@ -175,20 +173,10 @@ const AdminDashboard = () => {
     }
   };
 
-  const fetchParents = async () => {
-    try {
-      const parentsData = await api.get('/parents');
-      setParents(parentsData);
-    } catch {
-      // Silent fail
-    }
-  };
-
   useEffect(() => {
     const init = async () => {
       await loadAdminData();
       await fetchDemoBookings();
-      await fetchParents();
       await fetchPayments();
       await fetchAnnouncements();
       await fetchEnquiries();
@@ -309,9 +297,9 @@ const AdminDashboard = () => {
   // Settings state — fetched from backend
   const [settings, setSettings] = useState({
     centreName: 'CoGrad',
-    contactEmail: 'connect@cograd.in',
-    contactPhone: '+91-9220253001',
-    address: 'C-56A/28, Sector 62, Noida 201301',
+    contactEmail: 'admin@cograd.com',
+    contactPhone: '+91-9876500000',
+    address: 'CoGrad Admin Support Desk',
     session: '2026-2027',
     currency: '₹ (INR)',
     autoReminders: true,
@@ -325,9 +313,9 @@ const AdminDashboard = () => {
       if (data) {
         setSettings({
           centreName: data.centreName || 'CoGrad',
-          contactEmail: data.contactEmail || 'connect@cograd.in',
-          contactPhone: data.contactPhone || '+91-9220253001',
-          address: data.address || 'C-56A/28, Sector 62, Noida 201301',
+          contactEmail: data.contactEmail || 'admin@cograd.com',
+          contactPhone: data.contactPhone || '+91-9876500000',
+          address: data.address || 'CoGrad Admin Support Desk',
           session: data.session || '2026-2027',
           currency: data.currency || '₹ (INR)',
           autoReminders: data.autoReminders !== undefined ? data.autoReminders : true,
@@ -387,6 +375,10 @@ const AdminDashboard = () => {
   const [showPublishTest, setShowPublishTest] = useState(false);
   const [selectedTest, setSelectedTest] = useState(null);
   const [selectedTeacherDocs, setSelectedTeacherDocs] = useState(null);
+  const [selectedTeacherEarnings, setSelectedTeacherEarnings] = useState(null);
+  const [newEarningForm, setNewEarningForm] = useState({ studentName: '', amount: '', status: 'Paid', method: 'Razorpay' });
+  const [isSavingEarning, setIsSavingEarning] = useState(false);
+  const [adminFeedback, setAdminFeedback] = useState('');
 
   // Student Form Inputs
   const [newStudent, setNewStudent] = useState({ name: '', email: '', parentName: '', batch: 'Class 9', status: 'Active' });
@@ -395,17 +387,7 @@ const AdminDashboard = () => {
   // Test Form Inputs
   const [newTest, setNewTest] = useState({ name: '', date: '', batch: 'Class 9', avgScore: '', topScore: '', toppers: '' });
 
-  // Attendance Sheet Filter State
-  const [attendanceFilter, setAttendanceFilter] = useState({ batch: 'Class 9', date: '2026-06-13' });
-  // Attendance Students Presence State (temporary session logs)
-  const [attendanceLogs, setAttendanceLogs] = useState({
-    1: 'Present',
-    2: 'Present',
-    3: 'Present',
-    4: 'Absent',
-    5: 'Present',
-    6: 'Absent'
-  });
+
 
   // Search/Filter states
   const [crmSearch, setCrmSearch] = useState('');
@@ -421,10 +403,7 @@ const AdminDashboard = () => {
   const [exportingPDF, setExportingPDF] = useState(false);
   const [exportingCSV, setExportingCSV] = useState(false);
 
-  // Help Center states (old local tickets — superseded by supportTickets backend)
-  const [tickets, setTickets] = useState([]);
 
-  const [newTicket, setNewTicket] = useState({ title: '', category: 'General Support', description: '' });
 
   // Derive activeDefaulters from students list and payments ledger
   const activeDefaulters = students
@@ -438,24 +417,6 @@ const AdminDashboard = () => {
       amount: '₹3,000',
       status: remindersSent[s.id] ? 'Sent' : 'Pending'
     }));
-
-  const handleRaiseTicketSubmit = (e) => {
-    e.preventDefault();
-    if (!newTicket.title || !newTicket.description) {
-      triggerToast('Please fill out all ticket details!');
-      return;
-    }
-    const id = tickets.length + 1;
-    const newEntry = {
-      ...newTicket,
-      id,
-      status: 'Open',
-      date: new Date().toISOString().split('T')[0]
-    };
-    setTickets(prev => [newEntry, ...prev]);
-    setNewTicket({ title: '', category: 'General Support', description: '' });
-    triggerToast(`Support ticket #${id} submitted successfully!`);
-  };
 
   // Toast helper
   const triggerToast = (msg) => {
@@ -552,6 +513,45 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleVerifyStep = async (teacherId, step, action) => {
+    try {
+      const res = await api.post(`/admin/teachers/${teacherId}/verify-step`, {
+        step,
+        action,
+        feedback: adminFeedback
+      });
+      await syncWithBackend();
+      await loadAdminData();
+      
+      // Update selectedTeacherDocs details locally
+      setSelectedTeacherDocs(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          onboarding_progress: res.onboarding_progress,
+          verification_status: res.verification_status
+        };
+      });
+      
+      setAdminFeedback('');
+      triggerToast(`Step ${step} ${action === 'verify' ? 'verified' : 'rejected'} successfully.`);
+    } catch (err) {
+      triggerToast(err.message || 'Failed to update step status');
+    }
+  };
+
+  const handleFinalApprove = async (teacherId, name) => {
+    try {
+      await api.post(`/admin/teachers/${teacherId}/approve`);
+      await syncWithBackend();
+      await loadAdminData();
+      setSelectedTeacherDocs(null);
+      triggerToast(`${name} is now fully approved & verified!`);
+    } catch (err) {
+      triggerToast(err.message || 'Failed to approve teacher');
+    }
+  };
+
 
 
   // Test actions
@@ -591,7 +591,7 @@ const AdminDashboard = () => {
   };
 
   // CRM actions
-  const handleMoveEnquiry = async (id, name, currentStatus, course, email) => {
+  const handleMoveEnquiry = async (id, name, currentStatus) => {
     let nextStatus = 'Follow-up';
     if (currentStatus === 'Follow-up') {
       nextStatus = 'Enrolled';
@@ -1122,22 +1122,29 @@ const AdminDashboard = () => {
                   </div>
                 </div>
 
-                <div className="flex space-x-2">
+                <div className="flex gap-2">
                   <button
                     onClick={() => toggleTeacherVerification(teacher.id, teacher.name)}
-                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center border ${
+                    className={`flex-1 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer text-center border ${
                       teacher.status === 'Verified'
                         ? 'border-slate-200 text-slate-600 hover:bg-slate-50'
                         : 'border-emerald-500 bg-emerald-50 text-emerald-600 hover:bg-emerald-100/30'
                     }`}
                   >
-                    {teacher.status === 'Verified' ? 'Revoke Verify' : 'Verify Partner'}
+                    {teacher.status === 'Verified' ? 'Revoke' : 'Verify'}
                   </button>
                   <button
                     onClick={() => setSelectedTeacherDocs(teacher)}
-                    className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-600 hover:text-blue-800 font-bold rounded-xl text-xs transition-all cursor-pointer"
+                    className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-600 hover:text-blue-800 font-bold rounded-xl text-[10px] transition-all cursor-pointer"
                   >
-                    Review Docs
+                    Docs
+                  </button>
+                  <button
+                    onClick={() => setSelectedTeacherEarnings(teacher)}
+                    className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 font-bold rounded-xl text-[10px] transition-all cursor-pointer flex items-center gap-0.5"
+                  >
+                    <DollarSign className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                    <span>Earnings</span>
                   </button>
                 </div>
               </div>
@@ -1155,182 +1162,6 @@ const AdminDashboard = () => {
   };
 
 
-
-  const renderAttendance = () => {
-    const activeBatchStudents = students.filter(s => s.batch === attendanceFilter.batch);
-
-    return (
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-6 text-left">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-50 pb-5 gap-4">
-          <div>
-            <h3 className="text-base font-black text-slate-800 tracking-tight">Systemic Attendance Register</h3>
-            <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Select batch and date to view logs</p>
-          </div>
-          
-          <div className="flex flex-wrap gap-3">
-            <select
-              value={attendanceFilter.batch}
-              onChange={(e) => setAttendanceFilter(prev => ({ ...prev, batch: e.target.value }))}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-            >
-              {['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'].map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-            <input
-              type="date"
-              value={attendanceFilter.date}
-              onChange={(e) => setAttendanceFilter(prev => ({ ...prev, date: e.target.value }))}
-              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-2xl">
-          <div className="text-center">
-            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Enrolled</span>
-            <span className="text-xl font-black text-slate-800 mt-1 block">{activeBatchStudents.length}</span>
-          </div>
-          <div className="text-center sm:border-l sm:border-slate-200/60 border-l-0">
-            <span className="text-[10px] text-emerald-500 font-black uppercase tracking-wider block">Present</span>
-            <span className="text-xl font-black text-emerald-600 mt-1 block">
-              {activeBatchStudents.filter(s => attendanceLogs[s.id] === 'Present').length}
-            </span>
-          </div>
-          <div className="text-center sm:border-l sm:border-slate-200/60 border-l-0">
-            <span className="text-[10px] text-rose-500 font-black uppercase tracking-wider block">Absent</span>
-            <span className="text-xl font-black text-rose-600 mt-1 block">
-              {activeBatchStudents.filter(s => attendanceLogs[s.id] === 'Absent').length}
-            </span>
-          </div>
-          <div className="text-center sm:border-l sm:border-slate-200/60 border-l-0">
-            <span className="text-[10px] text-primary-500 font-black uppercase tracking-wider block">Rate</span>
-            <span className="text-xl font-black text-primary-600 mt-1 block">
-              {activeBatchStudents.length > 0 
-                ? `${Math.round((activeBatchStudents.filter(s => attendanceLogs[s.id] === 'Present').length / activeBatchStudents.length) * 100)}%`
-                : '0%'}
-            </span>
-          </div>
-        </div>
-
-        <div className="divide-y divide-slate-100">
-          {activeBatchStudents.length === 0 ? (
-            <div className="empty-state"><div className="empty-state-icon"><Users className="w-5 h-5" /></div><p className="empty-state-title">No Students</p><p className="empty-state-desc">No active students in this batch yet.</p></div>
-          ) : (
-            activeBatchStudents.map(student => {
-              const status = attendanceLogs[student.id] || 'Present';
-              return (
-                <div key={student.id} className="py-3.5 flex items-center justify-between gap-4">
-                  <div className="flex items-center space-x-3.5">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                      status === 'Present' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
-                    }`}>
-                      {student.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-black text-slate-800">{student.name}</h4>
-                      <p className="text-[9px] text-slate-400 font-bold mt-0.5">{student.email}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => setAttendanceLogs(prev => ({ ...prev, [student.id]: 'Present' }))}
-                      className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                        status === 'Present'
-                          ? 'bg-emerald-500 text-white shadow-sm'
-                          : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
-                      }`}
-                    >
-                      Present
-                    </button>
-                    <button
-                      onClick={() => setAttendanceLogs(prev => ({ ...prev, [student.id]: 'Absent' }))}
-                      className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                        status === 'Absent'
-                          ? 'bg-rose-500 text-white shadow-sm'
-                          : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
-                      }`}
-                    >
-                      Absent
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {activeBatchStudents.length > 0 && (
-          <div className="pt-2 text-right">
-            <button
-              onClick={() => triggerToast(`Attendance sheet saved for ${attendanceFilter.batch} on ${attendanceFilter.date}!`)}
-              className="btn-primary py-2 px-5 rounded-xl text-xs font-bold cursor-pointer"
-            >
-              Save Attendance Sheet
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderTestsAndResults = () => {
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-sm font-black text-slate-500 uppercase tracking-wider">Academics & Tests Registry</h3>
-          <button
-            onClick={() => setShowPublishTest(true)}
-            className="btn-primary py-2 px-4 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer"
-          >
-            <Plus className="w-4.5 h-4.5" />
-            <span>Publish Test Results</span>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
-          {tests.map(test => (
-            <div key={test.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 hover:shadow-md transition-shadow flex flex-col justify-between">
-              <div className="space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-extrabold text-slate-800 text-sm">{test.name}</h4>
-                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">Batch: {test.batch} | Date: {test.date}</p>
-                  </div>
-                  <span className="text-[10px] font-black text-primary-600 bg-primary-50 px-2 py-0.5 rounded">
-                    {test.avgScore} Class Avg
-                  </span>
-                </div>
-
-                <div className="bg-slate-50 p-3.5 rounded-xl text-[11px] font-semibold text-slate-600 space-y-1">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Performance Summary</div>
-                  <div className="flex justify-between text-slate-700">
-                    <span>Target Class:</span>
-                    <span className="font-extrabold text-slate-800">{test.batch}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-700">
-                    <span>Average Marks:</span>
-                    <span className="font-extrabold text-slate-800">{test.avgScore}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-right pt-2 border-t border-slate-50">
-                <button
-                  onClick={() => setSelectedTest(test)}
-                  className="text-xs font-bold text-primary-500 hover:text-primary-600 transition-colors flex items-center justify-end cursor-pointer ml-auto"
-                >
-                  <span>View Test Details</span>
-                  <ChevronRight className="w-4 h-4 ml-0.5" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
 
   const renderFeeManagement = () => {
     const totalDefaultersAmount = activeDefaulters.reduce((acc, d) => {
@@ -1996,7 +1827,7 @@ const AdminDashboard = () => {
         {/* Official CoGrad Contact Details */}
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-5">
           <div>
-            <h3 className="text-base font-black text-slate-800 tracking-tight">CoGrad Corporate Support & Office Details</h3>
+            <h3 className="text-base font-black text-slate-800 tracking-tight">CoGrad Admin Support Desk Details</h3>
             <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Official business and help desk contact details</p>
           </div>
           
@@ -2008,7 +1839,7 @@ const AdminDashboard = () => {
               </div>
               <div className="space-y-1">
                 <span className="text-[9px] uppercase font-black text-slate-400">Call Support</span>
-                <p className="text-xs font-black text-slate-800">+91-9220253001</p>
+                <p className="text-xs font-black text-slate-800">{settings.contactPhone}</p>
                 <p className="text-[9px] text-slate-400 font-bold">Mon–Sat, 10am – 6pm IST</p>
               </div>
             </div>
@@ -2021,7 +1852,7 @@ const AdminDashboard = () => {
               <div className="space-y-1">
                 <span className="text-[9px] uppercase font-black text-slate-400">Email Address</span>
                 <p className="text-xs font-black text-slate-800">
-                  <a href="mailto:connect@cograd.in" className="hover:underline text-emerald-700">connect@cograd.in</a>
+                  <a href={`mailto:${settings.contactEmail}`} className="hover:underline text-emerald-700">{settings.contactEmail}</a>
                 </p>
                 <p className="text-[9px] text-slate-400 font-bold">We reply within 24 hours</p>
               </div>
@@ -2033,10 +1864,10 @@ const AdminDashboard = () => {
                 <MapPin className="w-5 h-5 text-violet-600" />
               </div>
               <div className="space-y-1">
-                <span className="text-[9px] uppercase font-black text-slate-400">Corporate Office</span>
-                <p className="text-xs font-black text-slate-800">PI Softek Ltd</p>
+                <span className="text-[9px] uppercase font-black text-slate-400">Support Desk Location</span>
+                <p className="text-xs font-black text-slate-800">{settings.centreName || 'CoGrad'}</p>
                 <p className="text-[9px] text-slate-500 font-medium leading-tight">
-                  C-56A/28, Sector 62, Noida 201301
+                  {settings.address}
                 </p>
               </div>
             </div>
@@ -2065,128 +1896,6 @@ const AdminDashboard = () => {
       </button>
     </div>
   );
-
-  const renderMatchQueue = () => {
-    const pendingStudents = students.filter(s => s.status === 'pending_match');
-
-    return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Tutor Allotment Match Queue</h2>
-          <p className="text-slate-500 text-xs mt-1">Review diagnostic placement test results and assign vetted home tutors based on compatibility rankings.</p>
-        </div>
-
-        {pendingStudents.length === 0 ? (
-          <div className="glow-card p-8 text-center max-w-xl mx-auto">
-            <span className="text-4xl">🎉</span>
-            <h3 className="text-lg font-black text-slate-800 mt-4">All Matches Completed!</h3>
-            <p className="text-xs text-slate-400 mt-2">No students are currently waiting for tutor matching in the queue.</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {pendingStudents.map(student => {
-              const suggestions = findSuggestedTeachers(student);
-              const scores = student.test_score || { Mathematics: 0, Science: 0 };
-              
-              return (
-                <div key={student.id} className="glow-card p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                  
-                  {/* Left Column: Student Details & Scores */}
-                  <div className="lg:col-span-5 space-y-4">
-                    <div className="flex items-center space-x-3 text-left">
-                      <img src={student.avatar} alt={student.name} className="w-11 h-11 rounded-full object-cover border border-slate-150" />
-                      <div>
-                        <h3 className="text-sm font-extrabold text-slate-800">{student.name}</h3>
-                        <p className="text-[10px] text-slate-400 font-semibold">{student.standard} | {student.city}</p>
-                        <InlineGoogleMap address={student.city} label="Student Location" />
-                      </div>
-                    </div>
-
-                    <div className="p-3 bg-slate-50 rounded-2xl text-left">
-                      <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block mb-2">
-                        Diagnostic Test Scores (Total: {scores.totalMarksText || '0/35'} Marks)
-                      </span>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="bg-white p-2.5 rounded-xl border border-slate-100/50">
-                          <span className="text-[10px] text-slate-500 font-semibold block">Mathematics</span>
-                          <span className="text-sm font-black text-blue-600 mt-1 block">{scores.mathMarksText || `0/16`}</span>
-                        </div>
-                        <div className="bg-white p-2.5 rounded-xl border border-slate-100/50">
-                          <span className="text-[10px] text-slate-500 font-semibold block">Science</span>
-                          <span className="text-sm font-black text-blue-600 mt-1 block">{scores.scienceMarksText || `0/19`}</span>
-                        </div>
-                      </div>
-                      <span className="text-[9px] text-slate-400 font-medium block mt-2">Subjects needed: {student.subjects.join(', ')}</span>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Suggested Matches */}
-                  <div className="lg:col-span-7 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Top Tutor Recommendations</span>
-                      <button
-                        onClick={() => { setSelectedMatchStudent(student); setShowOverrideModal(true); }}
-                        className="text-blue-500 hover:text-blue-700 text-xs font-black flex items-center space-x-1 cursor-pointer transition-colors"
-                      >
-                        ⚙️ Manual Override
-                      </button>
-                    </div>
-
-                    <div className="space-y-2.5">
-                      {suggestions.slice(0, 2).map((sug) => {
-                        const t = sug.teacher;
-                        return (
-                          <div key={t.id} className="p-3.5 border border-slate-100 hover:border-slate-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50 hover:bg-white transition-all text-left">
-                            <div>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-xs font-black text-slate-800">{t.name}</span>
-                                <span className="bg-emerald-50 text-emerald-700 text-[9px] font-black px-1.5 py-0.5 rounded-lg border border-emerald-100">{sug.score}% Match</span>
-                              </div>
-                              <p className="text-[10px] text-slate-500 font-semibold mt-1">
-                                {t.experience} | {t.qualification} | Locality: {t.locality || 'N/A'}, {t.city || 'N/A'}
-                              </p>
-                              <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                                {sug.reasons.map((r, ri) => (
-                                  <span key={ri} className="bg-blue-50/70 text-blue-700 border border-blue-100/30 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full">{r}</span>
-                                ))}
-                              </div>
-                            </div>
-
-                            <button
-                              onClick={() => {
-                                allotTutor(student.id, t.id);
-                                triggerToast(`Allotted ${t.name} to ${student.name}!`);
-                                loadAdminData();
-                              }}
-                              className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-sm cursor-pointer transition-all flex items-center justify-center gap-1 shrink-0 active:scale-95 text-center"
-                            >
-                              Confirm Match
-                            </button>
-                          </div>
-                        );
-                      })}
-                      {suggestions.length === 0 && (
-                        <div className="p-4 border border-dashed border-slate-200 rounded-2xl bg-slate-50/20 text-center">
-                          <p className="text-xs text-slate-400 font-semibold">No vetted home tutors in {student.city} qualified for this score-band/subject match.</p>
-                          <button
-                            onClick={() => { setSelectedMatchStudent(student); setShowOverrideModal(true); }}
-                            className="mt-2.5 px-4 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-[10px] rounded-xl transition-all cursor-pointer"
-                          >
-                            Allot Tutor Manually
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const handleConfirmBooking = async (booking) => {
     const finalTeacherId = selectedTeachers[booking.id] || booking.assigned_teacher_id;
@@ -2485,119 +2194,6 @@ const AdminDashboard = () => {
                 </div>
               );
             })}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderWaitlist = () => {
-    // Waitlisted students (matching_eligible = false or status = 'waitlist')
-    const waitlistedStudents = students.filter(s => s.matching_eligible === false || s.status === 'waitlist' || s.status === 'Waitlist');
-    
-    // Waitlisted parents (childMatchingEligible = false or status = 'waitlist')
-    const waitlistedParents = parents.filter(p => p.childMatchingEligible === false || p.status === 'waitlist' || p.status === 'Waitlist');
-
-    const waitlisted = [...waitlistedStudents, ...waitlistedParents];
-
-    // Group by city
-    const groupedByCity = {};
-    waitlisted.forEach(u => {
-      const city = u.city || u.childCity || 'Unknown';
-      const normalizedCity = city.charAt(0).toUpperCase() + city.slice(1);
-      if (!groupedByCity[normalizedCity]) {
-        groupedByCity[normalizedCity] = [];
-      }
-      groupedByCity[normalizedCity].push(u);
-    });
-
-    const cityNames = Object.keys(groupedByCity).sort();
-
-    return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Waitlist</h2>
-          <p className="text-slate-500 text-xs mt-1">
-            Users who registered from unsupported cities. They'll be notified when Cograd launches in their area.
-          </p>
-        </div>
-
-        {waitlisted.length === 0 ? (
-          <div className="glow-card p-8 text-center max-w-xl mx-auto">
-            <span className="text-4xl">📋</span>
-            <h3 className="text-lg font-black text-slate-800 mt-4">Waitlist is Empty</h3>
-            <p className="text-xs text-slate-400 mt-2">No users are currently on the waitlist.</p>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-black text-blue-800">Total Waitlist: <strong>{waitlisted.length}</strong> users</p>
-                <p className="text-[10px] text-blue-600 font-semibold mt-0.5">Across {cityNames.length} cities</p>
-              </div>
-            </div>
-
-            {cityNames.map(city => (
-              <div key={city} className="space-y-3">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <h3 className="text-lg font-black text-slate-800">{city}</h3>
-                  <span className="bg-amber-50 text-amber-700 text-[10px] font-black px-2 py-0.5 rounded-lg border border-amber-100">
-                    {groupedByCity[city].length} waiting
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3">
-                  {groupedByCity[city].map(user => (
-                    <div key={user.id} className="glow-card p-4 flex items-start justify-between">
-                      <div className="flex items-start space-x-3">
-                        <img 
-                          src={user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'} 
-                          alt={user.name} 
-                          className="w-10 h-10 rounded-full object-cover border border-slate-200"
-                        />
-                        <div>
-                          <h4 className="text-sm font-extrabold text-slate-800">{user.name}</h4>
-                          <p className="text-[10px] text-slate-500 font-semibold">
-                            {user.role === 'parent' ? 'Parent' : 'Student'} 
-                            {user.role === 'parent' && user.childName && ` — Child: ${user.childName}`}
-                            {user.role === 'student' && ` — ${user.standard || ''}`}
-                          </p>
-                          <p className="text-[9px] text-slate-400 mt-0.5">
-                            {user.email} | {user.phone}
-                          </p>
-                          {user.role === 'parent' && user.childSubjects && (
-                            <div className="flex flex-wrap gap-1 mt-1.5">
-                              {user.childSubjects.map(sub => (
-                                <span key={sub} className="bg-blue-50/70 text-blue-700 border border-blue-100/30 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full">
-                                  {sub}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          {user.role === 'student' && user.subjects && (
-                            <div className="flex flex-wrap gap-1 mt-1.5">
-                              {user.subjects.map(sub => (
-                                <span key={sub} className="bg-blue-50/70 text-blue-700 border border-blue-100/30 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full">
-                                  {sub}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1.5 shrink-0">
-                        <span className="bg-amber-50 text-amber-700 text-[9px] font-black px-1.5 py-0.5 rounded-lg border border-amber-100 whitespace-nowrap">
-                          Waitlist
-                        </span>
-                        <span className="text-[8px] text-slate-400 font-medium">
-                          Joined: {user.joinDate || user.createdAt ? new Date(user.joinDate || user.createdAt).toLocaleDateString() : 'N/A'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
           </div>
         )}
       </div>
@@ -3020,13 +2616,13 @@ const AdminDashboard = () => {
       {/* Teacher Verification Documents Modal — Full Per-Doc Control */}
       {selectedTeacherDocs && (
         <div className="modal-overlay">
-          <div className="modal-panel p-6 space-y-4">
+          <div className="modal-panel p-6 space-y-4 max-w-2xl max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-50">
               <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
                 <GraduationCap className="w-5 h-5 text-primary-600" />
-                <span>Document Verification Portal</span>
+                <span>Teacher Joining &amp; Vetting Hub</span>
               </h3>
-              <button onClick={() => setSelectedTeacherDocs(null)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg cursor-pointer">
+              <button onClick={() => { setSelectedTeacherDocs(null); setAdminFeedback(''); }} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg cursor-pointer border-0 bg-transparent">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -3034,139 +2630,581 @@ const AdminDashboard = () => {
             <div className="space-y-4 text-left">
               {/* Teacher Summary */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-100 text-xs flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 font-black text-base shrink-0">
-                  {selectedTeacherDocs.name.charAt(0)}
+                <div className="w-10 h-10 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 font-black text-base shrink-0 overflow-hidden">
+                  {selectedTeacherDocs.avatar ? (
+                    <img src={selectedTeacherDocs.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    selectedTeacherDocs.name.charAt(0)
+                  )}
                 </div>
-                <div>
+                <div className="flex-1">
                   <div className="font-extrabold text-slate-800 text-sm">{selectedTeacherDocs.name}</div>
-                  <div className="text-slate-500 mt-0.5">{selectedTeacherDocs.subject} Specialist</div>
+                  <div className="text-slate-505 mt-0.5">{selectedTeacherDocs.email} · {selectedTeacherDocs.phone}</div>
                   <div className="mt-1">
-                    {areAllDocsApproved(selectedTeacherDocs.id) ? (
-                      <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">🛡️ All documents cleared</span>
-                    ) : (
-                      <span className="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">⚠️ Documents pending review</span>
-                    )}
+                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border
+                      ${selectedTeacherDocs.verification_status === 'Verified'
+                        ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                        : selectedTeacherDocs.verification_status === 'Pending'
+                          ? 'bg-amber-50 border-amber-100 text-amber-700 animate-pulse'
+                          : 'bg-indigo-50 border-indigo-100 text-indigo-700'
+                      }`}
+                    >
+                      Status: {selectedTeacherDocs.verification_status || selectedTeacherDocs.status}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* Per-Document Verification Controls */}
-              <div className="space-y-2.5">
-                <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Credential Documents — View &amp; Toggle Status</h5>
+              {selectedTeacherDocs.onboarding_progress ? (
+                /* ── MULTI-STEP ONBOARDING VETTING VIEW ── */
+                <div className="space-y-4 text-xs font-semibold text-slate-705">
+                  
+                  {/* Feedback Box */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Admin Feedback / Rejection Comments</label>
+                    <textarea
+                      placeholder="Write feedback here before clicking Reject..."
+                      value={adminFeedback}
+                      onChange={(e) => setAdminFeedback(e.target.value)}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none h-16"
+                    />
+                  </div>
 
-                {(() => {
-                  // Map each doc key to the matching uploaded file from teacher.documents
-                  const TYPE_MAP = {
-                    degree:     (d) => d.type === 'Academic'   || d.name?.toLowerCase().includes('degree'),
-                    aadhar:     (d) => d.type === 'Identity'   || d.name?.toLowerCase().includes('aadhaar') || d.name?.toLowerCase().includes('aadhar'),
-                    resume:     (d) => d.type === 'Resume'     || d.name?.toLowerCase().includes('resume') || d.name?.toLowerCase().includes('cv'),
-                  };
-                  const uploadedDocs = selectedTeacherDocs.documents || [];
+                  {/* Step 1: Identity & KYC */}
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-150 space-y-3">
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                      <span className="text-xs font-extrabold text-slate-800">1. Identity &amp; KYC Verification</span>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase border
+                        ${selectedTeacherDocs.onboarding_progress.step_1_identity.status === 'Verified'
+                          ? 'bg-emerald-50 border-emerald-150 text-emerald-600'
+                          : selectedTeacherDocs.onboarding_progress.step_1_identity.status === 'Submitted'
+                            ? 'bg-blue-50 border-blue-150 text-blue-600 animate-pulse'
+                            : 'bg-slate-100 border-slate-200 text-slate-500'
+                        }`}
+                      >
+                        {selectedTeacherDocs.onboarding_progress.step_1_identity.status}
+                      </span>
+                    </div>
 
-                  return [
-                    { key: 'degree',     label: 'Academic Degree Certificate', icon: '🎓', info: 'M.Sc / B.Ed / Graduation proof from university' },
-                    { key: 'aadhar',     label: 'Aadhaar Identity Card',       icon: '🪪', info: 'UIDAI 12-digit unique ID verification' },
-                    { key: 'resume',     label: 'Professional Resume / CV',     icon: '📄', info: 'Curriculum Vitae containing details of teaching history' },
-                  ].map((doc) => {
-                    const status      = (teacherDocStatus[selectedTeacherDocs.id] || {})[doc.key] || 'Under Review';
-                    const isApproved  = status === 'Approved';
-                    const uploadedDoc = uploadedDocs.find(TYPE_MAP[doc.key]);
-                    // fileUrl is the permanent Cloudinary CDN URL stored in MongoDB
-                    const fileUrl     = uploadedDoc?.fileUrl || null;
-                    const isPdf       = uploadedDoc?.mimetype === 'application/pdf';
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                      <div>Aadhaar: <strong className="text-slate-800">{selectedTeacherDocs.onboarding_progress.step_1_identity.aadhaarNumber || 'N/A'}</strong></div>
+                      <div>PAN Card: <strong className="text-slate-800">{selectedTeacherDocs.onboarding_progress.step_1_identity.panNumber || 'N/A'}</strong></div>
+                    </div>
 
-                    return (
-                      <div key={doc.key} className={`p-3 rounded-xl border transition-all ${
-                        isApproved ? 'bg-emerald-50/50 border-emerald-100' : 'bg-amber-50/50 border-amber-100'
-                      }`}>
-                        {/* Top row: icon + label + approve btn */}
-                        <div className="flex justify-between items-center gap-3">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span className="text-base">{doc.icon}</span>
-                            <div className="min-w-0">
-                              <h6 className="text-xs font-bold text-slate-800 truncate">{doc.label}</h6>
-                              {uploadedDoc
-                                ? <p className="text-[9px] text-slate-500 font-semibold mt-0.5 truncate" title={uploadedDoc.name}>{uploadedDoc.name}</p>
-                                : <p className="text-[9px] text-rose-400 font-semibold mt-0.5">⚠ Not uploaded</p>
-                              }
-                            </div>
+                    {/* Files previews */}
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {selectedTeacherDocs.onboarding_progress.step_1_identity.aadhaarFileUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDoc({ url: selectedTeacherDocs.onboarding_progress.step_1_identity.aadhaarFileUrl, name: 'Aadhaar Card copy', isPdf: selectedTeacherDocs.onboarding_progress.step_1_identity.aadhaarFileUrl.endsWith('.pdf') })}
+                          className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-[9px] uppercase tracking-wider transition-all cursor-pointer"
+                        >
+                          👁️ Aadhaar copy
+                        </button>
+                      )}
+                      {selectedTeacherDocs.onboarding_progress.step_1_identity.panFileUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDoc({ url: selectedTeacherDocs.onboarding_progress.step_1_identity.panFileUrl, name: 'PAN Card copy', isPdf: selectedTeacherDocs.onboarding_progress.step_1_identity.panFileUrl.endsWith('.pdf') })}
+                          className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-[9px] uppercase tracking-wider transition-all cursor-pointer"
+                        >
+                          👁️ PAN copy
+                        </button>
+                      )}
+                      {selectedTeacherDocs.onboarding_progress.step_1_identity.selfieUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDoc({ url: selectedTeacherDocs.onboarding_progress.step_1_identity.selfieUrl, name: 'Selfie headshot', isPdf: false })}
+                          className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-[9px] uppercase tracking-wider transition-all cursor-pointer"
+                        >
+                          👁️ Selfie picture
+                        </button>
+                      )}
+                    </div>
+
+                    {selectedTeacherDocs.onboarding_progress.step_1_identity.status === 'Submitted' && (
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => handleVerifyStep(selectedTeacherDocs.id, 1, 'verify')}
+                          className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[10px] transition-all cursor-pointer text-center"
+                        >
+                          ✓ Approve Identity
+                        </button>
+                        <button
+                          onClick={() => handleVerifyStep(selectedTeacherDocs.id, 1, 'reject')}
+                          className="flex-1 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-[10px] transition-all cursor-pointer text-center"
+                        >
+                          ✗ Reject Identity
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Step 2: Academic Qualifications */}
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-150 space-y-3">
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                      <span className="text-xs font-extrabold text-slate-800">2. Academic Credentials Audit</span>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase border
+                        ${selectedTeacherDocs.onboarding_progress.step_2_qualification.status === 'Verified'
+                          ? 'bg-emerald-50 border-emerald-150 text-emerald-600'
+                          : selectedTeacherDocs.onboarding_progress.step_2_qualification.status === 'Submitted'
+                            ? 'bg-blue-50 border-blue-150 text-blue-600 animate-pulse'
+                            : 'bg-slate-100 border-slate-200 text-slate-500'
+                        }`}
+                      >
+                        {selectedTeacherDocs.onboarding_progress.step_2_qualification.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                      <div>Degree: <strong className="text-slate-800">{selectedTeacherDocs.onboarding_progress.step_2_qualification.degreeName || 'N/A'}</strong></div>
+                      <div>University: <strong className="text-slate-800">{selectedTeacherDocs.onboarding_progress.step_2_qualification.universityName || 'N/A'}</strong></div>
+                      <div>Graduation: <strong className="text-slate-800">{selectedTeacherDocs.onboarding_progress.step_2_qualification.graduationYear || 'N/A'}</strong></div>
+                      <div>Professional: <strong className="text-slate-800">{selectedTeacherDocs.onboarding_progress.step_2_qualification.professionalCertName || 'N/A'}</strong></div>
+                    </div>
+
+                    <div className="flex gap-2 pt-1">
+                      {selectedTeacherDocs.onboarding_progress.step_2_qualification.degreeUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDoc({ url: selectedTeacherDocs.onboarding_progress.step_2_qualification.degreeUrl, name: 'Degree certificate', isPdf: selectedTeacherDocs.onboarding_progress.step_2_qualification.degreeUrl.endsWith('.pdf') })}
+                          className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-[9px] uppercase tracking-wider transition-all cursor-pointer"
+                        >
+                          👁️ Degree copy
+                        </button>
+                      )}
+                      {selectedTeacherDocs.onboarding_progress.step_2_qualification.professionalCertUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDoc({ url: selectedTeacherDocs.onboarding_progress.step_2_qualification.professionalCertUrl, name: 'Professional certificate', isPdf: selectedTeacherDocs.onboarding_progress.step_2_qualification.professionalCertUrl.endsWith('.pdf') })}
+                          className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-[9px] uppercase tracking-wider transition-all cursor-pointer"
+                        >
+                          👁️ Professional Cert
+                        </button>
+                      )}
+                    </div>
+
+                    {selectedTeacherDocs.onboarding_progress.step_2_qualification.status === 'Submitted' && (
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => handleVerifyStep(selectedTeacherDocs.id, 2, 'verify')}
+                          className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[10px] transition-all cursor-pointer text-center"
+                        >
+                          ✓ Approve Credentials
+                        </button>
+                        <button
+                          onClick={() => handleVerifyStep(selectedTeacherDocs.id, 2, 'reject')}
+                          className="flex-1 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-[10px] transition-all cursor-pointer text-center"
+                        >
+                          ✗ Reject Credentials
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Step 3: Competency Test */}
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-150 space-y-3">
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                      <span className="text-xs font-extrabold text-slate-800">3. Subject Competency quiz results</span>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase border
+                        ${selectedTeacherDocs.onboarding_progress.step_3_competency.status === 'Passed'
+                          ? 'bg-emerald-50 border-emerald-150 text-emerald-600'
+                          : 'bg-slate-100 border-slate-200 text-slate-500'
+                        }`}
+                      >
+                        {selectedTeacherDocs.onboarding_progress.step_3_competency.status}
+                      </span>
+                    </div>
+
+                    {selectedTeacherDocs.onboarding_progress.step_3_competency.testAttempts && selectedTeacherDocs.onboarding_progress.step_3_competency.testAttempts.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {selectedTeacherDocs.onboarding_progress.step_3_competency.testAttempts.map((attempt, idx) => (
+                          <div key={idx} className="flex justify-between items-center text-[10px] bg-white p-2 border border-slate-100 rounded-lg">
+                            <span>Subject: <strong className="text-slate-800">{attempt.subject}</strong></span>
+                            <span>Score: <strong className={attempt.passed ? 'text-emerald-600' : 'text-rose-500'}>{attempt.scorePercentage}%</strong></span>
+                            <span>Result: <strong className={attempt.passed ? 'text-emerald-600' : 'text-rose-500'}>{attempt.passed ? 'PASSED' : 'FAILED'}</strong></span>
                           </div>
-                          <button
-                            onClick={() => toggleDocStatus(selectedTeacherDocs.id, doc.key)}
-                            className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider shrink-0 border cursor-pointer transition-all hover:scale-105 active:scale-95 ${
-                              isApproved
-                                ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
-                                : 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-emerald-100 hover:text-emerald-700 hover:border-emerald-200'
-                            }`}
-                            title={isApproved ? 'Click to reject this document' : 'Click to approve this document'}
-                          >
-                            {isApproved ? '✓ Approved' : '⏳ Review'}
-                          </button>
-                        </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-slate-400 italic">No competency test attempts registered yet.</p>
+                    )}
+                  </div>
 
-                        {/* View / Download row */}
-                        {fileUrl && (
-                          <div className="mt-2 flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setPreviewDoc({ url: fileUrl, name: uploadedDoc.name, isPdf: isPdf })}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer"
-                            >
-                              👁 Preview
-                            </button>
-                            <a
-                              href={fileUrl}
-                              download={uploadedDoc.name}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
-                            >
-                              ⬇ Download
-                            </a>
-                            {isPdf && (
-                              <span className="px-2 py-1.5 bg-red-50 text-red-500 border border-red-100 rounded-lg text-[9px] font-black uppercase tracking-wider">
-                                PDF
-                              </span>
+                  {/* Step 4: Demo Class */}
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-150 space-y-3">
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                      <span className="text-xs font-extrabold text-slate-800">4. Demo Lesson Evaluation</span>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase border
+                        ${selectedTeacherDocs.onboarding_progress.step_4_demo.status === 'Approved'
+                          ? 'bg-emerald-50 border-emerald-150 text-emerald-600'
+                          : selectedTeacherDocs.onboarding_progress.step_4_demo.status === 'Submitted'
+                            ? 'bg-blue-50 border-blue-150 text-blue-600 animate-pulse'
+                            : 'bg-slate-100 border-slate-200 text-slate-500'
+                        }`}
+                      >
+                        {selectedTeacherDocs.onboarding_progress.step_4_demo.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                      <div>Target Grade: <strong className="text-slate-800">{selectedTeacherDocs.onboarding_progress.step_4_demo.targetGrade || 'N/A'}</strong></div>
+                      <div>Topic Explained: <strong className="text-slate-800">{selectedTeacherDocs.onboarding_progress.step_4_demo.topic || 'N/A'}</strong></div>
+                    </div>
+
+                    {selectedTeacherDocs.onboarding_progress.step_4_demo.demoVideoUrl && (
+                      <div className="pt-1">
+                        <a
+                          href={selectedTeacherDocs.onboarding_progress.step_4_demo.demoVideoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
+                        >
+                          🎥 View Demo Video Recording
+                        </a>
+                      </div>
+                    )}
+
+                    {selectedTeacherDocs.onboarding_progress.step_4_demo.status === 'Submitted' && (
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => handleVerifyStep(selectedTeacherDocs.id, 4, 'verify')}
+                          className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[10px] transition-all cursor-pointer text-center"
+                        >
+                          ✓ Approve Demo Lesson
+                        </button>
+                        <button
+                          onClick={() => handleVerifyStep(selectedTeacherDocs.id, 4, 'reject')}
+                          className="flex-1 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-[10px] transition-all cursor-pointer text-center"
+                        >
+                          ✗ Reject Demo Lesson
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Final Verify Trigger */}
+                  {selectedTeacherDocs.verification_status === 'Pending' &&
+                    selectedTeacherDocs.onboarding_progress.step_1_identity.status === 'Verified' &&
+                    selectedTeacherDocs.onboarding_progress.step_2_qualification.status === 'Verified' &&
+                    selectedTeacherDocs.onboarding_progress.step_4_demo.status === 'Approved' && (
+                      <button
+                        onClick={() => handleFinalApprove(selectedTeacherDocs.id, selectedTeacherDocs.name)}
+                        className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] text-center"
+                      >
+                        🛡️ Approve Onboarding &amp; Fully Verify Tutor Partner
+                      </button>
+                    )
+                  }
+                </div>
+              ) : (
+                /* ── OLD BACKWARD COMPATIBLE VETTING VIEW ── */
+                <>
+                  {/* Per-Document Verification Controls */}
+                  <div className="space-y-2.5">
+                    <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Credential Documents — View &amp; Toggle Status</h5>
+
+                    {(() => {
+                      const TYPE_MAP = {
+                        degree:     (d) => d.type === 'Academic'   || d.name?.toLowerCase().includes('degree'),
+                        aadhar:     (d) => d.type === 'Identity'   || d.name?.toLowerCase().includes('aadhaar') || d.name?.toLowerCase().includes('aadhar'),
+                        resume:     (d) => d.type === 'Resume'     || d.name?.toLowerCase().includes('resume') || d.name?.toLowerCase().includes('cv'),
+                      };
+                      const uploadedDocs = selectedTeacherDocs.documents || [];
+
+                      return [
+                        { key: 'degree',     label: 'Academic Degree Certificate', icon: '🎓', info: 'M.Sc / B.Ed / Graduation proof from university' },
+                        { key: 'aadhar',     label: 'Aadhaar Identity Card',       icon: '🪪', info: 'UIDAI 12-digit unique ID verification' },
+                        { key: 'resume',     label: 'Professional Resume / CV',     icon: '📄', info: 'Curriculum Vitae containing details of teaching history' },
+                      ].map((doc) => {
+                        const status      = (teacherDocStatus[selectedTeacherDocs.id] || {})[doc.key] || 'Under Review';
+                        const isApproved  = status === 'Approved';
+                        const uploadedDoc = uploadedDocs.find(TYPE_MAP[doc.key]);
+                        const fileUrl     = uploadedDoc?.fileUrl || null;
+                        const isPdf       = uploadedDoc?.mimetype === 'application/pdf';
+
+                        return (
+                          <div key={doc.key} className={`p-3 rounded-xl border transition-all ${
+                            isApproved ? 'bg-emerald-50/50 border-emerald-100' : 'bg-amber-50/50 border-amber-100'
+                          }`}>
+                            <div className="flex justify-between items-center gap-3">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="text-base">{doc.icon}</span>
+                                <div className="min-w-0">
+                                  <h6 className="text-xs font-bold text-slate-800 truncate">{doc.label}</h6>
+                                  {uploadedDoc
+                                    ? <p className="text-[9px] text-slate-500 font-semibold mt-0.5 truncate" title={uploadedDoc.name}>{uploadedDoc.name}</p>
+                                    : <p className="text-[9px] text-rose-400 font-semibold mt-0.5">⚠ Not uploaded</p>
+                                  }
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => toggleDocStatus(selectedTeacherDocs.id, doc.key)}
+                                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider shrink-0 border cursor-pointer transition-all hover:scale-105 active:scale-95 ${
+                                  isApproved
+                                    ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
+                                    : 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-emerald-100 hover:text-emerald-700 hover:border-emerald-200'
+                                }`}
+                              >
+                                {isApproved ? '✓ Approved' : '⏳ Review'}
+                              </button>
+                            </div>
+
+                            {fileUrl && (
+                              <div className="mt-2 flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewDoc({ url: fileUrl, name: uploadedDoc.name, isPdf: isPdf })}
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer"
+                                >
+                                  👁 Preview
+                                </button>
+                                <a
+                                  href={fileUrl}
+                                  download={uploadedDoc.name}
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
+                                >
+                                  ⬇ Download
+                                </a>
+                                {isPdf && (
+                                  <span className="px-2 py-1.5 bg-red-50 text-red-500 border border-red-100 rounded-lg text-[9px] font-black uppercase tracking-wider">
+                                    PDF
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </div>
-                        )}
-                      </div>
-                    );
-                  });
-                })()}
+                        );
+                      });
+                    })()}
+                  </div>
+
+                  {/* Overall Action Buttons */}
+                  <div className="flex space-x-3 pt-1">
+                    {areAllDocsApproved(selectedTeacherDocs.id) && selectedTeacherDocs.status !== 'Verified' && (
+                      <button
+                        onClick={() => {
+                          toggleTeacherVerification(selectedTeacherDocs.id, selectedTeacherDocs.name);
+                          triggerToast(`${selectedTeacherDocs.name} is now a Verified Partner!`);
+                          setSelectedTeacherDocs(null);
+                        }}
+                        className="flex-grow py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all text-center cursor-pointer shadow-md shadow-emerald-500/20"
+                      >
+                        🛡️ Activate Verified Badge
+                      </button>
+                    )}
+                    {!areAllDocsApproved(selectedTeacherDocs.id) && (
+                      <button
+                        onClick={() => {
+                          setTeacherDocStatus(prev => ({
+                            ...prev,
+                            [selectedTeacherDocs.id]: { degree: 'Approved', aadhar: 'Approved', resume: 'Approved' }
+                          }));
+                          triggerToast('All documents approved! You can now grant the Verified badge.');
+                        }}
+                        className="flex-grow py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all text-center cursor-pointer"
+                      >
+                        Approve All Documents
+                      </button>
+                    )}
+                    <button onClick={() => setSelectedTeacherDocs(null)} className="flex-grow py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all text-center cursor-pointer">
+                      Close
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manage Teacher Earnings Modal */}
+      {selectedTeacherEarnings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto animate-fade-in text-left">
+          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="text-base font-black text-slate-800">Manage Earnings: {selectedTeacherEarnings.name}</h3>
+                <p className="text-[10px] text-slate-400 font-bold mt-0.5">Record parent payments, view ledger transaction logs, and verify payouts.</p>
+              </div>
+              <button 
+                onClick={() => setSelectedTeacherEarnings(null)} 
+                className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg cursor-pointer border-0 bg-transparent"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-6">
+              {/* Stats Panel */}
+              {(() => {
+                const logs = selectedTeacherEarnings.earnings_log || [];
+                const totalEarned = logs.filter(l => l.status === 'Paid').reduce((acc, curr) => acc + (curr.amount || 0), 0);
+                const pendingInvoices = logs.filter(l => l.status === 'Pending').reduce((acc, curr) => acc + (curr.amount || 0), 0);
+                const totalWithdrawn = logs.filter(l => l.status === 'Payout').reduce((acc, curr) => acc + (curr.amount || 0), 0);
+                const availablePayout = Math.max(0, Math.round(totalEarned * 0.4) - totalWithdrawn);
+
+                return (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-slate-50 p-4 border border-slate-100 rounded-2xl">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Total Net</span>
+                      <span className="text-sm font-black text-slate-800 mt-1 block">₹{totalEarned.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="bg-slate-50 p-4 border border-slate-100 rounded-2xl">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Payout Bal</span>
+                      <span className="text-sm font-black text-slate-800 mt-1 block">₹{availablePayout.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="bg-slate-50 p-4 border border-slate-100 rounded-2xl">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Pending</span>
+                      <span className="text-sm font-black text-slate-800 mt-1 block">₹{pendingInvoices.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Record a New Transaction Form */}
+              <div className="bg-slate-50 border border-slate-100/70 p-5 rounded-2xl space-y-4">
+                <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider">Record New Earning Transaction</h4>
+                <form 
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!newEarningForm.studentName || !newEarningForm.amount) {
+                      triggerToast('Please provide a student name and amount');
+                      return;
+                    }
+                    setIsSavingEarning(true);
+                    try {
+                      const amountNum = parseFloat(newEarningForm.amount);
+                      const newLog = {
+                        id: 'INV-' + Math.floor(100000 + Math.random() * 900000),
+                        studentName: newEarningForm.studentName,
+                        date: new Date().toISOString().split('T')[0],
+                        amount: amountNum,
+                        status: newEarningForm.status,
+                        method: newEarningForm.method
+                      };
+
+                      const currentLogs = selectedTeacherEarnings.earnings_log || [];
+                      const updatedLogs = [newLog, ...currentLogs];
+
+                      await api.put(`/teachers/${selectedTeacherEarnings.id}`, { earnings_log: updatedLogs });
+                      
+                      // Update local states
+                      setTeachers(prev => prev.map(t => t.id === selectedTeacherEarnings.id ? { ...t, earnings_log: updatedLogs } : t));
+                      setSelectedTeacherEarnings({ ...selectedTeacherEarnings, earnings_log: updatedLogs });
+                      setNewEarningForm({ studentName: '', amount: '', status: 'Paid', method: 'Razorpay' });
+                      triggerToast('Transaction recorded successfully!');
+                    } catch (err) {
+                      console.error("Failed to add transaction:", err);
+                      triggerToast(err.message || 'Failed to record transaction');
+                    } finally {
+                      setIsSavingEarning(false);
+                    }
+                  }}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                >
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Student Name</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="e.g. Rohan Sharma"
+                      value={newEarningForm.studentName}
+                      onChange={e => setNewEarningForm(prev => ({ ...prev, studentName: e.target.value }))}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Amount (₹)</label>
+                    <input 
+                      type="number" 
+                      required 
+                      placeholder="e.g. 3500"
+                      value={newEarningForm.amount}
+                      onChange={e => setNewEarningForm(prev => ({ ...prev, amount: e.target.value }))}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Payment Method</label>
+                    <select 
+                      value={newEarningForm.method}
+                      onChange={e => setNewEarningForm(prev => ({ ...prev, method: e.target.value }))}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none cursor-pointer"
+                    >
+                      <option value="Razorpay">Razorpay</option>
+                      <option value="Bank Transfer">Bank Transfer</option>
+                      <option value="Cash / Manual">Cash / Manual</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Status</label>
+                    <select 
+                      value={newEarningForm.status}
+                      onChange={e => setNewEarningForm(prev => ({ ...prev, status: e.target.value }))}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none cursor-pointer"
+                    >
+                      <option value="Paid">Paid (Added to Total & Payout)</option>
+                      <option value="Pending">Pending (Invoice generated)</option>
+                      <option value="Payout">Payout (Direct withdrawal log)</option>
+                    </select>
+                  </div>
+                  <div className="sm:col-span-2 pt-2">
+                    <button
+                      type="submit"
+                      disabled={isSavingEarning}
+                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow cursor-pointer transition-all disabled:opacity-50 text-center border-0"
+                    >
+                      {isSavingEarning ? 'Saving Transaction...' : 'Add Transaction to Ledger'}
+                    </button>
+                  </div>
+                </form>
               </div>
 
-              {/* Overall Action Buttons */}
-              <div className="flex space-x-3 pt-1">
-                {areAllDocsApproved(selectedTeacherDocs.id) && selectedTeacherDocs.status !== 'Verified' && (
-                  <button
-                    onClick={() => {
-                      toggleTeacherVerification(selectedTeacherDocs.id, selectedTeacherDocs.name);
-                      triggerToast(`${selectedTeacherDocs.name} is now a Verified Partner!`);
-                      setSelectedTeacherDocs(null);
-                    }}
-                    className="flex-grow py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all text-center cursor-pointer shadow-md shadow-emerald-500/20"
-                  >
-                    🛡️ Activate Verified Badge
-                  </button>
-                )}
-                {!areAllDocsApproved(selectedTeacherDocs.id) && (
-                  <button
-                    onClick={() => {
-                      // Approve all docs at once
-                      setTeacherDocStatus(prev => ({
-                        ...prev,
-                        [selectedTeacherDocs.id]: { degree: 'Approved', aadhar: 'Approved', resume: 'Approved' }
-                      }));
-                      triggerToast('All documents approved! You can now grant the Verified badge.');
-                    }}
-                    className="flex-grow py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all text-center cursor-pointer"
-                  >
-                    Approve All Documents
-                  </button>
-                )}
-                <button onClick={() => setSelectedTeacherDocs(null)} className="flex-grow py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all text-center cursor-pointer">
-                  Close
-                </button>
+              {/* Transactions History Logs */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider">Ledger Transaction Logs</h4>
+                <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto">
+                  {(!selectedTeacherEarnings.earnings_log || selectedTeacherEarnings.earnings_log.length === 0) ? (
+                    <p className="text-xs text-slate-400 font-bold py-4 text-center">No transactions recorded for this teacher.</p>
+                  ) : (
+                    selectedTeacherEarnings.earnings_log.map(log => (
+                      <div key={log.id} className="py-3 flex justify-between items-center text-xs border-b border-slate-50 last:border-0">
+                        <div>
+                          <h5 className="font-extrabold text-slate-700">
+                            {log.status === 'Payout' ? 'Payout Withdrawal' : `Tuition Fee - ${log.studentName}`}
+                          </h5>
+                          <p className="text-[10px] text-slate-400 mt-0.5">{log.date} | ID: {log.id} {log.method ? `via ${log.method}` : ''}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="font-black text-slate-800 block">₹{log.amount}</span>
+                          <span className={`font-bold text-[8px] px-1.5 py-0.5 rounded border uppercase tracking-wider ${
+                            log.status === 'Paid'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                              : log.status === 'Pending'
+                              ? 'bg-amber-50 text-amber-700 border-amber-100'
+                              : 'bg-indigo-50 text-indigo-700 border-indigo-100 font-extrabold'
+                          }`}>
+                            {log.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end shrink-0">
+              <button 
+                onClick={() => setSelectedTeacherEarnings(null)} 
+                className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100 cursor-pointer"
+              >
+                Close Manager
+              </button>
             </div>
           </div>
         </div>

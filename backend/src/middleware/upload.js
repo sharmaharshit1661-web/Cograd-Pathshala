@@ -72,12 +72,59 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB per file
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB max limit to allow video
 });
+
+export const validateUploadSizes = (fields) => {
+  return (req, res, next) => {
+    const files = req.files || {};
+    if (req.file) {
+      const file = req.file;
+      const maxBytes = fields[file.fieldname];
+      if (maxBytes && file.size > maxBytes) {
+        const limitLabel = maxBytes >= 1024 * 1024 
+          ? `${maxBytes / (1024 * 1024)} MB` 
+          : `${maxBytes / 1024} KB`;
+        return res.status(400).json({ 
+          message: `File upload failed: Field "${file.fieldname}" exceeds the size limit of ${limitLabel}.` 
+        });
+      }
+    }
+    for (const [fieldName, maxBytes] of Object.entries(fields)) {
+      if (files[fieldName] && files[fieldName][0]) {
+        const file = files[fieldName][0];
+        if (file.size > maxBytes) {
+          const limitLabel = maxBytes >= 1024 * 1024 
+            ? `${maxBytes / (1024 * 1024)} MB` 
+            : `${maxBytes / 1024} KB`;
+          return res.status(400).json({ 
+            message: `File upload failed: Field "${fieldName}" exceeds the size limit of ${limitLabel}.` 
+          });
+        }
+      }
+    }
+    next();
+  };
+};
 
 export const uploadTeacherDocs = upload.fields([
   { name: 'doc_degree',            maxCount: 1 },
   { name: 'doc_id_proof',          maxCount: 1 },
   { name: 'doc_resume',            maxCount: 1 },
   { name: 'avatar',                maxCount: 1 },
+]);
+
+export const uploadIdentityDocs = upload.fields([
+  { name: 'selfie',                maxCount: 1 },
+  { name: 'doc_aadhaar',           maxCount: 1 },
+  { name: 'doc_pan',               maxCount: 1 },
+]);
+
+export const uploadQualificationDocs = upload.fields([
+  { name: 'doc_degree',            maxCount: 1 },
+  { name: 'doc_professional',      maxCount: 1 },
+]);
+
+export const uploadDemoVideo = upload.fields([
+  { name: 'demo_video',            maxCount: 1 },
 ]);

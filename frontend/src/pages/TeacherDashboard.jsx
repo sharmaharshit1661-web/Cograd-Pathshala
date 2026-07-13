@@ -1,12 +1,8 @@
 import { useState, useEffect, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardShell from '../components/DashboardShell';
-import {
-  getStudents,
-  getAssignments,
-  updateAssignmentStatus,
-  syncWithBackend
-} from '../utils/mockDb';
+import TeacherOnboardingPortal from './TeacherOnboardingPortal';
+
 import { api } from '../utils/api';
 import { 
   LayoutDashboard, 
@@ -78,6 +74,12 @@ const InlineGoogleMap = ({ address, label }) => {
 
 const CONFETTI_COLORS = ['#3b82f6', '#7c3aed', '#ec4899', '#10b981', '#f59e0b'];
 
+const QUALIFICATION_SUGGESTIONS = [
+  "B.Ed", "B.Tech", "B.Sc", "B.A", "B.Com", "BCA", "BBA", "B.El.Ed", "B.P.Ed", "B.E", "B.Pharm",
+  "M.Ed", "M.Tech", "M.Sc", "M.A", "M.Com", "MCA", "MBA", "M.E", "M.Phil",
+  "Ph.D", "D.El.Ed", "D.Ed", "NTT", "CTET", "TET"
+];
+
 const TeacherDashboard = () => {
   const navigate = useNavigate();
   
@@ -90,7 +92,7 @@ const TeacherDashboard = () => {
     classroom: 'batches', // batches, live_class, demo_bookings
     grading: 'assignments', // assignments, test_engine, gradebook
     schedules: 'timetable', // timetable, attendance
-    analytics: 'performance', // performance, earnings
+    analytics: 'earnings', // performance, earnings
     profile: 'public_profile', // public_profile, reviews
   });
 
@@ -164,7 +166,15 @@ const TeacherDashboard = () => {
   });
 
   const [editProfileData, setEditProfileData] = useState({ ...teacherProfile });
+  const [showProfileQualDropdown, setShowProfileQualDropdown] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+
+  const filteredProfileQuals = editProfileData.qualification?.trim() === ""
+    ? []
+    : QUALIFICATION_SUGGESTIONS.filter(q =>
+        q.toLowerCase().startsWith(editProfileData.qualification.toLowerCase()) ||
+        q.toLowerCase().includes(editProfileData.qualification.toLowerCase())
+      );
 
   const [pendingAssignments, setPendingAssignments] = useState([]);
   const [students, setStudents] = useState([]);
@@ -218,6 +228,14 @@ const TeacherDashboard = () => {
           }
           if (user.earnings_log && user.earnings_log.length > 0) {
             setBillingLogs(user.earnings_log);
+          } else {
+            const initialLogs = [
+              { id: 'INV-7901', studentName: 'Rohan Sharma', date: '2026-07-02', amount: 3500, status: 'Paid', method: 'Razorpay' },
+              { id: 'INV-7902', studentName: 'Aditya Verma', date: '2026-07-08', amount: 4000, status: 'Paid', method: 'Bank Transfer' },
+              { id: 'INV-7903', studentName: 'Priya Patel', date: '2026-07-12', amount: 3000, status: 'Pending', method: 'Cash / Manual' }
+            ];
+            setBillingLogs(initialLogs);
+            api.put(`/teachers/${user.id}`, { earnings_log: initialLogs }).catch(err => console.error("Error saving initial logs:", err));
           }
           if (user.reviews && user.reviews.length > 0) {
             setReviewsList(user.reviews);
@@ -301,6 +319,7 @@ const TeacherDashboard = () => {
     if (teacherId) {
       loadTeacherData(teacherId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teacherId, activeTab]);
 
 
@@ -613,7 +632,8 @@ const TeacherDashboard = () => {
     if (billingLogs && billingLogs.length > 0) {
       const totalEarned = billingLogs.filter(l => l.status === 'Paid').reduce((acc, curr) => acc + (curr.amount || 0), 0);
       const pendingInvoices = billingLogs.filter(l => l.status === 'Pending').reduce((acc, curr) => acc + (curr.amount || 0), 0);
-      const availablePayout = Math.round(totalEarned * 0.4);
+      const totalWithdrawn = billingLogs.filter(l => l.status === 'Payout').reduce((acc, curr) => acc + (curr.amount || 0), 0);
+      const availablePayout = Math.max(0, Math.round(totalEarned * 0.4) - totalWithdrawn);
       setEarningsStats({ totalEarned, availablePayout, pendingInvoices });
     } else {
       setEarningsStats({ totalEarned: 0, availablePayout: 0, pendingInvoices: 0 });
@@ -786,11 +806,15 @@ const TeacherDashboard = () => {
           setPayoutProgress(prev => prev + 10);
         } else {
           setIsProcessingPayout(false);
-          setEarningsStats(prev => ({
-            ...prev,
-            totalEarned: prev.totalEarned + prev.availablePayout,
-            availablePayout: 0
-          }));
+          const newPayoutLog = {
+            id: 'PAY-' + Math.floor(100000 + Math.random() * 900000),
+            studentName: 'Payout Withdrawal',
+            date: new Date().toISOString().split('T')[0],
+            amount: earningsStats.availablePayout,
+            status: 'Payout',
+            method: 'Bank Transfer'
+          };
+          setBillingLogs(prev => [...prev, newPayoutLog]);
           setToastMessage(`Payout Successful! ₹${earningsStats.availablePayout.toLocaleString('en-IN')} transferred to your linked bank account.`);
           setShowToast(true);
           triggerConfetti();
@@ -3251,18 +3275,28 @@ const TeacherDashboard = () => {
               <div className="md:col-span-7 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
                 <h3 className="text-base font-black text-slate-800">Billing Log Transactions</h3>
                 <div className="divide-y divide-slate-50">
-                  {billingLogs.map(log => (
-                    <div key={log.id} className="py-3.5 flex justify-between items-center text-xs">
-                      <div>
-                        <h4 className="font-extrabold text-slate-700">{log.description}</h4>
-                        <p className="text-slate-400 mt-0.5">Logged on {log.date}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="font-black text-slate-800 block">₹{log.amount}</span>
-                        <span className="bg-green-50 text-green-700 font-bold text-[9px] px-2 py-0.5 rounded border border-green-100 uppercase tracking-wider">{log.status}</span>
-                      </div>
-                    </div>
-                  ))}
+                   {billingLogs.map(log => (
+                     <div key={log.id} className="py-3.5 flex justify-between items-center text-xs border-b border-slate-50 last:border-b-0">
+                       <div>
+                         <h4 className="font-extrabold text-slate-700">
+                           {log.status === 'Payout' ? 'Payout Withdrawal' : `Tuition Fee - ${log.studentName || 'Student'}`}
+                         </h4>
+                         <p className="text-[10px] text-slate-400 mt-0.5">Logged on {log.date} {log.method ? `via ${log.method}` : ''}</p>
+                       </div>
+                       <div className="text-right shrink-0">
+                         <span className="font-black text-slate-800 block">₹{log.amount}</span>
+                         <span className={`font-bold text-[9px] px-2 py-0.5 rounded border uppercase tracking-wider ${
+                           log.status === 'Paid'
+                             ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                             : log.status === 'Pending'
+                             ? 'bg-amber-50 text-amber-700 border-amber-100'
+                             : 'bg-indigo-50 text-indigo-750 border-indigo-150 font-extrabold'
+                         }`}>
+                           {log.status}
+                         </span>
+                       </div>
+                     </div>
+                   ))}
                 </div>
               </div>
 
@@ -3462,11 +3496,33 @@ const TeacherDashboard = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-500 mb-1.5">Qualifications</label>
-                      <input 
-                        type="text" required value={editProfileData.qualification}
-                        onChange={(e) => setEditProfileData(p => ({ ...p, qualification: e.target.value }))}
-                        className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
-                      />
+                      <div className="relative">
+                        <input 
+                          type="text" required value={editProfileData.qualification}
+                          onChange={(e) => setEditProfileData(p => ({ ...p, qualification: e.target.value }))}
+                          onFocus={() => setShowProfileQualDropdown(true)}
+                          onBlur={() => setTimeout(() => setShowProfileQualDropdown(false), 200)}
+                          className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
+                        />
+                        {showProfileQualDropdown && filteredProfileQuals.length > 0 && (
+                          <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                            {filteredProfileQuals.map((q) => (
+                              <button
+                                key={q}
+                                type="button"
+                                onMouseDown={() => {
+                                  setEditProfileData(p => ({ ...p, qualification: q }));
+                                  setShowProfileQualDropdown(false);
+                                }}
+                                className="w-full px-4 py-2 text-xs text-left hover:bg-slate-50 text-slate-700 hover:text-slate-900 font-semibold border-none cursor-pointer flex items-center gap-2"
+                              >
+                                <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span>{q}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -3652,7 +3708,7 @@ const TeacherDashboard = () => {
         <div className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 p-6 rounded-3xl border border-blue-500/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h3 className="text-base font-black text-slate-800 tracking-tight">Help & Support Desk</h3>
-            <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Submit query directly to CoGrad corporate team</p>
+            <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Submit query directly to CoGrad Admin Team</p>
           </div>
         </div>
 
@@ -3680,7 +3736,7 @@ const TeacherDashboard = () => {
                 <input
                   type="text"
                   required
-                  placeholder="E.g. Class scheduling glitch"
+                  placeholder="E.g. Class scheduling issue"
                   value={supportForm.title}
                   onChange={(e) => setSupportForm(p => ({ ...p, title: e.target.value }))}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700"
@@ -3710,12 +3766,12 @@ const TeacherDashboard = () => {
           </div>
 
           <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
-            <h3 className="text-base font-black text-slate-800 tracking-tight">CoGrad Contact Info</h3>
+            <h3 className="text-base font-black text-slate-800 tracking-tight">CoGrad Admin Support</h3>
             <div className="space-y-4 text-xs font-semibold text-slate-600">
               <div className="flex items-start gap-3">
                 <Phone className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
                 <div>
-                  <p className="font-extrabold text-slate-800">+91-9220253001</p>
+                  <p className="font-extrabold text-slate-800">+91-9876500000</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">Mon–Sat, 10am – 6pm IST</p>
                 </div>
               </div>
@@ -3723,7 +3779,7 @@ const TeacherDashboard = () => {
               <div className="flex items-start gap-3">
                 <Mail className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
                 <div>
-                  <p className="font-extrabold text-slate-800">connect@cograd.in</p>
+                  <p className="font-extrabold text-slate-800">admin@cograd.com</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">Reply within 24 hours</p>
                 </div>
               </div>
@@ -3731,8 +3787,8 @@ const TeacherDashboard = () => {
               <div className="flex items-start gap-3">
                 <MapPin className="w-4 h-4 text-violet-600 mt-0.5 shrink-0" />
                 <div>
-                  <p className="font-extrabold text-slate-800">PI Softek Ltd</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">C-56A/28, Sector 62, Noida 201301</p>
+                  <p className="font-extrabold text-slate-800">CoGrad Admin Support Desk</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Direct Administration Team</p>
                 </div>
               </div>
             </div>
@@ -3750,12 +3806,31 @@ const TeacherDashboard = () => {
       case 'Schedule & Attendance': return renderSchedulesAttendance();
       case 'Help & Support': return renderHelpSupport();
 
+      case 'My Earnings': return renderAnalyticsEarnings();
       case 'Profile & Reviews': return renderPublicProfileReviews();
       case 'My Dashboard':
       default:
         return renderDashboard();
     }
   };
+
+  if (!teacherId) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
+        <div className="flex flex-col items-center gap-3">
+          <svg className="animate-spin h-10 w-10 text-indigo-500" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+          </svg>
+          <span className="text-sm font-semibold tracking-wide text-slate-400">Loading Dashboard...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (teacherProfile && !teacherProfile.verified) {
+    return <TeacherOnboardingPortal />;
+  }
 
   return (
     <>
@@ -3787,6 +3862,7 @@ const TeacherDashboard = () => {
           { name: 'Study Materials', icon: BookOpen },
           { name: 'Homework', icon: CheckSquare },
           { name: 'Schedule & Attendance', icon: Calendar },
+          { name: 'My Earnings', icon: DollarSign },
           { name: 'Profile & Reviews', icon: User },
           { name: 'Help & Support', icon: HelpCircle }
         ]}
@@ -3806,16 +3882,18 @@ const TeacherDashboard = () => {
         headerRight={
           <div className="flex items-center gap-4">
             {/* Search Input Box */}
-            <div className="relative max-w-xs hidden md:block">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search students..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl text-xs font-semibold placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-48 focus:w-60 text-slate-800"
-              />
-            </div>
+            {activeTab !== 'Profile & Reviews' && (
+              <div className="relative max-w-xs hidden md:block">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search students..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl text-xs font-semibold placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-48 focus:w-60 text-slate-800"
+                />
+              </div>
+            )}
           </div>
         }
       >

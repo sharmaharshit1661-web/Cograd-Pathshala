@@ -4,7 +4,6 @@ import {
   Award,
   Bell,
   BookOpen,
-  Check,
   ChevronRight,
   Clock,
   ClipboardList,
@@ -105,12 +104,12 @@ export default function DashboardShell({
   toast = { show: false, message: '' },
 }) {
   const theme = THEME_MAP[roleColor] || THEME_MAP.blue;
-  const [sidebarOpen, setSidebarOpen]   = useState(false);
-  const [notifOpen, setNotifOpen]       = useState(false);
-  const [searchQuery, setSearchQuery]   = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const [toastExiting, setToastExiting] = useState(false);
-  const notifRef  = useRef(null);
+  const notifRef = useRef(null);
   const toastTimer = useRef(null);
 
   /* auto-show / auto-dismiss toast when toast.show changes */
@@ -128,9 +127,8 @@ export default function DashboardShell({
   }, [toast.show, toast.message]);
 
   const unreadCount = notifications.filter((n) => n.isNew).length;
-  const cleanName   = userName.replace(/Mrs\.|Mr\.|Dr\./, '').trim();
-  const initials    = cleanName.slice(0, 2).toUpperCase() || 'U';
-  const firstName   = cleanName.split(' ')[0] || 'User';
+  const cleanName = userName.replace(/Mrs\.|Mr\.|Dr\./, '').trim();
+  const initials = cleanName.slice(0, 2).toUpperCase() || 'U';
 
   /* close notif panel on outside click */
   useEffect(() => {
@@ -155,43 +153,43 @@ export default function DashboardShell({
     if (role.includes('student')) {
       return {
         ctaLabel: 'Book Demo Class', ctaTab: 'Schedule',
-        title: 'Student Dashboard',  subtitle: 'Your Learning Hub',
-        card1Val: '96%',     card1Label: 'Attendance', card1Icon: Clock,
+        title: 'Student Dashboard', subtitle: 'Your Learning Hub',
+        card1Val: '96%', card1Label: 'Attendance', card1Icon: Clock,
         card2Val: '12 Done', card2Label: 'Worksheets', card2Icon: ClipboardList,
-        card3Val: '9.2/10',  card3Label: 'Term GPA',   card3Icon: Award,
-        card4Val: '4 Passed',card4Label: 'Exams',      card4Icon: GraduationCap,
+        card3Val: '9.2/10', card3Label: 'Term GPA', card3Icon: Award,
+        card4Val: '4 Passed', card4Label: 'Exams', card4Icon: GraduationCap,
       };
     }
     if (role.includes('teacher')) {
       return {
         ctaLabel: 'Create New Batch', ctaTab: 'Batches',
-        title: 'Teacher Dashboard',   subtitle: 'Your Teaching Hub',
-        card1Val: '92%',      card1Label: 'Batch Attend.', card1Icon: Users,
-        card2Val: '3 Active', card2Label: 'Batches',       card2Icon: BookOpen,
-        card3Val: '17 Graded',card3Label: 'Worksheets',    card3Icon: ClipboardList,
-        card4Val: '48 Held',  card4Label: 'Lectures',      card4Icon: Presentation,
+        title: 'Teacher Dashboard', subtitle: 'Your Teaching Hub',
+        card1Val: '92%', card1Label: 'Batch Attend.', card1Icon: Users,
+        card2Val: '3 Active', card2Label: 'Batches', card2Icon: BookOpen,
+        card3Val: '17 Graded', card3Label: 'Worksheets', card3Icon: ClipboardList,
+        card4Val: '48 Held', card4Label: 'Lectures', card4Icon: Presentation,
       };
     }
     if (role.includes('parent')) {
       return {
-        ctaLabel: 'Contact Mentor', ctaTab: 'Support',
-        title: 'Parent Dashboard',  subtitle: "Track Your Child's Progress",
-        card1Val: '96%',       card1Label: 'Child Attend.', card1Icon: Activity,
-        card2Val: '2 Assigned',card2Label: 'Mentors',       card2Icon: UserCheck,
-        card3Val: '3 Cleared', card3Label: 'Payments',      card3Icon: CreditCard,
-        card4Val: '4 Ready',   card4Label: 'Report Cards',  card4Icon: FileText,
+        ctaLabel: 'Contact Admin', ctaTab: 'Support',
+        title: 'Parent Dashboard', subtitle: "Track Your Child's Progress",
+        card1Val: '96%', card1Label: 'Child Attend.', card1Icon: Activity,
+        card2Val: '2 Assigned', card2Label: 'Mentors', card2Icon: UserCheck,
+        card3Val: '3 Cleared', card3Label: 'Payments', card3Icon: CreditCard,
+        card4Val: '4 Ready', card4Label: 'Report Cards', card4Icon: FileText,
       };
     }
     return {
-      title: 'Admin Dashboard',  subtitle: 'Platform Control Center',
-      card1Val: '99.9%',     card1Label: 'Uptime',       card1Icon: Activity,
-      card2Val: '240 Active',card2Label: 'Tutors Vetted', card2Icon: Users,
-      card3Val: '78 Vetted', card3Label: 'Pending: 22',  card3Icon: ShieldCheck,
-      card4Val: '3 Open',    card4Label: 'Tickets',       card4Icon: LifeBuoy,
+      title: 'Admin Dashboard', subtitle: 'Platform Control Center',
+      card1Val: '99.9%', card1Label: 'Uptime', card1Icon: Activity,
+      card2Val: '240 Active', card2Label: 'Tutors Vetted', card2Icon: Users,
+      card3Val: '78 Vetted', card3Label: 'Pending: 22', card3Icon: ShieldCheck,
+      card4Val: '3 Open', card4Label: 'Tickets', card4Icon: LifeBuoy,
     };
   };
 
-  const stats  = getSidebarData();
+  const stats = getSidebarData();
   const dateStr = new Date().toLocaleDateString('en-IN', {
     weekday: 'long', day: 'numeric', month: 'short', year: 'numeric',
   });
@@ -265,7 +263,9 @@ export default function DashboardShell({
                 onClick={goToCta}
                 className={`w-full flex items-center justify-center gap-2 text-white rounded-full font-black text-[11.5px] py-3 px-4 transition-all duration-200 cursor-pointer border-0 active:scale-[0.98] ${theme.ctaBtn}`}
               >
-                <Plus className="w-4 h-4 stroke-[3]" aria-hidden="true" />
+                {stats.ctaLabel !== 'Contact Admin' && (
+                  <Plus className="w-4 h-4 stroke-[3]" aria-hidden="true" />
+                )}
                 <span>{stats.ctaLabel}</span>
               </button>
             </div>
@@ -324,7 +324,7 @@ export default function DashboardShell({
 
           {/* Header */}
           <header className="h-[68px] px-5 md:px-7 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white gap-3">
-            
+
             {/* Left: hamburger + search */}
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <button
@@ -486,11 +486,10 @@ export default function DashboardShell({
         <div
           role="status"
           aria-live="polite"
-          className={`toast ${toastExiting ? 'toast-exit' : ''} ${
-            toast.type === 'error' ? 'toast-error'
-            : toast.type === 'info' ? 'toast-info'
-            : 'toast-success'
-          }`}
+          className={`toast ${toastExiting ? 'toast-exit' : ''} ${toast.type === 'error' ? 'toast-error'
+              : toast.type === 'info' ? 'toast-info'
+                : 'toast-success'
+            }`}
         >
           {toast.message}
         </div>

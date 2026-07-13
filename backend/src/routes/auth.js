@@ -11,7 +11,7 @@
 
 import express from 'express';
 import { protect }                          from '../middleware/auth.js';
-import { uploadTeacherDocs }                from '../middleware/upload.js';
+import { uploadTeacherDocs, validateUploadSizes } from '../middleware/upload.js';
 import { 
   registerUser, 
   loginUser, 
@@ -38,7 +38,16 @@ const assignTeacherId = (req, res, next) => {
   // For plain-JSON registrations (student, parent) we skip multer entirely.
   if (ct.includes('multipart/form-data')) {
     req._teacherId = `teacher_${Date.now()}`;
-    return uploadTeacherDocs(req, res, next); // runs multer, files saved to teacher folder
+    return uploadTeacherDocs(req, res, (err) => {
+      if (err) return next(err);
+      const sizeValidator = validateUploadSizes({
+        doc_degree: 10 * 1024 * 1024,
+        doc_id_proof: 10 * 1024 * 1024,
+        doc_resume: 10 * 1024 * 1024,
+        avatar: 150 * 1024
+      });
+      sizeValidator(req, res, next);
+    });
   }
 
   next(); // plain JSON — no files

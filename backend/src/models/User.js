@@ -207,8 +207,48 @@ const UserSchema = new mongoose.Schema(
     grade_levels_qualified: [String],
     verification_status: {
       type: String,
-      enum: ['Pending', 'Verified'],
-      default: 'Pending',
+      enum: ['Onboarding', 'Pending', 'Verified'],
+      default: 'Onboarding',
+    },
+    onboarding_progress: {
+      current_step: { type: Number, default: 1 },
+      step_1_identity: {
+        status: { type: String, enum: ['Pending', 'Submitted', 'Verified', 'Rejected'], default: 'Pending' },
+        aadhaarNumber: { type: String, default: '' },
+        panNumber: { type: String, default: '' },
+        selfieUrl: { type: String, default: '' },
+        aadhaarFileUrl: { type: String, default: '' },
+        panFileUrl: { type: String, default: '' },
+        isMobileVerified: { type: Boolean, default: false },
+        isEmailVerified: { type: Boolean, default: false },
+        rejectionReason: { type: String, default: '' }
+      },
+      step_2_qualification: {
+        status: { type: String, enum: ['Pending', 'Submitted', 'Verified', 'Rejected'], default: 'Pending' },
+        degreeName: { type: String, default: '' },
+        degreeUrl: { type: String, default: '' },
+        professionalCertName: { type: String, default: '' },
+        professionalCertUrl: { type: String, default: '' },
+        universityName: { type: String, default: '' },
+        graduationYear: { type: String, default: '' },
+        rejectionReason: { type: String, default: '' }
+      },
+      step_3_competency: {
+        status: { type: String, enum: ['Pending', 'Passed', 'Failed'], default: 'Pending' },
+        testAttempts: [{
+          subject: String,
+          scorePercentage: Number,
+          passed: Boolean,
+          attemptedAt: { type: Date, default: Date.now }
+        }]
+      },
+      step_4_demo: {
+        status: { type: String, enum: ['Pending', 'Submitted', 'Approved', 'Rejected'], default: 'Pending' },
+        targetGrade: { type: String, default: '' },
+        topic: { type: String, default: '' },
+        demoVideoUrl: { type: String, default: '' },
+        feedback: { type: String, default: '' }
+      }
     },
     current_student_count: {
       type: Number,
