@@ -405,13 +405,13 @@ export default function TeacherOnboardingPortal() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-700">
         <div className="flex flex-col items-center gap-3">
-          <svg className="animate-spin h-10 w-10 text-indigo-500" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin h-10 w-10 text-indigo-650" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>
-          <span className="text-sm font-semibold tracking-wide text-slate-400">Loading Onboarding Portal...</span>
+          <span className="text-sm font-semibold tracking-wide text-slate-500">Loading Onboarding Portal...</span>
         </div>
       </div>
     );
@@ -426,20 +426,20 @@ export default function TeacherOnboardingPortal() {
     !(onboarding.step_1_identity.status === 'Verified' && onboarding.step_2_qualification.status === 'Verified');
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-10 px-4 sm:px-6 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 text-slate-700 py-10 px-4 sm:px-6 relative overflow-hidden">
       {/* Dynamic Background Gradients */}
-      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-indigo-900/20 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-950/20 rounded-full blur-[120px]" />
+      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-indigo-100/50 rounded-full blur-[120px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-100/50 rounded-full blur-[120px]" />
 
       <div className="max-w-4xl mx-auto z-10 relative">
         {/* Header Section */}
-        <div className="flex flex-col sm:flex-row items-center justify-between border-b border-slate-800/60 pb-8 mb-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between border-b border-slate-200 pb-8 mb-8">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
-              <ShieldCheck className="w-8 h-8 text-indigo-400" /> Tutor Joining Board
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-3">
+              <ShieldCheck className="w-8 h-8 text-indigo-600" /> Tutor Joining Board
             </h1>
-            <p className="text-xs text-slate-400 font-semibold mt-1.5">
-              Welcome, <span className="text-indigo-300 font-bold">{profile?.name}</span>. Complete these four joining tasks to get verified.
+            <p className="text-xs text-slate-500 font-semibold mt-1.5">
+              Welcome, <span className="text-indigo-600 font-bold">{profile?.name}</span>. Complete these four joining tasks to get verified.
             </p>
           </div>
           <button
@@ -447,7 +447,7 @@ export default function TeacherOnboardingPortal() {
               localStorage.clear();
               navigate('/login');
             }}
-            className="mt-4 sm:mt-0 px-4 py-2 border border-slate-800 bg-slate-900/50 hover:bg-slate-800 hover:text-white transition-all text-xs font-extrabold rounded-xl"
+            className="mt-4 sm:mt-0 px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 hover:text-slate-950 transition-all text-xs font-extrabold rounded-xl text-slate-700 shadow-sm"
           >
             Sign Out
           </button>
@@ -455,70 +455,70 @@ export default function TeacherOnboardingPortal() {
 
         {isPendingFinalApproval ? (
           /* Under Review Alert Card */
-          <div className="bg-slate-900/60 border border-amber-900/40 rounded-3xl p-8 text-center backdrop-blur-xl max-w-xl mx-auto shadow-xl">
-            <div className="w-16 h-16 bg-amber-950/40 border border-amber-500/30 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-              <Clock className="w-8 h-8 text-amber-400 animate-pulse" />
+          <div className="bg-white border border-slate-100 rounded-3xl p-8 text-center max-w-xl mx-auto shadow-md">
+            <div className="w-16 h-16 bg-amber-50 border border-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+              <Clock className="w-8 h-8 text-amber-500 animate-pulse" />
             </div>
-            <h3 className="text-xl font-black text-white mb-2">Joining Vetting Under Administrative Review</h3>
-            <p className="text-xs text-slate-400 leading-relaxed mb-6">
-              Thank you for submitting all four onboarding steps! Our administration matches your degree, selfie identity, and demo session. We will email you at <strong className="text-indigo-300">{profile?.email}</strong> once your tutor partner account is approved.
+            <h3 className="text-xl font-black text-slate-900 mb-2">Joining Vetting Under Administrative Review</h3>
+            <p className="text-xs text-slate-500 leading-relaxed mb-6">
+              Thank you for submitting all four onboarding steps! Our administration matches your degree, selfie identity, and demo session. We will email you at <strong className="text-indigo-600">{profile?.email}</strong> once your tutor partner account is approved.
             </p>
-            <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-5 text-left text-xs mb-1">
-              <p className="font-extrabold text-slate-500 uppercase tracking-widest mb-3.5 text-[9px]">Vetting Progress Summary</p>
-              <div className="space-y-2.5 font-semibold text-slate-300">
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-left text-xs mb-1">
+              <p className="font-extrabold text-slate-400 uppercase tracking-widest mb-3.5 text-[9px]">Vetting Progress Summary</p>
+              <div className="space-y-2.5 font-semibold text-slate-700">
                 <div className="flex items-center justify-between">
                   <span>Step 1: Identity Vetting</span>
-                  <span className="text-emerald-400 flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Checked</span>
+                  <span className="text-emerald-600 flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Checked</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Step 2: Credentials Audit</span>
-                  <span className="text-emerald-400 flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Verified</span>
+                  <span className="text-emerald-600 flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Verified</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Step 3: Competency Exam</span>
-                  <span className="text-emerald-400 flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Passed</span>
+                  <span className="text-emerald-600 flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Passed</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Step 4: Demo Session Evaluation</span>
-                  <span className="text-amber-400 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Under Review</span>
+                  <span className="text-amber-600 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Under Review</span>
                 </div>
               </div>
             </div>
           </div>
         ) : isWaitingPhase1 ? (
           /* Phase 1 Review Card */
-          <div className="bg-slate-900/60 border border-indigo-900/40 rounded-3xl p-8 text-center backdrop-blur-xl max-w-xl mx-auto shadow-xl">
-            <div className="w-16 h-16 bg-indigo-950/40 border border-indigo-500/30 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-              <Clock className="w-8 h-8 text-indigo-400 animate-pulse" />
+          <div className="bg-white border border-slate-100 rounded-3xl p-8 text-center max-w-xl mx-auto shadow-md">
+            <div className="w-16 h-16 bg-indigo-50 border border-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+              <Clock className="w-8 h-8 text-indigo-600 animate-pulse" />
             </div>
-            <h3 className="text-xl font-black text-white mb-2">Phase 1 Vetting Under Administrative Review</h3>
-            <p className="text-xs text-slate-400 leading-relaxed mb-6">
+            <h3 className="text-xl font-black text-slate-900 mb-2">Phase 1 Vetting Under Administrative Review</h3>
+            <p className="text-xs text-slate-500 leading-relaxed mb-6">
               Thank you for submitting your identity details and academic qualifications! Our administrative team is currently verifying your Aadhaar, PAN, and degree certificates. 
             </p>
-            <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-5 text-left text-xs mb-1">
-              <p className="font-extrabold text-slate-500 uppercase tracking-widest mb-3.5 text-[9px]">Vetting Progress Summary</p>
-              <div className="space-y-2.5 font-semibold text-slate-300">
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-left text-xs mb-1">
+              <p className="font-extrabold text-slate-400 uppercase tracking-widest mb-3.5 text-[9px]">Vetting Progress Summary</p>
+              <div className="space-y-2.5 font-semibold text-slate-700">
                 <div className="flex items-center justify-between">
                   <span>Step 1: Identity &amp; KYC Verification</span>
-                  <span className={onboarding.step_1_identity.status === 'Verified' ? "text-emerald-400 flex items-center gap-1" : "text-amber-400 flex items-center gap-1"}>
+                  <span className={onboarding.step_1_identity.status === 'Verified' ? "text-emerald-600 flex items-center gap-1" : "text-amber-600 flex items-center gap-1"}>
                     {onboarding.step_1_identity.status === 'Verified' ? <><CheckCircle className="w-3.5 h-3.5" /> Approved</> : <><Clock className="w-3.5 h-3.5 animate-pulse" /> Under Review</>}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Step 2: Academic Credentials Audit</span>
-                  <span className={onboarding.step_2_qualification.status === 'Verified' ? "text-emerald-400 flex items-center gap-1" : "text-amber-400 flex items-center gap-1"}>
+                  <span className={onboarding.step_2_qualification.status === 'Verified' ? "text-emerald-600 flex items-center gap-1" : "text-amber-600 flex items-center gap-1"}>
                     {onboarding.step_2_qualification.status === 'Verified' ? <><CheckCircle className="w-3.5 h-3.5" /> Approved</> : <><Clock className="w-3.5 h-3.5 animate-pulse" /> Under Review</>}
                   </span>
                 </div>
-                <hr className="border-slate-800 my-2" />
-                <p className="text-[10px] text-slate-555 italic mt-2 text-center">
+                <hr className="border-slate-100 my-2" />
+                <p className="text-[10px] text-slate-500 italic mt-2 text-center">
                   Once our team approves these initial steps, you will unlock the Subject Competency Test (Step 3) and Demo Class Video (Step 4).
                 </p>
               </div>
             </div>
             <button
               onClick={fetchStatus}
-              className="mt-6 w-full py-2.5 bg-indigo-650 hover:bg-indigo-755 text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer border-0"
+              className="mt-6 w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer border-0"
             >
               🔄 Check Verification Status
             </button>
@@ -544,39 +544,39 @@ export default function TeacherOnboardingPortal() {
                     key={s.num}
                     className={`p-4 rounded-2xl border text-left transition-all duration-300 relative overflow-hidden
                       ${isActive
-                        ? 'bg-indigo-600/10 border-indigo-500 shadow-md shadow-indigo-500/5'
+                        ? 'bg-indigo-50 border-indigo-200 shadow-sm'
                         : isCompleted
-                          ? 'bg-slate-900/40 border-slate-800/80 opacity-75'
-                          : 'bg-transparent border-slate-900/50 opacity-50'
+                          ? 'bg-slate-50 border-slate-100 opacity-75'
+                          : 'bg-transparent border-slate-200/50 opacity-50'
                       }`}
                   >
                     <div className="flex items-start gap-3">
                       <div
                         className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black shrink-0 border
                           ${isCompleted
-                            ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
                             : isRejected
-                              ? 'bg-rose-500/10 border-rose-500 text-rose-400'
+                              ? 'bg-rose-50 border-rose-200 text-rose-600'
                               : isActive
-                                ? 'bg-indigo-500 border-indigo-400 text-white'
-                                : 'bg-slate-900 border-slate-800 text-slate-500'
+                                ? 'bg-indigo-600 border-indigo-500 text-white'
+                                : 'bg-slate-50 border-slate-200 text-slate-400'
                           }`}
                       >
                         {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : s.num}
                       </div>
                       <div>
-                        <h4 className="text-xs font-black text-slate-100">{s.label}</h4>
-                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">{s.desc}</p>
+                        <h4 className="text-xs font-black text-slate-850">{s.label}</h4>
+                        <p className="text-[10px] text-slate-500 font-medium mt-0.5">{s.desc}</p>
                       </div>
                     </div>
                     {/* Status Pill */}
                     {s.status && (
                       <span className={`absolute top-2.5 right-3 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border
                         ${s.status === 'Verified' || s.status === 'Passed' || s.status === 'Approved'
-                          ? 'bg-emerald-950/30 border-emerald-800/40 text-emerald-400'
+                          ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
                           : s.status === 'Submitted'
-                            ? 'bg-indigo-950/30 border-indigo-800/40 text-indigo-400'
-                            : 'bg-rose-950/30 border-rose-805/40 text-rose-400'
+                            ? 'bg-blue-50 border-blue-100 text-blue-700'
+                            : 'bg-rose-50 border-rose-100/50 text-rose-700'
                         }`}
                       >
                         {s.status}
@@ -588,36 +588,36 @@ export default function TeacherOnboardingPortal() {
             </div>
 
             {/* Right form editor view */}
-            <div className="md:col-span-8 bg-slate-900/40 border border-slate-850 rounded-3xl p-6 sm:p-8 backdrop-blur-xl text-left">
+            <div className="md:col-span-8 bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm text-left">
               
               {/* STEP 1: IDENTITY */}
               {currentStep === 1 && (
                 <form onSubmit={handleStep1Submit} className="space-y-6">
-                  <div className="border-b border-slate-800 pb-3">
-                    <h2 className="text-lg font-black text-white">Step 1: Identity &amp; KYC Verification</h2>
-                    <p className="text-xs text-slate-400 mt-1 font-medium">Verify your email and enter your government credentials to build proof.</p>
+                  <div className="border-b border-slate-100 pb-3">
+                    <h2 className="text-lg font-black text-slate-800">Step 1: Identity &amp; KYC Verification</h2>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">Verify your email and enter your government credentials to build proof.</p>
                   </div>
 
                   {onboarding?.step_1_identity?.rejectionReason && (
-                    <div className="p-4 bg-rose-950/20 border border-rose-800/30 text-rose-400 rounded-2xl text-xs font-semibold leading-relaxed flex items-start gap-2.5">
+                    <div className="p-4 bg-rose-50 border border-rose-100 text-rose-705 rounded-2xl text-xs font-semibold leading-relaxed flex items-start gap-2.5">
                       <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                       <div>
                         <p className="font-extrabold uppercase tracking-wider text-[10px] mb-1">Previous Attempt Rejected</p>
-                        <p className="text-rose-300">{onboarding.step_1_identity.rejectionReason}</p>
+                        <p className="text-rose-600">{onboarding.step_1_identity.rejectionReason}</p>
                       </div>
                     </div>
                   )}
 
                   {/* OTP Verification */}
-                  <div className="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-5 space-y-4">
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4">
                     <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-4.5 h-4.5 text-indigo-400" />
-                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-300">OTP Account verification</h3>
+                      <ShieldCheck className="w-4.5 h-4.5 text-indigo-650" />
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">OTP Account verification</h3>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="text-[10px] font-bold text-slate-400 uppercase">Registered Email</label>
-                        <p className="text-sm font-semibold text-white mt-1">{profile?.email}</p>
+                        <p className="text-sm font-semibold text-slate-800 mt-1">{profile?.email}</p>
                       </div>
                       <div className="flex items-end">
                         {!otpVerified ? (
@@ -626,7 +626,7 @@ export default function TeacherOnboardingPortal() {
                               type="button"
                               onClick={handleSendOtp}
                               disabled={otpLoading}
-                              className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-indigo-600/10"
+                              className="w-full py-2 bg-indigo-650 hover:bg-indigo-755 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                             >
                               {otpLoading ? 'Sending...' : 'Trigger Verification OTP'} <ArrowRight className="w-3.5 h-3.5" />
                             </button>
@@ -638,7 +638,7 @@ export default function TeacherOnboardingPortal() {
                                 placeholder="Enter 6-digit OTP"
                                 value={otpCode}
                                 onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                                className="w-2/3 px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 font-semibold focus:ring-1 focus:ring-indigo-500"
+                                className="w-2/3 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-750 placeholder-slate-400 font-semibold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                               />
                               <button
                                 type="button"
@@ -651,8 +651,8 @@ export default function TeacherOnboardingPortal() {
                             </div>
                           )
                         ) : (
-                          <div className="w-full py-2 bg-emerald-950/20 border border-emerald-800/40 text-emerald-400 font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 select-none">
-                            <CheckCircle2 className="w-4 h-4" /> Identity Verification Verified
+                          <div className="w-full py-2 bg-emerald-50 border border-emerald-100 text-emerald-700 font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 select-none shadow-sm">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Identity Verification Verified
                           </div>
                         )}
                       </div>
@@ -670,7 +670,7 @@ export default function TeacherOnboardingPortal() {
                         placeholder="e.g. 543210987654"
                         value={aadhaarNumber}
                         onChange={(e) => setAadhaarNumber(e.target.value.replace(/[^0-9]/g, ''))}
-                        className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 font-semibold mt-1.5 focus:ring-1 focus:ring-indigo-500"
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 font-semibold mt-1.5 focus:bg-white focus:outline-none focus:border-blue-500"
                       />
                     </div>
                     <div>
@@ -682,7 +682,7 @@ export default function TeacherOnboardingPortal() {
                         placeholder="e.g. ABCDE1234F"
                         value={panNumber}
                         onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
-                        className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 font-semibold mt-1.5 focus:ring-1 focus:ring-indigo-500"
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 font-semibold mt-1.5 focus:bg-white focus:outline-none focus:border-blue-500"
                       />
                     </div>
                   </div>
@@ -690,17 +690,17 @@ export default function TeacherOnboardingPortal() {
                   {/* File Uploads */}
                   <div className="space-y-4 pt-2">
                     {/* Selfie Upload */}
-                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-slate-800 bg-slate-950/30 rounded-2xl">
-                      <div className="w-12 h-12 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center shrink-0">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-slate-100 bg-slate-50/50 rounded-2xl">
+                      <div className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
                         <User className="w-5 h-5 text-slate-400" />
                       </div>
                       <div className="flex-1 text-center sm:text-left">
-                        <h4 className="text-xs font-black text-white">Live Selfie Verification</h4>
+                        <h4 className="text-xs font-black text-slate-800">Live Selfie Verification</h4>
                         <p className="text-[10px] text-slate-500 mt-0.5">Upload a clear headshot image (JPG, PNG) · Max 150 KB</p>
                       </div>
                       <div className="shrink-0">
-                        <label className="px-4 py-2 border border-slate-800 hover:border-slate-600 bg-slate-900/80 hover:bg-slate-800 cursor-pointer rounded-xl text-[10px] font-bold transition-all inline-block">
-                          <Upload className="w-3.5 h-3.5 text-slate-400 inline mr-1.5" />
+                        <label className="px-4 py-2 border border-slate-200 hover:border-slate-350 bg-white hover:bg-slate-50 cursor-pointer rounded-xl text-[10px] font-bold text-slate-650 transition-all inline-block shadow-sm">
+                          <Upload className="w-3.5 h-3.5 text-slate-450 inline mr-1.5" />
                           {selfie ? selfie.name : 'Select Selfie'}
                           <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(setSelfie, e.target.files[0], 'image')} />
                         </label>
@@ -708,17 +708,17 @@ export default function TeacherOnboardingPortal() {
                     </div>
 
                     {/* Aadhaar File Upload */}
-                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-slate-800 bg-slate-950/30 rounded-2xl">
-                      <div className="w-12 h-12 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center shrink-0">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-slate-100 bg-slate-50/50 rounded-2xl">
+                      <div className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
                         <FileText className="w-5 h-5 text-slate-400" />
                       </div>
                       <div className="flex-1 text-center sm:text-left">
-                        <h4 className="text-xs font-black text-white">Aadhaar Card copy</h4>
+                        <h4 className="text-xs font-black text-slate-800">Aadhaar Card copy</h4>
                         <p className="text-[10px] text-slate-500 mt-0.5">Upload copy of Aadhaar (PDF, JPG, PNG) · Max 10 MB</p>
                       </div>
                       <div className="shrink-0">
-                        <label className="px-4 py-2 border border-slate-800 hover:border-slate-600 bg-slate-900/80 hover:bg-slate-800 cursor-pointer rounded-xl text-[10px] font-bold transition-all inline-block">
-                          <Upload className="w-3.5 h-3.5 text-slate-400 inline mr-1.5" />
+                        <label className="px-4 py-2 border border-slate-200 hover:border-slate-350 bg-white hover:bg-slate-50 cursor-pointer rounded-xl text-[10px] font-bold text-slate-650 transition-all inline-block shadow-sm">
+                          <Upload className="w-3.5 h-3.5 text-slate-450 inline mr-1.5" />
                           {aadhaarFile ? aadhaarFile.name : 'Select File'}
                           <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => handleFileChange(setAadhaarFile, e.target.files[0], 'document')} />
                         </label>
@@ -726,17 +726,17 @@ export default function TeacherOnboardingPortal() {
                     </div>
 
                     {/* PAN File Upload */}
-                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-slate-800 bg-slate-950/30 rounded-2xl">
-                      <div className="w-12 h-12 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center shrink-0">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-slate-100 bg-slate-50/50 rounded-2xl">
+                      <div className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
                         <FileText className="w-5 h-5 text-slate-400" />
                       </div>
                       <div className="flex-1 text-center sm:text-left">
-                        <h4 className="text-xs font-black text-white">PAN Card copy</h4>
+                        <h4 className="text-xs font-black text-slate-800">PAN Card copy</h4>
                         <p className="text-[10px] text-slate-500 mt-0.5">Upload copy of PAN (PDF, JPG, PNG) · Max 10 MB</p>
                       </div>
                       <div className="shrink-0">
-                        <label className="px-4 py-2 border border-slate-800 hover:border-slate-600 bg-slate-900/80 hover:bg-slate-800 cursor-pointer rounded-xl text-[10px] font-bold transition-all inline-block">
-                          <Upload className="w-3.5 h-3.5 text-slate-400 inline mr-1.5" />
+                        <label className="px-4 py-2 border border-slate-200 hover:border-slate-350 bg-white hover:bg-slate-50 cursor-pointer rounded-xl text-[10px] font-bold text-slate-650 transition-all inline-block shadow-sm">
+                          <Upload className="w-3.5 h-3.5 text-slate-450 inline mr-1.5" />
                           {panFile ? panFile.name : 'Select File'}
                           <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => handleFileChange(setPanFile, e.target.files[0], 'document')} />
                         </label>
@@ -747,7 +747,7 @@ export default function TeacherOnboardingPortal() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl cursor-pointer transition-all hover:shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-1.5 mt-4"
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl cursor-pointer transition-all hover:shadow-lg shadow-blue-600/10 flex items-center justify-center gap-1.5 mt-4"
                   >
                     {submitting ? 'Uploading Documents...' : 'Verify and Save Step 1'} <ArrowRight className="w-4 h-4" />
                   </button>
@@ -757,17 +757,17 @@ export default function TeacherOnboardingPortal() {
               {/* STEP 2: QUALIFICATION */}
               {currentStep === 2 && (
                 <form onSubmit={handleStep2Submit} className="space-y-6">
-                  <div className="border-b border-slate-800 pb-3">
-                    <h2 className="text-lg font-black text-white">Step 2: Qualification Auditing</h2>
-                    <p className="text-xs text-slate-400 mt-1 font-medium">Verify your degree certificates and professional university credentials.</p>
+                  <div className="border-b border-slate-100 pb-3">
+                    <h2 className="text-lg font-black text-slate-800">Step 2: Qualification Auditing</h2>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">Verify your degree certificates and professional university credentials.</p>
                   </div>
 
                   {onboarding?.step_2_qualification?.rejectionReason && (
-                    <div className="p-4 bg-rose-950/20 border border-rose-800/30 text-rose-400 rounded-2xl text-xs font-semibold leading-relaxed flex items-start gap-2.5">
+                    <div className="p-4 bg-rose-50 border border-rose-100 text-rose-705 rounded-2xl text-xs font-semibold leading-relaxed flex items-start gap-2.5">
                       <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                       <div>
                         <p className="font-extrabold uppercase tracking-wider text-[10px] mb-1">Previous Attempt Rejected</p>
-                        <p className="text-rose-300">{onboarding.step_2_qualification.rejectionReason}</p>
+                        <p className="text-rose-600">{onboarding.step_2_qualification.rejectionReason}</p>
                       </div>
                     </div>
                   )}
@@ -784,10 +784,10 @@ export default function TeacherOnboardingPortal() {
                           onChange={(e) => setDegreeName(e.target.value)}
                           onFocus={() => setShowDegreeDropdown(true)}
                           onBlur={() => setTimeout(() => setShowDegreeDropdown(false), 200)}
-                          className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 font-semibold mt-1.5 focus:ring-1 focus:ring-indigo-500"
+                          className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 font-semibold mt-1.5 focus:bg-white focus:outline-none focus:border-blue-500"
                         />
                         {showDegreeDropdown && filteredDegrees.length > 0 && (
-                          <div className="absolute left-0 right-0 mt-1 bg-slate-900 border border-slate-800 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                          <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
                             {filteredDegrees.map((q) => (
                               <button
                                 key={q}
@@ -796,7 +796,7 @@ export default function TeacherOnboardingPortal() {
                                   setDegreeName(q);
                                   setShowDegreeDropdown(false);
                                 }}
-                                className="w-full px-4 py-2.5 text-xs text-left hover:bg-slate-800 text-slate-300 hover:text-white font-semibold border-none cursor-pointer flex items-center gap-2"
+                                className="w-full px-4 py-2.5 text-xs text-left hover:bg-slate-50 text-slate-700 hover:text-slate-900 font-semibold border-none cursor-pointer flex items-center gap-2"
                               >
                                 <GraduationCap className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                                 <span>{q}</span>
@@ -814,7 +814,7 @@ export default function TeacherOnboardingPortal() {
                         placeholder="e.g. Delhi University"
                         value={universityName}
                         onChange={(e) => setUniversityName(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 font-semibold mt-1.5 focus:ring-1 focus:ring-indigo-500"
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 font-semibold mt-1.5 focus:bg-white focus:outline-none focus:border-blue-500"
                       />
                     </div>
                     <div>
@@ -825,7 +825,7 @@ export default function TeacherOnboardingPortal() {
                         placeholder="e.g. 2021"
                         value={graduationYear}
                         onChange={(e) => setGraduationYear(e.target.value.replace(/[^0-9]/g, ''))}
-                        className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 font-semibold mt-1.5 focus:ring-1 focus:ring-indigo-500"
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 font-semibold mt-1.5 focus:bg-white focus:outline-none focus:border-blue-500"
                       />
                     </div>
                     <div>
@@ -835,41 +835,41 @@ export default function TeacherOnboardingPortal() {
                         placeholder="e.g. CTET, TET Qualified"
                         value={professionalCertName}
                         onChange={(e) => setProfessionalCertName(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 font-semibold mt-1.5 focus:ring-1 focus:ring-indigo-500"
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 font-semibold mt-1.5 focus:bg-white focus:outline-none focus:border-blue-500"
                       />
                     </div>
                   </div>
 
                   {/* Degree uploads */}
                   <div className="space-y-4 pt-2">
-                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-slate-800 bg-slate-950/30 rounded-2xl">
-                      <div className="w-12 h-12 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center shrink-0">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-slate-100 bg-slate-50/50 rounded-2xl">
+                      <div className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
                         <GraduationCap className="w-5 h-5 text-slate-400" />
                       </div>
                       <div className="flex-1 text-center sm:text-left">
-                        <h4 className="text-xs font-black text-white">Degree Certificate Upload</h4>
+                        <h4 className="text-xs font-black text-slate-800">Degree Certificate Upload</h4>
                         <p className="text-[10px] text-slate-500 mt-0.5">Upload degree / highest transcript (PDF, JPG, PNG) · Max 10 MB</p>
                       </div>
                       <div className="shrink-0">
-                        <label className="px-4 py-2 border border-slate-800 hover:border-slate-600 bg-slate-900/80 hover:bg-slate-800 cursor-pointer rounded-xl text-[10px] font-bold transition-all inline-block">
-                          <Upload className="w-3.5 h-3.5 text-slate-400 inline mr-1.5" />
+                        <label className="px-4 py-2 border border-slate-200 hover:border-slate-350 bg-white hover:bg-slate-50 cursor-pointer rounded-xl text-[10px] font-bold text-slate-650 transition-all inline-block shadow-sm">
+                          <Upload className="w-3.5 h-3.5 text-slate-450 inline mr-1.5" />
                           {degreeFile ? degreeFile.name : 'Select File'}
                           <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => handleFileChange(setDegreeFile, e.target.files[0], 'document')} />
                         </label>
                       </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-slate-800 bg-slate-950/30 rounded-2xl">
-                      <div className="w-12 h-12 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center shrink-0">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-slate-100 bg-slate-50/50 rounded-2xl">
+                      <div className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
                         <FileCheck className="w-5 h-5 text-slate-400" />
                       </div>
                       <div className="flex-1 text-center sm:text-left">
-                        <h4 className="text-xs font-black text-white">Professional Certificate (B.Ed., CTET)</h4>
+                        <h4 className="text-xs font-black text-slate-800">Professional Certificate (B.Ed., CTET)</h4>
                         <p className="text-[10px] text-slate-500 mt-0.5">Upload certified document (PDF, JPG, PNG) · Max 10 MB</p>
                       </div>
                       <div className="shrink-0">
-                        <label className="px-4 py-2 border border-slate-800 hover:border-slate-600 bg-slate-900/80 hover:bg-slate-800 cursor-pointer rounded-xl text-[10px] font-bold transition-all inline-block">
-                          <Upload className="w-3.5 h-3.5 text-slate-400 inline mr-1.5" />
+                        <label className="px-4 py-2 border border-slate-200 hover:border-slate-350 bg-white hover:bg-slate-50 cursor-pointer rounded-xl text-[10px] font-bold text-slate-650 transition-all inline-block shadow-sm">
+                          <Upload className="w-3.5 h-3.5 text-slate-450 inline mr-1.5" />
                           {professionalFile ? professionalFile.name : 'Select File'}
                           <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => handleFileChange(setProfessionalFile, e.target.files[0], 'document')} />
                         </label>
@@ -880,7 +880,7 @@ export default function TeacherOnboardingPortal() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl cursor-pointer transition-all hover:shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-1.5 mt-4"
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl cursor-pointer transition-all hover:shadow-lg shadow-blue-600/10 flex items-center justify-center gap-1.5 mt-4"
                   >
                     {submitting ? 'Saving Certificates...' : 'Verify and Save Step 2'} <ArrowRight className="w-4 h-4" />
                   </button>
@@ -890,18 +890,18 @@ export default function TeacherOnboardingPortal() {
               {/* STEP 3: COMPETENCY TEST */}
               {currentStep === 3 && (
                 <div className="space-y-6">
-                  <div className="border-b border-slate-800 pb-3">
-                    <h2 className="text-lg font-black text-white">Step 3: Subject Competency Exam</h2>
-                    <p className="text-xs text-slate-400 mt-1 font-medium">Verify your command of subjects by taking a timed online examination.</p>
+                  <div className="border-b border-slate-100 pb-3">
+                    <h2 className="text-lg font-black text-slate-800">Step 3: Subject Competency Exam</h2>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">Verify your command of subjects by taking a timed online examination.</p>
                   </div>
 
                   {!testStarted ? (
                     <div className="space-y-6">
-                      <div className="p-4 bg-indigo-950/20 border border-indigo-800/30 text-indigo-400 rounded-2xl text-xs leading-relaxed flex items-start gap-2.5 font-semibold">
+                      <div className="p-4 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-2xl text-xs leading-relaxed flex items-start gap-2.5 font-semibold">
                         <HelpCircle className="w-5 h-5 shrink-0 mt-0.5" />
                         <div>
                           <p className="font-extrabold uppercase tracking-wider text-[10px] mb-1">Exam Rules &amp; Protocols</p>
-                          <ul className="list-disc pl-4 space-y-1 mt-1 font-medium text-indigo-300">
+                          <ul className="list-disc pl-4 space-y-1 mt-1 font-medium text-indigo-600">
                             <li>The exam consists of 5 multiple-choice questions (MCQs) of your choice of subject.</li>
                             <li>You have a total of 5 minutes (300 seconds) to submit the examination.</li>
                             <li>A minimum passing score of **75%** is required to unlock step 4.</li>
@@ -914,15 +914,15 @@ export default function TeacherOnboardingPortal() {
                         {SUBJECTS.map((subject) => (
                           <div
                             key={subject}
-                            className="p-5 border border-slate-800 bg-slate-950/40 hover:bg-indigo-950/10 hover:border-indigo-500/40 rounded-2xl transition-all flex items-center justify-between"
+                            className="p-5 border border-slate-150 bg-slate-50/50 hover:bg-indigo-50/20 hover:border-indigo-300/50 rounded-2xl transition-all flex items-center justify-between"
                           >
                             <div className="flex items-center gap-3">
-                              <BookOpen className="w-5 h-5 text-indigo-400" />
-                              <span className="text-sm font-extrabold text-white">{subject} Test</span>
+                              <BookOpen className="w-5 h-5 text-indigo-600" />
+                              <span className="text-sm font-extrabold text-slate-800">{subject} Test</span>
                             </div>
                             <button
                               onClick={() => startCompetencyTest(subject)}
-                              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[10px] uppercase rounded-lg transition-all cursor-pointer"
+                              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[10px] uppercase rounded-lg transition-all cursor-pointer border-0"
                             >
                               Start Exam
                             </button>
@@ -932,11 +932,11 @@ export default function TeacherOnboardingPortal() {
                     </div>
                   ) : (
                     /* Active Test Console UI */
-                    <div className="bg-slate-950/40 border border-indigo-900/30 rounded-3xl p-6 relative">
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
-                        <span className="text-xs font-black uppercase tracking-wider text-indigo-400">{testSubject} Exam Console</span>
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-950/50 border border-indigo-850 rounded-xl text-xs font-bold text-indigo-300">
-                          <Clock className="w-4 h-4 text-indigo-400 animate-pulse" />
+                    <div className="bg-slate-50 border border-slate-150 rounded-3xl p-6 relative">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-6">
+                        <span className="text-xs font-black uppercase tracking-wider text-indigo-600">{testSubject} Exam Console</span>
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-xl text-xs font-bold text-indigo-750">
+                          <Clock className="w-4 h-4 text-indigo-650 animate-pulse" />
                           <span>{Math.floor(testTimeLeft / 60)}:{(testTimeLeft % 60).toString().padStart(2, '0')}</span>
                         </div>
                       </div>
@@ -944,8 +944,8 @@ export default function TeacherOnboardingPortal() {
                       {/* Question Text */}
                       <div className="space-y-6">
                         <div className="space-y-2">
-                          <span className="text-[10px] font-black uppercase text-indigo-500 tracking-wider">Question {currentQIndex + 1} of 5</span>
-                          <h3 className="text-base font-extrabold text-white">{TEST_QUESTIONS[testSubject][currentQIndex].q}</h3>
+                          <span className="text-[10px] font-black uppercase text-indigo-600 tracking-wider">Question {currentQIndex + 1} of 5</span>
+                          <h3 className="text-base font-extrabold text-slate-850">{TEST_QUESTIONS[testSubject][currentQIndex].q}</h3>
                         </div>
 
                         {/* Options List */}
@@ -959,8 +959,8 @@ export default function TeacherOnboardingPortal() {
                                 onClick={() => handleSelectOption(TEST_QUESTIONS[testSubject][currentQIndex].id, idx)}
                                 className={`w-full p-4 rounded-xl border text-left text-xs font-semibold transition-all cursor-pointer
                                   ${isSelected
-                                    ? 'bg-indigo-600/10 border-indigo-500 text-indigo-300'
-                                    : 'bg-slate-950 border-slate-850 hover:bg-slate-900 hover:border-slate-700 text-slate-300'
+                                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                                    : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
                                   }`}
                               >
                                 {opt}
@@ -970,12 +970,12 @@ export default function TeacherOnboardingPortal() {
                         </div>
 
                         {/* Nav Buttons */}
-                        <div className="flex items-center justify-between border-t border-slate-800 pt-4 mt-8">
+                        <div className="flex items-center justify-between border-t border-slate-200 pt-4 mt-8">
                           <button
                             type="button"
                             disabled={currentQIndex === 0}
                             onClick={() => setCurrentQIndex(prev => prev - 1)}
-                            className="px-4 py-2 border border-slate-800 rounded-xl text-xs font-bold disabled:opacity-30"
+                            className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 disabled:opacity-30 cursor-pointer"
                           >
                             Previous
                           </button>
@@ -983,7 +983,7 @@ export default function TeacherOnboardingPortal() {
                             <button
                               type="button"
                               onClick={() => setCurrentQIndex(prev => prev + 1)}
-                              className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer"
+                              className="px-5 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold cursor-pointer"
                             >
                               Next Question
                             </button>
@@ -995,7 +995,7 @@ export default function TeacherOnboardingPortal() {
                                   submitTest();
                                 }
                               }}
-                              className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl text-xs font-black cursor-pointer shadow-md shadow-indigo-500/10"
+                              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black cursor-pointer shadow-sm"
                             >
                               Submit Examination
                             </button>
@@ -1010,17 +1010,17 @@ export default function TeacherOnboardingPortal() {
               {/* STEP 4: DEMO CLASS */}
               {currentStep === 4 && (
                 <form onSubmit={handleStep4Submit} className="space-y-6">
-                  <div className="border-b border-slate-800 pb-3">
-                    <h2 className="text-lg font-black text-white">Step 4: Demo Class Audition</h2>
-                    <p className="text-xs text-slate-400 mt-1 font-medium">Upload or share a 10–15 minute recording of you explaining an educational topic.</p>
+                  <div className="border-b border-slate-100 pb-3">
+                    <h2 className="text-lg font-black text-slate-805">Step 4: Demo Class Audition</h2>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">Upload or share a 10–15 minute recording of you explaining an educational topic.</p>
                   </div>
 
                   {onboarding?.step_4_demo?.feedback && (
-                    <div className="p-4 bg-rose-950/20 border border-rose-800/30 text-rose-400 rounded-2xl text-xs font-semibold leading-relaxed flex items-start gap-2.5">
+                    <div className="p-4 bg-rose-50 border border-rose-100 text-rose-705 rounded-2xl text-xs font-semibold leading-relaxed flex items-start gap-2.5">
                       <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                       <div>
                         <p className="font-extrabold uppercase tracking-wider text-[10px] mb-1">Previous Demo Rejected</p>
-                        <p className="text-rose-300">{onboarding.step_4_demo.feedback}</p>
+                        <p className="text-rose-600">{onboarding.step_4_demo.feedback}</p>
                       </div>
                     </div>
                   )}
@@ -1032,7 +1032,7 @@ export default function TeacherOnboardingPortal() {
                         required
                         value={targetGrade}
                         onChange={(e) => setTargetGrade(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white font-semibold mt-1.5 focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-semibold mt-1.5 focus:bg-white focus:outline-none focus:border-blue-500 cursor-pointer"
                       >
                         <option value="">Select Target Grade</option>
                         {GRADE_LEVELS.map((g) => (
@@ -1048,7 +1048,7 @@ export default function TeacherOnboardingPortal() {
                         placeholder="e.g. Quadratic Equations, Photosynthesis"
                         value={topic}
                         onChange={(e) => setTopic(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 font-semibold mt-1.5 focus:ring-1 focus:ring-indigo-500"
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 font-semibold mt-1.5 focus:bg-white focus:outline-none focus:border-blue-500"
                       />
                     </div>
                   </div>
@@ -1061,30 +1061,30 @@ export default function TeacherOnboardingPortal() {
                       placeholder="e.g. https://www.loom.com/share/..."
                       value={demoVideoUrl}
                       onChange={(e) => setDemoVideoUrl(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 font-semibold mt-1.5 focus:ring-1 focus:ring-indigo-500"
+                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 font-semibold mt-1.5 focus:bg-white focus:outline-none focus:border-blue-500"
                     />
                     <p className="text-[9px] text-slate-500 mt-1 font-semibold">Recommended: Upload your video to Loom or YouTube and paste the link to avoid large file wait times.</p>
                   </div>
 
                   {/* Divider */}
                   <div className="relative flex py-2 items-center">
-                    <div className="flex-grow border-t border-slate-800/80"></div>
-                    <span className="flex-shrink mx-4 text-[9px] text-slate-500 font-black uppercase tracking-wider">or Upload Video file</span>
-                    <div className="flex-grow border-t border-slate-800/80"></div>
+                    <div className="flex-grow border-t border-slate-200"></div>
+                    <span className="flex-shrink mx-4 text-[9px] text-slate-400 font-black uppercase tracking-wider">or Upload Video file</span>
+                    <div className="flex-grow border-t border-slate-200"></div>
                   </div>
 
                   {/* File Upload Zone */}
-                  <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-slate-800 bg-slate-950/30 rounded-2xl">
-                    <div className="w-12 h-12 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center shrink-0">
+                  <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-slate-100 bg-slate-50/50 rounded-2xl">
+                    <div className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
                       <Video className="w-5 h-5 text-slate-400" />
                     </div>
                     <div className="flex-1 text-center sm:text-left">
-                      <h4 className="text-xs font-black text-white">Upload Class MP4/MOV file</h4>
+                      <h4 className="text-xs font-black text-slate-800">Upload Class MP4/MOV file</h4>
                       <p className="text-[10px] text-slate-500 mt-0.5">Max size 50MB, length 10-15 minutes</p>
                     </div>
                     <div className="shrink-0">
-                      <label className="px-4 py-2 border border-slate-800 hover:border-slate-600 bg-slate-900/80 hover:bg-slate-800 cursor-pointer rounded-xl text-[10px] font-bold transition-all inline-block">
-                        <Upload className="w-3.5 h-3.5 text-slate-400 inline mr-1.5" />
+                      <label className="px-4 py-2 border border-slate-200 hover:border-slate-350 bg-white hover:bg-slate-50 cursor-pointer rounded-xl text-[10px] font-bold text-slate-650 transition-all inline-block shadow-sm">
+                        <Upload className="w-3.5 h-3.5 text-slate-450 inline mr-1.5" />
                         {demoVideoFile ? demoVideoFile.name : 'Select File'}
                         <input type="file" accept="video/*" className="hidden" onChange={(e) => handleFileChange(setDemoVideoFile, e.target.files[0], 'video')} />
                       </label>
@@ -1094,7 +1094,7 @@ export default function TeacherOnboardingPortal() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-xs font-black rounded-xl cursor-pointer transition-all hover:shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 mt-4"
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl cursor-pointer transition-all hover:shadow-lg shadow-blue-600/10 flex items-center justify-center gap-2 mt-4"
                   >
                     {submitting ? (
                       <>
