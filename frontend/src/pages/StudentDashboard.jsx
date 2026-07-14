@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardShell from '../components/DashboardShell';
+import DemoBooking from './DemoBooking';
 import { api } from '../utils/api';
 import { getDiagnosticQuestions } from '../utils/mockDb';
 import {
   LayoutDashboard,
+  GraduationCap,
   BookOpen,
   FileText,
   Mic,
@@ -1150,6 +1152,7 @@ const StudentDashboard = () => {
 
   const NAV_ITEMS = [
     { name: 'Home',           icon: LayoutDashboard },
+    { name: 'Book Demo',      icon: GraduationCap },
     { name: 'Study Material', icon: BookMarked },
     { name: 'Tests',          icon: FileText },
     { name: 'Study Groups',   icon: Users },
@@ -1171,6 +1174,7 @@ const StudentDashboard = () => {
       onClearNotifs={() => setUnreadNotifications(p => p.map(n => ({ ...n, isNew: false })))}
       onLogout={handleLogout}
       toast={{ show: showToast, message: toastMessage, type: 'success' }}
+      onCtaClick={() => setActiveTab('Book Demo')}
       headerRight={
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-xl text-amber-700 text-xs font-bold">
@@ -2188,7 +2192,12 @@ const StudentDashboard = () => {
               </div>
             )}
 
-
+          {/* TAB: BOOK DEMO */}
+          {activeTab === 'Book Demo' && (
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-md p-2 sm:p-6 text-left animate-fade-in no-glass">
+              <DemoBooking isEmbedded={true} onClose={() => setActiveTab('Home')} />
+            </div>
+          )}
 
           {/* TAB 3: STUDY MATERIAL */}
           {activeTab === 'Study Material' && (

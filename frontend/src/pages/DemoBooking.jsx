@@ -19,7 +19,7 @@ const CONFETTI = Array.from({ length: 30 }).map((_, i) => ({
   duration: Math.random() * 1.5 + 1.5,
 }));
 
-const DemoBooking = () => {
+const DemoBooking = ({ isEmbedded = false, onClose }) => {
   const [step, setStep] = useState(1);
   const [dir, setDir] = useState('next');
   const [shake, setShake] = useState(false);
@@ -134,6 +134,7 @@ const DemoBooking = () => {
     setSelectedSlot(null);
     setCitySearch('');
     setShowCityDropdown(false);
+    if (onClose) onClose();
   };
 
   const getMinDate = () => {
@@ -149,34 +150,46 @@ const DemoBooking = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className={isEmbedded ? "bg-white p-2 rounded-2xl" : "min-h-screen bg-neutral-50"}>
 
       {/* Hero */}
-      <section className="pt-28 pb-14 bg-white border-b border-neutral-100 bg-dot-subtle">
-        <div className="max-w-2xl mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-medium rounded-full mb-5">
-            <CheckCircle className="w-4 h-4" />
-            100% Free Demo Class
+      {!isEmbedded && (
+        <section className="pt-28 pb-14 bg-white border-b border-neutral-100 bg-dot-subtle">
+          <div className="max-w-2xl mx-auto px-4 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-medium rounded-full mb-5">
+              <CheckCircle className="w-4 h-4" />
+              100% Free Demo Class
+            </div>
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-neutral-900 mb-4 tracking-tight">
+              Book Your <span className="color-blend-text">Free Demo</span>
+            </h1>
+            <p className="text-lg text-neutral-500 leading-relaxed">
+              Experience quality home tuition with our expert teachers — no commitment required.
+            </p>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-neutral-900 mb-4 tracking-tight">
-            Book Your <span className="color-blend-text">Free Demo</span>
-          </h1>
-          <p className="text-lg text-neutral-500 leading-relaxed">
-            Experience quality home tuition with our expert teachers — no commitment required.
-          </p>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Main */}
-      <section className="pt-12 pb-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+      <section className={isEmbedded ? "pt-2 pb-2" : "pt-12 pb-16"}>
+        <div className={isEmbedded ? "max-w-xl mx-auto" : "max-w-6xl mx-auto px-4 sm:px-6 lg:px-8"}>
+          <div className={isEmbedded ? "w-full" : "grid grid-cols-1 lg:grid-cols-2 gap-10 items-start"}>
 
             {/* Form card */}
-            <div className={`bg-white rounded-2xl border border-neutral-100 shadow-sm transition-all ${shake ? 'animate-shake' : ''}`}>
+            <div className={`bg-white rounded-2xl border border-neutral-100 shadow-sm transition-all ${shake ? 'animate-shake' : ''} relative`}>
 
               {/* Progress header */}
-              <div className="bg-gradient-to-r from-primary-600 to-secondary-600 p-5 text-white rounded-t-2xl">
+              <div className="bg-gradient-to-r from-primary-600 to-secondary-600 p-5 text-white rounded-t-2xl relative">
+                {isEmbedded && onClose && (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="absolute top-4 right-4 p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg cursor-pointer transition-colors border-0"
+                    aria-label="Close"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
                 <div className="flex items-center gap-2 mb-4">
                   {STEPS.map((s, i) => (
                     <div key={s.n} className="flex items-center gap-2 flex-1 last:flex-none">
@@ -449,9 +462,10 @@ const DemoBooking = () => {
             </div>
 
             {/* Right info panel */}
-            <div className="space-y-6 lg:sticky lg:top-24">
-              <div>
-                <h2 className="text-2xl font-bold text-neutral-900 mb-6">Why Our Demo Classes?</h2>
+            {!isEmbedded && (
+              <div className="space-y-6 lg:sticky lg:top-24">
+                <div>
+                  <h2 className="text-2xl font-bold text-neutral-900 mb-6">Why Our Demo Classes?</h2>
                 <div className="space-y-5">
                   {[
                     { icon: GraduationCap, title: 'Expert Teachers', desc: 'Vetted, experienced teachers who understand localized challenges.', color: 'bg-blue-50 text-blue-600' },
@@ -505,6 +519,7 @@ const DemoBooking = () => {
                 </div>
               </div>
             </div>
+          )}
           </div>
         </div>
       </section>

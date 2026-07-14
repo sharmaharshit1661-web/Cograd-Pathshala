@@ -89,6 +89,38 @@ const THEME_MAP = {
   },
 };
 
+const formatNotifTime = (createdAt) => {
+  if (!createdAt) return '';
+  const date = new Date(createdAt);
+  if (isNaN(date.getTime())) return '';
+
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) {
+    return 'Just now';
+  }
+  if (diffMins < 60) {
+    return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+  }
+  if (diffHours < 24) {
+    return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  }
+  if (diffDays < 7) {
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  }
+  return date.toLocaleString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
 export default function DashboardShell({
   navItems = [],
   activeTab,
@@ -102,6 +134,7 @@ export default function DashboardShell({
   headerRight,
   children,
   toast = { show: false, message: '' },
+  onCtaClick,
 }) {
   const theme = THEME_MAP[roleColor] || THEME_MAP.blue;
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -260,7 +293,7 @@ export default function DashboardShell({
           {stats.ctaLabel && (
             <div className="px-5 mt-1 mb-5 shrink-0">
               <button
-                onClick={goToCta}
+                onClick={onCtaClick || goToCta}
                 className={`w-full flex items-center justify-center gap-2 text-white rounded-full font-black text-[11.5px] py-3 px-4 transition-all duration-200 cursor-pointer border-0 active:scale-[0.98] ${theme.ctaBtn}`}
               >
                 {stats.ctaLabel !== 'Contact Admin' && (
@@ -419,17 +452,22 @@ export default function DashboardShell({
                           <p className="empty-state-desc text-xs">No new notifications.</p>
                         </div>
                       ) : (
-                        notifications.map((n) => (
-                          <div key={n.id} className={`notif-item ${n.isNew ? 'unread' : ''}`}>
-                            <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.isNew ? theme.notifDot : 'bg-slate-200'}`} aria-hidden="true" />
-                            <div className="min-w-0">
-                              <p className="text-[12px] font-medium text-slate-700 leading-snug">{n.text}</p>
-                              {n.time && (
-                                <span className="text-[10px] text-slate-400 font-medium mt-0.5 block">{n.time}</span>
-                              )}
+                        notifications.map((n) => {
+                          const displayTime = n.createdAt
+                            ? formatNotifTime(n.createdAt)
+                            : n.time;
+                          return (
+                            <div key={n.id} className={`notif-item ${n.isNew ? 'unread' : ''}`}>
+                              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.isNew ? theme.notifDot : 'bg-slate-200'}`} aria-hidden="true" />
+                              <div className="min-w-0">
+                                <p className="text-[12px] font-medium text-slate-700 leading-snug">{n.text}</p>
+                                {displayTime && (
+                                  <span className="text-[10px] text-slate-400 font-medium mt-0.5 block">{displayTime}</span>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   </div>
