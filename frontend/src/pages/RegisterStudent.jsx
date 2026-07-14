@@ -174,13 +174,13 @@ const RegisterStudent = () => {
   const [placementAnswers, setPlacementAnswers] = useState({});
   const [testResult, setTestResult] = useState(null);
   const [isOtherCity, setIsOtherCity] = useState(false);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Restrict phone fields to digits only
     if (name === 'phone' || name === 'parentPhone') {
       const digitsOnly = value.replace(/\D/g, '');
-      setForm(prev => ({ ...prev, [name]: digitsOnly }));
+      if (digitsOnly.length <= 10) {
+        setForm(prev => ({ ...prev, [name]: digitsOnly }));
+      }
       return;
     }
     if (name === 'email') {

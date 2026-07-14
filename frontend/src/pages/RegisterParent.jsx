@@ -203,6 +203,13 @@ const RegisterParent = () => {
 
   const handleParentChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'phone') {
+      const numeric = value.replace(/\D/g, '');
+      if (numeric.length <= 10) {
+        setParentForm((prev) => ({ ...prev, phone: numeric }));
+      }
+      return;
+    }
     if (name === 'email') {
       setParentForm((prev) => ({ ...prev, email: value }));
       if (value && value.includes('@') && !isAllowedEmail(value)) {
@@ -711,6 +718,7 @@ const RegisterParent = () => {
                   type="tel"
                   name="phone"
                   required
+                  maxLength={10}
                   value={parentForm.phone}
                   onChange={handleParentChange}
                   className="form-input"
@@ -841,8 +849,17 @@ const RegisterParent = () => {
                     <input
                       type={childSearchType === 'email' ? 'email' : 'tel'}
                       value={childSearchQuery}
-                      onChange={(e) => { setChildSearchQuery(e.target.value); setSearchError(''); }}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (childSearchType === 'phone') {
+                          setChildSearchQuery(val.replace(/\D/g, '').slice(0, 10));
+                        } else {
+                          setChildSearchQuery(val);
+                        }
+                        setSearchError('');
+                      }}
                       placeholder={childSearchType === 'email' ? "Enter your child's registered email" : "Enter your child's 10-digit phone"}
+                      maxLength={childSearchType === 'phone' ? 10 : undefined}
                       className="form-input pr-12"
                       onKeyDown={(e) => { if (e.key === 'Enter' && childSearchQuery.trim()) handleChildSearch(); }}
                     />
