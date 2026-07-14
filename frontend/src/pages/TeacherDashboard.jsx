@@ -133,17 +133,19 @@ const TeacherDashboard = () => {
   const [unreadNotifications, setUnreadNotifications] = useState([]);
   
   useEffect(() => {
-    if (teacherId) {
-      const saved = localStorage.getItem(`cograd_teacher_notifications_${teacherId}`);
-      setUnreadNotifications(saved ? JSON.parse(saved) : []);
-    }
-  }, [teacherId]);
-
-  useEffect(() => {
-    if (teacherId) {
-      localStorage.setItem(`cograd_teacher_notifications_${teacherId}`, JSON.stringify(unreadNotifications));
-    }
-  }, [unreadNotifications, teacherId]);
+    if (!localStorage.getItem('cograd_token')) return;
+    const fetchNotifs = async () => {
+      try {
+        const dbNotifs = await api.get('/notifications/my-notifications');
+        setUnreadNotifications(dbNotifs || []);
+      } catch (e) {
+        console.error('Failed to fetch user notifications:', e);
+      }
+    };
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 15000); // Poll every 15 seconds for notifications
+    return () => clearInterval(interval);
+  }, []);
 
   // 1. Teacher Profile States
   const [teacherProfile, setTeacherProfile] = useState({
@@ -3872,10 +3874,15 @@ const TeacherDashboard = () => {
         roleColor="blue"
         userName={teacherProfile.name}
         notifications={unreadNotifications}
-        onClearNotifs={() => {
+        onClearNotifs={async () => {
           setUnreadNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
           setToastMessage('All notifications read.');
           setShowToast(true);
+          try {
+            await api.put('/notifications/my-notifications/read-all');
+          } catch (e) {
+            console.error('Failed to mark user notifications as read:', e);
+          }
         }}
         onLogout={handleLogout}
         toast={{ show: showToast, message: toastMessage }}

@@ -134,17 +134,19 @@ const StudentDashboard = () => {
   const [unreadNotifications, setUnreadNotifications] = useState([]);
 
   useEffect(() => {
-    if (profileData.studentId && profileData.studentId !== 'Loading...') {
-      const saved = localStorage.getItem(`cograd_student_notifications_${profileData.studentId}`);
-      setUnreadNotifications(saved ? JSON.parse(saved) : []);
-    }
-  }, [profileData.studentId]);
-
-  useEffect(() => {
-    if (profileData.studentId && profileData.studentId !== 'Loading...') {
-      localStorage.setItem(`cograd_student_notifications_${profileData.studentId}`, JSON.stringify(unreadNotifications));
-    }
-  }, [unreadNotifications, profileData.studentId]);
+    if (!localStorage.getItem('cograd_token')) return;
+    const fetchNotifs = async () => {
+      try {
+        const dbNotifs = await api.get('/notifications/my-notifications');
+        setUnreadNotifications(dbNotifs || []);
+      } catch (e) {
+        console.error('Failed to fetch user notifications:', e);
+      }
+    };
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 15000); // Poll every 15 seconds for notifications
+    return () => clearInterval(interval);
+  }, []);
 
 
   const [reminderSet, setReminderSet] = useState(false);
@@ -1171,7 +1173,14 @@ const StudentDashboard = () => {
         userName={profileData.name}
         userAvatar={profileData.avatar}
         notifications={unreadNotifications}
-        onClearNotifs={() => setUnreadNotifications(p => p.map(n => ({ ...n, isNew: false })))}
+        onClearNotifs={async () => {
+          setUnreadNotifications(p => p.map(n => ({ ...n, isNew: false })));
+          try {
+            await api.put('/notifications/my-notifications/read-all');
+          } catch (e) {
+            console.error('Failed to mark user notifications as read:', e);
+          }
+        }}
         onLogout={handleLogout}
         toast={{ show: showToast, message: toastMessage, type: 'success' }}
         onCtaClick={() => setActiveTab('Book Demo')}

@@ -1225,6 +1225,7 @@ router.get('/demo-bookings', protect, async (req, res) => {
 });
 
 // @desc    Confirm/Assign demo booking (Admin Route)
+// @desc    Confirm/Assign demo booking (Admin Route)
 // @route   PUT /api/demo-bookings/:id/confirm
 // @access  Private
 router.put('/demo-bookings/:id/confirm', protect, async (req, res) => {
@@ -1240,6 +1241,36 @@ router.put('/demo-bookings/:id/confirm', protect, async (req, res) => {
     }
     booking.status = 'pending_teacher_acceptance';
     await booking.save();
+
+    // 1. Notify Student/Parent
+    const studentUsers = await User.find({ $or: [{ phone: booking.parentPhone }, { parentPhone: booking.parentPhone }] });
+    for (const u of studentUsers) {
+      if (!u.notifications) u.notifications = [];
+      u.notifications.push({
+        id: 'ntf_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        text: `Your demo booking for ${booking.subjects.join(', ')} has been approved by Admin and is pending tutor acceptance.`,
+        isNew: true,
+        time: 'Just now',
+        createdAt: new Date()
+      });
+      await u.save();
+    }
+
+    // 2. Notify Teacher
+    if (teacherId) {
+      const teacherUser = await User.findOne({ id: teacherId, role: 'teacher' });
+      if (teacherUser) {
+        if (!teacherUser.notifications) teacherUser.notifications = [];
+        teacherUser.notifications.push({
+          id: 'ntf_' + Date.now() + '_tch',
+          text: `You have been assigned a new demo class request for student: ${booking.studentName} (${booking.studentClass}) in ${booking.villageArea}. Please accept or decline the request.`,
+          isNew: true,
+          time: 'Just now',
+          createdAt: new Date()
+        });
+        await teacherUser.save();
+      }
+    }
 
     res.json(booking);
   } catch (error) {
@@ -1281,7 +1312,24 @@ router.put('/demo-bookings/:id/status', protect, async (req, res) => {
 
     await booking.save();
 
-    // 1. Create Admin Notification
+    // 1. Notify Student/Parent of Teacher Response
+    const studentUsers = await User.find({ $or: [{ phone: booking.parentPhone }, { parentPhone: booking.parentPhone }] });
+    for (const u of studentUsers) {
+      if (!u.notifications) u.notifications = [];
+      const isConfirmed = booking.status === 'confirmed';
+      u.notifications.push({
+        id: 'ntf_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        text: isConfirmed 
+          ? `Congratulations! Your demo class for ${booking.subjects.join(', ')} on ${booking.preferredDate} at ${booking.preferredTime} has been CONFIRMED by tutor.` 
+          : `Your demo class request for ${booking.subjects.join(', ')} was declined by the assigned tutor. Admin will assign a different tutor shortly.`,
+        isNew: true,
+        time: 'Just now',
+        createdAt: new Date()
+      });
+      await u.save();
+    }
+
+    // 2. Create Admin Notification
     await Notification.create({
       id: 'ntf_' + Date.now(),
       text: `Demo Booking (${booking.id}) status updated to ${booking.status.toUpperCase()} by teacher for student: ${booking.studentName}`,
@@ -1977,6 +2025,42 @@ router.delete('/notifications/:id', protect, async (req, res) => {
       return res.status(404).json({ message: 'Notification not found' });
     }
     res.json({ message: 'Notification deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Get user-specific notifications
+// @route   GET /api/notifications/my-notifications
+// @access  Private (User)
+router.get('/notifications/my-notifications', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user.notifications || []);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Mark user-specific notifications as read
+// @route   PUT /api/notifications/my-notifications/read-all
+// @access  Private (User)
+router.put('/notifications/my-notifications/read-all', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (user.notifications && user.notifications.length > 0) {
+      user.notifications.forEach(n => {
+        n.isNew = false;
+      });
+      await user.save();
+    }
+    res.json({ message: 'All user notifications marked as read', notifications: user.notifications || [] });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

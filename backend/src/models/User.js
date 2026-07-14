@@ -174,6 +174,18 @@ const UserSchema = new mongoose.Schema(
       type: Number,
       default: 25,
     },
+    notifications: {
+      type: [
+        {
+          id: String,
+          text: String,
+          isNew: { type: Boolean, default: true },
+          time: { type: String, default: 'Just now' },
+          createdAt: { type: Date, default: Date.now }
+        }
+      ],
+      default: []
+    },
 
 
     // Parent fields
