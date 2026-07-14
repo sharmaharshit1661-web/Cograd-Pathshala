@@ -71,7 +71,7 @@ export default function TeacherOnboardingPortal() {
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(true);
 
   // Form Fields Step 1
   const [aadhaarNumber, setAadhaarNumber] = useState('');
@@ -158,7 +158,7 @@ export default function TeacherOnboardingPortal() {
         const s1 = res.onboarding_progress.step_1_identity;
         setAadhaarNumber(s1.aadhaarNumber || '');
         setPanNumber(s1.panNumber || '');
-        setOtpVerified(s1.isMobileVerified || false);
+        setOtpVerified(true);
 
         const s2 = res.onboarding_progress.step_2_qualification;
         setDegreeName(s2.degreeName || '');

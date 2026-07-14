@@ -320,18 +320,13 @@ const RegisterStudent = () => {
 
           const data = await api.post('/auth/register', registrationData);
 
-          if (data.requiresVerification) {
-            localStorage.setItem('cograd_pending_verify_email', data.email);
-            navigate('/verify-email', { state: { email: data.email } });
-          } else {
-            localStorage.setItem('cograd_token', data.token);
-            localStorage.setItem('cograd_logged_in', 'true');
-            localStorage.setItem('cograd_role', 'student');
-            localStorage.setItem('cograd_logged_in_email', form.email);
-            localStorage.setItem('cograd_student_name', form.name);
+          localStorage.setItem('cograd_token', data.token);
+          localStorage.setItem('cograd_logged_in', 'true');
+          localStorage.setItem('cograd_role', 'student');
+          localStorage.setItem('cograd_logged_in_email', form.email);
+          localStorage.setItem('cograd_student_name', form.name);
 
-            setStep(4);
-          }
+          setStep(4);
         }
       } catch (error) {
         alert(error.message || 'Registration failed. Please try again.');
@@ -429,17 +424,12 @@ const RegisterStudent = () => {
 
         const data = await api.post('/auth/register', registrationData);
 
-        if (data.requiresVerification) {
-          localStorage.setItem('cograd_pending_verify_email', data.email);
-          navigate('/verify-email', { state: { email: data.email } });
-        } else {
-          localStorage.setItem('cograd_token', data.token);
-          localStorage.setItem('cograd_logged_in', 'true');
-          localStorage.setItem('cograd_role', 'student');
-          localStorage.setItem('cograd_logged_in_email', form.email);
-          localStorage.setItem('cograd_student_name', form.name);
-          setStep(4);
-        }
+        localStorage.setItem('cograd_token', data.token);
+        localStorage.setItem('cograd_logged_in', 'true');
+        localStorage.setItem('cograd_role', 'student');
+        localStorage.setItem('cograd_logged_in_email', form.email);
+        localStorage.setItem('cograd_student_name', form.name);
+        setStep(4);
       }
     } catch (error) {
       alert(error.message || 'Registration failed. Please try again.');

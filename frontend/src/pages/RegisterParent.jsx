@@ -362,20 +362,15 @@ const RegisterParent = () => {
 
         const data = await api.post('/auth/register', registrationData);
 
-        if (data.requiresVerification) {
-          localStorage.setItem('cograd_pending_verify_email', data.email);
-          navigate('/verify-email', { state: { email: data.email } });
-        } else {
-          localStorage.setItem('cograd_token', data.token);
-          localStorage.setItem('cograd_logged_in', 'true');
-          localStorage.setItem('cograd_role', 'parent');
-          localStorage.setItem('cograd_logged_in_email', parentForm.email);
-          localStorage.setItem('cograd_parent_name', parentForm.name);
+        localStorage.setItem('cograd_token', data.token);
+        localStorage.setItem('cograd_logged_in', 'true');
+        localStorage.setItem('cograd_role', 'parent');
+        localStorage.setItem('cograd_logged_in_email', parentForm.email);
+        localStorage.setItem('cograd_parent_name', parentForm.name);
 
-          setIsOtherCity(false);
-          setTestResult(linkedChild.test_score || null);
-          setStep(4);
-        }
+        setIsOtherCity(false);
+        setTestResult(linkedChild.test_score || null);
+        setStep(4);
       }
     } catch (error) {
       alert(error.message || 'Registration failed. Please try again.');
@@ -460,18 +455,13 @@ const RegisterParent = () => {
 
           const data = await api.post('/auth/register', registrationData);
 
-          if (data.requiresVerification) {
-            localStorage.setItem('cograd_pending_verify_email', data.email);
-            navigate('/verify-email', { state: { email: data.email } });
-          } else {
-            localStorage.setItem('cograd_token', data.token);
-            localStorage.setItem('cograd_logged_in', 'true');
-            localStorage.setItem('cograd_role', 'parent');
-            localStorage.setItem('cograd_logged_in_email', parentForm.email);
-            localStorage.setItem('cograd_parent_name', parentForm.name);
+          localStorage.setItem('cograd_token', data.token);
+          localStorage.setItem('cograd_logged_in', 'true');
+          localStorage.setItem('cograd_role', 'parent');
+          localStorage.setItem('cograd_logged_in_email', parentForm.email);
+          localStorage.setItem('cograd_parent_name', parentForm.name);
 
-            setStep(4);
-          }
+          setStep(4);
         }
       } catch (error) {
         alert(error.message || 'Registration failed. Please try again.');
@@ -571,18 +561,13 @@ const RegisterParent = () => {
 
         const data = await api.post('/auth/register', registrationData);
 
-        if (data.requiresVerification) {
-          localStorage.setItem('cograd_pending_verify_email', data.email);
-          navigate('/verify-email', { state: { email: data.email } });
-        } else {
-          localStorage.setItem('cograd_token', data.token);
-          localStorage.setItem('cograd_logged_in', 'true');
-          localStorage.setItem('cograd_role', 'parent');
-          localStorage.setItem('cograd_logged_in_email', parentForm.email);
-          localStorage.setItem('cograd_parent_name', parentForm.name);
+        localStorage.setItem('cograd_token', data.token);
+        localStorage.setItem('cograd_logged_in', 'true');
+        localStorage.setItem('cograd_role', 'parent');
+        localStorage.setItem('cograd_logged_in_email', parentForm.email);
+        localStorage.setItem('cograd_parent_name', parentForm.name);
 
-          setStep(4);
-        }
+        setStep(4);
       }
     } catch (error) {
       alert(error.message || 'Registration failed. Please try again.');

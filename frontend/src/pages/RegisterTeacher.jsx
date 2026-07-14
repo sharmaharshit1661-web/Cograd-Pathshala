@@ -197,13 +197,14 @@ const isAllowedEmail = (email) => {
 const QUALIFICATION_SUGGESTIONS = [
   "B.Ed", "B.Tech", "B.Sc", "B.A", "B.Com", "BCA", "BBA", "B.El.Ed", "B.P.Ed", "B.E", "B.Pharm",
   "M.Ed", "M.Tech", "M.Sc", "M.A", "M.Com", "MCA", "MBA", "M.E", "M.Phil",
-  "Ph.D", "D.El.Ed", "D.Ed", "NTT", "CTET", "TET"
+  "Ph.D", "D.El.Ed", "D.Ed", "NTT", "CTET", "TET", "Other"
 ];
 
 /* ── Main Component ── */
 const RegisterTeacher = () => {
   const [step, setStep] = useState(1);
   const [showQualDropdown, setShowQualDropdown] = useState(false);
+  const [otherQualification, setOtherQualification] = useState('');
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -306,7 +307,11 @@ const RegisterTeacher = () => {
       if (!form.city) newErrors.city = 'Please select a city';
       if (!form.locality.trim()) newErrors.locality = 'Locality is required';
     } else if (currentStep === 2) {
-      if (!form.qualifications.trim()) newErrors.qualifications = 'Qualifications are required';
+      if (!form.qualifications.trim()) {
+        newErrors.qualifications = 'Qualifications are required';
+      } else if (form.qualifications === 'Other' && !otherQualification.trim()) {
+        newErrors.qualifications = 'Please specify your qualification';
+      }
       if (subjects.length === 0) newErrors.subjects = 'Select at least one subject';
       if (!form.experience) newErrors.experience = 'Experience level is required';
       if (!form.bio.trim() || form.bio.trim().length < 20) {
@@ -348,7 +353,8 @@ const RegisterTeacher = () => {
       fd.append('email',           form.email);
       fd.append('phone',           form.phone);
       fd.append('role',            'teacher');
-      fd.append('qualifications',  form.qualifications);
+      const finalQuals = form.qualifications === 'Other' ? otherQualification : form.qualifications;
+      fd.append('qualifications',  finalQuals);
       fd.append('experience',      form.experience);
       fd.append('bio',             form.bio);
       fd.append('primarySubject',   form.primarySubject);
@@ -654,7 +660,23 @@ const RegisterTeacher = () => {
                      )}
                    </div>
                    {errors.qualifications && <p className="text-[10px] text-red-500 font-semibold mt-1">{errors.qualifications}</p>}
-                 </div>
+
+                    {form.qualifications === 'Other' && (
+                      <div className="mt-3 animate-fade-in">
+                        <label className="form-label text-[10px] text-slate-400 font-extrabold uppercase">
+                          Specify Qualification
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={otherQualification}
+                          onChange={(e) => setOtherQualification(e.target.value)}
+                          placeholder="Please write your qualification"
+                          className="form-input"
+                        />
+                      </div>
+                    )}
+                  </div>
 
                 <div>
                   <label className="form-label">
