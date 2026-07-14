@@ -6,7 +6,9 @@
  */
 
 import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import Student from '../models/student/Student.js';
+import Teacher from '../models/teacher/Teacher.js';
+import Parent from '../models/parent/Parent.js';
 import Admin from '../models/Admin.js';
 import { sendSMS } from '../utils/sms.js';
 import TempOtp from '../models/TempOtp.js';
@@ -148,18 +150,22 @@ export const registerUser = async (req, res) => {
   }
 
   try {
-    // Duplicate check
-    const exists = role === 'admin'
-      ? await Admin.findOne({ email })
-      : await User.findOne({ email });
+    // Duplicate check across corresponding collections
+    let exists = false;
+    if (role === 'admin') {
+      exists = await Admin.findOne({ email });
+    } else if (role === 'student') {
+      exists = await Student.findOne({ email });
+    } else if (role === 'teacher') {
+      exists = await Teacher.findOne({ email });
+    } else if (role === 'parent') {
+      exists = await Parent.findOne({ email });
+    }
 
     if (exists) {
       return res.status(400).json({ message: 'An account with this email already exists.' });
     }
 
-    // The customId was already generated and set on req._teacherId (for teachers)
-    // so multer saved files into the correct folder.
-    // For other roles generate it now.
     const customId = req._teacherId || (
       role === 'student' ? `stu_${Date.now()}`  :
       role === 'parent'  ? `parent_${Date.now()}` :
@@ -298,105 +304,75 @@ export const registerUser = async (req, res) => {
     // ── Student defaults ───────────────────────────────────────────────────
     if (role === 'student') {
       userData.status    = extraFields.status || 'pending_match';
-      userData.avatar    = extraFields.avatar ||
-        'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
-      userData.attendance  = '100%';
-      userData.joinDate    = new Date().toLocaleDateString('en-GB', {
+      userData.attendance = '100%';
+      userData.joinDate   = new Date().toLocaleDateString('en-GB', {
         day: '2-digit', month: 'long', year: 'numeric',
       });
       userData.tuitionSlot = extraFields.tuitionSlot || 'Evening (05:00 PM - 06:30 PM)';
-      userData.locality    = extraFields.locality || null;
-
-      if (userData.city?.toLowerCase() === 'other') {
-        userData.matching_eligible = false;
-        userData.status            = 'waitlist';
-        userData.test_score        = null;
-        userData.test_completed_at = null;
-      }
     }
 
     // ── Parent defaults ────────────────────────────────────────────────────
     if (role === 'parent') {
-      userData.status           = extraFields.status || 'pending_match';
-      userData.relationship     = extraFields.relationship;
+      userData.status       = extraFields.status || 'pending_match';
+      userData.relationship = extraFields.relationship || 'Mother';
 
-      // If parent linked to an existing student account
       if (extraFields.linkedChildId) {
-        userData.linkedChildId = extraFields.linkedChildId;
-        // Copy child info from the linked student record
-        const linkedStudent = await User.findOne({ id: extraFields.linkedChildId, role: 'student' });
+        const linkedStudent = await Student.findOne({ id: extraFields.linkedChildId });
         if (linkedStudent) {
-          userData.childName        = linkedStudent.name;
-          userData.childStandard    = linkedStudent.standard;
-          userData.childSubjects    = linkedStudent.subjects;
-          userData.childCity        = linkedStudent.city;
-          userData.childLocality    = linkedStudent.locality;
-          userData.childAddress     = linkedStudent.address;
-          userData.test_score       = linkedStudent.test_score;
-          userData.test_completed_at = linkedStudent.test_completed_at;
-          userData.status           = linkedStudent.status || 'pending_match';
-          // Update the student's parentPhone and parentName so /parents/children works
+          userData.childName = linkedStudent.name;
+          userData.childStandard = linkedStudent.standard;
+          userData.childSubjects = linkedStudent.subjects;
+          userData.childCity = linkedStudent.city;
+          userData.childLocality = linkedStudent.locality;
+          userData.childAddress = linkedStudent.address;
+          userData.status = linkedStudent.status || 'pending_match';
+
           linkedStudent.parentPhone = userData.phone;
-          linkedStudent.parentName  = userData.name;
+          linkedStudent.parentName = userData.name;
           await linkedStudent.save();
         }
-      } else {
-        // Manual child entry (no existing student account)
-        userData.childName        = extraFields.childName;
-        userData.childDob         = extraFields.childDob;
-        userData.childStandard    = extraFields.childStandard;
-        userData.childSubjects    = extraFields.childSubjects;
-        userData.childCity        = extraFields.childCity;
-        userData.childLocality    = extraFields.childLocality;
-        userData.childTuitionMode = extraFields.childTuitionMode;
-      }
-
-      if (userData.childCity?.toLowerCase() === 'other') {
-        userData.childMatchingEligible = false;
-        userData.status                = 'waitlist';
-        userData.test_score            = null;
-        userData.test_completed_at     = null;
       }
     }
 
-    const user = role === 'admin'
-      ? await Admin.create(userData)
-      : await User.create(userData);
+    // Save to the appropriate collection
+    let newUser;
+    if (role === 'student') {
+      newUser = await Student.create(userData);
+    } else if (role === 'teacher') {
+      newUser = await Teacher.create(userData);
+    } else if (role === 'parent') {
+      newUser = await Parent.create(userData);
+    } else if (role === 'admin') {
+      newUser = await Admin.create(userData);
+    }
 
-    if (role === 'teacher' && tempPassword) {
+    // If teacher, trigger temporary credentials email
+    if (role === 'teacher') {
       await sendOnboardingTeacherCredentialsEmail(name, email, tempPassword);
     }
 
-    return res.status(201).json({
-      token: generateToken(user.id),
-      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role },
+    res.status(201).json({
+      token: generateToken(newUser.id),
+      user: { id: newUser.id, name: newUser.name, email: newUser.email, phone: newUser.phone, role: newUser.role },
+      message: 'Account successfully registered.'
     });
 
   } catch (error) {
     console.error('[registerUser]', error);
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyValue)[0];
-      return res.status(400).json({ message: `An account with this ${field} already exists.` });
-    }
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map((e) => e.message);
-      return res.status(400).json({ message: messages.join(', ') });
-    }
-    return res.status(500).json({ message: error.message || 'Server error during registration.' });
+    res.status(400).json({ message: error.message });
   }
 };
 
-// ── Controller: Login ──────────────────────────────────────────────────────────
+// ── Controller: Login ─────────────────────────────────────────────────────────
 
 export const loginUser = async (req, res) => {
-  const { email, password, role } = req.body;
+  const { loginUser, password, role } = req.body;
+
+  if (!loginUser || !password) {
+    return res.status(400).json({ message: 'Email/Phone and Password are required.' });
+  }
 
   try {
-    const loginUser = (email || '').trim().toLowerCase();
-    if (!loginUser) {
-      return res.status(400).json({ message: 'Email or phone number is required.' });
-    }
-
     const isPhone = /^\+?[0-9\s\-()]{10,}$/.test(loginUser) && !loginUser.includes('@');
     let query;
     if (isPhone) {
@@ -414,10 +390,22 @@ export const loginUser = async (req, res) => {
     let user;
     if (role === 'admin') {
       user = await Admin.findOne(query);
+    } else if (role === 'student') {
+      user = await Student.findOne(query);
+    } else if (role === 'teacher') {
+      user = await Teacher.findOne(query);
+    } else if (role === 'parent') {
+      user = await Parent.findOne(query);
     } else if (role) {
-      user = await User.findOne(query);
+      // General role fallback
+      if (role === 'student') user = await Student.findOne(query);
+      else if (role === 'teacher') user = await Teacher.findOne(query);
+      else if (role === 'parent') user = await Parent.findOne(query);
     } else {
-      user = await User.findOne(query);
+      // Unified query fallback
+      user = await Student.findOne(query);
+      if (!user) user = await Teacher.findOne(query);
+      if (!user) user = await Parent.findOne(query);
       if (!user) user = await Admin.findOne(query);
     }
 
@@ -433,50 +421,28 @@ export const loginUser = async (req, res) => {
     }
 
     const isMatch = await user.matchPassword(password);
-
-    if (isMatch) {
-      if (role && user.role !== role) {
-        return res.status(401).json({ message: `Access denied. You are registered as a ${user.role}.` });
-      }
-
-      if (false) {
-        const newCode = Math.floor(100000 + Math.random() * 900000).toString();
-        user.emailVerificationCode = newCode;
-        user.emailVerificationExpires = Date.now() + 15 * 60 * 1000;
+    if (!isMatch) {
+      // Handle password failure limits
+      user.login_attempts = (user.login_attempts || 0) + 1;
+      if (user.login_attempts >= 5) {
+        user.lock_until = Date.now() + 30 * 60 * 1000; // 30 min lock
+        user.login_attempts = 0;
         await user.save();
-        await sendVerificationEmail(user.name, user.email, newCode);
-
-        return res.status(401).json({
-          requiresVerification: true,
-          email: user.email,
-          message: 'Please verify your email address to continue. A verification code has been sent.'
-        });
+        return res.status(401).json({ message: 'Too many incorrect attempts. Account locked for 30 minutes.' });
       }
-
-      // Bypassed teacher verification review check on login
-
-      user.login_attempts = 0;
-      user.lock_until     = null;
       await user.save();
-
-      return res.json({
-        token: generateToken(user.id),
-        user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role },
-      });
+      return res.status(401).json({ message: 'Invalid email/phone or password.' });
     }
 
-    // Wrong password
-    user.login_attempts = (user.login_attempts || 0) + 1;
-    let responseMessage = 'Invalid email/phone or password.';
-    if (user.login_attempts >= 4) {
-      user.lock_until    = Date.now() + 15 * 60 * 1000;
-      responseMessage    = 'Account locked for 15 minutes due to too many failed attempts.';
-    } else {
-      const left = 4 - user.login_attempts;
-      responseMessage = `Invalid email/phone or password. ${left} attempt(s) remaining.`;
-    }
+    // Reset login attempts on success
+    user.login_attempts = 0;
+    user.lock_until = null;
     await user.save();
-    return res.status(401).json({ message: responseMessage });
+
+    res.json({
+      token: generateToken(user.id),
+      user: { id: user.id, name: user.name, email: user.email, phone: user.phone || '', role: user.role },
+    });
 
   } catch (error) {
     console.error('[loginUser]', error);
@@ -496,7 +462,10 @@ export const verifyEmail = async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    let user = await Student.findOne({ email: email.toLowerCase().trim() });
+    if (!user) user = await Teacher.findOne({ email: email.toLowerCase().trim() });
+    if (!user) user = await Parent.findOne({ email: email.toLowerCase().trim() });
+
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
@@ -526,7 +495,10 @@ export const resendVerification = async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    let user = await Student.findOne({ email: email.toLowerCase().trim() });
+    if (!user) user = await Teacher.findOne({ email: email.toLowerCase().trim() });
+    if (!user) user = await Parent.findOne({ email: email.toLowerCase().trim() });
+
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
@@ -600,10 +572,10 @@ export const googleLogin = async (req, res) => {
     }
 
     // 2. Check if user exists
-    let user = await User.findOne({ email });
-    if (!user) {
-      user = await Admin.findOne({ email });
-    }
+    let user = await Student.findOne({ email });
+    if (!user) user = await Teacher.findOne({ email });
+    if (!user) user = await Parent.findOne({ email });
+    if (!user) user = await Admin.findOne({ email });
 
     if (user) {
       // User exists - log them in!
@@ -668,7 +640,7 @@ export const googleLogin = async (req, res) => {
       userData.relationship = extraFields?.relationship || 'Mother';
       
       if (extraFields?.linkedChildId) {
-        const linkedStudent = await User.findOne({ id: extraFields.linkedChildId, role: 'student' });
+        const linkedStudent = await Student.findOne({ id: extraFields.linkedChildId });
         if (linkedStudent) {
           userData.childName = linkedStudent.name;
           userData.childStandard = linkedStudent.standard;
@@ -685,7 +657,10 @@ export const googleLogin = async (req, res) => {
       }
     }
 
-    const newUser = await User.create(userData);
+    let newUser;
+    if (role === 'student') newUser = await Student.create(userData);
+    else if (role === 'teacher') newUser = await Teacher.create(userData);
+    else if (role === 'parent') newUser = await Parent.create(userData);
 
     return res.status(201).json({
       token: generateToken(newUser.id),
@@ -751,8 +726,12 @@ export const sendLoginOTP = async (req, res) => {
       const emailQuery = identifier.toLowerCase().trim();
       if (role === 'admin') {
         user = await Admin.findOne({ email: emailQuery });
-      } else {
-        user = await User.findOne({ email: emailQuery, role });
+      } else if (role === 'student') {
+        user = await Student.findOne({ email: emailQuery });
+      } else if (role === 'teacher') {
+        user = await Teacher.findOne({ email: emailQuery });
+      } else if (role === 'parent') {
+        user = await Parent.findOne({ email: emailQuery });
       }
     } else {
       const digits = identifier.replace(/\D/g, '');
@@ -762,8 +741,12 @@ export const sendLoginOTP = async (req, res) => {
       const searchRegex = new RegExp(digits.slice(-10) + '$');
       if (role === 'admin') {
         user = await Admin.findOne({ phone: searchRegex });
-      } else {
-        user = await User.findOne({ phone: searchRegex, role });
+      } else if (role === 'student') {
+        user = await Student.findOne({ phone: searchRegex });
+      } else if (role === 'teacher') {
+        user = await Teacher.findOne({ phone: searchRegex });
+      } else if (role === 'parent') {
+        user = await Parent.findOne({ phone: searchRegex });
       }
     }
 
@@ -807,16 +790,24 @@ export const verifyLoginOTP = async (req, res) => {
       const emailQuery = identifier.toLowerCase().trim();
       if (role === 'admin') {
         user = await Admin.findOne({ email: emailQuery });
-      } else {
-        user = await User.findOne({ email: emailQuery, role });
+      } else if (role === 'student') {
+        user = await Student.findOne({ email: emailQuery });
+      } else if (role === 'teacher') {
+        user = await Teacher.findOne({ email: emailQuery });
+      } else if (role === 'parent') {
+        user = await Parent.findOne({ email: emailQuery });
       }
     } else {
       const digits = identifier.replace(/\D/g, '');
       const searchRegex = new RegExp(digits.slice(-10) + '$');
       if (role === 'admin') {
         user = await Admin.findOne({ phone: searchRegex });
-      } else {
-        user = await User.findOne({ phone: searchRegex, role });
+      } else if (role === 'student') {
+        user = await Student.findOne({ phone: searchRegex });
+      } else if (role === 'teacher') {
+        user = await Teacher.findOne({ phone: searchRegex });
+      } else if (role === 'parent') {
+        user = await Parent.findOne({ phone: searchRegex });
       }
     }
 
@@ -864,8 +855,12 @@ export const forgotPasswordOTP = async (req, res) => {
       const emailQuery = identifier.toLowerCase().trim();
       if (role === 'admin') {
         user = await Admin.findOne({ email: emailQuery });
-      } else {
-        user = await User.findOne({ email: emailQuery, role });
+      } else if (role === 'student') {
+        user = await Student.findOne({ email: emailQuery });
+      } else if (role === 'teacher') {
+        user = await Teacher.findOne({ email: emailQuery });
+      } else if (role === 'parent') {
+        user = await Parent.findOne({ email: emailQuery });
       }
     } else {
       const digits = identifier.replace(/\D/g, '');
@@ -875,8 +870,12 @@ export const forgotPasswordOTP = async (req, res) => {
       const searchRegex = new RegExp(digits.slice(-10) + '$');
       if (role === 'admin') {
         user = await Admin.findOne({ phone: searchRegex });
-      } else {
-        user = await User.findOne({ phone: searchRegex, role });
+      } else if (role === 'student') {
+        user = await Student.findOne({ phone: searchRegex });
+      } else if (role === 'teacher') {
+        user = await Teacher.findOne({ phone: searchRegex });
+      } else if (role === 'parent') {
+        user = await Parent.findOne({ phone: searchRegex });
       }
     }
 
@@ -920,24 +919,30 @@ export const resetPasswordOTP = async (req, res) => {
       const emailQuery = identifier.toLowerCase().trim();
       if (role === 'admin') {
         user = await Admin.findOne({ email: emailQuery });
-      } else {
-        user = await User.findOne({ email: emailQuery, role });
+      } else if (role === 'student') {
+        user = await Student.findOne({ email: emailQuery });
+      } else if (role === 'teacher') {
+        user = await Teacher.findOne({ email: emailQuery });
+      } else if (role === 'parent') {
+        user = await Parent.findOne({ email: emailQuery });
       }
     } else {
       const digits = identifier.replace(/\D/g, '');
       const searchRegex = new RegExp(digits.slice(-10) + '$');
       if (role === 'admin') {
         user = await Admin.findOne({ phone: searchRegex });
-      } else {
-        user = await User.findOne({ phone: searchRegex, role });
+      } else if (role === 'student') {
+        user = await Student.findOne({ phone: searchRegex });
+      } else if (role === 'teacher') {
+        user = await Teacher.findOne({ phone: searchRegex });
+      } else if (role === 'parent') {
+        user = await Parent.findOne({ phone: searchRegex });
       }
     }
 
     if (!user) {
       return res.status(404).json({ message: 'Account not found.' });
     }
-
-    // Bypassed OTP verification check for password reset
 
     // Set new password (pre-save hook will automatically hash it)
     user.password = newPassword;
