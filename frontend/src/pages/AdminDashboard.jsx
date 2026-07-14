@@ -3212,7 +3212,7 @@ const AdminDashboard = () => {
 
       {/* Document Preview Modal */}
       {previewDoc && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[1050] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-fade-in">
           <div className="modal-panel max-w-4xl p-6 flex flex-col space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="text-left">
