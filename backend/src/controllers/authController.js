@@ -221,25 +221,25 @@ export const registerUser = async (req, res) => {
 
     // ── Teacher defaults + uploaded documents ──────────────────────────────
     if (role === 'teacher') {
-      userData.verification_status   = 'Verified';
+      userData.verification_status   = 'Onboarding';
       userData.current_student_count = 0;
       userData.max_student_capacity  = 5;
       userData.rating                = 5.0;
       userData.onboarding_progress   = {
-        current_step: 4,
+        current_step: 1,
         step_1_identity: {
-          status: 'Approved',
+          status: 'Pending',
           aadhaarNumber: '',
           panNumber: '',
           selfieUrl: '',
           aadhaarFileUrl: '',
           panFileUrl: '',
-          isMobileVerified: true,
-          isEmailVerified: true,
+          isMobileVerified: false,
+          isEmailVerified: false,
           rejectionReason: ''
         },
         step_2_qualification: {
-          status: 'Approved',
+          status: 'Pending',
           degreeName: '',
           degreeUrl: '',
           professionalCertName: '',
@@ -249,11 +249,11 @@ export const registerUser = async (req, res) => {
           rejectionReason: ''
         },
         step_3_competency: {
-          status: 'Approved',
+          status: 'Pending',
           testAttempts: []
         },
         step_4_demo: {
-          status: 'Approved',
+          status: 'Pending',
           targetGrade: '',
           topic: '',
           demoVideoUrl: '',
@@ -277,7 +277,7 @@ export const registerUser = async (req, res) => {
             id:          docIndex++,
             name:        f.originalname,
             type:        meta.type,
-            status:      'Approved',
+            status:      'Under Review',
             fileUrl:     f.path,        // permanent Cloudinary URL ← used by admin to view
             publicId:    f.filename,    // Cloudinary public_id    ← used to delete file
             mimetype:    f.mimetype,
