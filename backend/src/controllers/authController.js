@@ -366,7 +366,8 @@ export const registerUser = async (req, res) => {
 // ── Controller: Login ─────────────────────────────────────────────────────────
 
 export const loginUser = async (req, res) => {
-  const { loginUser, password, role } = req.body;
+  const { loginUser: destLoginUser, email, password, role } = req.body;
+  const loginUser = destLoginUser || email;
 
   if (!loginUser || !password) {
     return res.status(400).json({ message: 'Email/Phone and Password are required.' });

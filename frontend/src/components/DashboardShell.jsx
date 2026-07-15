@@ -13,14 +13,17 @@ import {
   LifeBuoy,
   LogOut,
   Menu,
+  Moon,
   Plus,
   Presentation,
   Search,
   ShieldCheck,
+  Sun,
   UserCheck,
   Users,
   X,
 } from 'lucide-react';
+import { useDarkMode } from '../hooks/useTheme';
 
 const THEME_MAP = {
   emerald: {
@@ -137,6 +140,7 @@ export default function DashboardShell({
   onCtaClick,
 }) {
   const theme = THEME_MAP[roleColor] || THEME_MAP.blue;
+  const { darkMode, toggleDarkMode } = useDarkMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -244,13 +248,13 @@ export default function DashboardShell({
     : navItems;
 
   return (
-    <div className={`min-h-[100dvh] ${theme.outerBg} p-0 md:p-6 flex items-center justify-center font-sans overflow-hidden relative`}>
+    <div className={`min-h-[100dvh] ${darkMode ? 'bg-[#0f1117]' : theme.outerBg} p-0 md:p-6 flex items-center justify-center font-sans overflow-hidden relative transition-colors duration-300`}>
       {/* Corner decorative dots */}
       <div className="absolute top-0 left-0 w-48 h-48 bg-dot-grid opacity-10 pointer-events-none hidden md:block" aria-hidden="true" />
       <div className="absolute bottom-0 right-0 w-48 h-48 bg-dot-grid opacity-10 pointer-events-none hidden md:block" aria-hidden="true" />
 
       {/* Main card */}
-      <div className={`bg-white w-full min-h-[100dvh] md:min-h-0 md:h-[calc(100dvh-48px)] md:rounded-[40px] ${theme.sidebarShadow} overflow-hidden flex flex-col md:flex-row relative border border-slate-100/50`}>
+      <div className={`${darkMode ? 'bg-[#181a20] border-[#2a2d35]' : 'bg-white border-slate-100/50'} w-full min-h-[100dvh] md:min-h-0 md:h-[calc(100dvh-48px)] md:rounded-[40px] ${theme.sidebarShadow} overflow-hidden flex flex-col md:flex-row relative border transition-colors duration-300`}>
 
         {/* Mobile sidebar backdrop */}
         {sidebarOpen && (
@@ -265,11 +269,11 @@ export default function DashboardShell({
         <aside
           aria-label="Dashboard navigation"
           className={`
-            fixed md:relative top-0 bottom-0 left-0 h-full w-64 bg-white text-slate-800
+            fixed md:relative top-0 bottom-0 left-0 h-full w-64 ${darkMode ? 'bg-[#181a20] text-slate-200' : 'bg-white text-slate-800'}
             flex flex-col z-40 shrink-0
-            transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+            transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-            border-r border-slate-100/60
+            border-r ${darkMode ? 'border-[#2a2d35]' : 'border-slate-100/60'}
           `}
         >
           {/* Brand block */}
@@ -341,7 +345,7 @@ export default function DashboardShell({
           </nav>
 
           {/* Logout */}
-          <div className="px-3 py-4 shrink-0 border-t border-slate-100">
+          <div className={`px-3 py-4 shrink-0 border-t ${darkMode ? 'border-[#2a2d35]' : 'border-slate-100'}`}>
             <button
               onClick={onLogout}
               className="w-full flex items-center gap-3 px-3.5 py-2.5 text-[12px] font-bold text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-2xl cursor-pointer transition-all duration-150 border-0"
@@ -353,10 +357,10 @@ export default function DashboardShell({
         </aside>
 
         {/* ── MAIN CONTENT ── */}
-        <div className="flex-grow flex flex-col h-[100dvh] md:h-full overflow-hidden bg-[#F8FAFC] min-w-0">
+        <div className={`flex-grow flex flex-col h-[100dvh] md:h-full overflow-hidden ${darkMode ? 'bg-[#13151a]' : 'bg-[#F8FAFC]'} min-w-0 transition-colors duration-300`}>
 
           {/* Header */}
-          <header className="h-[68px] px-5 md:px-7 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white gap-3">
+          <header className={`h-[68px] px-5 md:px-7 border-b ${darkMode ? 'border-[#2a2d35] bg-[#181a20]' : 'border-slate-100 bg-white'} flex items-center justify-between shrink-0 gap-3 transition-colors duration-300`}>
 
             {/* Left: hamburger + search */}
             <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -398,9 +402,26 @@ export default function DashboardShell({
 
             {/* Right: date + notif + avatar */}
             <div className="flex items-center gap-2.5 shrink-0">
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider hidden lg:block">
+              <span className={`text-[10px] font-semibold ${darkMode ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider hidden lg:block`}>
                 {dateStr}
               </span>
+
+              {/* Dark Mode Toggle */}
+              <button
+                type="button"
+                onClick={toggleDarkMode}
+                aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                className={`relative w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 border ${
+                  darkMode
+                    ? 'bg-[#2a2d35] border-[#3a3d45] text-amber-400 hover:bg-[#333640] hover:text-amber-300'
+                    : 'bg-slate-50 border-slate-100 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50'
+                }`}
+              >
+                <div className="relative w-4.5 h-4.5">
+                  <Sun className={`w-4.5 h-4.5 absolute inset-0 transition-all duration-300 ${darkMode ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'}`} />
+                  <Moon className={`w-4.5 h-4.5 absolute inset-0 transition-all duration-300 ${darkMode ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'}`} />
+                </div>
+              </button>
 
               {/* Notification bell */}
               <div className="relative" ref={notifRef}>
@@ -494,10 +515,10 @@ export default function DashboardShell({
               {/* Page title row */}
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pt-7 pb-5">
                 <div>
-                  <h1 className={`text-xl sm:text-2xl font-black ${theme.headerTitleText} leading-tight tracking-tight`}>
+                  <h1 className={`text-xl sm:text-2xl font-black ${darkMode ? 'text-slate-100' : theme.headerTitleText} leading-tight tracking-tight`}>
                     {activeTab}
                   </h1>
-                  <p className="text-[11px] font-semibold text-slate-400 mt-1 flex items-center gap-1.5">
+                  <p className={`text-[11px] font-semibold ${darkMode ? 'text-slate-500' : 'text-slate-400'} mt-1 flex items-center gap-1.5`}>
                     <span>{stats.title}</span>
                     <span aria-hidden="true">•</span>
                     <span>{stats.subtitle}</span>

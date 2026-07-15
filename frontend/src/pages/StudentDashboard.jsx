@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardShell from '../components/DashboardShell';
+import DiagnosticGame from '../components/DiagnosticGame';
 import DemoBooking from './DemoBooking';
 import { api } from '../utils/api';
 import { getDiagnosticQuestions } from '../utils/mockDb';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import {
   LayoutDashboard,
   GraduationCap,
@@ -1199,97 +1201,26 @@ const StudentDashboard = () => {
         <div className="tab-content-enter">
           {profileData.matching_eligible === false || profileData.status === 'waitlist' ? (
             showDiagnosticTest ? (
-              <div className="max-w-2xl mx-auto bg-white rounded-3xl border border-slate-100 shadow-md p-6 sm:p-8 no-glass">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
-                  <div className="text-left">
-                    <span className="text-[10px] bg-blue-600 text-white font-black px-2 py-0.5 rounded-lg uppercase tracking-wider">Placement Test</span>
-                    <h3 className="text-lg font-black text-slate-800 mt-1">Assess Your Diagnostic Potential</h3>
-                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Calibrated for {profileData.standard} Level</p>
-                  </div>
-                  <div className="bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-2xl shrink-0">
-                    <span className="text-[10px] text-amber-700 font-black block uppercase tracking-wide">
-                      {getDiagnosticQuestions(profileData.standard).reduce((sum, q) => sum + q.marks, 0)} Marks Total
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-5 text-left max-h-[450px] overflow-y-auto pr-2">
-                  {getDiagnosticQuestions(profileData.standard).map((q, qidx) => (
-                    <div key={q.id} className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg">{q.subject} • {q.marks} Marks</span>
-                        <div className="text-xs font-bold text-slate-850">Question {qidx + 1}. {q.text}</div>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {q.options.map((opt) => {
-                          const isSelected = placementAnswers[q.id] === opt;
-                          return (
-                            <button
-                              key={opt}
-                              type="button"
-                              onClick={() => setPlacementAnswers(prev => ({ ...prev, [q.id]: opt }))}
-                              className={`text-left text-xs font-semibold py-2.5 px-3.5 rounded-xl border transition-all cursor-pointer ${isSelected
-                                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                  : 'bg-white text-slate-600 border-slate-150 hover:bg-slate-50'
-                                }`}
-                            >
-                              {opt}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t border-slate-100 pt-5 flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 font-bold">
-                    Answered {Object.keys(placementAnswers).filter(k => placementAnswers[k] !== '').length} of {getDiagnosticQuestions(profileData.standard).length} questions
-                  </span>
-                  <button
-                    type="button"
-                    disabled={!getDiagnosticQuestions(profileData.standard).every(q => placementAnswers[q.id] !== undefined && placementAnswers[q.id] !== '')}
-                    onClick={async () => {
-                      const qs = getDiagnosticQuestions(profileData.standard);
-                      let mathScore = 0, scienceScore = 0, mathTotal = 0, scienceTotal = 0;
-                      qs.forEach(q => {
-                        const isCorrect = placementAnswers[q.id] === q.correct;
-                        const pts = isCorrect ? q.marks : 0;
-                        if (q.subject === 'Mathematics') { mathScore += pts; mathTotal += q.marks; }
-                        else if (q.subject === 'Science') { scienceScore += pts; scienceTotal += q.marks; }
-                      });
-                      const scores = {
-                        Mathematics: Math.round((mathScore / mathTotal) * 100) || 0,
-                        Science: Math.round((scienceScore / scienceTotal) * 100) || 0,
-                        mathMarksText: `${mathScore}/${mathTotal}`,
-                        scienceMarksText: `${scienceScore}/${scienceTotal}`,
-                        totalMarksText: `${mathScore + scienceScore}/${mathTotal + scienceTotal}`
-                      };
-                      try {
-                        const updated = {
-                          ...profileData,
-                          test_score: scores,
-                          test_completed_at: new Date().toISOString(),
-                          status: 'pending_match'
-                        };
-                        await api.put(`/students/${profileData.studentId}`, updated);
-                        setProfileData(updated);
-                        setShowDiagnosticTest(false);
-                        triggerToast('Diagnostic placement test completed successfully!');
-                      } catch (err) {
-                        alert(err.message || 'Failed to submit test score.');
-                      }
-                    }}
-                    className={`px-6 py-3 font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer ${getDiagnosticQuestions(profileData.standard).every(q => placementAnswers[q.id] !== undefined && placementAnswers[q.id] !== '')
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
-                        : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
-                      }`}
-                  >
-                    Submit & Complete Setup
-                    <CheckCircle2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+              <DiagnosticGame
+                questions={getDiagnosticQuestions(profileData.standard)}
+                standard={profileData.standard}
+                onComplete={async (scores) => {
+                  try {
+                    const updated = {
+                      ...profileData,
+                      test_score: scores,
+                      test_completed_at: new Date().toISOString(),
+                      status: 'pending_match'
+                    };
+                    await api.put(`/students/${profileData.studentId}`, updated);
+                    setProfileData(updated);
+                    setShowDiagnosticTest(false);
+                    triggerToast('Diagnostic placement test completed successfully!');
+                  } catch (err) {
+                    alert(err.message || 'Failed to submit test score.');
+                  }
+                }}
+              />
             ) : (
               <div className="max-w-2xl mx-auto space-y-6">
                 <div className="bg-amber-50/50 border border-amber-200 rounded-3xl p-6 sm:p-8 text-center space-y-6">
@@ -1396,97 +1327,26 @@ const StudentDashboard = () => {
               </div>
             )
           ) : showDiagnosticTest ? (
-            <div className="max-w-2xl mx-auto bg-white rounded-3xl border border-slate-100 shadow-md p-6 sm:p-8 no-glass">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
-                <div className="text-left">
-                  <span className="text-[10px] bg-blue-600 text-white font-black px-2 py-0.5 rounded-lg uppercase tracking-wider">Placement Test</span>
-                  <h3 className="text-lg font-black text-slate-800 mt-1">Assess Your Diagnostic Potential</h3>
-                  <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Calibrated for {profileData.standard} Level</p>
-                </div>
-                <div className="bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-2xl shrink-0">
-                  <span className="text-[10px] text-amber-700 font-black block uppercase tracking-wide">
-                    {getDiagnosticQuestions(profileData.standard).reduce((sum, q) => sum + q.marks, 0)} Marks Total
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-5 text-left max-h-[450px] overflow-y-auto pr-2">
-                {getDiagnosticQuestions(profileData.standard).map((q, qidx) => (
-                  <div key={q.id} className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg">{q.subject} • {q.marks} Marks</span>
-                      <div className="text-xs font-bold text-slate-850">Question {qidx + 1}. {q.text}</div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {q.options.map((opt) => {
-                        const isSelected = placementAnswers[q.id] === opt;
-                        return (
-                          <button
-                            key={opt}
-                            type="button"
-                            onClick={() => setPlacementAnswers(prev => ({ ...prev, [q.id]: opt }))}
-                            className={`text-left text-xs font-semibold py-2.5 px-3.5 rounded-xl border transition-all cursor-pointer ${isSelected
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                : 'bg-white text-slate-600 border-slate-150 hover:bg-slate-50'
-                              }`}
-                          >
-                            {opt}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t border-slate-100 pt-5 flex items-center justify-between">
-                <span className="text-[10px] text-slate-400 font-bold">
-                  Answered {Object.keys(placementAnswers).filter(k => placementAnswers[k] !== '').length} of {getDiagnosticQuestions(profileData.standard).length} questions
-                </span>
-                <button
-                  type="button"
-                  disabled={!getDiagnosticQuestions(profileData.standard).every(q => placementAnswers[q.id] !== undefined && placementAnswers[q.id] !== '')}
-                  onClick={async () => {
-                    const qs = getDiagnosticQuestions(profileData.standard);
-                    let mathScore = 0, scienceScore = 0, mathTotal = 0, scienceTotal = 0;
-                    qs.forEach(q => {
-                      const isCorrect = placementAnswers[q.id] === q.correct;
-                      const pts = isCorrect ? q.marks : 0;
-                      if (q.subject === 'Mathematics') { mathScore += pts; mathTotal += q.marks; }
-                      else if (q.subject === 'Science') { scienceScore += pts; scienceTotal += q.marks; }
-                    });
-                    const scores = {
-                      Mathematics: Math.round((mathScore / mathTotal) * 100) || 0,
-                      Science: Math.round((scienceScore / scienceTotal) * 100) || 0,
-                      mathMarksText: `${mathScore}/${mathTotal}`,
-                      scienceMarksText: `${scienceScore}/${scienceTotal}`,
-                      totalMarksText: `${mathScore + scienceScore}/${mathTotal + scienceTotal}`
-                    };
-                    try {
-                      const updated = {
-                        ...profileData,
-                        test_score: scores,
-                        test_completed_at: new Date().toISOString(),
-                        status: 'pending_match'
-                      };
-                      await api.put(`/students/${profileData.studentId}`, updated);
-                      setProfileData(updated);
-                      setShowDiagnosticTest(false);
-                      triggerToast('Diagnostic placement test completed successfully!');
-                    } catch (err) {
-                      alert(err.message || 'Failed to submit test score.');
-                    }
-                  }}
-                  className={`px-6 py-3 font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer ${getDiagnosticQuestions(profileData.standard).every(q => placementAnswers[q.id] !== undefined && placementAnswers[q.id] !== '')
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
-                      : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
-                    }`}
-                >
-                  Submit & Complete Setup
-                  <CheckCircle2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+            <DiagnosticGame
+              questions={getDiagnosticQuestions(profileData.standard)}
+              standard={profileData.standard}
+              onComplete={async (scores) => {
+                try {
+                  const updated = {
+                    ...profileData,
+                    test_score: scores,
+                    test_completed_at: new Date().toISOString(),
+                    status: 'pending_match'
+                  };
+                  await api.put(`/students/${profileData.studentId}`, updated);
+                  setProfileData(updated);
+                  setShowDiagnosticTest(false);
+                  triggerToast('Diagnostic placement test completed successfully!');
+                } catch (err) {
+                  alert(err.message || 'Failed to submit test score.');
+                }
+              }}
+            />
           ) : (
             <>
               {/* TAB 1: HOME (MY DASHBOARD) */}
@@ -2094,21 +1954,48 @@ const StudentDashboard = () => {
                             </form>
                           </div>
 
-                          <div className="h-32 flex items-end justify-between px-2 pt-2">
-                            {getWeeklyHoursData().map((item, idx) => (
-                              <div key={idx} className="flex flex-col items-center flex-grow group">
-                                <div className="w-full px-1 relative flex justify-center">
-                                  <span className="absolute -top-7 scale-0 group-hover:scale-100 transition-all duration-200 bg-slate-900 text-white font-bold text-[9px] px-2 py-0.5 rounded shadow z-10">
-                                    {item.hrs} hrs
-                                  </span>
-                                  <div
-                                    style={{ height: item.pct }}
-                                    className="w-6 bg-gradient-to-t from-blue-400 to-blue-500 hover:from-blue-600 hover:to-blue-600 rounded-t-lg transition-all duration-300 shadow-sm shadow-blue-400/20 cursor-pointer"
-                                  ></div>
-                                </div>
-                                <span className="text-[10px] text-slate-400 font-extrabold mt-2">{item.day}</span>
-                              </div>
-                            ))}
+                          <div className="h-44 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={getWeeklyHoursData()} margin={{ top: 12, right: 8, left: -20, bottom: 0 }} barCategoryGap="25%">
+                                <defs>
+                                  <linearGradient id="studyHoursGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={1}/>
+                                    <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.7}/>
+                                  </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f030" />
+                                <XAxis
+                                  dataKey="day"
+                                  tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }}
+                                  axisLine={false}
+                                  tickLine={false}
+                                />
+                                <YAxis
+                                  tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
+                                  axisLine={false}
+                                  tickLine={false}
+                                  unit="h"
+                                />
+                                <Tooltip
+                                  cursor={{ fill: 'rgba(59,130,246,0.06)', radius: 8 }}
+                                  contentStyle={{
+                                    background: '#0f172a',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    padding: '8px 14px',
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                                  }}
+                                  labelStyle={{ color: '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                                  itemStyle={{ color: '#60a5fa', fontSize: 12, fontWeight: 800 }}
+                                  formatter={(value) => [`${value} hrs`, 'Study Time']}
+                                />
+                                <Bar dataKey="hrs" fill="url(#studyHoursGradient)" radius={[8, 8, 0, 0]} maxBarSize={36} animationDuration={800} animationEasing="ease-out">
+                                  {getWeeklyHoursData().map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fillOpacity={entry.hrs > 0 ? 1 : 0.25} />
+                                  ))}
+                                </Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
                           </div>
                         </div>
 

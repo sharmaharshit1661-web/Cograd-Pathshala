@@ -2,6 +2,7 @@ import { useEffect, lazy, Suspense } from 'react';
 import { useSmoothScroll } from './hooks/useSmoothScroll';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
+import { ThemeProvider } from './hooks/useTheme';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
@@ -116,32 +117,34 @@ function App() {
   }, []);
 
   return (
-    <Router>
-      <ScrollToTop />
-      <LayoutWrapper>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/student" element={<Student />} />
-            <Route path="/teacher" element={<Teacher />} />
-            <Route path="/demo-booking" element={<DemoBooking />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<RoleSelector />} />
-            <Route path="/register/student" element={<RegisterStudent />} />
-            <Route path="/register/parent" element={<RegisterParent />} />
-            <Route path="/register/teacher" element={<RegisterTeacher />} />
-            <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/student/dashboard" element={<StudentDashboard />} />
-            <Route path="/parent/dashboard" element={<ParentDashboard />} />
-            <Route path="/verify-email" element={<VerifyEmail />} />
-          </Routes>
-        </Suspense>
-      </LayoutWrapper>
-      <Analytics />
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <ScrollToTop />
+        <LayoutWrapper>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/student" element={<Student />} />
+              <Route path="/teacher" element={<Teacher />} />
+              <Route path="/demo-booking" element={<DemoBooking />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<RoleSelector />} />
+              <Route path="/register/student" element={<RegisterStudent />} />
+              <Route path="/register/parent" element={<RegisterParent />} />
+              <Route path="/register/teacher" element={<RegisterTeacher />} />
+              <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/student/dashboard" element={<StudentDashboard />} />
+              <Route path="/parent/dashboard" element={<ParentDashboard />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+            </Routes>
+          </Suspense>
+        </LayoutWrapper>
+        <Analytics />
+      </Router>
+    </ThemeProvider>
   );
 }
 

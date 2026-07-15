@@ -2631,3 +2631,166 @@ section,
 }
 
 
+/* ============================================================
+   DARK MODE — DASHBOARD OVERRIDES
+   Applied when html element has .dark class (set by ThemeProvider)
+   ============================================================ */
+
+/* Global dark transitions */
+html.dark * {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+
+/* Dashboard content body cards */
+html.dark .dashboard-content-body .bg-white,
+html.dark .dashboard-content-body > div > div > .bg-white {
+  background-color: #1e2028 !important;
+  border-color: #2a2d35 !important;
+}
+
+/* Card backgrounds in dark mode */
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/50 {
+  background-color: #1a1c24 !important;
+}
+
+html.dark .bg-\[#F8FAFC\] {
+  background-color: #13151a !important;
+}
+
+/* Text colors */
+html.dark .text-slate-800,
+html.dark .text-slate-900 {
+  color: #e2e8f0 !important;
+}
+
+html.dark .text-slate-700 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+html.dark .text-slate-500 {
+  color: #64748b !important;
+}
+
+html.dark .text-slate-400 {
+  color: #6b7280 !important;
+}
+
+/* Borders */
+html.dark .border-slate-100,
+html.dark .border-slate-100\/50,
+html.dark .border-slate-100\/60,
+html.dark .border-slate-200 {
+  border-color: #2a2d35 !important;
+}
+
+html.dark .border-slate-150,
+html.dark .border-slate-50 {
+  border-color: #252830 !important;
+}
+
+/* Input fields */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #1a1c24 !important;
+  border-color: #2a2d35 !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #4b5563 !important;
+}
+
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  background-color: #1e2028 !important;
+  border-color: #4b5563 !important;
+}
+
+/* Notification panel */
+html.dark .notif-panel {
+  background-color: #1e2028 !important;
+  border-color: #2a2d35 !important;
+}
+
+html.dark .notif-item {
+  border-color: #252830 !important;
+}
+
+/* Gradient overlays */
+html.dark .bg-gradient-to-br.from-indigo-50 {
+  background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(30,32,40,1) 100%) !important;
+}
+
+html.dark .bg-gradient-to-r.from-amber-500\/5 {
+  background: linear-gradient(90deg, rgba(245,158,11,0.06) 0%, rgba(30,32,40,1) 100%) !important;
+}
+
+/* Recharts dark mode */
+html.dark .recharts-cartesian-axis-tick-value {
+  fill: #94a3b8 !important;
+}
+
+html.dark .recharts-cartesian-grid line {
+  stroke: #2a2d35 !important;
+}
+
+html.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: #1e2028 !important;
+  border-color: #2a2d35 !important;
+}
+
+/* Dividers */
+html.dark .divide-slate-50 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #252830 !important;
+}
+
+/* Badge/tag backgrounds - keep their colors but slightly darken */
+html.dark .bg-blue-50 { background-color: rgba(37,99,235,0.12) !important; }
+html.dark .bg-emerald-50 { background-color: rgba(5,150,105,0.12) !important; }
+html.dark .bg-amber-50,
+html.dark .bg-amber-50\/50 { background-color: rgba(217,119,6,0.12) !important; }
+html.dark .bg-red-50 { background-color: rgba(239,68,68,0.12) !important; }
+html.dark .bg-purple-50 { background-color: rgba(124,58,237,0.12) !important; }
+html.dark .bg-indigo-50 { background-color: rgba(99,102,241,0.12) !important; }
+html.dark .bg-indigo-100 { background-color: rgba(99,102,241,0.16) !important; }
+
+/* Shadow adjustments for dark mode */
+html.dark .shadow-sm,
+html.dark .shadow-md {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+}
+
+/* Diagnostic game dark mode */
+html.dark .diagnostic-game-card {
+  background-color: #1e2028 !important;
+  border-color: #2a2d35 !important;
+}
+
+html.dark .diagnostic-option-btn {
+  background-color: #1a1c24 !important;
+  border-color: #2a2d35 !important;
+  color: #cbd5e1 !important;
+}
+
+html.dark .diagnostic-option-btn:hover {
+  background-color: #252830 !important;
+  border-color: #3a3d45 !important;
+}
+
+html.dark .diagnostic-option-btn.selected {
+  background-color: rgba(37,99,235,0.15) !important;
+  border-color: #2563eb !important;
+  color: #93c5fd !important;
+}
+

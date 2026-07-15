@@ -2,7 +2,7 @@ import { useState, useEffect, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardShell from '../components/DashboardShell';
 import TeacherOnboardingPortal from './TeacherOnboardingPortal';
-
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, AreaChart, Area } from 'recharts';
 import { api } from '../utils/api';
 import { 
   LayoutDashboard, 
@@ -3181,18 +3181,58 @@ const TeacherDashboard = () => {
             <div className="md:col-span-8 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-6">
               <h3 className="text-base font-black text-slate-800">Student Average Score Distribution</h3>
               
-              {/* SVG Bar Chart */}
-              <div className="relative h-60 w-full bg-slate-50 rounded-2xl border border-slate-100 p-4 flex items-end justify-around">
-                {students.map(student => (
-                  <div key={student.id} className="flex flex-col items-center group w-full">
-                    <span className="text-[10px] font-bold text-slate-600 mb-1 opacity-0 group-hover:opacity-100 transition-opacity">{student.avgGrade}%</span>
-                    <div 
-                      className="w-7 bg-blue-500 hover:bg-blue-600 rounded-t-lg transition-all duration-700 cursor-pointer shadow-sm"
-                      style={{ height: `${student.avgGrade * 1.5}px` }}
+              {/* Recharts Interactive Bar Chart */}
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={students.map(s => ({ name: s.name.split(' ')[0], score: s.avgGrade, fullName: s.name }))} margin={{ top: 12, right: 12, left: -16, bottom: 0 }} barCategoryGap="20%">
+                    <defs>
+                      <linearGradient id="scoreGradientGreen" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
+                        <stop offset="100%" stopColor="#34d399" stopOpacity={0.6}/>
+                      </linearGradient>
+                      <linearGradient id="scoreGradientAmber" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f59e0b" stopOpacity={1}/>
+                        <stop offset="100%" stopColor="#fbbf24" stopOpacity={0.6}/>
+                      </linearGradient>
+                      <linearGradient id="scoreGradientRed" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ef4444" stopOpacity={1}/>
+                        <stop offset="100%" stopColor="#f87171" stopOpacity={0.6}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f020" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 9, fontWeight: 800, fill: '#94a3b8' }}
+                      axisLine={false}
+                      tickLine={false}
                     />
-                    <span className="text-[8px] font-black text-slate-400 mt-2 truncate w-12 text-center uppercase">{student.name.split(' ')[0]}</span>
-                  </div>
-                ))}
+                    <YAxis
+                      domain={[0, 100]}
+                      tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
+                      axisLine={false}
+                      tickLine={false}
+                      unit="%"
+                    />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(99,102,241,0.05)', radius: 8 }}
+                      contentStyle={{
+                        background: '#0f172a',
+                        border: 'none',
+                        borderRadius: '12px',
+                        padding: '10px 16px',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                      }}
+                      labelStyle={{ color: '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                      itemStyle={{ color: '#a5b4fc', fontSize: 12, fontWeight: 800 }}
+                      formatter={(value, name, props) => [`${value}%`, props.payload.fullName]}
+                    />
+                    <Bar dataKey="score" radius={[8, 8, 0, 0]} maxBarSize={40} animationDuration={1000} animationEasing="ease-out">
+                      {students.map((s, idx) => (
+                        <Cell key={idx} fill={s.avgGrade >= 70 ? 'url(#scoreGradientGreen)' : s.avgGrade >= 50 ? 'url(#scoreGradientAmber)' : 'url(#scoreGradientRed)'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
 
@@ -3303,6 +3343,79 @@ const TeacherDashboard = () => {
               </div>
 
             </div>
+
+            {/* Earnings Trend Area Chart */}
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
+              <h3 className="text-base font-black text-slate-800">Monthly Earnings Trend</h3>
+              <div className="h-52 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={(() => {
+                      const monthMap = {};
+                      billingLogs.filter(l => l.status === 'Paid').forEach(log => {
+                        const month = log.date ? log.date.substring(0, 7) : 'Unknown';
+                        monthMap[month] = (monthMap[month] || 0) + (log.amount || 0);
+                      });
+                      const months = Object.keys(monthMap).sort();
+                      if (months.length === 0) {
+                        return [{ month: 'Jan', amount: 0 }, { month: 'Feb', amount: 0 }, { month: 'Mar', amount: 0 }];
+                      }
+                      let cumulative = 0;
+                      return months.map(m => {
+                        cumulative += monthMap[m];
+                        const label = new Date(m + '-01').toLocaleDateString('en-IN', { month: 'short' });
+                        return { month: label, amount: monthMap[m], cumulative };
+                      });
+                    })()}
+                    margin={{ top: 12, right: 12, left: -8, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="earningsGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.3}/>
+                        <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f020" />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v) => `₹${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: '#0f172a',
+                        border: 'none',
+                        borderRadius: '12px',
+                        padding: '10px 16px',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                      }}
+                      labelStyle={{ color: '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                      itemStyle={{ fontSize: 12, fontWeight: 800 }}
+                      formatter={(value) => [`₹${value.toLocaleString('en-IN')}`, 'Earned']}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="amount"
+                      stroke="#6366f1"
+                      strokeWidth={2.5}
+                      fill="url(#earningsGradient)"
+                      dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }}
+                      activeDot={{ r: 6, fill: '#6366f1', strokeWidth: 3, stroke: '#fff' }}
+                      animationDuration={1200}
+                      animationEasing="ease-out"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
           </div>
         )}
 
