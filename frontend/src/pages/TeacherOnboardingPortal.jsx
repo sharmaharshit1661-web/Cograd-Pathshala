@@ -216,10 +216,6 @@ export default function TeacherOnboardingPortal() {
   // Step 1 Submission
   const handleStep1Submit = async (e) => {
     e.preventDefault();
-    if (!otpVerified) {
-      alert('Please complete the Email OTP verification first.');
-      return;
-    }
     if (aadhaarNumber.length !== 12 || isNaN(aadhaarNumber)) {
       alert('Please enter a valid 12-digit Aadhaar Number.');
       return;
@@ -608,56 +604,7 @@ export default function TeacherOnboardingPortal() {
                     </div>
                   )}
 
-                  {/* OTP Verification */}
-                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-4.5 h-4.5 text-indigo-650" />
-                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">OTP Account verification</h3>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase">Registered Email</label>
-                        <p className="text-sm font-semibold text-slate-800 mt-1">{profile?.email}</p>
-                      </div>
-                      <div className="flex items-end">
-                        {!otpVerified ? (
-                          !otpSent ? (
-                            <button
-                              type="button"
-                              onClick={handleSendOtp}
-                              disabled={otpLoading}
-                              className="w-full py-2 bg-indigo-650 hover:bg-indigo-755 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-                            >
-                              {otpLoading ? 'Sending...' : 'Trigger Verification OTP'} <ArrowRight className="w-3.5 h-3.5" />
-                            </button>
-                          ) : (
-                            <div className="flex gap-2 w-full">
-                              <input
-                                type="text"
-                                maxLength="6"
-                                placeholder="Enter 6-digit OTP"
-                                value={otpCode}
-                                onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                                className="w-2/3 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-750 placeholder-slate-400 font-semibold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                              />
-                              <button
-                                type="button"
-                                onClick={handleVerifyOtp}
-                                disabled={otpLoading}
-                                className="w-1/3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer"
-                              >
-                                {otpLoading ? '...' : 'Verify'}
-                              </button>
-                            </div>
-                          )
-                        ) : (
-                          <div className="w-full py-2 bg-emerald-50 border border-emerald-100 text-emerald-700 font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 select-none shadow-sm">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Identity Verification Verified
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+
 
                   {/* Input Fields */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
