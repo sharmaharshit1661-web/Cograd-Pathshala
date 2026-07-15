@@ -821,6 +821,19 @@ router.put('/assignments/status', protect, async (req, res) => {
     await student.save();
     await teacher.save();
 
+    // Synchronize status back to DemoBooking if one exists for the student
+    if (student.parentPhone) {
+      const demoBooking = await DemoBooking.findOne({
+        parentPhone: student.parentPhone,
+        assigned_teacher_id: teacherId,
+        status: 'pending_teacher_acceptance'
+      });
+      if (demoBooking) {
+        demoBooking.status = accept ? 'confirmed' : 'declined';
+        await demoBooking.save();
+      }
+    }
+
     res.json({ message: 'Assignment status updated successfully', assignment });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -1242,18 +1255,41 @@ router.put('/demo-bookings/:id/confirm', protect, async (req, res) => {
     booking.status = 'pending_teacher_acceptance';
     await booking.save();
 
-    // 1. Notify Student/Parent
-    const studentUsers = await User.find({ $or: [{ phone: booking.parentPhone }, { parentPhone: booking.parentPhone }] });
-    for (const u of studentUsers) {
-      if (!u.notifications) u.notifications = [];
-      u.notifications.push({
+    // 1. Notify Student/Parent & Create Assignment & Update student matching details
+    const studentUsers = await User.find({
+      $or: [{ phone: booking.parentPhone }, { parentPhone: booking.parentPhone }],
+      role: 'student'
+    });
+
+    for (const student of studentUsers) {
+      student.assigned_teacher_id = teacherId;
+      student.status = 'matched'; // Assigned but pending teacher confirmation
+
+      if (!student.notifications) student.notifications = [];
+      student.notifications.push({
         id: 'ntf_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
         text: `Your demo booking for ${booking.subjects.join(', ')} has been approved by Admin and is pending tutor acceptance.`,
         isNew: true,
         time: 'Just now',
         createdAt: new Date()
       });
-      await u.save();
+      await student.save();
+
+      // Create Assignment if it doesn't already exist
+      const existingAssignment = await Assignment.findOne({
+        student_id: student.id,
+        teacher_id: teacherId,
+        status: 'proposed'
+      });
+      if (!existingAssignment) {
+        await Assignment.create({
+          id: `asg_${student.id}_${Date.now()}`,
+          student_id: student.id,
+          teacher_id: teacherId,
+          assigned_by: req.user.id,
+          status: 'proposed',
+        });
+      }
     }
 
     // 2. Notify Teacher
@@ -1312,12 +1348,42 @@ router.put('/demo-bookings/:id/status', protect, async (req, res) => {
 
     await booking.save();
 
-    // 1. Notify Student/Parent of Teacher Response
-    const studentUsers = await User.find({ $or: [{ phone: booking.parentPhone }, { parentPhone: booking.parentPhone }] });
-    for (const u of studentUsers) {
-      if (!u.notifications) u.notifications = [];
+    // Update corresponding student and assignment status in MongoDB
+    const studentUsers = await User.find({
+      $or: [{ phone: booking.parentPhone }, { parentPhone: booking.parentPhone }],
+      role: 'student'
+    });
+
+    for (const student of studentUsers) {
+      const assignment = await Assignment.findOne({
+        student_id: student.id,
+        teacher_id: booking.assigned_teacher_id,
+        status: 'proposed'
+      });
+
+      if (booking.status === 'confirmed') {
+        student.status = 'active';
+        if (assignment) {
+          assignment.status = 'active';
+          await assignment.save();
+        }
+        const teacher = await User.findOne({ id: booking.assigned_teacher_id, role: 'teacher' });
+        if (teacher) {
+          teacher.current_student_count = (teacher.current_student_count || 0) + 1;
+          await teacher.save();
+        }
+      } else if (booking.status === 'declined') {
+        student.status = 'pending_match';
+        student.assigned_teacher_id = null;
+        if (assignment) {
+          assignment.status = 'ended';
+          await assignment.save();
+        }
+      }
+      
+      if (!student.notifications) student.notifications = [];
       const isConfirmed = booking.status === 'confirmed';
-      u.notifications.push({
+      student.notifications.push({
         id: 'ntf_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
         text: isConfirmed 
           ? `Congratulations! Your demo class for ${booking.subjects.join(', ')} on ${booking.preferredDate} at ${booking.preferredTime} has been CONFIRMED by tutor.` 
@@ -1326,7 +1392,7 @@ router.put('/demo-bookings/:id/status', protect, async (req, res) => {
         time: 'Just now',
         createdAt: new Date()
       });
-      await u.save();
+      await student.save();
     }
 
     // 2. Create Admin Notification

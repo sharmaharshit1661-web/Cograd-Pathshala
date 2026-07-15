@@ -146,12 +146,18 @@ const AdminDashboard = () => {
 
   const loadAdminData = async () => {
     try {
+      await syncWithBackend();
+    } catch (err) {
+      console.error('Failed to sync mockDb cache:', err);
+    }
+
+    try {
       const raw = await api.get('/students');
       const normalized = (raw || []).map(s => ({
         ...s,
         batch: s.standard || 'Class 10',
         date: s.joinDate || '2026-06-19',
-        status: s.status === 'active' ? 'Active' : s.status === 'matched' ? 'Active' : s.status === 'pending_test' ? 'Pending Test' : s.status === 'pending_match' ? 'Pending Match' : s.status
+        status: s.status === 'active' ? 'Active' : s.status === 'matched' ? 'Matched' : s.status === 'pending_test' ? 'Pending Test' : s.status === 'pending_match' ? 'Pending Match' : s.status
       }));
       setStudents(normalized);
     } catch (err) {
@@ -692,7 +698,7 @@ const AdminDashboard = () => {
 
   // Sub-views implementations
   const renderDashboard = () => {
-    const pendingStudents = students.filter(s => s.status === 'pending_match');
+    const pendingStudents = students.filter(s => s.status === 'pending_match' || s.status === 'Pending Match');
 
     return (
       <div className="space-y-12 animate-fade-in text-left">
@@ -787,8 +793,8 @@ const AdminDashboard = () => {
                                   <span className="text-xs font-black text-blue-600 block">{score}% Match</span>
                                 </div>
                                 <button
-                                  onClick={() => {
-                                    allotTutor(student.id, teacher.id);
+                                  onClick={async () => {
+                                    await allotTutor(student.id, teacher.id);
                                     triggerToast(`Proposed match: Allotted ${teacher.name} to ${student.name}. Pending teacher confirmation.`);
                                     loadAdminData();
                                   }}
@@ -978,7 +984,9 @@ const AdminDashboard = () => {
                       <td className="py-4 px-6 text-slate-500 font-bold">{student.date}</td>
                       <td className="py-4 px-6 text-center">
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                          student.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'
+                          student.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                          student.status === 'Matched' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
+                          'bg-rose-50 text-rose-600 border border-rose-100'
                         }`}>
                           {student.status}
                         </span>
@@ -2273,8 +2281,8 @@ const AdminDashboard = () => {
                           </div>
                         <button
                           disabled={!isWithinCapacity}
-                          onClick={() => {
-                            allotTutor(selectedMatchStudent.id, teacher.id);
+                          onClick={async () => {
+                            await allotTutor(selectedMatchStudent.id, teacher.id);
                             triggerToast(`Allotted ${teacher.name} to ${selectedMatchStudent.name}`);
                             setShowOverrideModal(false);
                             setSelectedMatchStudent(null);
