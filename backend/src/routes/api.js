@@ -768,6 +768,12 @@ router.post('/assignments/allot', protect, async (req, res) => {
       return res.status(404).json({ message: 'Student or Teacher not found' });
     }
 
+    // End other active or proposed assignments for this student
+    await Assignment.updateMany(
+      { student_id: studentId, teacher_id: { $ne: teacherId }, status: { $in: ['proposed', 'active'] } },
+      { status: 'ended' }
+    );
+
     // Update Student
     student.assigned_teacher_id = teacherId;
     student.status = 'matched'; // Assigned but pending teacher confirmation
@@ -1262,6 +1268,12 @@ router.put('/demo-bookings/:id/confirm', protect, async (req, res) => {
     });
 
     for (const student of studentUsers) {
+      // End other active or proposed assignments for this student
+      await Assignment.updateMany(
+        { student_id: student.id, teacher_id: { $ne: teacherId }, status: { $in: ['proposed', 'active'] } },
+        { status: 'ended' }
+      );
+
       student.assigned_teacher_id = teacherId;
       student.status = 'matched'; // Assigned but pending teacher confirmation
 
@@ -2101,11 +2113,7 @@ router.delete('/notifications/:id', protect, async (req, res) => {
 // @access  Private (User)
 router.get('/notifications/my-notifications', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    res.json(user.notifications || []);
+    res.json(req.user.notifications || []);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -2116,17 +2124,13 @@ router.get('/notifications/my-notifications', protect, async (req, res) => {
 // @access  Private (User)
 router.put('/notifications/my-notifications/read-all', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    if (user.notifications && user.notifications.length > 0) {
-      user.notifications.forEach(n => {
+    if (req.user.notifications && req.user.notifications.length > 0) {
+      req.user.notifications.forEach(n => {
         n.isNew = false;
       });
-      await user.save();
+      await req.user.save();
     }
-    res.json({ message: 'All user notifications marked as read', notifications: user.notifications || [] });
+    res.json({ message: 'All user notifications marked as read', notifications: req.user.notifications || [] });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

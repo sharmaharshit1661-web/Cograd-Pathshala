@@ -19,11 +19,20 @@ const CONFETTI = Array.from({ length: 30 }).map((_, i) => ({
   duration: Math.random() * 1.5 + 1.5,
 }));
 
-const DemoBooking = ({ isEmbedded = false, onClose }) => {
+const DemoBooking = ({ isEmbedded = false, onClose, prefillData }) => {
   const [step, setStep] = useState(1);
   const [dir, setDir] = useState('next');
   const [shake, setShake] = useState(false);
-  const [form, setForm] = useState({ studentName: '', parentPhone: '', studentClass: '', preferredDate: '', preferredTime: '', district: '', villageArea: '', landmark: '' });
+  const [form, setForm] = useState({
+    studentName: prefillData?.name || '',
+    parentPhone: prefillData?.parentPhone || prefillData?.phone || '',
+    studentClass: prefillData?.standard || '',
+    preferredDate: '',
+    preferredTime: '',
+    district: prefillData?.district || prefillData?.city || '',
+    villageArea: prefillData?.locality || '',
+    landmark: prefillData?.address || ''
+  });
   const [selectedSubjects, setSelectedSubjects] = useState([]);
   const [selectedDays, setSelectedDays] = useState([]);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -33,7 +42,7 @@ const DemoBooking = ({ isEmbedded = false, onClose }) => {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
 
-  const [citySearch, setCitySearch] = useState(form.district || '');
+  const [citySearch, setCitySearch] = useState(prefillData?.district || prefillData?.city || '');
   const [showCityDropdown, setShowCityDropdown] = useState(false);
 
   const filteredCities = INDIAN_CITIES.filter((c) =>

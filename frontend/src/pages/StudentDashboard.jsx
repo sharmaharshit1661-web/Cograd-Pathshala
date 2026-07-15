@@ -2082,7 +2082,7 @@ const StudentDashboard = () => {
               {/* TAB: BOOK DEMO */}
               {activeTab === 'Book Demo' && (
                 <div className="bg-white rounded-3xl border border-slate-100 shadow-md p-2 sm:p-6 text-left animate-fade-in no-glass">
-                  <DemoBooking isEmbedded={true} onClose={() => setActiveTab('Home')} />
+                  <DemoBooking isEmbedded={true} onClose={() => setActiveTab('Home')} prefillData={profileData} />
                 </div>
               )}
 
