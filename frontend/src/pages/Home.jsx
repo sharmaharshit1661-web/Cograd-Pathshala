@@ -793,6 +793,7 @@ const Home = () => {
                   className="reveal-on-scroll glow-card bg-white p-6 transition-all text-center relative"
                   style={{ 
                     transitionDelay: `${i * 110}ms`,
+                    overflow: 'visible',
                     '--glow-gradient': i === 0
                       ? 'linear-gradient(135deg, #3b82f6, #60a5fa)'
                       : i === 1
