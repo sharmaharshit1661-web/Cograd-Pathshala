@@ -85,6 +85,10 @@ const AdminDashboard = () => {
   const [selectedMatchStudent, setSelectedMatchStudent] = useState(null);
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [overrideTeacherSearch, setOverrideTeacherSearch] = useState('');
+  const [selectedTeacherForAssign, setSelectedTeacherForAssign] = useState(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [studentSearchForAssign, setStudentSearchForAssign] = useState('');
+  const [selectedStudentIdToAssign, setSelectedStudentIdToAssign] = useState('');
 
   
   // Notification center
@@ -1135,7 +1139,7 @@ const AdminDashboard = () => {
                     onClick={() => toggleTeacherVerification(teacher.id, teacher.name)}
                     className={`flex-1 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer text-center border ${
                       teacher.status === 'Verified'
-                        ? 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        ? 'border-slate-200 text-slate-650 hover:bg-slate-50'
                         : 'border-emerald-500 bg-emerald-50 text-emerald-600 hover:bg-emerald-100/30'
                     }`}
                   >
@@ -1153,6 +1157,15 @@ const AdminDashboard = () => {
                   >
                     <DollarSign className="w-3.5 h-3.5 shrink-0 text-slate-400" />
                     <span>Earnings</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedTeacherForAssign(teacher);
+                      setShowAssignModal(true);
+                    }}
+                    className="px-2.5 py-1.5 bg-violet-50 hover:bg-violet-100 border border-violet-100 text-violet-650 hover:text-violet-855 font-bold rounded-xl text-[10px] transition-all cursor-pointer"
+                  >
+                    Assign
                   </button>
                 </div>
               </div>
@@ -3301,6 +3314,107 @@ const AdminDashboard = () => {
           {getTabContent()}
         </div>
       </DashboardShell>
+
+      {/* Assign Student to Teacher Modal */}
+      {showAssignModal && selectedTeacherForAssign && (
+        <div className="modal-overlay text-left">
+          <div className="modal-panel p-6 space-y-4 text-left">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-50">
+              <h3 className="text-base font-black text-slate-800 tracking-tight">
+                Assign Student to {selectedTeacherForAssign.name}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowAssignModal(false);
+                  setSelectedTeacherForAssign(null);
+                  setSelectedStudentIdToAssign('');
+                  setStudentSearchForAssign('');
+                }}
+                className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                Choose an unmatched student to assign to <strong>{selectedTeacherForAssign.name}</strong>. The student will receive a proposed match notification, and the teacher will see a pending confirmation request on their dashboard.
+              </p>
+
+              {/* Student search input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search unmatched students..."
+                  value={studentSearchForAssign}
+                  onChange={(e) => setStudentSearchForAssign(e.target.value)}
+                  className="pl-9 pr-4 py-2 w-full bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                />
+              </div>
+
+              {/* Student list dropdown / selection */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">
+                  Select Student
+                </label>
+                <select
+                  value={selectedStudentIdToAssign}
+                  onChange={(e) => setSelectedStudentIdToAssign(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-650 focus:outline-none"
+                >
+                  <option value="">-- Choose a student --</option>
+                  {students
+                    .filter(s => {
+                      // Filter unmatched students (no assigned teacher ID)
+                      const isUnmatched = !s.assigned_teacher_id;
+                      const matchesSearch = s.name.toLowerCase().includes(studentSearchForAssign.toLowerCase()) || 
+                                            s.email.toLowerCase().includes(studentSearchForAssign.toLowerCase());
+                      return isUnmatched && matchesSearch;
+                    })
+                    .map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.standard || 'Class 10'} - {s.city || 'Meerut'})
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-50">
+                <button
+                  onClick={() => {
+                    setShowAssignModal(false);
+                    setSelectedTeacherForAssign(null);
+                    setSelectedStudentIdToAssign('');
+                    setStudentSearchForAssign('');
+                  }}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-650 font-extrabold text-xs rounded-xl transition-all cursor-pointer border-0"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={!selectedStudentIdToAssign}
+                  onClick={async () => {
+                    const studentObj = students.find(s => s.id === selectedStudentIdToAssign);
+                    const studentName = studentObj ? studentObj.name : 'Student';
+                    await allotTutor(selectedStudentIdToAssign, selectedTeacherForAssign.id);
+                    triggerToast(`Allotted ${selectedTeacherForAssign.name} to ${studentName}`);
+                    setShowAssignModal(false);
+                    setSelectedTeacherForAssign(null);
+                    setSelectedStudentIdToAssign('');
+                    setStudentSearchForAssign('');
+                    loadAdminData();
+                  }}
+                  className="px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer border-0"
+                >
+                  Confirm Assignment
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
