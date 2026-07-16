@@ -224,12 +224,33 @@ const TeacherDashboard = () => {
   const [pendingAssignments, setPendingAssignments] = useState([]);
   const [students, setStudents] = useState([]);
   
+  useEffect(() => {
+    const role = localStorage.getItem('cograd_role');
+    const token = localStorage.getItem('cograd_token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    if (role && role !== 'teacher') {
+      if (role === 'student') navigate('/student/dashboard');
+      else if (role === 'parent') navigate('/parent/dashboard');
+      else if (role === 'admin') navigate('/admin/dashboard');
+    }
+  }, [navigate]);
+
   // Load real teacher profile and child states from backend
   useEffect(() => {
     const loadTeacherProfile = async () => {
       try {
         if (!localStorage.getItem('cograd_token')) return;
         const user = await api.get('/auth/me');
+        if (user && user.role && user.role !== 'teacher') {
+          localStorage.setItem('cograd_role', user.role);
+          if (user.role === 'student') navigate('/student/dashboard');
+          else if (user.role === 'parent') navigate('/parent/dashboard');
+          else if (user.role === 'admin') navigate('/admin/dashboard');
+          return;
+        }
         if (user) {
           setTeacherId(user.id);
           const profile = {

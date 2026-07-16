@@ -147,11 +147,33 @@ const StudentDashboard = () => {
   const [, setLoadingData] = useState(true);
   const [matchedTeacherData, setMatchedTeacherData] = useState(null);
 
+  useEffect(() => {
+    const role = localStorage.getItem('cograd_role');
+    const token = localStorage.getItem('cograd_token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    if (role && role !== 'student') {
+      if (role === 'teacher') navigate('/teacher/dashboard');
+      else if (role === 'parent') navigate('/parent/dashboard');
+      else if (role === 'admin') navigate('/admin/dashboard');
+    }
+  }, [navigate]);
+
   const loadData = useCallback(async () => {
     try {
       if (!localStorage.getItem('cograd_token')) return;
       const user = await api.get('/auth/me');
       
+      if (user && user.role && user.role !== 'student') {
+        localStorage.setItem('cograd_role', user.role);
+        if (user.role === 'teacher') navigate('/teacher/dashboard');
+        else if (user.role === 'parent') navigate('/parent/dashboard');
+        else if (user.role === 'admin') navigate('/admin/dashboard');
+        return;
+      }
+
       // Fetch notifications inside the same call
       api.get('/notifications/my-notifications')
         .then(dbNotifs => setUnreadNotifications(dbNotifs || []))

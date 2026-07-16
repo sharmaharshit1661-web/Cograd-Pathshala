@@ -118,10 +118,31 @@ const ParentDashboard = () => {
   };
 
   useEffect(() => {
+    const role = localStorage.getItem('cograd_role');
+    const token = localStorage.getItem('cograd_token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    if (role && role !== 'parent') {
+      if (role === 'student') navigate('/student/dashboard');
+      else if (role === 'teacher') navigate('/teacher/dashboard');
+      else if (role === 'admin') navigate('/admin/dashboard');
+    }
+  }, [navigate]);
+
+  useEffect(() => {
     const loadParentData = async () => {
       try {
         if (!localStorage.getItem('cograd_token')) return;
         const user = await api.get('/auth/me');
+        if (user && user.role && user.role !== 'parent') {
+          localStorage.setItem('cograd_role', user.role);
+          if (user.role === 'student') navigate('/student/dashboard');
+          else if (user.role === 'teacher') navigate('/teacher/dashboard');
+          else if (user.role === 'admin') navigate('/admin/dashboard');
+          return;
+        }
         if (user) {
           setParentUser(user);
           if (user.name) {

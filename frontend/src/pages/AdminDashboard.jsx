@@ -184,6 +184,20 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
+    const role = localStorage.getItem('cograd_role');
+    const token = localStorage.getItem('cograd_token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    if (role && role !== 'admin') {
+      if (role === 'student') navigate('/student/dashboard');
+      else if (role === 'teacher') navigate('/teacher/dashboard');
+      else if (role === 'parent') navigate('/parent/dashboard');
+    }
+  }, [navigate]);
+
+  useEffect(() => {
     const init = async () => {
       await loadAdminData();
       await fetchDemoBookings();
