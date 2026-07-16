@@ -254,7 +254,8 @@ const ParentDashboard = () => {
               homeworks: liveHomeworks,
               schedule: child.schedule || [],
               activities: child.activities || [],
-              mock_tests_log: child.mock_tests_log || []
+              mock_tests_log: child.mock_tests_log || [],
+              createdAt: child.createdAt
             };
           });
 
@@ -280,12 +281,19 @@ const ParentDashboard = () => {
     const defStudent = studentsData[selectedStudentKey];
     const generatedNotifications = [];
 
+    const parseDate = (d) => {
+      if (!d) return undefined;
+      const parsed = new Date(d);
+      return isNaN(parsed.getTime()) ? undefined : parsed;
+    };
+
     if (defStudent.attendance_log && defStudent.attendance_log.length > 0) {
       defStudent.attendance_log.slice(-2).forEach((log, index) => {
         generatedNotifications.push({
           id: 'notif_att_' + index + '_' + selectedStudentKey,
           text: `${defStudent.name} was marked ${log.status.toUpperCase()} on ${log.date} by tutor ${log.markedBy}`,
           time: 'Tutor update',
+          createdAt: log.createdAt ? new Date(log.createdAt) : parseDate(log.date),
           isNew: false
         });
       });
@@ -297,6 +305,7 @@ const ParentDashboard = () => {
           id: 'notif_test_' + index + '_' + selectedStudentKey,
           text: `New result: ${defStudent.name} scored ${test.percentage || (test.percentageNum + '%')} in ${test.testName || test.subject}`,
           time: 'Academic update',
+          createdAt: test.createdAt ? new Date(test.createdAt) : parseDate(test.date),
           isNew: true
         });
       });
@@ -308,7 +317,8 @@ const ParentDashboard = () => {
         generatedNotifications.push({
           id: 'notif_pay_' + index + '_' + selectedStudentKey,
           text: `Payment of ₹${pay.amount} for ${defStudent.name} is processed successfully`,
-          time: pay.date,
+          time: 'Billing',
+          createdAt: pay.createdAt ? new Date(pay.createdAt) : parseDate(pay.date),
           isNew: false
         });
       });
@@ -319,6 +329,7 @@ const ParentDashboard = () => {
         id: 'notif_welcome_' + selectedStudentKey,
         text: `Welcome to Cograd! Keep track of your child ${defStudent.name}'s tuition progress here.`,
         time: 'System',
+        createdAt: defStudent.createdAt ? new Date(defStudent.createdAt) : new Date(),
         isNew: true
       });
     }
@@ -849,7 +860,30 @@ const ParentDashboard = () => {
         roleColor="amber"
         userName={parentName}
         notifications={notifications}
-        onClearNotifs={() => setNotifications(prev => prev.map(n => ({ ...n, isNew: false })))}
+        onClearNotifs={async () => {
+          setNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
+          try {
+            await api.put('/notifications/my-notifications/read-all');
+          } catch (e) {
+            console.error('Failed to mark user notifications as read:', e);
+          }
+        }}
+        onDeleteNotif={async (id) => {
+          setNotifications(p => p.filter(n => n.id !== id));
+          try {
+            await api.delete(`/notifications/my-notifications/${id}`);
+          } catch (e) {
+            console.error('Failed to delete notification:', e);
+          }
+        }}
+        onClearAllNotifs={async () => {
+          setNotifications([]);
+          try {
+            await api.delete('/notifications/my-notifications/clear-all');
+          } catch (e) {
+            console.error('Failed to clear notifications:', e);
+          }
+        }}
         onLogout={handleLogout}
         toast={{ show: showToast, message: toastMessage }}
         headerRight={
@@ -1342,7 +1376,7 @@ const ParentDashboard = () => {
                     <p className="text-xs text-slate-400 font-medium mb-4">Select quick workflows to interact with mentors or review progress documents.</p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     
                     {/* Chat with Primary Teacher */}
                     <button 
@@ -1356,21 +1390,6 @@ const ParentDashboard = () => {
                       </div>
                       <span className="text-xs font-bold text-slate-800 block">Chat with Teacher</span>
                       <span className="text-[9px] text-slate-400 font-semibold mt-1">Redirect to WhatsApp Chat</span>
-                    </button>
-
-                    {/* Book PTM Slots */}
-                    <button 
-                      onClick={() => {
-                        setSelectedTeacher(activeStudent.primaryTeacher);
-                        setShowPTMModal(true);
-                      }}
-                      className="bg-purple-50/50 hover:bg-purple-50 border border-purple-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:-translate-y-0.5 group active:scale-[0.98]"
-                    >
-                      <div className="p-3 bg-purple-100 rounded-full text-purple-700 mb-2 group-hover:scale-105 transition-transform">
-                        <Calendar className="w-5 h-5" />
-                      </div>
-                      <span className="text-xs font-bold text-slate-800 block">Schedule PTM</span>
-                      <span className="text-[9px] text-slate-400 font-semibold mt-1">Book home visit / call</span>
                     </button>
 
                     {/* Download Report Card */}
@@ -1391,128 +1410,76 @@ const ParentDashboard = () => {
               </div>
 
               {/* Subject Academic List Mini Summary */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Left Side: Subject Academic cards with miniature graphs */}
-                <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <div>
-                      <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider">Subject-Wise Performance</h3>
-                      <p className="text-[11px] text-slate-400 font-semibold">Mock examinations and tests progress trend</p>
-                    </div>
-                    <button 
-                      onClick={() => setActiveTab('Progress')}
-                      className="text-xs text-blue-600 font-bold flex items-center hover:underline"
-                    >
-                      <span>Detailed Analysis</span>
-                      <ChevronRight className="w-4 h-4 ml-0.5" />
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {activeStudent.subjects.map((sub, index) => {
-                      const hasTrend = sub.trend && sub.trend.length > 0;
-                      const trendMin = hasTrend ? Math.min(...sub.trend) : 0;
-                      const trendMax = hasTrend ? Math.max(...sub.trend) : 0;
-                      const points = hasTrend ? sub.trend.map((val, idx) => {
-                        const x = (idx / (sub.trend.length - 1)) * 100;
-                        const y = 50 - ((val - trendMin) / (trendMax - trendMin || 1)) * 40;
-                        return `${x},${y}`;
-                      }).join(' ') : '';
-
-                      return (
-                        <div key={index} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between hover:shadow-md transition-shadow group">
-                          <div>
-                            <div className="flex justify-between items-start">
-                              <span className="text-xs font-bold text-slate-800 leading-snug">{sub.name}</span>
-                              <span className="px-2 py-0.5 text-[10px] bg-blue-50 text-blue-700 font-bold border border-blue-100 rounded-lg">{sub.grade}</span>
-                            </div>
-                            <span className="text-[9px] text-slate-400 font-semibold block mt-1">Mentor: {sub.teacher}</span>
-                          </div>
-
-                          {/* Mini SVG Trend Line Chart */}
-                          <div className="w-full h-12 my-3 relative overflow-hidden flex items-center justify-center">
-                            {hasTrend ? (
-                              <svg className="w-full h-full" viewBox="0 0 100 50" preserveAspectRatio="none">
-                                <defs>
-                                  <linearGradient id={`grad-${index}`} x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
-                                    <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-                                  </linearGradient>
-                                </defs>
-                                <path
-                                  d={`M 0,50 L ${points} L 100,50 Z`}
-                                  fill={`url(#grad-${index})`}
-                                />
-                                <polyline
-                                  fill="none"
-                                  stroke="#2563eb"
-                                  strokeWidth="2"
-                                  points={points}
-                                />
-                              </svg>
-                            ) : (
-                              <span className="text-[9px] text-slate-400 italic">No score progress</span>
-                            )}
-                          </div>
-
-                          <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 pt-2 border-t border-slate-100">
-                            <span>Attendance</span>
-                            <span className="text-slate-800">{sub.attendance}%</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Right Side: Upcoming schedule log */}
-                <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm flex flex-col justify-between">
+              <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-4">
+                <div className="flex justify-between items-center mb-2">
                   <div>
-                    <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider mb-3 flex items-center justify-between">
-                      <span>Upcoming Events</span>
-                      <span className="px-2 py-0.5 text-[9px] bg-purple-50 text-purple-700 font-bold border border-purple-100 rounded-full">{activeStudent.schedule.length} Active</span>
-                    </h3>
-
-                    <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                      {activeStudent.schedule.map((item, index) => {
-                        const Icon = getScheduleIcon(item.icon);
-                        return (
-                          <div key={index} className="flex items-start space-x-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl transition-all hover:bg-slate-100">
-                            <div className="p-2 bg-white rounded-xl border border-slate-200 text-blue-600 shadow-sm shrink-0">
-                              <Icon className="w-4 h-4" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center justify-between">
-                                <span className={`text-[9px] font-extrabold uppercase tracking-wide ${item.type === 'PTM' ? 'text-purple-600' : 'text-blue-600'}`}>
-                                  {item.type}
-                                </span>
-                                <span className="text-[9px] text-slate-400 font-semibold">{item.date}</span>
-                              </div>
-                              <h4 className="text-xs font-bold text-slate-800 truncate mt-0.5">{item.title}</h4>
-                              <p className="text-[10px] text-slate-400 font-semibold mt-0.5 flex items-center">
-                                <Clock className="w-3 h-3 mr-1 inline shrink-0" />
-                                {item.time} | {item.details}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider">Subject-Wise Performance</h3>
+                    <p className="text-[11px] text-slate-400 font-semibold">Mock examinations and tests progress trend</p>
                   </div>
-
-                  <button
-                    onClick={() => {
-                      setSelectedTeacher(activeStudent.primaryTeacher);
-                      setShowPTMModal(true);
-                    }}
-                    className="w-full mt-4 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-2xl py-2.5 text-xs font-bold flex items-center justify-center space-x-1 hover:text-slate-900 transition-colors"
+                  <button 
+                    onClick={() => setActiveTab('Progress')}
+                    className="text-xs text-blue-600 font-bold flex items-center hover:underline"
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>Book Parent Meeting</span>
+                    <span>Detailed Analysis</span>
+                    <ChevronRight className="w-4 h-4 ml-0.5" />
                   </button>
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {activeStudent.subjects.map((sub, index) => {
+                    const hasTrend = sub.trend && sub.trend.length > 0;
+                    const trendMin = hasTrend ? Math.min(...sub.trend) : 0;
+                    const trendMax = hasTrend ? Math.max(...sub.trend) : 0;
+                    const points = hasTrend ? sub.trend.map((val, idx) => {
+                      const x = (idx / (sub.trend.length - 1)) * 100;
+                      const y = 50 - ((val - trendMin) / (trendMax - trendMin || 1)) * 40;
+                      return `${x},${y}`;
+                    }).join(' ') : '';
+
+                    return (
+                      <div key={index} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between hover:shadow-md transition-shadow group">
+                        <div>
+                          <div className="flex justify-between items-start">
+                            <span className="text-xs font-bold text-slate-800 leading-snug">{sub.name}</span>
+                            <span className="px-2 py-0.5 text-[10px] bg-blue-50 text-blue-700 font-bold border border-blue-100 rounded-lg">{sub.grade}</span>
+                          </div>
+                          <span className="text-[9px] text-slate-400 font-semibold block mt-1">Mentor: {sub.teacher}</span>
+                        </div>
+
+                        {/* Mini SVG Trend Line Chart */}
+                        <div className="w-full h-12 my-3 relative overflow-hidden flex items-center justify-center">
+                          {hasTrend ? (
+                            <svg className="w-full h-full" viewBox="0 0 100 50" preserveAspectRatio="none">
+                              <defs>
+                                <linearGradient id={`grad-${index}`} x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
+                                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                                </linearGradient>
+                              </defs>
+                              <path
+                                d={`M 0,50 L ${points} L 100,50 Z`}
+                                fill={`url(#grad-${index})`}
+                              />
+                              <polyline
+                                fill="none"
+                                stroke="#2563eb"
+                                strokeWidth="2"
+                                points={points}
+                              />
+                            </svg>
+                          ) : (
+                            <span className="text-[9px] text-slate-400 italic">No score progress</span>
+                          )}
+                        </div>
+
+                        <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 pt-2 border-t border-slate-100">
+                          <span>Attendance</span>
+                          <span className="text-slate-800">{sub.attendance}%</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Homework Tracker and Activity log */}
@@ -1578,7 +1545,7 @@ const ParentDashboard = () => {
                   <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider mb-4">Live Activity Log</h3>
 
                   <div className="relative border-l border-slate-100 ml-3.5 space-y-4 max-h-72 overflow-y-auto pr-1 pl-4">
-                    {activeStudent.activities.map((act) => (
+                    {(activeStudent.activities || []).map((act) => (
                       <div key={act.id} className="relative">
                         {/* Bullet point indicator */}
                         <div className={`absolute -left-[23.5px] top-1.5 w-3.5 h-3.5 rounded-full bg-white border-2 ${getBorderColor(act.type)} shadow-sm`}></div>

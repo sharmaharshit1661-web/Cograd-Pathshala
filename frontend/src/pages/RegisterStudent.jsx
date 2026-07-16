@@ -84,6 +84,8 @@ const RegisterStudent = () => {
     password: '',
     confirmPassword: '',
     standard: 'Class 10',
+    schoolName: '',
+    board: '',
     subjects: ['Mathematics', 'Science'], // Default subjects
     city: '',
     locality: '',
@@ -306,6 +308,8 @@ const RegisterStudent = () => {
             password: form.password,
             role: 'student',
             standard: form.standard,
+            schoolName: form.schoolName,
+            board: form.board,
             subjects: form.subjects,
             test_score: null,
             test_completed_at: null,
@@ -410,6 +414,8 @@ const RegisterStudent = () => {
           password: form.password,
           role: 'student',
           standard: form.standard,
+          schoolName: form.schoolName,
+          board: form.board,
           subjects: form.subjects,
           test_score: scores,
           test_completed_at: new Date().toISOString(),
@@ -702,6 +708,41 @@ const RegisterStudent = () => {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* School Name */}
+              <div className="text-left">
+                <label className="form-label"><BookOpen className="w-3.5 h-3.5 text-slate-400 mr-1.5" />School Name</label>
+                <input
+                  type="text"
+                  name="schoolName"
+                  required
+                  value={form.schoolName}
+                  onChange={(e) => setForm(p => ({ ...p, schoolName: e.target.value }))}
+                  className="form-input"
+                  placeholder="Enter your school name"
+                />
+              </div>
+
+              {/* Board */}
+              <div className="text-left">
+                <label className="form-label"><CheckSquare className="w-3.5 h-3.5 text-slate-400 mr-1.5" />Board of Education</label>
+                <select
+                  name="board"
+                  required
+                  value={form.board}
+                  onChange={(e) => setForm(p => ({ ...p, board: e.target.value }))}
+                  className="form-input pr-8"
+                >
+                  <option value="" disabled>Choose your board</option>
+                  <option value="CBSE">CBSE</option>
+                  <option value="ICSE">ICSE</option>
+                  <option value="State Board">State Board</option>
+                  <option value="UP Board">UP Board</option>
+                  <option value="IB">IB</option>
+                  <option value="IGCSE">IGCSE</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
 
               {/* City — required dropdown */}

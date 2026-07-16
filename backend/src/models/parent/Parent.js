@@ -1,6 +1,17 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+const NotificationItemSchema = new mongoose.Schema(
+  {
+    id: String,
+    text: String,
+    isNew: { type: Boolean, default: true },
+    time: { type: String, default: 'Just now' },
+    createdAt: { type: Date, default: Date.now }
+  },
+  { _id: false, suppressReservedKeysWarning: true }
+);
+
 const ParentSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true },
@@ -15,15 +26,7 @@ const ParentSchema = new mongoose.Schema(
     emailVerificationCode: { type: String, default: null },
     emailVerificationExpires: { type: Date, default: null },
     notifications: {
-      type: [
-        {
-          id: String,
-          text: String,
-          isNew: { type: Boolean, default: true },
-          time: { type: String, default: 'Just now' },
-          createdAt: { type: Date, default: Date.now }
-        }
-      ],
+      type: [NotificationItemSchema],
       default: []
     },
     login_attempts: { type: Number, default: 0 },
@@ -52,7 +55,7 @@ const ParentSchema = new mongoose.Schema(
     },
     linkedChildId: String
   },
-  { timestamps: true }
+  { timestamps: true, suppressReservedKeysWarning: true }
 );
 
 // Encrypt password before saving

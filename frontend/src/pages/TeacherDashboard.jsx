@@ -34,7 +34,10 @@ import {
   Map,
   Phone,
   MapPin,
-  HelpCircle
+  HelpCircle,
+  Award,
+  Lock,
+  GraduationCap
 } from 'lucide-react';
 
 const InlineGoogleMap = ({ address, label }) => {
@@ -104,6 +107,39 @@ const TeacherDashboard = () => {
     setTimeout(() => setShowToast(false), 3500);
   };
 
+  // CoGrad Certification Program States
+  const [certStatus, setCertStatus] = useState(null);
+  const [certLectures, setCertLectures] = useState([]);
+  const [selectedLecture, setSelectedLecture] = useState(null);
+  const [testAnswers, setTestAnswers] = useState({});
+  const [testResult, setTestResult] = useState(null);
+  const [isTakingTest, setIsTakingTest] = useState(false);
+  const [certLoading, setCertLoading] = useState(true);
+  const [certActionLoading, setCertActionLoading] = useState(false);
+  const [activeCertMonth, setActiveCertMonth] = useState(1);
+
+  const fetchCertStatus = async () => {
+    setCertLoading(true);
+    try {
+      const res = await api.get('/teachers/certification/status');
+      setCertStatus(res);
+      if (res.payment_status === 'paid') {
+        const lecturesRes = await api.get('/teachers/certification/lectures');
+        setCertLectures(lecturesRes.lectures || []);
+      }
+    } catch (err) {
+      console.error('Error fetching certification status:', err);
+    } finally {
+      setCertLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'CoGrad Certification') {
+      fetchCertStatus();
+    }
+  }, [activeTab]);
+
   const [supportForm, setSupportForm] = useState({ category: 'General Support', title: '', description: '' });
   const [supportSubmitting, setSupportSubmitting] = useState(false);
 
@@ -164,7 +200,14 @@ const TeacherDashboard = () => {
     bio: '',
     avatar: '',
     verified: false,
-    documents: []
+    documents: [],
+    certification: {
+      payment_status: 'unpaid',
+      completed_lectures: [],
+      test_attempts: [],
+      is_certified: false,
+      certified_at: null
+    }
   });
 
   const [editProfileData, setEditProfileData] = useState({ ...teacherProfile });
@@ -206,6 +249,13 @@ const TeacherDashboard = () => {
             avatar: user.avatar || '',
             verified: user.verification_status === 'Verified',
             documents: user.documents || [],
+            certification: user.certification || {
+              payment_status: 'unpaid',
+              completed_lectures: [],
+              test_attempts: [],
+              is_certified: false,
+              certified_at: null
+            }
           };
           setTeacherProfile(profile);
           setEditProfileData(profile);
@@ -1091,6 +1141,12 @@ const TeacherDashboard = () => {
             <p className="text-xs text-slate-500 mt-1">Here is your home tutoring overview for today.</p>
           </div>
           <div className="flex items-center gap-2">
+            {teacherProfile.certification?.is_certified && (
+              <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 border border-amber-500/30 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm">
+                <Award className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
+                CoGrad Certified
+              </span>
+            )}
             <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl border flex items-center gap-1.5 ${
               teacherProfile.verified 
                 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
@@ -1735,26 +1791,30 @@ const TeacherDashboard = () => {
             <p className="text-slate-500 text-xs mt-1">Manage home tuition students, demo bookings, schedules, and daily reports for parents.</p>
           </div>
           
-          <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200/50 w-max shadow-inner flex-wrap gap-1">
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200/50 max-w-full overflow-x-auto scrollbar-none shadow-inner gap-1 shrink-0">
             {[
-              { id: 'batches', label: 'My Students' },
-              { id: 'demo_bookings', label: 'Demo Bookings' },
-              { id: 'content_schedule', label: '📅 Schedule' },
-              { id: 'daily_reports', label: '📋 Daily Reports' },
-              { id: 'doubts_desk', label: '❓ Doubts Desk' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setSubTabs(prev => ({ ...prev, classroom: tab.id }))}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  subTabs.classroom === tab.id 
-                    ? 'bg-white text-slate-800 shadow-sm border border-slate-200/20' 
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+              { id: 'batches', label: 'My Students', icon: Users },
+              { id: 'demo_bookings', label: 'Demo Bookings', icon: Clock },
+              { id: 'content_schedule', label: 'Schedule', icon: Calendar },
+              { id: 'daily_reports', label: 'Daily Reports', icon: FileSpreadsheet },
+              { id: 'doubts_desk', label: 'Doubts Desk', icon: HelpCircle }
+            ].map(tab => {
+              const TabIcon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setSubTabs(prev => ({ ...prev, classroom: tab.id }))}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    subTabs.classroom === tab.id 
+                      ? 'bg-white text-slate-800 shadow-sm border border-slate-200/20' 
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <TabIcon className="w-3.5 h-3.5" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -3913,8 +3973,449 @@ const TeacherDashboard = () => {
     );
   };
 
+  const FRONTEND_CERTIFICATION_QUESTIONS = [
+    { id: 1, question: 'What is the primary focus of student-centric pedagogy?', options: ['Teacher lectures', 'Student active participation', 'Textbook memorization', 'Strict discipline'] },
+    { id: 2, question: 'According to Piaget, which stage involves abstract thinking?', options: ['Sensorimotor', 'Preoperational', 'Concrete operational', 'Formal operational'] },
+    { id: 3, question: 'A well-structured lesson plan should always begin with?', options: ['Homework review', 'Learning objectives', 'Attendance check', 'Random questions'] },
+    { id: 4, question: 'Which communication technique helps build rapport with shy students?', options: ['Loud instructions', 'Active listening', 'Ignoring them', 'Public questioning'] },
+    { id: 5, question: 'What is the best strategy for managing classroom disruptions?', options: ['Shouting at students', 'Preventive planning and clear rules', 'Ignoring all behavior', 'Punishing immediately'] },
+    { id: 6, question: 'Inclusive education means?', options: ['Teaching only gifted students', 'Excluding weak students', 'Accommodating all learning needs', 'Using one method for everyone'] },
+    { id: 7, question: 'Formative assessment is conducted?', options: ['Only at year-end', 'During the learning process', 'Before admission', 'Never'] },
+    { id: 8, question: 'Which EdTech tool is most useful for interactive home tutoring?', options: ['Fax machine', 'Digital whiteboard', 'Typewriter', 'Landline phone'] },
+    { id: 9, question: 'How often should parent-teacher communication happen ideally?', options: ['Never', 'Once a year', 'Regularly throughout the term', 'Only during emergencies'] },
+    { id: 10, question: 'Intrinsic motivation refers to?', options: ['External rewards', 'Punishment fear', 'Internal desire to learn', 'Parental pressure'] },
+    { id: 11, question: 'Professional ethics for a tutor includes?', options: ['Sharing student data publicly', 'Maintaining confidentiality', 'Favoritism', 'Skipping sessions'] },
+    { id: 12, question: 'Building a teaching brand involves?', options: ['Hiding your qualifications', 'Collecting reviews and showcasing results', 'Avoiding parents', 'Never updating your profile'] },
+    { id: 13, question: 'What is Bloom\'s Taxonomy used for?', options: ['Grading students', 'Classifying learning objectives', 'Scheduling classes', 'Hiring teachers'] },
+    { id: 14, question: 'The Zone of Proximal Development (ZPD) was proposed by?', options: ['Piaget', 'Vygotsky', 'Montessori', 'Dewey'] },
+    { id: 15, question: 'Which is NOT a characteristic of effective feedback?', options: ['Specific', 'Timely', 'Vague and generic', 'Constructive'] },
+    { id: 16, question: 'Differentiated instruction means?', options: ['Teaching the same way to all', 'Adapting teaching to individual needs', 'Only using lectures', 'Ignoring student differences'] },
+    { id: 17, question: 'What is the ideal student-teacher ratio for home tutoring?', options: ['1:50', '1:1 to 1:5', '1:100', '1:30'] },
+    { id: 18, question: 'Summative assessment examples include?', options: ['Quick class polls', 'Final exams and term papers', 'Entry tickets', 'Think-pair-share'] },
+    { id: 19, question: 'Active learning strategies include?', options: ['Only lecturing', 'Group discussions and problem-solving', 'Silent reading only', 'Copying from the board'] },
+    { id: 20, question: 'A growth mindset in students is encouraged by?', options: ['Praising effort over talent', 'Punishing mistakes', 'Comparing students', 'Fixed grading'] },
+  ];
+
+  const handleCertPay = async () => {
+    setCertActionLoading(true);
+    try {
+      const res = await api.post('/teachers/certification/pay');
+      triggerToast('Payment of ₹499 successful! Welcome to the CoGrad Certification program.');
+      // Refresh local profile
+      const updatedProfile = await api.get('/auth/me');
+      setTeacherProfile(prev => ({ ...prev, certification: updatedProfile.certification }));
+      await fetchCertStatus();
+    } catch (err) {
+      triggerToast(err.message || 'Payment failed.');
+    } finally {
+      setCertActionLoading(false);
+    }
+  };
+
+  const handleCompleteLecture = async (lectureId) => {
+    try {
+      await api.post('/teachers/certification/complete-lecture', { lectureId });
+      triggerToast('Lecture marked as completed!');
+      await fetchCertStatus();
+    } catch (err) {
+      triggerToast(err.message || 'Failed to complete lecture.');
+    }
+  };
+
+  const handleSubmitTest = async () => {
+    // Validate that all questions are answered
+    const unanswered = FRONTEND_CERTIFICATION_QUESTIONS.filter(q => testAnswers[q.id] === undefined);
+    if (unanswered.length > 0) {
+      triggerToast(`Please answer all questions before submitting. (${unanswered.length} left)`);
+      return;
+    }
+
+    setCertActionLoading(true);
+    try {
+      const res = await api.post('/teachers/certification/submit-test', { answers: testAnswers });
+      setTestResult(res);
+      setIsTakingTest(false);
+      if (res.passed) {
+        triggerToast('Congratulations! You passed the CoGrad Certification Exam!');
+        const updatedProfile = await api.get('/auth/me');
+        setTeacherProfile(prev => ({ ...prev, certification: updatedProfile.certification }));
+      } else {
+        triggerToast(`You scored ${res.score}%. Unfortunately, you did not pass. The passing score is 60%. Please try again!`);
+      }
+      await fetchCertStatus();
+    } catch (err) {
+      triggerToast(err.message || 'Failed to submit test.');
+    } finally {
+      setCertActionLoading(false);
+    }
+  };
+
+  const renderCertification = () => {
+    if (certLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <svg className="animate-spin h-8 w-8 text-blue-500" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+          </svg>
+          <span className="text-xs font-semibold text-slate-400">Loading course curriculum...</span>
+        </div>
+      );
+    }
+
+    const cert = certStatus || { payment_status: 'unpaid', completed_lectures: [], test_attempts: [], is_certified: false };
+    const isPaid = cert.payment_status === 'paid';
+    const completedCount = cert.completed_lectures?.length || 0;
+    const isCurriculumFinished = completedCount >= cert.total_lectures;
+    const isCertified = cert.is_certified;
+
+    // LOCKED PAYWALL VIEW
+    if (!isPaid) {
+      return (
+        <div className="max-w-4xl mx-auto space-y-10 text-left animate-fade-in">
+          <div className="glow-card p-10 relative overflow-hidden flex flex-col md:flex-row items-center gap-10">
+            <div className="absolute top-0 right-0 bg-blue-500/10 text-blue-600 text-[10px] font-black uppercase px-4 py-2 rounded-bl-3xl border-l border-b border-blue-500/20">
+              CoGrad Academy
+            </div>
+            <div className="flex-1 space-y-4">
+              <span className="text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl border border-blue-100">
+                PRO EDUCATOR CERTIFICATION
+              </span>
+              <h2 className="text-2xl font-black text-slate-800 leading-tight">
+                Unlock the CoGrad Certified Badge
+              </h2>
+              <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                Elevate your professional profile, earn parent trust, and unlock premium home tutoring opportunities. Complete our curated 2-3 months training program and clear the certification exam to showcase your skills.
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 text-xs font-semibold text-slate-600">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  </div>
+                  <span>12 Pedagogy & Management Lectures</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  </div>
+                  <span>Interactive 100-mark Certification Exam</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  </div>
+                  <span>Gold Badge on CoGrad Parents Roster</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  </div>
+                  <span>Premium Conversion (Up to 35% higher)</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="w-full md:w-80 bg-slate-50/50 border border-slate-100 rounded-3xl p-6 flex flex-col justify-between items-center text-center space-y-6">
+              <div className="w-14 h-14 rounded-full bg-blue-50 border border-blue-150 flex items-center justify-center">
+                <Lock className="w-6 h-6 text-blue-500" />
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Program Price</span>
+                <p className="text-3xl font-black text-slate-800 mt-1">₹499</p>
+                <p className="text-[10px] text-slate-500 font-semibold mt-1">One-time registration fee</p>
+              </div>
+              <button
+                onClick={handleCertPay}
+                disabled={certActionLoading}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/20 transition-all cursor-pointer"
+              >
+                {certActionLoading ? 'Unlocking...' : 'Unlock Now'}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // TAKING TEST VIEW
+    if (isTakingTest) {
+      return (
+        <div className="max-w-4xl mx-auto space-y-8 text-left animate-fade-in">
+          <div className="flex justify-between items-center bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+            <div>
+              <h2 className="text-lg font-black text-slate-800">CoGrad Certification Exam</h2>
+              <p className="text-xs text-slate-500 mt-0.5">20 Pedagogy & Methodology Questions • 5 Marks Each</p>
+            </div>
+            <button
+              onClick={() => {
+                if (confirm('Are you sure you want to exit the exam? Your progress will be lost.')) {
+                  setIsTakingTest(false);
+                }
+              }}
+              className="px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600 transition-all cursor-pointer bg-white"
+            >
+              Exit Exam
+            </button>
+          </div>
+
+          <div className="space-y-6 bg-white border border-slate-100 rounded-3xl p-8 shadow-sm">
+            {FRONTEND_CERTIFICATION_QUESTIONS.map((q, idx) => (
+              <div key={q.id} className="p-5 bg-slate-50/50 border border-slate-100/50 rounded-2xl space-y-4">
+                <h4 className="text-xs font-black text-slate-800 leading-relaxed">
+                  {idx + 1}. {q.question}
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {q.options.map((opt, optIdx) => (
+                    <label
+                      key={optIdx}
+                      className={`flex items-center gap-3 p-3.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
+                        testAnswers[q.id] === optIdx
+                          ? 'bg-blue-50/80 border-blue-500 text-blue-700 shadow-sm'
+                          : 'bg-white border-slate-200/50 hover:bg-slate-50 text-slate-600'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`q-${q.id}`}
+                        checked={testAnswers[q.id] === optIdx}
+                        onChange={() => setTestAnswers(prev => ({ ...prev, [q.id]: optIdx }))}
+                        className="w-3.5 h-3.5 accent-blue-600 cursor-pointer"
+                      />
+                      <span>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={handleSubmitTest}
+              disabled={certActionLoading}
+              className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/20 disabled:opacity-50 transition-all cursor-pointer border-0"
+            >
+              {certActionLoading ? 'Submitting Answers...' : 'Submit Certification Exam'}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // CERTIFIED SUCCESS VIEW
+    if (isCertified) {
+      return (
+        <div className="max-w-3xl mx-auto space-y-10 text-center animate-fade-in">
+          {/* Confetti container or certificate card */}
+          <div className="glow-card p-10 flex flex-col items-center space-y-8 relative overflow-hidden">
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl"></div>
+            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl"></div>
+            
+            <div className="w-20 h-20 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center animate-bounce shadow-md">
+              <Award className="w-10 h-10 text-amber-500 fill-amber-500/20" />
+            </div>
+
+            <div className="space-y-3">
+              <span className="text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 px-3 py-1.5 rounded-xl border border-amber-100">
+                COGRAD ACADEMY CERTIFIED
+              </span>
+              <h2 className="text-2xl font-black text-slate-800">Congratulations, {teacherProfile.name}!</h2>
+              <p className="text-xs text-slate-500 font-semibold max-w-md mx-auto leading-relaxed">
+                You have successfully unlocked the learning curriculum, completed all training components, and cleared the general exam.
+              </p>
+            </div>
+
+            {/* Certificate visual card */}
+            <div className="w-full max-w-lg bg-slate-50 border-2 border-dashed border-amber-500/30 rounded-3xl p-8 relative space-y-6 shadow-inner text-left">
+              <div className="flex justify-between items-start">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">CERTIFICATE NO: CG-CERT-{teacherProfile.id?.slice(-6).toUpperCase() || 'MEMBER'}</span>
+                <span className="text-[9px] font-black text-amber-600 uppercase bg-amber-50 border border-amber-100 px-2 py-0.5 rounded">PASSED ✓</span>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-base font-black text-slate-800">CoGrad Professional Tutoring Certification</h3>
+                <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                  This certifies that <strong className="text-slate-800">{teacherProfile.name}</strong> has demonstrated expert competency in child pedagogy, classroom management, and lesson planning.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-slate-200/50 flex justify-between items-center text-[10px] font-semibold text-slate-500">
+                <span>Issued: {cert.certified_at ? new Date(cert.certified_at).toLocaleDateString() : new Date().toLocaleDateString()}</span>
+                <span className="font-bold text-slate-700">CoGrad Admin Panel</span>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                onClick={() => {
+                  setActiveTab('My Dashboard');
+                  triggerToast('Your badge is now live on your profile.');
+                }}
+                className="px-6 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer border-0"
+              >
+                Go to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // LEARNING CURRICULUM VIEW (Paid, not yet completed)
+    const activeLectureDetails = certLectures.find(l => l.id === selectedLecture);
+
+    return (
+      <div className="max-w-5xl mx-auto space-y-8 text-left animate-fade-in">
+        
+        {/* Progress Tracker Card */}
+        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="flex-1 space-y-2">
+            <h2 className="text-base font-black text-slate-800">Professional Certification Course</h2>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                  style={{ width: `${(completedCount / cert.total_lectures) * 100}%` }}
+                ></div>
+              </div>
+              <span className="text-xs font-black text-slate-700">{completedCount}/{cert.total_lectures} Completed</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            {isCurriculumFinished ? (
+              <button
+                onClick={() => {
+                  setTestAnswers({});
+                  setIsTakingTest(true);
+                }}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer border-0 flex items-center gap-1.5"
+              >
+                <Award className="w-3.5 h-3.5" />
+                Take Certification Exam
+              </button>
+            ) : (
+              <span className="text-[10px] font-black uppercase tracking-wider bg-slate-50 border border-slate-150 text-slate-400 px-4 py-2.5 rounded-xl flex items-center gap-1.5 cursor-not-allowed">
+                <Lock className="w-3.5 h-3.5" />
+                Exam Unlocks at 12/12
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Video Lecture Player Panel */}
+        {activeLectureDetails && (
+          <div className="bg-slate-900 rounded-3xl p-6 md:p-8 text-white space-y-6 animate-scale-up border border-slate-800">
+            <div className="flex justify-between items-start">
+              <div>
+                <span className="text-[9px] font-black uppercase tracking-widest text-blue-400">LECTURE {activeLectureDetails.id} • MONTH {activeLectureDetails.month}</span>
+                <h3 className="text-base font-black mt-1">{activeLectureDetails.title}</h3>
+              </div>
+              <button
+                onClick={() => setSelectedLecture(null)}
+                className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer border-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Video Mockup Screen */}
+            <div className="aspect-video w-full max-w-2xl mx-auto bg-slate-950 rounded-2xl border border-slate-800 relative overflow-hidden flex flex-col justify-between p-4 group">
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent z-10"></div>
+              
+              <div className="z-20 self-end w-full space-y-3">
+                {/* Control bar */}
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center cursor-pointer shadow-lg shadow-blue-500/20 transition-all">
+                    <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden relative cursor-pointer">
+                    <div className="absolute top-0 left-0 bottom-0 w-1/3 bg-blue-500 rounded-full"></div>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-300">14:02 / {activeLectureDetails.duration}</span>
+                </div>
+              </div>
+
+              {/* Watermark Logo */}
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-950/40 group-hover:bg-slate-950/10 transition-colors">
+                <div className="flex flex-col items-center gap-2">
+                  <span className="text-xs font-black uppercase tracking-widest text-white bg-slate-900/80 px-3 py-1.5 rounded-lg border border-white/10">CoGrad Lecture Series</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4 border-t border-slate-800">
+              <p className="text-xs text-slate-400 font-semibold max-w-md">{activeLectureDetails.description}</p>
+              {!activeLectureDetails.completed && (
+                <button
+                  onClick={() => {
+                    handleCompleteLecture(activeLectureDetails.id);
+                  }}
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer border-0 shrink-0"
+                >
+                  Mark as Completed
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Curriculum Selector Tabs */}
+        <div className="space-y-4">
+          <div className="flex gap-2 border-b border-slate-100 pb-2">
+            {[1, 2, 3].map(month => (
+              <button
+                key={month}
+                onClick={() => setActiveCertMonth(month)}
+                className={`px-4 py-2 text-xs font-black tracking-wide border-0 bg-transparent transition-all cursor-pointer ${
+                  activeCertMonth === month
+                    ? 'text-blue-600 border-b-2 border-blue-500 font-black'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                Month {month} Lectures
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {certLectures
+              .filter(l => l.month === activeCertMonth)
+              .map(lecture => (
+                <div
+                  key={lecture.id}
+                  onClick={() => setSelectedLecture(lecture.id)}
+                  className={`p-5 rounded-2xl border transition-all cursor-pointer hover:shadow-sm ${
+                    lecture.completed
+                      ? 'bg-emerald-50/20 border-emerald-100 hover:bg-emerald-50/40'
+                      : 'bg-white border-slate-150 hover:border-blue-300'
+                  }`}
+                >
+                  <div className="flex justify-between items-start gap-4">
+                    <div>
+                      <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${
+                        lecture.completed ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {lecture.completed ? 'Completed' : `Lecture ${lecture.id}`}
+                      </span>
+                      <h4 className="text-xs font-black text-slate-800 mt-2">{lecture.title}</h4>
+                      <p className="text-[10px] text-slate-400 font-semibold mt-1 line-clamp-2">{lecture.description}</p>
+                    </div>
+                    <span className="text-[9px] font-black text-slate-500 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded shrink-0">{lecture.duration}</span>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+
+      </div>
+    );
+  };
+
   const getActiveTabContent = () => {
     switch (activeTab) {
+      case 'CoGrad Certification': return renderCertification();
       case 'Study Materials': return renderContentResources();
       case 'My Students': return renderClassroomBatches();
       case 'Homework': return renderAssignmentsGrading();
@@ -3978,6 +4479,7 @@ const TeacherDashboard = () => {
           { name: 'Homework', icon: CheckSquare },
           { name: 'Schedule & Attendance', icon: Calendar },
           { name: 'My Earnings', icon: DollarSign },
+          { name: 'CoGrad Certification', icon: Award },
           { name: 'Profile & Reviews', icon: User },
           { name: 'Help & Support', icon: HelpCircle }
         ]}
@@ -3995,6 +4497,22 @@ const TeacherDashboard = () => {
             await api.put('/notifications/my-notifications/read-all');
           } catch (e) {
             console.error('Failed to mark user notifications as read:', e);
+          }
+        }}
+        onDeleteNotif={async (id) => {
+          setUnreadNotifications(p => p.filter(n => n.id !== id));
+          try {
+            await api.delete(`/notifications/my-notifications/${id}`);
+          } catch (e) {
+            console.error('Failed to delete notification:', e);
+          }
+        }}
+        onClearAllNotifs={async () => {
+          setUnreadNotifications([]);
+          try {
+            await api.delete('/notifications/my-notifications/clear-all');
+          } catch (e) {
+            console.error('Failed to clear notifications:', e);
           }
         }}
         onLogout={handleLogout}

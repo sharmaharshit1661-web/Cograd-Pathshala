@@ -355,6 +355,12 @@ router.post('/teachers/onboarding/qualification', protect, mapUserToTeacherId, u
       return res.status(400).json({ message: 'Degree, University and Graduation Year are required' });
     }
 
+    const currentYear = new Date().getFullYear();
+    const gradYearNum = parseInt(graduationYear, 10);
+    if (isNaN(gradYearNum) || gradYearNum < 1970 || gradYearNum > currentYear) {
+      return res.status(400).json({ message: `Please enter a valid graduation year between 1970 and ${currentYear}` });
+    }
+
     const files = req.files || {};
     if (!files.doc_degree && (!user.onboarding_progress?.step_2_qualification?.degreeUrl || user.onboarding_progress?.step_2_qualification?.degreeUrl === '')) {
       return res.status(400).json({ message: 'Degree certificate upload is required' });
@@ -598,6 +604,224 @@ router.post('/admin/teachers/:id/approve', protect, async (req, res) => {
 
     await teacher.save();
     res.json({ message: 'Teacher fully approved and verified successfully', teacher });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ============================================================
+// COGRAD CERTIFICATION PROGRAM ROUTES
+// ============================================================
+
+const CERTIFICATION_LECTURES = [
+  // Month 1: Foundations of Teaching
+  { id: 1, month: 1, title: 'Introduction to Modern Pedagogy', description: 'Understanding student-centric learning approaches and how modern pedagogy differs from traditional methods.', duration: '45 min' },
+  { id: 2, month: 1, title: 'Understanding Child Psychology', description: 'Key developmental stages in children and how to adapt teaching strategies for different age groups.', duration: '50 min' },
+  { id: 3, month: 1, title: 'Effective Lesson Planning', description: 'How to create structured, goal-driven lesson plans with learning objectives and assessments.', duration: '40 min' },
+  { id: 4, month: 1, title: 'Communication Skills for Educators', description: 'Verbal and non-verbal communication techniques to engage students and build rapport with parents.', duration: '35 min' },
+  // Month 2: Classroom Mastery
+  { id: 5, month: 2, title: 'Classroom Management Techniques', description: 'Strategies for maintaining discipline, managing disruptions, and creating a positive learning environment.', duration: '50 min' },
+  { id: 6, month: 2, title: 'Inclusive Education Practices', description: 'Teaching diverse learners including students with special needs, language barriers, and varying abilities.', duration: '45 min' },
+  { id: 7, month: 2, title: 'Assessment & Evaluation Methods', description: 'Formative vs summative assessments, rubric design, and using data to track student progress.', duration: '55 min' },
+  { id: 8, month: 2, title: 'Technology in Education', description: 'Leveraging EdTech tools, digital whiteboards, and online resources to enhance home tutoring sessions.', duration: '40 min' },
+  // Month 3: Professional Excellence
+  { id: 9, month: 3, title: 'Parent-Teacher Collaboration', description: 'Building effective partnerships with parents, conducting progress meetings, and managing expectations.', duration: '35 min' },
+  { id: 10, month: 3, title: 'Motivation & Student Engagement', description: 'Intrinsic vs extrinsic motivation, gamification techniques, and keeping students focused during sessions.', duration: '45 min' },
+  { id: 11, month: 3, title: 'Ethics & Professionalism in Teaching', description: 'Professional conduct, confidentiality, ethical decision-making, and CoGrad community standards.', duration: '30 min' },
+  { id: 12, month: 3, title: 'Building Your Teaching Brand', description: 'Personal branding for tutors, collecting reviews, showcasing results, and growing your student base.', duration: '40 min' },
+];
+
+const CERTIFICATION_TEST_QUESTIONS = [
+  { id: 1, question: 'What is the primary focus of student-centric pedagogy?', options: ['Teacher lectures', 'Student active participation', 'Textbook memorization', 'Strict discipline'], answer: 1 },
+  { id: 2, question: 'According to Piaget, which stage involves abstract thinking?', options: ['Sensorimotor', 'Preoperational', 'Concrete operational', 'Formal operational'], answer: 3 },
+  { id: 3, question: 'A well-structured lesson plan should always begin with?', options: ['Homework review', 'Learning objectives', 'Attendance check', 'Random questions'], answer: 1 },
+  { id: 4, question: 'Which communication technique helps build rapport with shy students?', options: ['Loud instructions', 'Active listening', 'Ignoring them', 'Public questioning'], answer: 1 },
+  { id: 5, question: 'What is the best strategy for managing classroom disruptions?', options: ['Shouting at students', 'Preventive planning and clear rules', 'Ignoring all behavior', 'Punishing immediately'], answer: 1 },
+  { id: 6, question: 'Inclusive education means?', options: ['Teaching only gifted students', 'Excluding weak students', 'Accommodating all learning needs', 'Using one method for everyone'], answer: 2 },
+  { id: 7, question: 'Formative assessment is conducted?', options: ['Only at year-end', 'During the learning process', 'Before admission', 'Never'], answer: 1 },
+  { id: 8, question: 'Which EdTech tool is most useful for interactive home tutoring?', options: ['Fax machine', 'Digital whiteboard', 'Typewriter', 'Landline phone'], answer: 1 },
+  { id: 9, question: 'How often should parent-teacher communication happen ideally?', options: ['Never', 'Once a year', 'Regularly throughout the term', 'Only during emergencies'], answer: 2 },
+  { id: 10, question: 'Intrinsic motivation refers to?', options: ['External rewards', 'Punishment fear', 'Internal desire to learn', 'Parental pressure'], answer: 2 },
+  { id: 11, question: 'Professional ethics for a tutor includes?', options: ['Sharing student data publicly', 'Maintaining confidentiality', 'Favoritism', 'Skipping sessions'], answer: 1 },
+  { id: 12, question: 'Building a teaching brand involves?', options: ['Hiding your qualifications', 'Collecting reviews and showcasing results', 'Avoiding parents', 'Never updating your profile'], answer: 1 },
+  { id: 13, question: 'What is Bloom\'s Taxonomy used for?', options: ['Grading students', 'Classifying learning objectives', 'Scheduling classes', 'Hiring teachers'], answer: 1 },
+  { id: 14, question: 'The Zone of Proximal Development (ZPD) was proposed by?', options: ['Piaget', 'Vygotsky', 'Montessori', 'Dewey'], answer: 1 },
+  { id: 15, question: 'Which is NOT a characteristic of effective feedback?', options: ['Specific', 'Timely', 'Vague and generic', 'Constructive'], answer: 2 },
+  { id: 16, question: 'Differentiated instruction means?', options: ['Teaching the same way to all', 'Adapting teaching to individual needs', 'Only using lectures', 'Ignoring student differences'], answer: 1 },
+  { id: 17, question: 'What is the ideal student-teacher ratio for home tutoring?', options: ['1:50', '1:1 to 1:5', '1:100', '1:30'], answer: 1 },
+  { id: 18, question: 'Summative assessment examples include?', options: ['Quick class polls', 'Final exams and term papers', 'Entry tickets', 'Think-pair-share'], answer: 1 },
+  { id: 19, question: 'Active learning strategies include?', options: ['Only lecturing', 'Group discussions and problem-solving', 'Silent reading only', 'Copying from the board'], answer: 1 },
+  { id: 20, question: 'A growth mindset in students is encouraged by?', options: ['Praising effort over talent', 'Punishing mistakes', 'Comparing students', 'Fixed grading'], answer: 0 },
+];
+
+const CERT_PASS_THRESHOLD = 60; // 60 out of 100
+
+// @desc    Get certification status for a teacher
+// @route   GET /api/teachers/certification/status
+// @access  Private
+router.get('/teachers/certification/status', protect, async (req, res) => {
+  try {
+    const teacher = await User.findOne({ id: req.user.id, role: 'teacher' });
+    if (!teacher) return res.status(404).json({ message: 'Teacher not found' });
+
+    const cert = teacher.certification || {};
+    res.json({
+      payment_status: cert.payment_status || 'unpaid',
+      payment_date: cert.payment_date || null,
+      completed_lectures: cert.completed_lectures || [],
+      test_attempts: cert.test_attempts || [],
+      is_certified: cert.is_certified || false,
+      certified_at: cert.certified_at || null,
+      total_lectures: CERTIFICATION_LECTURES.length,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Get certification lectures with completion status
+// @route   GET /api/teachers/certification/lectures
+// @access  Private
+router.get('/teachers/certification/lectures', protect, async (req, res) => {
+  try {
+    const teacher = await User.findOne({ id: req.user.id, role: 'teacher' });
+    if (!teacher) return res.status(404).json({ message: 'Teacher not found' });
+
+    const cert = teacher.certification || {};
+    if (cert.payment_status !== 'paid') {
+      return res.status(403).json({ message: 'Payment required to access lectures' });
+    }
+
+    const completedIds = cert.completed_lectures || [];
+    const lectures = CERTIFICATION_LECTURES.map(l => ({
+      ...l,
+      completed: completedIds.includes(l.id)
+    }));
+
+    res.json({ lectures, completed_count: completedIds.length, total: CERTIFICATION_LECTURES.length });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Record ₹499 certification payment (simulated)
+// @route   POST /api/teachers/certification/pay
+// @access  Private
+router.post('/teachers/certification/pay', protect, async (req, res) => {
+  try {
+    const teacher = await User.findOne({ id: req.user.id, role: 'teacher' });
+    if (!teacher) return res.status(404).json({ message: 'Teacher not found' });
+
+    if (teacher.certification && teacher.certification.payment_status === 'paid') {
+      return res.status(400).json({ message: 'Payment already completed' });
+    }
+
+    const txnId = 'CG-CERT-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+
+    if (!teacher.certification) teacher.certification = {};
+    teacher.certification.payment_status = 'paid';
+    teacher.certification.payment_date = new Date();
+    teacher.certification.payment_transaction_id = txnId;
+    teacher.markModified('certification');
+    await teacher.save();
+
+    res.json({ message: 'Payment recorded successfully', transaction_id: txnId });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Mark a lecture as completed
+// @route   POST /api/teachers/certification/complete-lecture
+// @access  Private
+router.post('/teachers/certification/complete-lecture', protect, async (req, res) => {
+  try {
+    const { lectureId } = req.body;
+    if (!lectureId) return res.status(400).json({ message: 'lectureId is required' });
+
+    const teacher = await User.findOne({ id: req.user.id, role: 'teacher' });
+    if (!teacher) return res.status(404).json({ message: 'Teacher not found' });
+
+    const cert = teacher.certification || {};
+    if (cert.payment_status !== 'paid') {
+      return res.status(403).json({ message: 'Payment required' });
+    }
+
+    const validLecture = CERTIFICATION_LECTURES.find(l => l.id === lectureId);
+    if (!validLecture) return res.status(400).json({ message: 'Invalid lecture ID' });
+
+    if (!teacher.certification) teacher.certification = {};
+    const completed = teacher.certification.completed_lectures || [];
+    if (!completed.includes(lectureId)) {
+      completed.push(lectureId);
+      teacher.certification.completed_lectures = completed;
+      teacher.markModified('certification');
+      await teacher.save();
+    }
+
+    res.json({ message: 'Lecture marked as completed', completed_lectures: completed });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Submit certification test answers
+// @route   POST /api/teachers/certification/submit-test
+// @access  Private
+router.post('/teachers/certification/submit-test', protect, async (req, res) => {
+  try {
+    const { answers } = req.body; // { questionId: selectedOptionIndex, ... }
+    if (!answers || typeof answers !== 'object') {
+      return res.status(400).json({ message: 'Answers object is required' });
+    }
+
+    const teacher = await User.findOne({ id: req.user.id, role: 'teacher' });
+    if (!teacher) return res.status(404).json({ message: 'Teacher not found' });
+
+    const cert = teacher.certification || {};
+    if (cert.payment_status !== 'paid') {
+      return res.status(403).json({ message: 'Payment required' });
+    }
+
+    const completed = cert.completed_lectures || [];
+    if (completed.length < CERTIFICATION_LECTURES.length) {
+      return res.status(403).json({ message: 'Complete all lectures before taking the test' });
+    }
+
+    if (cert.is_certified) {
+      return res.status(400).json({ message: 'You are already certified' });
+    }
+
+    // Grade the test: 5 marks per correct answer = 100 total
+    let correctCount = 0;
+    const results = CERTIFICATION_TEST_QUESTIONS.map(q => {
+      const selected = answers[q.id];
+      const isCorrect = selected === q.answer;
+      if (isCorrect) correctCount++;
+      return { questionId: q.id, selected, correct: q.answer, isCorrect };
+    });
+
+    const score = correctCount * 5;
+    const passed = score >= CERT_PASS_THRESHOLD;
+
+    if (!teacher.certification) teacher.certification = {};
+    if (!teacher.certification.test_attempts) teacher.certification.test_attempts = [];
+    teacher.certification.test_attempts.push({
+      score,
+      total: 100,
+      passed,
+      attemptedAt: new Date()
+    });
+
+    if (passed) {
+      teacher.certification.is_certified = true;
+      teacher.certification.certified_at = new Date();
+    }
+
+    teacher.markModified('certification');
+    await teacher.save();
+
+    res.json({ score, total: 100, passed, correctCount, totalQuestions: 20, results });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -1237,6 +1461,21 @@ router.post('/demo-bookings', async (req, res) => {
 router.get('/demo-bookings', protect, async (req, res) => {
   try {
     const bookings = await DemoBooking.find();
+    res.json(bookings);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Get demo bookings for logged-in student/parent
+// @route   GET /api/demo-bookings/my-bookings
+// @access  Private (User)
+router.get('/demo-bookings/my-bookings', protect, async (req, res) => {
+  try {
+    const phones = [req.user.phone, req.user.parentPhone].filter(Boolean);
+    const bookings = await DemoBooking.find({
+      parentPhone: { $in: phones }
+    });
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -2128,9 +2367,41 @@ router.put('/notifications/my-notifications/read-all', protect, async (req, res)
       req.user.notifications.forEach(n => {
         n.isNew = false;
       });
+      req.user.markModified('notifications');
       await req.user.save();
     }
     res.json({ message: 'All user notifications marked as read', notifications: req.user.notifications || [] });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Clear all user-specific notifications
+// @route   DELETE /api/notifications/my-notifications/clear-all
+// @access  Private (User)
+router.delete('/notifications/my-notifications/clear-all', protect, async (req, res) => {
+  try {
+    req.user.notifications = [];
+    req.user.markModified('notifications');
+    await req.user.save();
+    res.json({ message: 'All notifications cleared', notifications: [] });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @desc    Delete a specific user-specific notification
+// @route   DELETE /api/notifications/my-notifications/:id
+// @access  Private (User)
+router.delete('/notifications/my-notifications/:id', protect, async (req, res) => {
+  try {
+    const notifId = req.params.id;
+    if (req.user.notifications && req.user.notifications.length > 0) {
+      req.user.notifications = req.user.notifications.filter(n => n.id !== notifId);
+      req.user.markModified('notifications');
+      await req.user.save();
+    }
+    res.json({ message: 'Notification deleted successfully', notifications: req.user.notifications || [] });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

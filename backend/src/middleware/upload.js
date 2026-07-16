@@ -30,7 +30,8 @@ const FIELD_PREFIX = {
   avatar:                'avatar',
 };
 
-const ALLOWED_FORMATS = ['pdf', 'jpg', 'jpeg', 'png'];
+const ALLOWED_DOC_FORMATS = ['pdf', 'jpg', 'jpeg', 'png'];
+const ALLOWED_VIDEO_FORMATS = ['mp4', 'mov', 'avi', 'mkv', 'webm'];
 
 const storage = new CloudinaryStorage({
   cloudinary,
@@ -42,6 +43,16 @@ const storage = new CloudinaryStorage({
       .replace(/[^a-zA-Z0-9._-]/g, '_'); // sanitise
 
     const isPdf = file.mimetype === 'application/pdf' || ext === '.pdf';
+    const isVideo = file.fieldname === 'demo_video' || file.mimetype.startsWith('video/');
+
+    if (isVideo) {
+      return {
+        folder        : `cograd-pathshala/teacher-docs/${teacherId}`,
+        public_id     : `${prefix}_${Date.now()}_${safeName}`,
+        resource_type : 'video',
+        allowed_formats: ALLOWED_VIDEO_FORMATS
+      };
+    }
 
     return {
       folder        : `cograd-pathshala/teacher-docs/${teacherId}`,
@@ -60,12 +71,24 @@ const storage = new CloudinaryStorage({
 
 const fileFilter = (req, file, cb) => {
   const ext = file.originalname.split('.').pop().toLowerCase();
-  if (ALLOWED_FORMATS.includes(ext)) {
-    cb(null, true);
+  const isVideoField = file.fieldname === 'demo_video';
+
+  if (isVideoField) {
+    if (ALLOWED_VIDEO_FORMATS.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error(
+        `File type ".${ext}" is not allowed for videos. Only MP4, MOV, AVI, MKV, and WEBM are accepted.`
+      ));
+    }
   } else {
-    cb(new Error(
-      `File type ".${ext}" is not allowed. Only PDF, JPG, and PNG are accepted.`
-    ));
+    if (ALLOWED_DOC_FORMATS.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error(
+        `File type ".${ext}" is not allowed. Only PDF, JPG, and PNG are accepted.`
+      ));
+    }
   }
 };
 

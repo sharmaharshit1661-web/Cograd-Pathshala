@@ -44,6 +44,8 @@ export default function Login() {
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotIdentifier, setForgotIdentifier] = useState('');
   const [newPasswordText, setNewPasswordText] = useState('');
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [forgotStep, setForgotStep] = useState(1); // 1 = Enter Identifier, 2 = Verify OTP & Reset
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotError, setForgotError] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState('');
@@ -134,13 +136,39 @@ export default function Login() {
 
 
 
-  const handleDirectResetPassword = async (e) => {
+  const handleSendForgotPasswordOTP = async (e) => {
     if (e) e.preventDefault();
     setForgotError('');
     setForgotSuccess('');
     const identifier = forgotIdentifier.trim();
-    if (!identifier || !newPasswordText) {
-      setForgotError('Please fill in all fields.');
+    if (!identifier) {
+      setForgotError('Please enter your email or phone number.');
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const data = await api.post('/auth/forgot-password-otp', {
+        identifier,
+        role
+      });
+      setForgotSuccess(data.message || 'Verification code sent to your email/phone.');
+      setForgotStep(2);
+    } catch (err) {
+      setForgotError(err.message || 'Failed to send verification code.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleResetPasswordWithOTP = async (e) => {
+    if (e) e.preventDefault();
+    setForgotError('');
+    setForgotSuccess('');
+    const identifier = forgotIdentifier.trim();
+    const otp = forgotOtp.trim();
+    const newPassword = newPasswordText;
+    if (!identifier || !otp || !newPassword) {
+      setForgotError('All fields are required.');
       return;
     }
     setForgotLoading(true);
@@ -148,8 +176,8 @@ export default function Login() {
       const data = await api.post('/auth/reset-password-otp', {
         identifier,
         role,
-        otp: '123456', // Dummy code (bypassed on backend)
-        newPassword: newPasswordText
+        otp,
+        newPassword
       });
       setForgotSuccess(data.message || 'Password reset successfully!');
       setTimeout(() => {
@@ -157,6 +185,8 @@ export default function Login() {
         // Reset modal fields
         setForgotIdentifier('');
         setNewPasswordText('');
+        setForgotOtp('');
+        setForgotStep(1);
       }, 2000);
     } catch (err) {
       setForgotError(err.message || 'Failed to reset password.');
@@ -345,6 +375,8 @@ export default function Login() {
                     setShowForgotModal(true);
                     setForgotError('');
                     setForgotSuccess('');
+                    setForgotStep(1);
+                    setForgotOtp('');
                   }}
                   className="text-[11px] font-semibold text-primary-600 hover:text-primary-800 transition-colors cursor-pointer border-0 bg-transparent"
                 >
@@ -483,53 +515,110 @@ export default function Login() {
               </button>
             </div>
 
-            <form onSubmit={handleDirectResetPassword} className="p-6 space-y-4">
-              {forgotError && (
-                <div role="alert" className="flex items-start gap-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-3.5 py-2.5 text-xs font-medium">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{forgotError}</span>
+            {forgotStep === 1 ? (
+              <form onSubmit={handleSendForgotPasswordOTP} className="p-6 space-y-4">
+                {forgotError && (
+                  <div role="alert" className="flex items-start gap-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-3.5 py-2.5 text-xs font-medium">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{forgotError}</span>
+                  </div>
+                )}
+                {forgotSuccess && (
+                  <div role="alert" className="flex items-start gap-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-3.5 py-2.5 text-xs font-medium">
+                    <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{forgotSuccess}</span>
+                  </div>
+                )}
+
+                <div>
+                  <label className="form-label">Email or Phone Number</label>
+                  <input
+                    type="text"
+                    required
+                    value={forgotIdentifier}
+                    onChange={(e) => setForgotIdentifier(e.target.value)}
+                    placeholder="Enter registered email or phone"
+                    className="form-input"
+                  />
                 </div>
-              )}
-              {forgotSuccess && (
-                <div role="alert" className="flex items-start gap-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-3.5 py-2.5 text-xs font-medium">
-                  <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{forgotSuccess}</span>
+
+                <button
+                  type="submit"
+                  disabled={forgotLoading}
+                  className="w-full py-3 rounded-full bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-all shadow-md cursor-pointer border-0"
+                >
+                  {forgotLoading ? 'Sending Code…' : 'Send Verification Code'}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleResetPasswordWithOTP} className="p-6 space-y-4">
+                {forgotError && (
+                  <div role="alert" className="flex items-start gap-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-3.5 py-2.5 text-xs font-medium">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{forgotError}</span>
+                  </div>
+                )}
+                {forgotSuccess && (
+                  <div role="alert" className="flex items-start gap-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-3.5 py-2.5 text-xs font-medium">
+                    <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{forgotSuccess}</span>
+                  </div>
+                )}
+
+                <div>
+                  <label className="form-label text-neutral-500 text-[11px] font-bold uppercase">Resetting for Account</label>
+                  <div className="bg-neutral-50 border border-neutral-100 px-3.5 py-2 rounded-xl text-xs text-neutral-700 font-semibold mb-2">
+                    {forgotIdentifier}
+                  </div>
                 </div>
-              )}
 
-              <div>
-                <label className="form-label">Email or Phone Number</label>
-                <input
-                  type="text"
-                  required
-                  value={forgotIdentifier}
-                  onChange={(e) => setForgotIdentifier(e.target.value)}
-                  placeholder="Enter registered email or phone"
-                  className="form-input"
-                />
-              </div>
+                <div>
+                  <label className="form-label">Verification Code (OTP)</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength="6"
+                    value={forgotOtp}
+                    onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Enter 6-digit OTP code"
+                    className="form-input text-center tracking-[4px] font-bold text-base placeholder:tracking-normal placeholder:font-normal"
+                  />
+                </div>
 
-              <div>
-                <label className="form-label">New Password</label>
-                <input
-                  type="password"
-                  required
-                  value={newPasswordText}
-                  onChange={(e) => setNewPasswordText(e.target.value)}
-                  placeholder="Enter new password"
-                  className="form-input"
-                />
-              </div>
+                <div>
+                  <label className="form-label">New Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={newPasswordText}
+                    onChange={(e) => setNewPasswordText(e.target.value)}
+                    placeholder="Enter new password"
+                    className="form-input"
+                  />
+                </div>
 
-              {/* Action Buttons */}
-              <button
-                type="submit"
-                disabled={forgotLoading}
-                className="w-full py-3 rounded-full bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-all shadow-md cursor-pointer border-0"
-              >
-                {forgotLoading ? 'Resetting Password…' : 'Reset Password'}
-              </button>
-            </form>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotStep(1);
+                      setForgotError('');
+                      setForgotSuccess('');
+                    }}
+                    className="flex-1 py-3 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-semibold transition-all cursor-pointer border-0"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={forgotLoading}
+                    className="flex-[2] py-3 rounded-full bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-all shadow-md cursor-pointer border-0"
+                  >
+                    {forgotLoading ? 'Verifying…' : 'Verify & Reset'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

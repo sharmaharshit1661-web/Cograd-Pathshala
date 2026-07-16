@@ -446,6 +446,12 @@ const Home = () => {
     window.location.href = `/student?location=${encodeURIComponent(locParam)}&area=${encodeURIComponent(areaParam)}`;
   };
 
+  const handleSelectCity = (cityName) => {
+    const match = FLAT_CITIES.find(c => c.name.toLowerCase() === cityName.toLowerCase());
+    const locParam = match ? match.value : cityName;
+    window.location.href = `/student?location=${encodeURIComponent(locParam)}`;
+  };
+
   const handleSearch = () => {
     const query = locationInput.trim();
     if (!query) return;

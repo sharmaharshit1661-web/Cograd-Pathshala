@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardShell from '../components/DashboardShell';
 import DiagnosticGame from '../components/DiagnosticGame';
@@ -31,6 +31,7 @@ import {
   Save,
   UploadCloud,
   MessageSquare,
+  Bot,
   Paperclip,
   Users,
   WifiOff,
@@ -130,156 +131,161 @@ const StudentDashboard = () => {
   });
 
   const [showDiagnosticTest, setShowDiagnosticTest] = useState(false);
+  const [showQuestionsModal, setShowQuestionsModal] = useState(false);
   const [placementAnswers, setPlacementAnswers] = useState({});
 
   // Notification states
   const [unreadNotifications, setUnreadNotifications] = useState([]);
 
-  useEffect(() => {
-    if (!localStorage.getItem('cograd_token')) return;
-    const fetchNotifs = async () => {
-      try {
-        const dbNotifs = await api.get('/notifications/my-notifications');
-        setUnreadNotifications(dbNotifs || []);
-      } catch (e) {
-        console.error('Failed to fetch user notifications:', e);
-      }
-    };
-    fetchNotifs();
-    const interval = setInterval(fetchNotifs, 15000); // Poll every 15 seconds for notifications
-    return () => clearInterval(interval);
-  }, []);
+
 
 
   const [reminderSet, setReminderSet] = useState(false);
+  const [myDemoBookings, setMyDemoBookings] = useState([]);
 
   // Load real user data from backend
   const [, setLoadingData] = useState(true);
   const [matchedTeacherData, setMatchedTeacherData] = useState(null);
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        if (!localStorage.getItem('cograd_token')) return;
-        const user = await api.get('/auth/me');
-        if (user) {
-          // Setup state from DB fields:
-          setAiHistory(user.ai_chat_history || []);
-          setTeacherDoubts(user.teacher_doubts || []);
-          setStudyHours(user.study_hours_log && user.study_hours_log.length > 0
-            ? user.study_hours_log.reduce((acc, curr) => acc + (curr.hours || 0), 0)
-            : 0);
-          setUserGoals(user.study_goals || []);
-          setSavedVideoNotes(user.video_notes || []);
-          setStudentXp(user.xp || 0);
-          setUnlockedRewards(user.unlocked_rewards || []);
-          setEarnedCertificates(user.earned_certificates || []);
-          setDeckProgress(user.flashcard_mastered || { d1: 0, d2: 0, d3: 0 });
 
-          // Initialize syllabus chapters from DB or fallback defaults
-          if (user.syllabus_chapters && user.syllabus_chapters.length > 0) {
-            if (!user.assigned_teacher_id) {
-              const cleanedChapters = user.syllabus_chapters.map(c => ({ ...c, status: 'Not Started' }));
-              setSyllabusChapters(cleanedChapters);
-              api.put(`/students/${user.id}`, { syllabus_chapters: cleanedChapters }).catch(e => console.error(e));
-            } else {
-              setSyllabusChapters(user.syllabus_chapters);
-            }
+  const loadData = useCallback(async () => {
+    try {
+      if (!localStorage.getItem('cograd_token')) return;
+      const user = await api.get('/auth/me');
+      
+      // Fetch notifications inside the same call
+      api.get('/notifications/my-notifications')
+        .then(dbNotifs => setUnreadNotifications(dbNotifs || []))
+        .catch(e => console.error('Failed to fetch user notifications:', e));
+
+      // Fetch demo bookings inside the same call
+      api.get('/demo-bookings/my-bookings')
+        .then(res => setMyDemoBookings(res || []))
+        .catch(e => console.error('Failed to fetch user demo bookings:', e));
+
+      if (user) {
+        // Setup state from DB fields:
+        setAiHistory(user.ai_chat_history || []);
+        setTeacherDoubts(user.teacher_doubts || []);
+        setStudyHours(user.study_hours_log && user.study_hours_log.length > 0
+          ? user.study_hours_log.reduce((acc, curr) => acc + (curr.hours || 0), 0)
+          : 0);
+        setUserGoals(user.study_goals || []);
+        setSavedVideoNotes(user.video_notes || []);
+        setStudentXp(user.xp || 0);
+        setUnlockedRewards(user.unlocked_rewards || []);
+        setEarnedCertificates(user.earned_certificates || []);
+        setDeckProgress(user.flashcard_mastered || { d1: 0, d2: 0, d3: 0 });
+
+        // Initialize syllabus chapters from DB or fallback defaults
+        if (user.syllabus_chapters && user.syllabus_chapters.length > 0) {
+          if (!user.assigned_teacher_id) {
+            const cleanedChapters = user.syllabus_chapters.map(c => ({ ...c, status: 'Not Started' }));
+            setSyllabusChapters(cleanedChapters);
+            api.put(`/students/${user.id}`, { syllabus_chapters: cleanedChapters }).catch(e => console.error(e));
           } else {
-            const defaultChapters = {
-              'Mathematics': ['Linear Equations', 'Quadratic Equations', 'Trigonometry', 'Coordinate Geometry', 'Probability'],
-              'Science': ['Chemical Reactions', 'Life Processes', 'Light Reflection & Refraction', 'Electricity', 'Carbon Compounds'],
-              'Physics': ['Kinematics', 'Laws of Motion', 'Work, Energy & Power', 'Gravitation', 'Thermodynamics'],
-              'Chemistry': ['Structure of Atom', 'Chemical Bonding', 'States of Matter', 'Chemical Kinetics', 'Organic Chemistry'],
-              'Biology': ['Cell Division', 'Human Anatomy', 'Plant Physiology', 'Genetics', 'Evolution'],
-              'English': ['Tenses & Grammar', 'Reading Comprehension', 'Short Stories', 'Poetry Analysis', 'Letter Writing']
-            };
-            const generated = [];
-            const subjectsList = user.subjects || ['Mathematics', 'Science'];
-            subjectsList.forEach(sub => {
-              const chapters = defaultChapters[sub] || ['Chapter 1: Intro', 'Chapter 2: Core', 'Chapter 3: Application', 'Chapter 4: Revision'];
-              chapters.forEach((ch, idx) => {
-                generated.push({
-                  id: `${sub.toLowerCase().substring(0, 2)}_${idx + 1}`,
-                  subject: sub,
-                  name: ch,
-                  status: 'Not Started'
-                });
+            setSyllabusChapters(user.syllabus_chapters);
+          }
+        } else {
+          const defaultChapters = {
+            'Mathematics': ['Linear Equations', 'Quadratic Equations', 'Trigonometry', 'Coordinate Geometry', 'Probability'],
+            'Science': ['Chemical Reactions', 'Life Processes', 'Light Reflection & Refraction', 'Electricity', 'Carbon Compounds'],
+            'Physics': ['Kinematics', 'Laws of Motion', 'Work, Energy & Power', 'Gravitation', 'Thermodynamics'],
+            'Chemistry': ['Structure of Atom', 'Chemical Bonding', 'States of Matter', 'Chemical Kinetics', 'Organic Chemistry'],
+            'Biology': ['Cell Division', 'Human Anatomy', 'Plant Physiology', 'Genetics', 'Evolution'],
+            'English': ['Tenses & Grammar', 'Reading Comprehension', 'Short Stories', 'Poetry Analysis', 'Letter Writing']
+          };
+          const generated = [];
+          const subjectsList = user.subjects || ['Mathematics', 'Science'];
+          subjectsList.forEach(sub => {
+            const chapters = defaultChapters[sub] || ['Chapter 1: Intro', 'Chapter 2: Core', 'Chapter 3: Application', 'Chapter 4: Revision'];
+            chapters.forEach((ch, idx) => {
+              generated.push({
+                id: `${sub.toLowerCase().substring(0, 2)}_${idx + 1}`,
+                subject: sub,
+                name: ch,
+                status: 'Not Started'
               });
             });
-            setSyllabusChapters(generated);
-            api.put(`/students/${user.id}`, { syllabus_chapters: generated }).catch(e => console.error(e));
-          }
-
-          // Compute pending homework and tests dynamically
-          let liveAssignmentsPending = 0;
-          let liveTestsThisWeek = 0;
-          if (user.assigned_teacher_id) {
-            try {
-              const matchedTeacher = await api.get(`/teachers/${user.assigned_teacher_id}`);
-              if (matchedTeacher) {
-                setMatchedTeacherData(matchedTeacher);
-
-                // Calculate pending assignments
-                const teacherAsgs = matchedTeacher.assignments || [];
-                const studentSubs = user.homework_submissions || [];
-                teacherAsgs.forEach(asg => {
-                  const matchedSub = studentSubs.find(sub => sub.assignmentName === asg.name);
-                  if (!matchedSub) {
-                    liveAssignmentsPending += 1;
-                  }
-                });
-
-                // Calculate tests this week
-                const teacherTests = matchedTeacher.tests || [];
-                liveTestsThisWeek = teacherTests.length;
-              }
-            } catch (err) {
-              console.error('Failed to fetch matched teacher details:', err);
-            }
-          }
-
-          setProfileData(prev => ({
-            ...prev,
-            name: user.name || prev.name,
-            email: user.email || prev.email,
-            phone: user.phone || prev.phone,
-            standard: user.standard || prev.standard,
-            avatar: user.avatar || prev.avatar,
-            parentName: user.parentName || prev.parentName,
-            parentPhone: user.parentPhone || prev.parentPhone,
-            city: user.city || prev.district,
-            district: user.city || prev.district,
-            state: user.state || prev.state,
-            joinDate: user.joinDate || prev.joinDate,
-            tuitionSlot: user.tuitionSlot || prev.tuitionSlot,
-            subjects: user.subjects || prev.subjects,
-            address: user.address || prev.address,
-            studentId: user.id || prev.studentId,
-            test_score: user.test_score || prev.test_score,
-            test_completed_at: user.test_completed_at || prev.test_completed_at,
-            assigned_teacher_id: user.assigned_teacher_id || null,
-            matching_eligible: user.matching_eligible !== undefined ? user.matching_eligible : prev.matching_eligible,
-            locality: user.locality || prev.locality,
-            status: user.status || prev.status,
-            streak: user.streak || 0,
-            rank: user.rank || 'N/A',
-            attendance: user.attendance || 'N/A',
-            attendance_log: user.attendance_log || [],
-            pendingHW: liveAssignmentsPending.toString(),
-            testsThisWeek: liveTestsThisWeek.toString(),
-            homework_submissions: user.homework_submissions || [],
-            mock_tests_log: user.mock_tests_log || [],
-            study_hours_log: user.study_hours_log || [],
-          }));
+          });
+          setSyllabusChapters(generated);
+          api.put(`/students/${user.id}`, { syllabus_chapters: generated }).catch(e => console.error(e));
         }
-      } catch (err) {
-        console.error('Failed to load student data:', err);
-      } finally {
-        setLoadingData(false);
+
+        // Compute pending homework and tests dynamically
+        let liveAssignmentsPending = 0;
+        let liveTestsThisWeek = 0;
+        if (user.assigned_teacher_id) {
+          try {
+            const matchedTeacher = await api.get(`/teachers/${user.assigned_teacher_id}`);
+            if (matchedTeacher) {
+              setMatchedTeacherData(matchedTeacher);
+
+              // Calculate pending assignments
+              const teacherAsgs = matchedTeacher.assignments || [];
+              const studentSubs = user.homework_submissions || [];
+              teacherAsgs.forEach(asg => {
+                const matchedSub = studentSubs.find(sub => sub.assignmentName === asg.name);
+                if (!matchedSub) {
+                  liveAssignmentsPending += 1;
+                }
+              });
+
+              // Calculate tests this week
+              const teacherTests = matchedTeacher.tests || [];
+              liveTestsThisWeek = teacherTests.length;
+            }
+          } catch (err) {
+            console.error('Failed to fetch matched teacher details:', err);
+          }
+        }
+
+        setProfileData(prev => ({
+          ...prev,
+          name: user.name || prev.name,
+          email: user.email || prev.email,
+          phone: user.phone || prev.phone,
+          standard: user.standard || prev.standard,
+          avatar: user.avatar || prev.avatar,
+          parentName: user.parentName || prev.parentName,
+          parentPhone: user.parentPhone || prev.parentPhone,
+          city: user.city || prev.district,
+          district: user.city || prev.district,
+          state: user.state || prev.state,
+          joinDate: user.joinDate || prev.joinDate,
+          tuitionSlot: user.tuitionSlot || prev.tuitionSlot,
+          subjects: user.subjects || prev.subjects,
+          address: user.address || prev.address,
+          studentId: user.id || prev.studentId,
+          test_score: user.test_score || prev.test_score,
+          test_completed_at: user.test_completed_at || prev.test_completed_at,
+          assigned_teacher_id: user.assigned_teacher_id || null,
+          matching_eligible: user.matching_eligible !== undefined ? user.matching_eligible : prev.matching_eligible,
+          locality: user.locality || prev.locality,
+          status: user.status || prev.status,
+          streak: user.streak || 0,
+          rank: user.rank || 'N/A',
+          attendance: user.attendance || 'N/A',
+          attendance_log: user.attendance_log || [],
+          pendingHW: liveAssignmentsPending.toString(),
+          testsThisWeek: liveTestsThisWeek.toString(),
+          homework_submissions: user.homework_submissions || [],
+          mock_tests_log: user.mock_tests_log || [],
+          study_hours_log: user.study_hours_log || [],
+        }));
       }
-    };
-    loadData();
+    } catch (err) {
+      console.error('Failed to load student data:', err);
+    } finally {
+      setLoadingData(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadData();
+    // Poll data every 15 seconds to sync dashboard in real-time
+    const interval = setInterval(loadData, 15000);
+    return () => clearInterval(interval);
+  }, [loadData]);
 
 
 
@@ -780,6 +786,19 @@ const StudentDashboard = () => {
 
   const studyMaterials = matchedTeacherData?.study_materials || [];
 
+  const triggerBrowserDownload = (fileName) => {
+    const textContent = `Cograd Pathshala - Study Notes & Materials\n\nFile Name: ${fileName}\n\nThis is a placeholder study resource matching your syllabus chapter. Real academic study sheets, practice assignments, and formula cards will be uploaded here by your allotted teacher.`;
+    const blob = new Blob([textContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName.endsWith('.zip') || fileName.endsWith('.pdf') || fileName.endsWith('.txt') ? fileName : `${fileName}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleDownload = (id, name) => {
     if (downloadingIds[id]) return;
 
@@ -794,6 +813,7 @@ const StudentDashboard = () => {
         clearInterval(interval);
         setTimeout(() => {
           setDownloadingIds(prev => ({ ...prev, [id]: false }));
+          triggerBrowserDownload(name);
           triggerToast(`Downloaded: ${name}`);
         }, 300);
       }
@@ -1133,7 +1153,9 @@ const StudentDashboard = () => {
         tuitionSlot: updatedUser.tuitionSlot,
         standard: updatedUser.standard,
         medium: updatedUser.medium,
-        district: updatedUser.district
+        district: updatedUser.district,
+        schoolName: updatedUser.schoolName,
+        board: updatedUser.board
       });
 
       setIsEditingProfile(false);
@@ -1156,10 +1178,8 @@ const StudentDashboard = () => {
 
   const NAV_ITEMS = [
     { name: 'Home', icon: LayoutDashboard },
-    { name: 'Book Demo', icon: GraduationCap },
     { name: 'Study Material', icon: BookMarked },
     { name: 'Tests', icon: FileText },
-    { name: 'Study Groups', icon: Users },
     { name: 'My Profile', icon: User },
     { name: 'Help & Support', icon: HelpCircle }
   ];
@@ -1183,6 +1203,22 @@ const StudentDashboard = () => {
             console.error('Failed to mark user notifications as read:', e);
           }
         }}
+        onDeleteNotif={async (id) => {
+          setUnreadNotifications(p => p.filter(n => n.id !== id));
+          try {
+            await api.delete(`/notifications/my-notifications/${id}`);
+          } catch (e) {
+            console.error('Failed to delete notification:', e);
+          }
+        }}
+        onClearAllNotifs={async () => {
+          setUnreadNotifications([]);
+          try {
+            await api.delete('/notifications/my-notifications/clear-all');
+          } catch (e) {
+            console.error('Failed to clear notifications:', e);
+          }
+        }}
         onLogout={handleLogout}
         toast={{ show: showToast, message: toastMessage, type: 'success' }}
         onCtaClick={() => setActiveTab('Book Demo')}
@@ -1191,6 +1227,10 @@ const StudentDashboard = () => {
             <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-xl text-amber-700 text-xs font-bold">
               <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
               <span>{profileData.streak}d</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-xl text-indigo-700 text-xs font-bold shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 fill-indigo-500 text-indigo-500 animate-pulse" />
+              <span>{studentXp} XP</span>
             </div>
           </div>
         }
@@ -1300,8 +1340,38 @@ const StudentDashboard = () => {
                             value={editProfileData.locality || ''}
                             onChange={(e) => setEditProfileData(prev => ({ ...prev, locality: e.target.value }))}
                             placeholder="e.g. Civil Lines, Sadar"
+                            />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1 text-left">School Name</label>
+                          <input
+                            type="text"
+                            required
+                            value={editProfileData.schoolName || ''}
+                            onChange={(e) => setEditProfileData(prev => ({ ...prev, schoolName: e.target.value }))}
+                            placeholder="Enter school name"
                             className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
                           />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1 text-left">Board of Education</label>
+                          <select
+                            value={editProfileData.board || ''}
+                            onChange={(e) => setEditProfileData(prev => ({ ...prev, board: e.target.value }))}
+                            className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                          >
+                            <option value="" disabled>Choose your board</option>
+                            <option value="CBSE">CBSE</option>
+                            <option value="ICSE">ICSE</option>
+                            <option value="State Board">State Board</option>
+                            <option value="UP Board">UP Board</option>
+                            <option value="IB">IB</option>
+                            <option value="IGCSE">IGCSE</option>
+                            <option value="Other">Other</option>
+                          </select>
                         </div>
                       </div>
 
@@ -1330,11 +1400,14 @@ const StudentDashboard = () => {
             <DiagnosticGame
               questions={getDiagnosticQuestions(profileData.standard)}
               standard={profileData.standard}
-              onComplete={async (scores) => {
+              onComplete={async (scores, testAnswers) => {
                 try {
                   const updated = {
                     ...profileData,
-                    test_score: scores,
+                    test_score: {
+                      ...scores,
+                      answers: testAnswers
+                    },
                     test_completed_at: new Date().toISOString(),
                     status: 'pending_match'
                   };
@@ -1351,159 +1424,146 @@ const StudentDashboard = () => {
             <>
               {/* TAB 1: HOME (MY DASHBOARD) */}
               {activeTab === 'Home' && (
-                <div className="space-y-6 animate-fade-in text-left">
-                  {/* Upgrade test prompt */}
+                <div className="space-y-5 animate-fade-in text-left">
+
+                  {/* ── 1. WELCOME HERO ── */}
+                  <div className="bg-gradient-to-br from-blue-500 via-indigo-500 to-violet-600 text-white rounded-3xl p-6 sm:p-8 shadow-lg shadow-indigo-500/15 relative overflow-hidden">
+                    <div className="absolute -right-16 -top-16 w-56 h-56 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute right-8 bottom-6 text-white/10 pointer-events-none hidden md:block">
+                      <GraduationCap className="w-36 h-36 transform rotate-12" />
+                    </div>
+                    <div className="relative z-10 space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <h3 className="text-2xl sm:text-3xl font-black tracking-tight">Hi {profileData.name ? profileData.name.split(' ')[0] : 'Student'} 👋</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] bg-white/20 backdrop-blur-md text-white font-extrabold px-2.5 py-1 rounded-xl flex items-center gap-1.5 border border-white/10 shadow-sm">
+                            <Sparkles className="w-3.5 h-3.5 fill-indigo-200 text-indigo-200 animate-pulse" />
+                            <span>{studentXp} XP</span>
+                          </span>
+                          <span className="text-[10px] bg-white/20 backdrop-blur-md text-white font-extrabold px-2.5 py-1 rounded-xl flex items-center gap-1.5 border border-white/10 shadow-sm">
+                            <Flame className="w-3.5 h-3.5 fill-amber-300 text-amber-300 animate-pulse" />
+                            <span>{profileData.streak}d Streak</span>
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-blue-100 text-sm max-w-xl font-medium leading-relaxed">
+                        {profileData.test_score ? (
+                          `Your diagnostic placement score is ${profileData.test_score.totalMarksText} (${getAverageTestScore()}%). We have personalized your study plan for ${profileData.standard || 'your grade'}!`
+                        ) : (
+                          "Welcome to Cograd Pathshala. Complete homework and review study materials."
+                        )}
+                      </p>
+                      {localStorage.getItem(`cograd_parent_message_to_${profileData.studentId}`) && (
+                        <div className="mt-4 p-3.5 bg-white/12 backdrop-blur-md rounded-2xl border border-white/10 text-xs text-white max-w-md">
+                          <div className="font-extrabold uppercase tracking-wider text-[9px] text-amber-300 flex items-center gap-1 mb-1">
+                            <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
+                            Message from {profileData.parentName || 'Parent'}
+                          </div>
+                          <p className="font-semibold italic text-slate-100">"{localStorage.getItem(`cograd_parent_message_to_${profileData.studentId}`)}"</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── 2. QUICK STATS ROW ── */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      {
+                        title: 'Attendance',
+                        val: (!studentProfile.attendance_log || studentProfile.attendance_log.length === 0) ? 'Pending' : studentProfile.attendance,
+                        desc: (!studentProfile.attendance_log || studentProfile.attendance_log.length === 0) ? 'Needs 1st session' : 'Aim for 95%+',
+                        accent: 'border-l-blue-500'
+                      },
+                      {
+                        title: 'Tests This Week',
+                        val: studentProfile.testsThisWeek === '0' ? '0' : studentProfile.testsThisWeek,
+                        desc: studentProfile.testsThisWeek === '0' ? 'No scheduled tests' : 'Mock papers assigned',
+                        accent: 'border-l-purple-500'
+                      },
+                      {
+                        title: 'Pending HW',
+                        val: studentProfile.pendingHW === '0' ? '0' : studentProfile.pendingHW,
+                        desc: studentProfile.pendingHW === '0' ? 'All caught up!' : 'Homework due soon',
+                        accent: 'border-l-rose-500'
+                      },
+                      {
+                        title: 'Study Streak',
+                        val: `${profileData.streak} Days`,
+                        desc: profileData.streak > 0 ? 'Keep it going!' : 'Start studying today',
+                        accent: 'border-l-amber-500'
+                      }
+                    ].map((stat, idx) => (
+                      <div
+                        key={idx}
+                        className={`bg-white rounded-2xl border border-slate-100 border-l-4 ${stat.accent} p-4 shadow-sm hover:shadow-md transition-shadow`}
+                      >
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{stat.title}</span>
+                        <div className="text-xl font-black text-slate-800 tracking-tight mt-2">{stat.val}</div>
+                        <p className="text-[9px] text-slate-400 font-semibold mt-0.5 truncate" title={stat.desc}>{stat.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* ── 3. PLACEMENT ASSESSMENT BANNER ── */}
                   {profileData.matching_eligible && !profileData.test_score && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 text-center space-y-4 shadow-sm">
-                      <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
-                      <div>
-                        <h4 className="text-base font-black text-slate-805">Placement Assessment Required</h4>
-                        <p className="text-xs text-slate-500 mt-1 font-medium">Please complete your Diagnostic Placement Test to find nearby tutors matching your level.</p>
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex flex-col sm:flex-row items-center gap-4 shadow-sm">
+                      <div className="p-3 bg-amber-100 rounded-xl shrink-0">
+                        <AlertTriangle className="w-6 h-6 text-amber-600" />
+                      </div>
+                      <div className="flex-grow text-center sm:text-left">
+                        <h4 className="text-sm font-black text-slate-800">Placement Assessment Required</h4>
+                        <p className="text-xs text-slate-500 mt-0.5 font-medium">Complete your Diagnostic Placement Test to find nearby tutors matching your level.</p>
                       </div>
                       <button
                         onClick={() => {
                           setPlacementAnswers({});
                           setShowDiagnosticTest(true);
                         }}
-                        className="btn-primary py-2.5 px-6 text-xs flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
+                        className="btn-primary py-2.5 px-6 text-xs flex items-center gap-1.5 cursor-pointer shrink-0"
                       >
                         <FileText className="w-4 h-4" />
-                        Start Placement Test
+                        Start Test
                       </button>
                     </div>
                   )}
 
-                  {/* Welcome Card & Stats Grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Left Welcome Card */}
-                    <div className="lg:col-span-2 bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-800 text-white rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-lg shadow-blue-600/15 relative overflow-hidden group">
-                      <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-700" />
-                      <div>
-                        <h3 className="text-2xl sm:text-3xl font-black mb-2 tracking-tight">Hi {profileData.name ? profileData.name.split(' ')[0] : 'Student'} 👋</h3>
-                        <p className="text-blue-100 text-xs sm:text-sm max-w-md font-medium leading-relaxed">
-                          {profileData.test_score ? (
-                            `Your diagnostic placement test score is ${profileData.test_score.totalMarksText} (${getAverageTestScore()}%). We have personalized your study plan for ${profileData.standard || 'your grade'}!`
-                          ) : (
-                            "Welcome to Cograd Pathshala. Complete homework and review study materials."
-                          )}
-                        </p>
-                        {localStorage.getItem(`cograd_parent_message_to_${profileData.studentId}`) && (
-                          <div className="mt-4 p-3 bg-white/15 backdrop-blur-md rounded-2xl border border-white/10 text-xs text-white max-w-md">
-                            <div className="font-extrabold uppercase tracking-wider text-[9px] text-amber-300 flex items-center gap-1 mb-1">
-                              <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
-                              Message from {profileData.parentName || 'Parent'}
-                            </div>
-                            <p className="font-semibold italic text-slate-100 font-medium">"{localStorage.getItem(`cograd_parent_message_to_${profileData.studentId}`)}"</p>
-                          </div>
-                        )}
-                      </div>
-                      <div className="mt-6 flex flex-wrap items-center gap-3">
-                        <span className="text-xs text-blue-200 font-semibold bg-white/10 px-3.5 py-1.5 rounded-xl">Target: {profileData.standard || 'Grade Prep'}</span>
-                      </div>
-                    </div>
-
-                    {/* Right Column: Attendance & Batch Rank Cards (Mini Metric cards) */}
-                    <div className="grid grid-cols-2 gap-4">
-                      {[
-                        {
-                          title: 'Attendance',
-                          val: (!studentProfile.attendance_log || studentProfile.attendance_log.length === 0) ? 'Pending' : studentProfile.attendance,
-                          desc: (!studentProfile.attendance_log || studentProfile.attendance_log.length === 0) ? 'Needs 1st session' : 'Aim for 95%+',
-                          icon: CheckCircle2,
-                          color: 'text-blue-600 bg-blue-50'
-                        },
-                        {
-                          title: 'Batch Rank',
-                          val: studentProfile.rank === 'N/A' ? 'Pending' : studentProfile.rank,
-                          desc: studentProfile.rank === 'N/A' ? 'Needs 1st test' : 'Out of 120 students',
-                          icon: Award,
-                          color: 'text-amber-600 bg-amber-50'
-                        },
-                        {
-                          title: 'Tests This Week',
-                          val: studentProfile.testsThisWeek === '0' ? '0' : studentProfile.testsThisWeek,
-                          desc: studentProfile.testsThisWeek === '0' ? 'No scheduled tests' : 'Mock papers assigned',
-                          icon: FileText,
-                          color: 'text-purple-600 bg-purple-50'
-                        },
-                        {
-                          title: 'Pending HW',
-                          val: studentProfile.pendingHW === '0' ? '0' : studentProfile.pendingHW,
-                          desc: studentProfile.pendingHW === '0' ? 'All caught up!' : 'Homework due soon',
-                          icon: AlertCircle,
-                          color: 'text-rose-600 bg-rose-50'
-                        }
-                      ].map((stat, idx) => {
-                        const Icon = stat.icon;
-                        return (
-                          <div
-                            key={idx}
-                            className="bg-white border border-slate-100 rounded-3xl p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{stat.title}</span>
-                              <div className={`p-1.5 rounded-lg ${stat.color}`}>
-                                <Icon className="w-3.5 h-3.5" />
-                              </div>
-                            </div>
-                            <div className="mt-3">
-                              <div className="text-xl font-black text-slate-800 tracking-tight">{stat.val}</div>
-                              <p className="text-[9px] text-slate-400 font-semibold mt-0.5 truncate" title={stat.desc}>{stat.desc}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Performance Cards if Completed */}
+                  {/* ── 4. DIAGNOSTIC RESULT + PARENT QUIZ ── */}
                   {(profileData.test_score || localStorage.getItem(`cograd_assigned_tests_${profileData.studentId}`)) && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-slide-up">
-                      {/* Diagnostic Test Result */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       {profileData.test_score && (
-                        <div className="bg-gradient-to-br from-indigo-50 to-slate-50 border border-indigo-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between gap-4">
-                          <div className="space-y-2">
+                        <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+                          <div className="space-y-3">
                             <div className="flex items-center gap-2">
-                              <span className="bg-indigo-100 text-indigo-800 border border-indigo-200 text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full">
-                                Placement Profile
-                              </span>
+                              <span className="bg-indigo-50 text-indigo-700 border border-indigo-100 text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full">Test Analysis</span>
                               <span className="text-[9px] text-slate-400 font-bold">
-                                Completed: {new Date(profileData.test_completed_at || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                {new Date(profileData.test_completed_at || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                               </span>
                             </div>
                             <h4 className="text-sm font-black text-slate-800">Diagnostic Performance</h4>
-                            <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">
+                            <p className="text-[11px] text-slate-500 font-semibold">
                               Personalized path for <strong className="text-slate-700">{profileData.standard}</strong>:
                             </p>
-                            <div className="flex gap-3 pt-1">
-                              <div className="bg-white px-2.5 py-1.5 rounded-xl border border-slate-100 shadow-sm text-center flex-1">
+                            <div className="flex gap-3">
+                              <div className="bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 text-center flex-1">
                                 <span className="text-[8px] text-slate-400 font-bold uppercase block">Math</span>
                                 <span className="text-xs font-black text-emerald-600 block mt-0.5">{profileData.test_score.mathMarksText}</span>
                               </div>
-                              <div className="bg-white px-2.5 py-1.5 rounded-xl border border-slate-100 shadow-sm text-center flex-1">
+                              <div className="bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 text-center flex-1">
                                 <span className="text-[8px] text-slate-400 font-bold uppercase block">Science</span>
                                 <span className="text-xs font-black text-blue-600 block mt-0.5">{profileData.test_score.scienceMarksText}</span>
                               </div>
                             </div>
                           </div>
-
-                          <div className="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm space-y-1.5">
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-1 h-1 rounded-full bg-indigo-500" />
-                              <p className="text-[10px] text-slate-500 font-semibold">
-                                {profileData.test_score.Mathematics < 60 ? 'Algebra foundations targeted' : 'Advanced Batches matched'}
-                              </p>
-                            </div>
-                            <div className="pt-1.5 border-t border-slate-100 text-center">
-                              <span className="text-[9px] text-slate-400 font-bold">
-                                {matchedTeacherData ? `Matched: ${matchedTeacherData.name}` : 'Tutor will contact shortly'}
-                              </span>
-                            </div>
-                          </div>
+                          <button
+                            onClick={() => setShowQuestionsModal(true)}
+                            className="w-full mt-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm border-0"
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            View Questions Analysis
+                          </button>
                         </div>
                       )}
 
-                      {/* Parent Quiz Result */}
                       {localStorage.getItem(`cograd_assigned_tests_${profileData.studentId}`) && (() => {
                         let testObj;
                         try {
@@ -1514,23 +1574,22 @@ const StudentDashboard = () => {
                         if (!testObj) return null;
                         const testResult = localStorage.getItem(`cograd_assigned_tests_result_${profileData.studentId}`);
                         return (
-                          <div className="bg-gradient-to-r from-amber-500/5 to-orange-500/5 border border-amber-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between gap-4">
+                          <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
                             <div className="space-y-2">
                               <div className="flex items-center justify-between">
-                                <h4 className="text-xs font-extrabold text-amber-900 uppercase tracking-wider">📝 Homework Quiz Assigned by Parent</h4>
+                                <h4 className="text-xs font-extrabold text-amber-800 uppercase tracking-wider">📝 Parent Assigned Quiz</h4>
                                 {testResult ? (
-                                  <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[8px] font-extrabold px-2 py-0.5 rounded-full">Done</span>
+                                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 text-[8px] font-extrabold px-2 py-0.5 rounded-full">Done</span>
                                 ) : (
-                                  <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[8px] font-extrabold px-2 py-0.5 rounded-full animate-pulse">Pending</span>
+                                  <span className="bg-amber-50 text-amber-700 border border-amber-100 text-[8px] font-extrabold px-2 py-0.5 rounded-full animate-pulse">Pending</span>
                                 )}
                               </div>
-                              <p className="text-xs font-bold text-slate-700 mt-1">{testObj.subject} — {testObj.topic} ({testObj.questionCount} Qs)</p>
-                              <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Parent assigned quiz to verify understanding. Earn +100 XP!</p>
+                              <p className="text-xs font-bold text-slate-700">{testObj.subject} — {testObj.topic} ({testObj.questionCount} Qs)</p>
+                              <p className="text-[10px] text-slate-400 font-semibold">Parent assigned quiz to verify understanding. Earn +100 XP!</p>
                             </div>
-
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-100/50">
+                            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
                               {testResult ? (
-                                <div className="bg-white border border-emerald-100 rounded-xl px-3 py-1 text-center shadow-inner">
+                                <div className="bg-slate-50 border border-emerald-100 rounded-xl px-3 py-1 text-center">
                                   <span className="text-[9px] text-slate-400 font-bold block">Score</span>
                                   <span className="text-sm font-black text-emerald-600">{testResult}</span>
                                 </div>
@@ -1541,7 +1600,7 @@ const StudentDashboard = () => {
                                     setParentTestAnswers({});
                                     setShowParentTestModal(true);
                                   }}
-                                  className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl shadow-sm text-center transition-all duration-200 cursor-pointer border-0"
+                                  className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl shadow-sm text-center transition-all cursor-pointer border-0"
                                 >
                                   Start Quiz
                                 </button>
@@ -1553,155 +1612,289 @@ const StudentDashboard = () => {
                     </div>
                   )}
 
-                  {/* Row 3: My Batches & Recent Results */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    {/* My Batches List */}
-                    <div className="lg:col-span-7 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-base font-black text-slate-800 tracking-tight">My Batches</h3>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Enrolled: {(!profileData.assigned_teacher_id || !matchedTeacherData) ? 0 : 1}</span>
+                  {/* ── 5. MOCK TEST TREND + TUTOR CARD ── */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                    {/* Mock Test Trend Chart */}
+                    <div className="lg:col-span-8 bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                      <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-50">
+                        <div>
+                          <h5 className="text-sm font-black text-slate-800">Mock Test Scores Trend</h5>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Visual report of last 5 mock papers</p>
                         </div>
-
-                        <div className="space-y-4">
-                          {!profileData.assigned_teacher_id || !matchedTeacherData ? (
-                            <div className="empty-state bg-slate-50 border border-slate-100 rounded-2xl py-8">
-                              <span className="text-2xl">🤝</span>
-                              <h4 className="text-xs font-black text-slate-800 mt-2">Tutor Matching In Progress</h4>
-                              <p className="text-[10px] text-slate-400 font-semibold mt-1">Our academic team is selecting a premium local tutor for you. Stay tuned!</p>
-                            </div>
-                          ) : (
-                            [
-                              {
-                                id: matchedTeacherData.id,
-                                name: `${profileData.standard || 'Class 10'} ${matchedTeacherData.primarySubject || 'Mathematics'} Batch`,
-                                tutor: `${matchedTeacherData.name} (${matchedTeacherData.primarySubject || 'Tutor'})`,
-                                syllabus: getSubjectCoverage(matchedTeacherData.primarySubject || 'Mathematics'),
-                                rating: matchedTeacherData.rating >= 4.8 ? 'A+' : 'A',
-                                code: `TUT-${matchedTeacherData.name.split(' ').pop().toUpperCase()}`
-                              }
-                            ].map((batch) => (
-                              <div
-                                key={batch.id}
-                                className="p-4 bg-slate-50/50 hover:bg-slate-50 border border-slate-100 rounded-2xl transition-colors flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
-                              >
-                                <div className="space-y-1">
-                                  <div className="flex items-center space-x-2">
-                                    <span className="text-sm font-black text-slate-800">{batch.name}</span>
-                                    <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-bold">{batch.rating}</span>
-                                  </div>
-                                  <p className="text-slate-400 text-xs font-medium">Tutor: {batch.tutor}</p>
-
-                                  {/* Syllabus progress bar */}
-                                  <div className="flex items-center space-x-3 w-48 sm:w-56 mt-2">
-                                    <div className="h-1.5 bg-slate-200 rounded-full flex-grow">
-                                      <div className="h-full bg-blue-600 rounded-full" style={{ width: `${batch.syllabus}%` }}></div>
-                                    </div>
-                                    <span className="text-[10px] text-slate-500 font-bold shrink-0">{batch.syllabus}% Syllabus</span>
-                                  </div>
-                                </div>
-
-                                <button
-                                  onClick={() => handleDownload(batch.id, `${batch.code}_Class_Notes.zip`)}
-                                  className="w-full sm:w-auto shrink-0 flex items-center justify-center space-x-1.5 bg-white border border-slate-100 hover:border-blue-200 hover:bg-blue-50 text-slate-600 hover:text-blue-700 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
-                                >
-                                  {downloadingIds[batch.id] ? (
-                                    <>
-                                      <span className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
-                                      <span className="tabular-nums">{downloadProgress[batch.id]}%</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Download className="w-3.5 h-3.5" />
-                                      <span>Notes</span>
-                                    </>
-                                  )}
-                                </button>
-                              </div>
-                            ))
-                          )}
-                        </div>
+                        <span className="text-[10px] bg-slate-100 text-slate-600 font-black px-2.5 py-1 rounded-lg">Avg: {getAverageTestScore()}%</span>
                       </div>
+
+                      {getMockTestTrendData().length === 0 ? (
+                        <div className="h-36 flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl border border-slate-100 text-center p-4">
+                          <Award className="w-6 h-6 text-slate-300 animate-bounce" />
+                          <span className="text-[10px] font-black text-slate-500 mt-1.5 block">No mock test scores logged yet.</span>
+                        </div>
+                      ) : (
+                        <div className="h-36 flex items-end justify-between px-2 pt-6">
+                          {getMockTestTrendData().map((item, idx) => (
+                            <div key={idx} className="flex flex-col items-center flex-grow group">
+                              <div className="w-full px-2 relative flex justify-center">
+                                <span className="absolute -top-7 scale-0 group-hover:scale-100 transition-all duration-200 bg-slate-900 text-white font-bold text-[9px] px-2 py-0.5 rounded shadow z-10">
+                                  {item.score}%
+                                </span>
+                                <div
+                                  style={{ height: item.pct }}
+                                  className="w-7 bg-gradient-to-t from-indigo-400 to-indigo-500 hover:from-indigo-600 hover:to-indigo-600 rounded-t-lg transition-all duration-300 shadow-sm shadow-indigo-400/20 cursor-pointer"
+                                ></div>
+                              </div>
+                              <span className="text-[9px] text-slate-400 font-extrabold mt-2 truncate w-14 text-center">{item.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
-                    {/* Recent Results */}
-                    <div className="lg:col-span-5 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-base font-black text-slate-800 tracking-tight">Recent Results</h3>
-                          <button onClick={() => setActiveTab('My Profile')} className="text-xs text-blue-600 hover:underline font-bold">All Mocks</button>
-                        </div>
-
-                        <div className="space-y-3">
-                          {recentResults.length === 0 ? (
-                            <div className="empty-state bg-slate-50 rounded-2xl border border-slate-100/50 py-8">
-                              <FileText className="w-8 h-8 text-slate-300 mx-auto" />
-                              <p className="text-xs font-bold text-slate-500 mt-2">No test reports available yet.</p>
-                              <p className="text-[10px] text-slate-400 font-semibold max-w-xs mx-auto mt-1">Performance reports will populate here.</p>
+                    {/* Assigned Tutor + Demo Bookings */}
+                    <div className="lg:col-span-4 space-y-5">
+                      <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                        <h5 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-3">Assigned Tutors</h5>
+                        {!profileData.assigned_teacher_id || !matchedTeacherData ? (
+                          <div className="bg-slate-50 border border-slate-100 rounded-xl py-5 text-center text-xs text-slate-500 font-semibold">
+                            Tutor matching in progress.
+                          </div>
+                        ) : (
+                          <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-center space-x-3">
+                            <div className="relative w-10 h-10 shrink-0 rounded-full border-2 border-white shadow-sm overflow-hidden bg-white">
+                              <img src={matchedTeacherData.avatar || "/assets/avatar-teacher.png"} alt="Teacher avatar" className="w-full h-full object-cover" />
                             </div>
-                          ) : (
-                            recentResults.map((res) => (
-                              <div
-                                key={res.id}
-                                className="p-3 border border-slate-100 hover:border-slate-200 rounded-2xl flex items-center justify-between transition-all"
-                              >
-                                <div className="min-w-0 flex-grow pr-3">
-                                  <div className="text-xs font-bold text-slate-800 truncate">{res.title}</div>
-                                  <div className="text-[10px] text-slate-400 font-semibold mt-0.5">{res.date}</div>
-                                </div>
+                            <div className="min-w-0 flex-grow">
+                              <span className="text-[8px] bg-blue-50 text-blue-700 border border-blue-100 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                Home Tutor
+                              </span>
+                              <h5 className="text-[11px] font-black text-slate-800 mt-1 truncate">{matchedTeacherData.name}</h5>
+                              <span className="text-[9px] text-slate-400 font-semibold block truncate">
+                                {matchedTeacherData.primarySubject || 'Mathematics'} • {matchedTeacherData.qualification || 'Verified'}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
-                                <div className="flex items-center space-x-3 shrink-0">
-                                  <div className="text-right">
-                                    <span className="text-sm font-black text-slate-800">{res.score}</span>
-                                    <div className="text-[9px] text-slate-400 font-bold">Rank: {res.rank}</div>
+                      {myDemoBookings.length > 0 && (
+                        <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                          <h5 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-3">Demo & Trial Classes</h5>
+                          <div className="space-y-2.5">
+                            {myDemoBookings.map((booking) => {
+                              const isPendingTeacher = booking.status === 'pending_teacher_acceptance';
+                              const isConfirmed = booking.status === 'confirmed';
+                              const isDeclined = booking.status === 'declined';
+                              return (
+                                <div key={booking.id} className="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-2 text-left">
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <h6 className="text-[11px] font-black text-slate-800">
+                                        {booking.subjects.join(', ')} Trial
+                                      </h6>
+                                      <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">
+                                        {booking.preferredDate} at {booking.preferredTime}
+                                      </span>
+                                    </div>
+                                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                                      isConfirmed
+                                        ? 'bg-green-50 text-green-700 border-green-200'
+                                        : isPendingTeacher
+                                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                        : isDeclined
+                                        ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                        : 'bg-blue-50 text-blue-700 border-blue-200'
+                                    }`}>
+                                      {isConfirmed ? 'Scheduled' : isPendingTeacher ? 'Pending Teacher' : isDeclined ? 'Declined' : 'Pending Admin'}
+                                    </span>
                                   </div>
-                                  <button
-                                    onClick={() => setSelectedResult(res)}
-                                    className="text-xs font-bold bg-slate-50 border border-slate-100 text-slate-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100 px-3 py-1.5 rounded-xl transition-all cursor-pointer border-0"
-                                  >
-                                    Analysis
-                                  </button>
+                                  {booking.assigned_teacher_id && (
+                                    <div className="pt-2 border-t border-slate-100/70 flex items-center space-x-2">
+                                      <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px]">
+                                        👨‍🏫
+                                      </div>
+                                      <div className="min-w-0 flex-grow">
+                                        <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wide block">Allotted Tutor</span>
+                                        <span className="text-[10px] font-bold text-slate-700 block truncate">
+                                          {matchedTeacherData?.id === booking.assigned_teacher_id ? matchedTeacherData.name : 'Assigned Tutor'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                              </div>
-                            ))
-                          )}
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-
-                      <div className="mt-4 bg-blue-50 border border-blue-100/30 rounded-2xl p-3 flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center shrink-0">
-                          <Award className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <h5 className="text-[11px] font-bold text-blue-900">Leaderboard update is live</h5>
-                          <p className="text-[9px] text-emerald-700">You climbed 2 positions in Chemistry this week!</p>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Study Material - Recently Added */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-base font-black text-slate-800 tracking-tight">Study Material - Recently Added</h3>
-                        <p className="text-slate-400 text-xs mt-0.5">Click download to trigger local download loading states.</p>
+                  {/* ── 6. SUBJECT PERFORMANCE ── */}
+                  <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                    <h5 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Subject Performance</h5>
+                    <p className="text-[10px] text-slate-400 font-semibold mb-4">Syllabus progress based on session logs.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {subjectBreakdown.map((sb) => (
+                        <div key={sb.subject} className="space-y-1.5 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                          <div className="flex justify-between items-center text-[11px] font-bold text-slate-700">
+                            <span>{sb.subject}</span>
+                            <span className="text-[9px] bg-white px-2 py-0.5 rounded border border-slate-100 font-black uppercase tracking-wider text-slate-500">
+                              {sb.grade}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <div className="h-2 bg-slate-200 rounded-full flex-grow overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${sb.color === 'emerald' ? 'bg-blue-600' :
+                                  sb.color === 'blue' ? 'bg-blue-500' : 'bg-indigo-500'
+                                }`}
+                                style={{ width: `${sb.rate}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-[10px] font-black text-slate-800 shrink-0">{sb.rate}%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── 7. WEEKLY STUDY TRACKER + ATTENDANCE ── */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                    {/* Study Hours Chart */}
+                    <div className="lg:col-span-8 bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-50 pb-3 gap-2 text-left">
+                        <div>
+                          <h5 className="text-xs font-black text-slate-700 uppercase tracking-wider">Weekly Study Tracker</h5>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Log self-study or guided session hours.</p>
+                        </div>
+                        <form onSubmit={handleLogStudyHours} className="flex items-center gap-2.5 shrink-0">
+                          <div className="relative flex items-center">
+                            <Clock className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0.5"
+                              max="24"
+                              required
+                              value={logHoursInput}
+                              onChange={(e) => setLogHoursInput(e.target.value)}
+                              placeholder="Hours"
+                              className="text-xs pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none w-28 font-bold text-slate-800 transition-all placeholder-slate-400"
+                            />
+                          </div>
+                          <button
+                            type="submit"
+                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs px-5 py-2 rounded-xl transition-all cursor-pointer shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 uppercase tracking-wider flex items-center gap-1.5"
+                          >
+                            Log Hours
+                          </button>
+                        </form>
                       </div>
-                      <button onClick={() => setActiveTab('Study Material')} className="text-xs text-blue-600 hover:underline font-bold">View Library</button>
+                      <div className="h-44 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={getWeeklyHoursData()} margin={{ top: 12, right: 8, left: -20, bottom: 0 }} barCategoryGap="25%">
+                            <defs>
+                              <linearGradient id="studyHoursGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#3b82f6" stopOpacity={1}/>
+                                <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.7}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f030" />
+                            <XAxis
+                              dataKey="day"
+                              tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }}
+                              axisLine={false}
+                              tickLine={false}
+                            />
+                            <YAxis
+                              tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
+                              axisLine={false}
+                              tickLine={false}
+                              unit="h"
+                            />
+                            <Tooltip
+                              cursor={{ fill: 'rgba(59,130,246,0.06)', radius: 8 }}
+                              contentStyle={{
+                                background: '#0f172a',
+                                border: 'none',
+                                borderRadius: '12px',
+                                padding: '8px 14px',
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                              }}
+                              labelStyle={{ color: '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                              itemStyle={{ color: '#60a5fa', fontSize: 12, fontWeight: 800 }}
+                              formatter={(value) => [`${value} hrs`, 'Study Time']}
+                            />
+                            <Bar dataKey="hrs" fill="url(#studyHoursGradient)" radius={[8, 8, 0, 0]} maxBarSize={36} animationDuration={800} animationEasing="ease-out">
+                              {getWeeklyHoursData().map((entry, index) => (
+                                <Cell key={`cell-${index}`} fillOpacity={entry.hrs > 0 ? 1 : 0.25} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
 
+                    {/* Attendance Sheet */}
+                    <div className="lg:col-span-4 bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                      <h5 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-3">Attendance Sheet</h5>
+                      {!studentProfile.attendance_log || studentProfile.attendance_log.length === 0 ? (
+                        <div className="bg-slate-50 rounded-xl border border-slate-100/50 py-6 text-center">
+                          <CheckCircle2 className="w-6 h-6 text-slate-300 mx-auto" />
+                          <p className="text-[10px] font-bold text-slate-500 mt-1">Attendance logs will sync after your first class.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3.5">
+                          <div className="flex items-center justify-between p-3 bg-blue-50/40 border border-blue-100/50 rounded-xl">
+                            <div>
+                              <span className="text-[11px] font-black text-blue-900 block">Rate</span>
+                              <p className="text-[9px] text-blue-600 font-bold mt-0.5">Center presence metric</p>
+                            </div>
+                            <span className={`text-sm font-black px-2.5 py-1 rounded-xl shadow-sm border ${parseFloat(studentProfile.attendance) >= 90 ? 'bg-emerald-50 text-emerald-800 border-emerald-100' :
+                              parseFloat(studentProfile.attendance) >= 75 ? 'bg-amber-50 text-amber-800 border-amber-100' :
+                                'bg-rose-50 text-rose-800 border-rose-100'
+                            }`}>
+                              {studentProfile.attendance}
+                            </span>
+                          </div>
+                          <div className="space-y-2 text-[10px] font-bold text-slate-500 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                            <div className="flex justify-between">
+                              <span>Total classes</span>
+                              <span className="text-slate-800 font-black">{studentProfile.attendance_log.length}</span>
+                            </div>
+                            <div className="flex justify-between border-t border-slate-100/50 pt-1.5">
+                              <span>Present</span>
+                              <span className="text-slate-800 font-black">{studentProfile.attendance_log.filter(l => l.status === 'Present').length}</span>
+                            </div>
+                            <div className="flex justify-between border-t border-slate-100/50 pt-1.5">
+                              <span>Absent</span>
+                              <span className="text-slate-800 font-black">{studentProfile.attendance_log.filter(l => l.status === 'Absent').length}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── 8. STUDY MATERIAL — RECENTLY ADDED ── */}
+                  <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h5 className="text-sm font-black text-slate-800 tracking-tight">Study Material</h5>
+                        <p className="text-slate-400 text-[10px] mt-0.5 font-semibold">Recently added resources</p>
+                      </div>
+                      <button onClick={() => setActiveTab('Study Material')} className="text-xs text-blue-600 hover:underline font-bold cursor-pointer">View Library</button>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       {studyMaterials.map((mat) => (
                         <div
                           key={mat.id}
-                          className="p-4 border border-slate-100 hover:border-blue-100 hover:bg-blue-50/5 rounded-2xl transition-all flex flex-col justify-between"
+                          className="p-4 border border-slate-100 hover:border-blue-100 hover:bg-blue-50/5 rounded-xl transition-all flex flex-col justify-between"
                         >
                           <div>
                             <span className="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">{mat.type}</span>
                             <h4 className="text-xs font-bold text-slate-800 mt-2 line-clamp-2 h-8 leading-tight">{mat.name}</h4>
                             <span className="text-[10px] text-slate-400 font-semibold mt-1 block">Size: {mat.size}</span>
                           </div>
-
                           <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between">
                             {downloadingIds[mat.id] ? (
                               <div className="w-full">
@@ -1718,7 +1911,7 @@ const StudentDashboard = () => {
                                 <span className="text-[10px] text-slate-400 font-semibold">Ready</span>
                                 <button
                                   onClick={() => handleDownload(mat.id, mat.name)}
-                                  className="p-1.5 bg-slate-50 border border-slate-100 text-slate-500 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-100 rounded-xl transition-all cursor-pointer border-0"
+                                  className="p-1.5 bg-slate-50 border border-slate-100 text-slate-500 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-100 rounded-xl transition-all cursor-pointer"
                                 >
                                   <Download className="w-3.5 h-3.5" />
                                 </button>
@@ -1730,359 +1923,13 @@ const StudentDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Visual Learning Progress & Analytics Section */}
-                  <div className="bg-slate-50/60 border border-slate-150 rounded-3xl p-6 space-y-8">
-                    {/* Dashboard Section Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-4 gap-4">
-                      <div>
-                        <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-                          <Trophy className="w-5.5 h-5.5 text-blue-600" />
-                          <span>Learning Progress & Performance Analytics</span>
-                        </h3>
-                        <p className="text-slate-505 text-xs mt-1 font-semibold">
-                          Real-time tracking of syllabus completion, mock test ratings, logged study hours, and tutor metrics.
-                        </p>
-                      </div>
-                      <span className="text-[10px] bg-blue-100 text-blue-800 font-extrabold px-3 py-1 rounded-full uppercase tracking-wider h-max w-max">
-                        Official Partner Analytics
-                      </span>
-                    </div>
-
-                    {/* SECTION 1: ACADEMIC PERFORMANCE & TESTING */}
-                    <div className="space-y-4">
-                      <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                        <Star className="w-3.5 h-3.5 text-blue-500" /> Academic Performance & Mock Testing
-                      </h4>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Left: Academic KPI cards */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-white border border-slate-100 rounded-2xl p-4.5 shadow-sm flex flex-col justify-between">
-                            <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">Average Mock Score</span>
-                            <div className="mt-2.5 flex items-baseline gap-1">
-                              <span className="text-2xl font-black text-blue-700">{progressStats.averageTestScore}%</span>
-                              <span className="text-[10px] text-green-600 font-black">▲ Top 15%</span>
-                            </div>
-                          </div>
-
-                          <div className="bg-white border border-slate-100 rounded-2xl p-4.5 shadow-sm flex flex-col justify-between">
-                            <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">Study Consistency</span>
-                            <div className="mt-2.5 flex items-center gap-1.5">
-                              <Flame className="w-5 h-5 text-rose-500 animate-pulse fill-rose-500" />
-                              <span className="text-2xl font-black text-rose-700">{profileData.streak} Days</span>
-                            </div>
-                          </div>
-
-                          <div className="bg-white border border-slate-100 rounded-2xl p-4.5 shadow-sm col-span-2 flex flex-col justify-between">
-                            <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">Enrolled Program Target</span>
-                            <span className="text-xs font-black text-slate-805 mt-2.5 block truncate">{profileData.standard}</span>
-                          </div>
-                        </div>
-
-                        {/* Right: Mock Test Trend Graph */}
-                        <div className="bg-white border border-slate-150 rounded-3xl p-5 shadow-sm md:col-span-2">
-                          <div className="flex items-center justify-between mb-4 border-b border-slate-50 pb-2">
-                            <div>
-                              <h5 className="text-xs font-black text-slate-808">Mock Test Scores Trend</h5>
-                              <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Visual report cards for the last 5 JEE/NEET format mock papers</p>
-                            </div>
-                            <span className="text-[10px] bg-slate-100 text-slate-600 font-black px-2 py-0.5 rounded">Average: {getAverageTestScore()}%</span>
-                          </div>
-
-                          {getMockTestTrendData().length === 0 ? (
-                            <div className="h-32 flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl border border-slate-150 text-center p-4">
-                              <Award className="w-6 h-6 text-slate-300 animate-bounce" />
-                              <span className="text-[10px] font-black text-slate-500 mt-1.5 block">No mock test scores logged yet.</span>
-                            </div>
-                          ) : (
-                            <div className="h-32 flex items-end justify-between px-2 pt-6">
-                              {getMockTestTrendData().map((item, idx) => (
-                                <div key={idx} className="flex flex-col items-center flex-grow group">
-                                  <div className="w-full px-2 relative flex justify-center">
-                                    <span className="absolute -top-7 scale-0 group-hover:scale-100 transition-all duration-200 bg-slate-900 text-white font-bold text-[9px] px-2 py-0.5 rounded shadow z-10">
-                                      {item.score}%
-                                    </span>
-                                    <div
-                                      style={{ height: item.pct }}
-                                      className="w-6 bg-gradient-to-t from-indigo-400 to-indigo-500 hover:from-indigo-600 hover:to-indigo-600 rounded-t-lg transition-all duration-300 shadow-sm shadow-indigo-400/20 cursor-pointer"
-                                    ></div>
-                                  </div>
-                                  <span className="text-[9px] text-slate-400 font-extrabold mt-2 truncate w-14 text-center">{item.label}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* SECTION 2: SYLLABUS COVERAGE & CHAPTER TRACKING */}
-                    <div className="space-y-4 pt-4 border-t border-slate-200">
-                      <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                        <BookOpen className="w-3.5 h-3.5 text-indigo-500" /> Syllabus Coverage & Chapter Tracking
-                      </h4>
-
-                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                        {/* Left: Subject Wise Performance */}
-                        <div className="lg:col-span-4 bg-white border border-slate-150 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-                          <div>
-                            <h5 className="text-xs font-black text-slate-808 uppercase tracking-wider mb-2">Subject Wise Performance</h5>
-                            <p className="text-[10px] text-slate-400 font-semibold mb-4">Calculated syllabus progress based on home session verification logs.</p>
-                          </div>
-
-                          <div className="space-y-4">
-                            {subjectBreakdown.map((sb) => (
-                              <div key={sb.subject} className="space-y-1.5 bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
-                                <div className="flex justify-between items-center text-[11px] font-bold text-slate-705">
-                                  <span>{sb.subject}</span>
-                                  <span className="text-[9px] bg-white px-2 py-0.5 rounded border border-slate-100 font-black uppercase tracking-wider text-slate-500">
-                                    {sb.grade}
-                                  </span>
-                                </div>
-                                <div className="flex items-center space-x-3">
-                                  <div className="h-2 bg-slate-200 rounded-full flex-grow overflow-hidden">
-                                    <div
-                                      className={`h-full rounded-full ${sb.color === 'emerald' ? 'bg-blue-600' :
-                                          sb.color === 'blue' ? 'bg-blue-500' : 'bg-indigo-500'
-                                        }`}
-                                      style={{ width: `${sb.rate}%` }}
-                                    ></div>
-                                  </div>
-                                  <span className="text-[10px] font-black text-slate-805 shrink-0">{sb.rate}%</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Right: Interactive Chapter Tracker */}
-                        <div className="lg:col-span-8 bg-white border border-slate-150 rounded-3xl p-6 shadow-sm">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5 pb-3 border-b border-slate-50">
-                            <div>
-                              <h5 className="text-xs font-black text-slate-808 uppercase tracking-wider">Interactive Syllabus Chapter Tracker</h5>
-                              <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Click chapter badges to toggle status (Completed ➜ In Progress ➜ Not Started)</p>
-                            </div>
-
-                            <div className="flex bg-slate-100 p-1 rounded-xl shrink-0 border border-slate-200/20 w-max self-start sm:self-center">
-                              {['All', 'Mathematics', 'Physics', 'Chemistry'].map(subj => (
-                                <button
-                                  key={subj}
-                                  onClick={() => setSelectedProgressSubject(subj)}
-                                  className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer border-0 ${selectedProgressSubject === subj
-                                      ? 'bg-white text-blue-805 shadow-sm'
-                                      : 'text-slate-505 hover:text-slate-808'
-                                    }`}
-                                >
-                                  {subj === 'Mathematics' ? 'Maths' : subj}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1">
-                            {syllabusChapters.filter(c => c.status !== 'Not Started').length === 0 ? (
-                              <div className="col-span-2 empty-state bg-slate-50 rounded-2xl border border-slate-100/50 py-10">
-                                <BookOpen className="w-8 h-8 text-slate-300 mx-auto" />
-                                <p className="text-xs font-bold text-slate-500 text-center mx-auto mt-2">Syllabus progress will update as you complete chapters with your tutor.</p>
-                              </div>
-                            ) : (
-                              syllabusChapters
-                                .filter(ch => selectedProgressSubject === 'All' || ch.subject === selectedProgressSubject)
-                                .map(ch => (
-                                  <div
-                                    key={ch.id}
-                                    className="p-3 border border-slate-100 hover:border-blue-100/50 hover:bg-blue-50/5 rounded-2xl flex items-center justify-between transition-all"
-                                  >
-                                    <div className="min-w-0 pr-3 text-left">
-                                      <span className={`text-[8px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${ch.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-800 border border-emerald-100' :
-                                          ch.subject === 'Mathematics' ? 'bg-blue-50 text-blue-800 border border-blue-100' :
-                                            'bg-indigo-50 text-indigo-800 border border-indigo-100'
-                                        }`}>
-                                        {ch.subject}
-                                      </span>
-                                      <h5 className="text-[11px] font-black text-slate-800 mt-2 truncate w-40 sm:w-48 md:w-36 lg:w-44">{ch.name}</h5>
-                                    </div>
-
-                                    <button
-                                      onClick={() => toggleChapterStatus(ch.id)}
-                                      className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-sm border-0 ${ch.status === 'Completed' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
-                                          ch.status === 'In Progress' ? 'bg-amber-400 hover:bg-amber-500 text-white' :
-                                            'bg-slate-100 hover:bg-slate-200 text-slate-505'
-                                        }`}
-                                    >
-                                      {ch.status}
-                                    </button>
-                                  </div>
-                                ))
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* SECTION 3: STUDY LOGS, TUTOR & ATTENDANCE */}
-                    <div className="space-y-4 pt-4 border-t border-slate-200">
-                      <h4 className="text-xs font-black text-slate-405 uppercase tracking-widest flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-amber-500" /> Engagement, Logged Hours & Attendance
-                      </h4>
-
-                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                        {/* Left: Study hours logger & graph */}
-                        <div className="lg:col-span-8 bg-white border border-slate-150 rounded-3xl p-6 shadow-sm space-y-4">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-50 pb-3 gap-2 text-left">
-                            <div>
-                              <h5 className="text-xs font-black text-slate-808 uppercase tracking-wider">Weekly Study Tracker</h5>
-                              <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Log self-study or guided session hours to analyze weekly consistency.</p>
-                            </div>
-
-                            {/* Log Hours Inline Form */}
-                            <form onSubmit={handleLogStudyHours} className="flex gap-2 shrink-0">
-                              <input
-                                type="number"
-                                step="0.5"
-                                min="0.5"
-                                max="24"
-                                required
-                                value={logHoursInput}
-                                onChange={(e) => setLogHoursInput(e.target.value)}
-                                placeholder="Hours (e.g. 2)"
-                                className="text-[10px] py-1.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none w-24 text-center font-bold text-slate-800"
-                              />
-                              <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-[9px] px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-sm border-0 uppercase tracking-wider">
-                                Log Hours
-                              </button>
-                            </form>
-                          </div>
-
-                          <div className="h-44 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={getWeeklyHoursData()} margin={{ top: 12, right: 8, left: -20, bottom: 0 }} barCategoryGap="25%">
-                                <defs>
-                                  <linearGradient id="studyHoursGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={1}/>
-                                    <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.7}/>
-                                  </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f030" />
-                                <XAxis
-                                  dataKey="day"
-                                  tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }}
-                                  axisLine={false}
-                                  tickLine={false}
-                                />
-                                <YAxis
-                                  tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
-                                  axisLine={false}
-                                  tickLine={false}
-                                  unit="h"
-                                />
-                                <Tooltip
-                                  cursor={{ fill: 'rgba(59,130,246,0.06)', radius: 8 }}
-                                  contentStyle={{
-                                    background: '#0f172a',
-                                    border: 'none',
-                                    borderRadius: '12px',
-                                    padding: '8px 14px',
-                                    boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-                                  }}
-                                  labelStyle={{ color: '#94a3b8', fontSize: 10, fontWeight: 700 }}
-                                  itemStyle={{ color: '#60a5fa', fontSize: 12, fontWeight: 800 }}
-                                  formatter={(value) => [`${value} hrs`, 'Study Time']}
-                                />
-                                <Bar dataKey="hrs" fill="url(#studyHoursGradient)" radius={[8, 8, 0, 0]} maxBarSize={36} animationDuration={800} animationEasing="ease-out">
-                                  {getWeeklyHoursData().map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fillOpacity={entry.hrs > 0 ? 1 : 0.25} />
-                                  ))}
-                                </Bar>
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-
-                        {/* Right Column: Tutors & Attendance summary */}
-                        <div className="lg:col-span-4 space-y-6 text-left">
-                          {/* Assigned Home Tutor */}
-                          <div className="bg-white border border-slate-150 rounded-3xl p-5 shadow-sm">
-                            <h5 className="text-xs font-black text-slate-808 uppercase tracking-wider mb-3">Assigned Tutors</h5>
-
-                            {!profileData.assigned_teacher_id || !matchedTeacherData ? (
-                              <div className="empty-state bg-slate-50 border border-slate-100 rounded-2xl py-6 text-center text-xs text-slate-500 font-semibold">
-                                Tutor matching in progress. We will show your assigned home tutors here.
-                              </div>
-                            ) : (
-                              <div className="p-3.5 bg-slate-50/50 border border-slate-100 rounded-2xl flex items-center space-x-3.5">
-                                <div className="relative w-11 h-11 shrink-0 rounded-full border-2 border-white shadow-sm overflow-hidden bg-white">
-                                  <img src={matchedTeacherData.avatar || "/assets/avatar-teacher.png"} alt="Teacher avatar" className="w-full h-full object-cover" />
-                                </div>
-                                <div className="min-w-0 flex-grow">
-                                  <span className="text-[8px] bg-blue-50 text-blue-800 border border-blue-100 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                    Assigned Home Tutor
-                                  </span>
-                                  <h5 className="text-[11px] font-black text-slate-805 mt-1 truncate">{matchedTeacherData.name}</h5>
-                                  <span className="text-[9px] text-slate-400 font-semibold block mt-0.5 truncate">
-                                    {matchedTeacherData.primarySubject || 'Mathematics'} • {matchedTeacherData.qualification || 'Verified Tutor'}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Center Attendance */}
-                          <div className="bg-white border border-slate-150 rounded-3xl p-5 shadow-sm">
-                            <h5 className="text-xs font-black text-slate-808 uppercase tracking-wider mb-3">Attendance Sheet</h5>
-
-                            {!studentProfile.attendance_log || studentProfile.attendance_log.length === 0 ? (
-                              <div className="empty-state bg-slate-50 rounded-2xl border border-slate-100/50 py-6">
-                                <CheckCircle2 className="w-6 h-6 text-slate-300 mx-auto" />
-                                <p className="text-[10px] font-bold text-slate-505 text-center mt-1">Attendance logs will sync after your first class.</p>
-                              </div>
-                            ) : (
-                              <div className="space-y-3.5">
-                                <div className="flex items-center justify-between p-3.5 bg-blue-50/30 border border-blue-100/50 rounded-2xl">
-                                  <div>
-                                    <span className="text-[11px] font-black text-blue-900 block">Attendance Rate</span>
-                                    <p className="text-[9px] text-blue-600 font-bold mt-0.5">Vetted center presence metric</p>
-                                  </div>
-                                  <span className={`text-sm font-black px-2.5 py-1 rounded-xl shadow-sm border ${parseFloat(studentProfile.attendance) >= 90 ? 'bg-emerald-50 text-emerald-800 border-emerald-100' :
-                                      parseFloat(studentProfile.attendance) >= 75 ? 'bg-amber-50 text-amber-800 border-amber-100' :
-                                        'bg-rose-50 text-rose-805 border-rose-100'
-                                    }`}>
-                                    {studentProfile.attendance}
-                                  </span>
-                                </div>
-
-                                <div className="space-y-2 text-[10px] font-bold text-slate-505 bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
-                                  <div className="flex justify-between">
-                                    <span>Total classes conducted</span>
-                                    <span className="text-slate-800 font-black">{studentProfile.attendance_log.length} Lectures</span>
-                                  </div>
-                                  <div className="flex justify-between border-t border-slate-100/50 pt-1.5">
-                                    <span>Present classes</span>
-                                    <span className="text-slate-800 font-black">
-                                      {studentProfile.attendance_log.filter(l => l.status === 'Present').length} Lectures
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between border-t border-slate-100/50 pt-1.5">
-                                    <span>Absent classes</span>
-                                    <span className="text-slate-800 font-black">
-                                      {studentProfile.attendance_log.filter(l => l.status === 'Absent').length} Lectures
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
 
               {/* TAB: BOOK DEMO */}
               {activeTab === 'Book Demo' && (
                 <div className="bg-white rounded-3xl border border-slate-100 shadow-md p-2 sm:p-6 text-left animate-fade-in no-glass">
-                  <DemoBooking isEmbedded={true} onClose={() => setActiveTab('Home')} prefillData={profileData} />
+                  <DemoBooking isEmbedded={true} onClose={() => setActiveTab('Home')} prefillData={profileData} theme="green" />
                 </div>
               )}
 
@@ -2456,18 +2303,24 @@ const StudentDashboard = () => {
                     <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
 
                       {/* Photo with Edit hover effect */}
-                      <div className="relative group w-24 h-24 shrink-0 rounded-full border-4 border-blue-50 shadow-md">
-                        <img
-                          src={profileData.avatar}
-                          alt={profileData.name}
-                          className="w-full h-full rounded-full object-cover"
-                        />
+                      <div className="relative group w-24 h-24 shrink-0 rounded-full border-4 border-blue-50 shadow-md bg-slate-100 flex items-center justify-center overflow-hidden">
+                        {profileData.avatar ? (
+                          <img
+                            src={profileData.avatar}
+                            alt={profileData.name}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-2xl font-black text-slate-400 select-none">
+                            {profileData.name ? profileData.name.replace(/Mrs\.|Mr\.|Dr\./, '').trim().slice(0, 2).toUpperCase() : 'S'}
+                          </span>
+                        )}
 
                         {isEditingProfile && (
                           <button
                             type="button"
                             onClick={() => setShowAvatarModal(true)}
-                            className="absolute inset-0 bg-slate-900/60 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            className="absolute inset-0 bg-slate-900/60 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border-0"
                             title="Edit Avatar Image"
                           >
                             <Camera className="w-6 h-6" />
@@ -2480,8 +2333,12 @@ const StudentDashboard = () => {
                         <p className="text-xs text-slate-400 font-bold mt-1">Enrollment ID: <span className="text-slate-600 font-black">{profileData.studentId}</span></p>
 
                         <div className="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
-                          <span className="text-[9px] bg-blue-50 border border-blue-100 text-blue-800 px-3 py-1 rounded-full font-black uppercase tracking-wider">JEE Main 2026 Target</span>
+                          <span className="text-[9px] bg-blue-50 border border-blue-100 text-blue-800 px-3 py-1 rounded-full font-black uppercase tracking-wider">{profileData.board ? (profileData.board.toLowerCase().includes('board') ? profileData.board : `${profileData.board} Board`) : 'CBSE Board'}</span>
                           <span className="text-[9px] bg-slate-50 border border-slate-100 text-slate-600 px-3 py-1 rounded-full font-black uppercase tracking-wider">Join Date: {profileData.joinDate}</span>
+                          <span className="text-[9px] bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-black uppercase tracking-wider flex items-center gap-1">
+                            <Sparkles className="w-2.5 h-2.5 fill-indigo-400 text-indigo-400 animate-pulse" />
+                            <span>{studentXp} XP</span>
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -2524,6 +2381,14 @@ const StudentDashboard = () => {
                               <div>
                                 <span className="text-[10px] text-slate-400 font-extrabold block">Tuition Location District</span>
                                 <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.district}, {profileData.state}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-slate-400 font-extrabold block">School Name</span>
+                                <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.schoolName || 'N/A'}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-slate-400 font-extrabold block">Board of Education</span>
+                                <span className="text-xs font-black text-slate-800 mt-1 block">{profileData.board || 'N/A'}</span>
                               </div>
                             </div>
                           </div>
@@ -2571,28 +2436,103 @@ const StudentDashboard = () => {
 
                           {/* Presets inline avatar selection when editing */}
                           {showAvatarModal && (
-                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/50 mb-4 animate-slide-up">
-                              <div className="flex justify-between items-center mb-3">
-                                <span className="text-xs font-black text-slate-700 uppercase tracking-wider">Select Student Avatar</span>
-                                <button type="button" onClick={() => setShowAvatarModal(false)} className="text-xs font-bold text-red-500">Close</button>
+                            <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200/50 mb-4 animate-slide-up space-y-4">
+                              <div className="flex justify-between items-center pb-2 border-b border-slate-200/40">
+                                <span className="text-xs font-black text-slate-700 uppercase tracking-wider">Select Profile Image</span>
+                                <button type="button" onClick={() => setShowAvatarModal(false)} className="text-xs font-bold text-red-500 hover:text-red-700">Close</button>
                               </div>
-                              <div className="flex space-x-3.5">
-                                {presetAvatars.map((av, idx) => (
+
+                              {/* Presets row */}
+                              <div className="space-y-1.5 text-left">
+                                <span className="text-[10px] font-extrabold text-slate-400 uppercase block">Preset Characters</span>
+                                <div className="flex flex-wrap gap-3">
+                                  {presetAvatars.map((av, idx) => (
+                                    <button
+                                      key={idx}
+                                      type="button"
+                                      onClick={() => {
+                                        setEditProfileData(prev => ({ ...prev, avatar: av }));
+                                        triggerToast("Preset avatar selected!");
+                                      }}
+                                      className={`w-12 h-12 rounded-full overflow-hidden border-2 cursor-pointer transition-all hover:scale-105 active:scale-95 ${editProfileData.avatar === av ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-100'}`}
+                                    >
+                                      <img src={av} alt="Preset avatar" className="w-full h-full object-cover" />
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Upload / Custom URL */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                                {/* Upload Local File */}
+                                <div className="space-y-1.5 text-left">
+                                  <span className="text-[10px] font-extrabold text-slate-400 uppercase block">Upload Local File</span>
+                                  <label className="flex items-center justify-center gap-2 w-full py-2 px-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-xs font-semibold text-slate-700 transition-all">
+                                    <UploadCloud className="w-4 h-4 text-slate-400" />
+                                    <span>Choose Image...</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                          if (file.size > 800000) {
+                                            triggerToast("Choose an image under 800KB.");
+                                            return;
+                                          }
+                                          const reader = new FileReader();
+                                          reader.onloadend = () => {
+                                            setEditProfileData(prev => ({ ...prev, avatar: reader.result }));
+                                            triggerToast("Custom photo loaded!");
+                                          };
+                                          reader.readAsDataURL(file);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                </div>
+
+                                {/* Custom Image URL */}
+                                <div className="space-y-1.5 text-left">
+                                  <span className="text-[10px] font-extrabold text-slate-400 uppercase block">Paste Image URL</span>
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="text"
+                                      placeholder="https://example.com/photo.jpg"
+                                      value={editProfileData.avatar && !editProfileData.avatar.startsWith('data:') ? editProfileData.avatar : ''}
+                                      onChange={(e) => setEditProfileData(prev => ({ ...prev, avatar: e.target.value }))}
+                                      className="flex-1 text-xs py-2 px-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 font-semibold w-full"
+                                    />
+                                    {editProfileData.avatar && !editProfileData.avatar.startsWith('data:') && (
+                                      <button
+                                        type="button"
+                                        onClick={() => triggerToast("Custom URL applied!")}
+                                        className="bg-blue-650 hover:bg-blue-700 text-white font-bold text-[10px] px-3 py-2 rounded-xl transition-all uppercase tracking-wider shrink-0 border-0"
+                                      >
+                                        Apply
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Remove profile photo option */}
+                              {editProfileData.avatar && (
+                                <div className="pt-2 flex justify-start border-t border-slate-200/40">
                                   <button
-                                    key={idx}
                                     type="button"
                                     onClick={() => {
-                                      setEditProfileData(prev => ({ ...prev, avatar: av }));
-                                      setShowAvatarModal(false);
-                                      triggerToast("Selected avatar updated in edit draft!");
+                                      setEditProfileData(prev => ({ ...prev, avatar: '' }));
+                                      triggerToast("Profile photo removed!");
                                     }}
-                                    className={`w-14 h-14 rounded-full overflow-hidden border-2 cursor-pointer transition-all hover:scale-105 active:scale-95 ${editProfileData.avatar === av ? 'border-blue-500 ring-2 ring-emerald-500/20' : 'border-slate-100'
-                                      }`}
+                                    className="text-xs font-bold text-red-500 hover:text-red-700 flex items-center gap-1.5"
                                   >
-                                    <img src={av} alt="Student avatar candidate" className="w-full h-full object-cover" />
+                                    <X className="w-3.5 h-3.5" />
+                                    <span>Remove Photo (Use Initials)</span>
                                   </button>
-                                ))}
-                              </div>
+                                </div>
+                              )}
                             </div>
                           )}
 
@@ -2622,6 +2562,38 @@ const StudentDashboard = () => {
                                   <option value="Class 12 (NEET Target)">Class 12 (NEET Target)</option>
                                   <option value="Class 11 (JEE Core Foundation)">Class 11 (JEE Core Foundation)</option>
                                   <option value="Class 10 CBSE Boards Core">Class 10 CBSE Boards Core</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            {/* School Name & Board */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                              <div>
+                                <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1 text-left">School Name</label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={editProfileData.schoolName || ''}
+                                  onChange={(e) => setEditProfileData(prev => ({ ...prev, schoolName: e.target.value }))}
+                                  className="w-full text-xs py-2 px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                                  placeholder="Enter school name"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-extrabold text-slate-400 uppercase block mb-1 text-left">Board of Education</label>
+                                <select
+                                  value={editProfileData.board || ''}
+                                  onChange={(e) => setEditProfileData(prev => ({ ...prev, board: e.target.value }))}
+                                  className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                                >
+                                  <option value="" disabled>Choose your board</option>
+                                  <option value="CBSE">CBSE</option>
+                                  <option value="ICSE">ICSE</option>
+                                  <option value="State Board">State Board</option>
+                                  <option value="UP Board">UP Board</option>
+                                  <option value="IB">IB</option>
+                                  <option value="IGCSE">IGCSE</option>
+                                  <option value="Other">Other</option>
                                 </select>
                               </div>
                             </div>
@@ -2781,140 +2753,7 @@ const StudentDashboard = () => {
                 </div>
               )}
 
-              {/* TAB: STUDY GROUPS */}
-              {activeTab === 'Study Groups' && (
-                <div className="space-y-6 tab-content-enter">
-                  {studyGroups.length === 0 ? (
-                    <div className="bg-white border border-slate-100 rounded-3xl p-12 shadow-sm text-center flex flex-col items-center justify-center min-h-[500px]">
-                      <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center border border-blue-100 shadow-inner mb-4">
-                        <Users className="w-8 h-8" />
-                      </div>
-                      <h3 className="text-lg font-black text-slate-805 tracking-tight">No Study Groups Joined</h3>
-                      <p className="text-xs text-slate-400 font-semibold max-w-sm mt-1.5 leading-relaxed">
-                        You are currently not enrolled in any peer study groups. You will be automatically added to the official cohort study groups once your classes begin.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col lg:flex-row gap-6 min-h-[580px]">
 
-                      {/* Left Panel: Available Rooms */}
-                      <div className="w-full lg:w-1/3 space-y-4 lg:border-r lg:border-slate-150 lg:pr-6">
-                        <div>
-                          <h3 className="text-lg font-black text-slate-805 tracking-tight">Peer Study Hub</h3>
-                          <p className="text-slate-400 text-xs">Collaborate, share notes, and solve doubts with cohort peers.</p>
-                        </div>
-
-                        <div className="space-y-2.5">
-                          {studyGroups.map((group) => {
-                            const isSelected = activeGroupId === group.id;
-                            return (
-                              <button
-                                key={group.id}
-                                onClick={() => {
-                                  setActiveGroupId(group.id);
-                                  triggerToast(`Joined group chat: ${group.name}`);
-                                }}
-                                className={`w-full text-left p-4 rounded-2xl border transition-all cursor-pointer ${isSelected
-                                    ? 'border-blue-500 bg-blue-50/20 ring-2 ring-blue-500/10 shadow-sm'
-                                    : 'border-slate-100 hover:border-slate-200 bg-slate-50/30'
-                                  }`}
-                              >
-                                <div className="flex justify-between items-start">
-                                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${group.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-800' :
-                                      group.subject === 'Mathematics' ? 'bg-blue-50 text-blue-800' :
-                                        'bg-indigo-50 text-indigo-800'
-                                    }`}>
-                                    {group.subject}
-                                  </span>
-                                  <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full">
-                                    {group.activePeers || 0} online
-                                  </span>
-                                </div>
-                                <h4 className="text-xs font-black text-slate-800 mt-2.5">{group.name}</h4>
-                                <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-relaxed">{group.description}</p>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Right Panel: Discussion Panel & Messages */}
-                      {(() => {
-                        const activeGroup = studyGroups.find(g => g.id === activeGroupId) || studyGroups[0];
-                        return (
-                          <div className="w-full lg:w-2/3 flex flex-col justify-between h-[450px] lg:h-auto">
-                            {/* Active Room Header */}
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 mb-4">
-                              <div className="flex items-center space-x-3">
-                                <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-sm shadow-inner">
-                                  {activeGroup?.name?.[0] || 'G'}
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-black text-slate-808 leading-none">{activeGroup?.name}</h4>
-                                  <span className="text-[10px] font-semibold text-slate-400 mt-1 block">Discussion room for JEE {activeGroup?.subject} topics</span>
-                                </div>
-                              </div>
-                              <span className="text-[10px] bg-slate-100 text-slate-500 font-black px-2.5 py-1 rounded-xl uppercase shadow-sm">
-                                Direct Feed
-                              </span>
-                            </div>
-
-                            {/* Chat Messages Log */}
-                            {isOffline ? (
-                              <div className="flex-grow flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-150 p-6 text-center">
-                                <WifiOff className="w-10 h-10 text-rose-500 animate-pulse mb-3" />
-                                <h5 className="text-xs font-black text-slate-808">Peer Chat Unavailable Offline</h5>
-                                <p className="text-[10px] text-slate-400 font-semibold mt-1 max-w-xs">
-                                  Please switch your workspace back to online mode in the header to sync live chat rooms.
-                                </p>
-                              </div>
-                            ) : (
-                              <div className="flex-grow flex flex-col items-center justify-center p-6 bg-slate-50/40 rounded-3xl border border-slate-100 text-center space-y-5">
-                                <div className="w-14 h-14 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                                  <MessageSquare className="w-7 h-7" />
-                                </div>
-
-                                <div className="max-w-md space-y-1.5">
-                                  <h4 className="text-sm font-black text-slate-808">Direct WhatsApp Group Chat</h4>
-                                  <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
-                                    To ensure high-fidelity communication, instant notifications, and seamless sharing of study sheets, assignments, and doubts, peer discussions for **{activeGroup?.name}** have been redirected to our official WhatsApp study group channels.
-                                  </p>
-                                </div>
-
-                                <div className="w-full max-w-xs bg-white border border-slate-100 rounded-xl p-3.5 text-left space-y-2.5 shadow-sm">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-emerald-500 text-[10px]">✔</span>
-                                    <span className="text-[10px] text-slate-700 font-bold">Daily practice questions shared by mentors</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-emerald-500 text-[10px]">✔</span>
-                                    <span className="text-[10px] text-slate-700 font-bold">Collaborative doubt solving with batchmates</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-emerald-500 text-[10px]">✔</span>
-                                    <span className="text-[10px] text-slate-700 font-bold">Official updates on curriculum schedules</span>
-                                  </div>
-                                </div>
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    window.open(`https://wa.me/919876543210?text=Hello%2C%20I%20am%20a%20student%20at%20Cograd%20Pathshala%20and%20would%20like%20to%20join%20the%20official%20${encodeURIComponent(activeGroup?.name || 'Study Group')}.`, "_blank");
-                                  }}
-                                  className="w-full max-w-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-2xl shadow-lg shadow-emerald-600/15 hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
-                                >
-                                  <MessageSquare className="w-4 h-4" />
-                                  <span>Join WhatsApp Group Chat</span>
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
-                </div>
-              )}
 
 
 
@@ -3438,14 +3277,14 @@ const StudentDashboard = () => {
       </DashboardShell>
 
       {/* Floating AI Chatbot Button & Overlay Drawer */}
-      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 md:bottom-8 md:right-8 z-[9999] flex flex-col items-end">
+      <div className="fixed bottom-8 right-8 sm:bottom-12 sm:right-12 md:bottom-16 md:right-16 z-[9999] flex flex-col items-end">
         {/* Chatbot Overlay Card */}
         {showAiChatbot && (
           <div className="mb-4 w-96 max-w-[calc(100vw-2rem)] h-[580px] bg-white border border-slate-150 rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-slide-up text-slate-800 no-glass">
             <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-750 text-white p-4.5 flex items-center justify-between shadow-md shrink-0">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-inner relative border border-white/15">
-                  <Sparkles className="w-5.5 h-5.5 text-white animate-pulse" />
+                  <Bot className="w-5.5 h-5.5 text-white animate-pulse" />
                   <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
                 </div>
                 <div>
@@ -3753,7 +3592,7 @@ const StudentDashboard = () => {
             <X className="w-6 h-6" />
           ) : (
             <>
-              <Sparkles className="w-6 h-6 animate-pulse" />
+              <Bot className="w-6 h-6 animate-pulse" />
               {/* Notification badge */}
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center text-[7px] font-black text-white">
                 1
@@ -3765,6 +3604,115 @@ const StudentDashboard = () => {
           )}
         </button>
       </div>
+
+      {/* Diagnostic Questions Modal */}
+      {showQuestionsModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] shadow-2xl animate-scale-up flex flex-col text-left overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
+              <div>
+                <h3 className="text-base font-black text-slate-800">Diagnostic Test Analysis</h3>
+                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Review test questions and correct answers for {profileData.standard}</p>
+              </div>
+              <button
+                onClick={() => setShowQuestionsModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-50 border border-slate-150 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5 flex-grow overflow-y-auto">
+              {getDiagnosticQuestions(profileData.standard).map((q, idx) => {
+                const selectedAnswer = profileData.test_score?.answers?.[q.id];
+                const hasSelected = selectedAnswer !== undefined;
+
+                return (
+                  <div key={q.id} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-3 text-left">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                        q.subject === 'Mathematics' 
+                          ? 'bg-blue-50 text-blue-700 border-blue-150' 
+                          : 'bg-indigo-50 text-indigo-700 border-indigo-150'
+                      }`}>
+                        {q.subject}
+                      </span>
+                      <span className="text-[9px] text-slate-400 font-extrabold">{q.marks} Marks</span>
+                    </div>
+                    <h5 className="text-xs font-bold text-slate-700 leading-relaxed">
+                      Q{idx + 1}. {q.text}
+                    </h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                      {q.options.map((opt) => {
+                        const isCorrect = opt === q.correct;
+                        const isSelected = opt === selectedAnswer;
+
+                        let cardStyle = 'bg-white text-slate-600 border-slate-150';
+                        let icon = null;
+
+                        if (isSelected) {
+                          if (isCorrect) {
+                            cardStyle = 'bg-emerald-50 text-emerald-700 border-emerald-250 ring-1 ring-emerald-200';
+                            icon = (
+                              <span className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shrink-0">
+                                ✓
+                              </span>
+                            );
+                          } else {
+                            cardStyle = 'bg-rose-50 text-rose-700 border-rose-250 ring-1 ring-rose-200';
+                            icon = (
+                              <span className="w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center text-[9px] font-black shrink-0">
+                                ✗
+                              </span>
+                            );
+                          }
+                        } else if (isCorrect) {
+                          cardStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                          icon = (
+                            <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-700 flex items-center justify-center text-[9px] font-black shrink-0">
+                              ✓
+                            </span>
+                          );
+                        }
+
+                        return (
+                          <div
+                            key={opt}
+                            className={`p-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-between transition-all ${cardStyle}`}
+                          >
+                            <span>{opt}</span>
+                            {icon}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {hasSelected && (
+                      <div className="text-[9px] font-bold mt-1.5 flex items-center gap-1">
+                        <span className="text-slate-400">Your Answer:</span>
+                        <span className={selectedAnswer === q.correct ? 'text-emerald-600' : 'text-rose-600'}>
+                          {selectedAnswer} {selectedAnswer === q.correct ? '(Correct)' : '(Incorrect)'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl text-right">
+              <button
+                onClick={() => setShowQuestionsModal(false)}
+                className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl cursor-pointer"
+              >
+                Close Analysis
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

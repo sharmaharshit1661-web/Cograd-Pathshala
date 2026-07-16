@@ -82,7 +82,7 @@ export default function DiagnosticGame({ questions = [], standard = '', onComple
     };
     setCompleted(true);
     setTimeout(() => {
-      onComplete?.(scores);
+      onComplete?.(scores, answers);
     }, 2500);
   }, [questions, answers, onComplete]);
 

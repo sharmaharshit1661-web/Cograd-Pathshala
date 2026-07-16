@@ -1,6 +1,17 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+const NotificationItemSchema = new mongoose.Schema(
+  {
+    id: String,
+    text: String,
+    isNew: { type: Boolean, default: true },
+    time: { type: String, default: 'Just now' },
+    createdAt: { type: Date, default: Date.now }
+  },
+  { _id: false, suppressReservedKeysWarning: true }
+);
+
 const StudentSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true },
@@ -15,15 +26,7 @@ const StudentSchema = new mongoose.Schema(
     emailVerificationCode: { type: String, default: null },
     emailVerificationExpires: { type: Date, default: null },
     notifications: {
-      type: [
-        {
-          id: String,
-          text: String,
-          isNew: { type: Boolean, default: true },
-          time: { type: String, default: 'Just now' },
-          createdAt: { type: Date, default: Date.now }
-        }
-      ],
+      type: [NotificationItemSchema],
       default: []
     },
     login_attempts: { type: Number, default: 0 },
@@ -35,6 +38,8 @@ const StudentSchema = new mongoose.Schema(
 
     // Student specific fields
     standard: String,
+    schoolName: { type: String, default: '' },
+    board: { type: String, default: '' },
     subjects: [String],
     test_score: { type: mongoose.Schema.Types.Mixed, default: null },
     test_completed_at: Date,
@@ -76,7 +81,7 @@ const StudentSchema = new mongoose.Schema(
     rank: { type: Number, default: 5 },
     totalInBatch: { type: Number, default: 25 }
   },
-  { timestamps: true }
+  { timestamps: true, suppressReservedKeysWarning: true }
 );
 
 // Encrypt password before saving

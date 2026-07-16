@@ -1,6 +1,17 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+const NotificationItemSchema = new mongoose.Schema(
+  {
+    id: String,
+    text: String,
+    isNew: { type: Boolean, default: true },
+    time: { type: String, default: 'Just now' },
+    createdAt: { type: Date, default: Date.now }
+  },
+  { _id: false, suppressReservedKeysWarning: true }
+);
+
 const TeacherSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true },
@@ -15,15 +26,7 @@ const TeacherSchema = new mongoose.Schema(
     emailVerificationCode: { type: String, default: null },
     emailVerificationExpires: { type: Date, default: null },
     notifications: {
-      type: [
-        {
-          id: String,
-          text: String,
-          isNew: { type: Boolean, default: true },
-          time: { type: String, default: 'Just now' },
-          createdAt: { type: Date, default: Date.now }
-        }
-      ],
+      type: [NotificationItemSchema],
       default: []
     },
     login_attempts: { type: Number, default: 0 },
@@ -85,6 +88,22 @@ const TeacherSchema = new mongoose.Schema(
         feedback: { type: String, default: '' }
       }
     },
+    // CoGrad Certification Program
+    certification: {
+      payment_status: { type: String, enum: ['unpaid', 'paid'], default: 'unpaid' },
+      payment_date: { type: Date, default: null },
+      payment_transaction_id: { type: String, default: null },
+      completed_lectures: { type: [Number], default: [] },
+      test_attempts: [{
+        score: Number,
+        total: { type: Number, default: 100 },
+        passed: Boolean,
+        attemptedAt: { type: Date, default: Date.now }
+      }],
+      is_certified: { type: Boolean, default: false },
+      certified_at: { type: Date, default: null }
+    },
+
     current_student_count: { type: Number, default: 0 },
     max_student_capacity: { type: Number, default: 5 },
     teaching_style: { type: String, enum: ['beginner', 'intermediate', 'advanced'], default: 'intermediate' },
@@ -115,7 +134,7 @@ const TeacherSchema = new mongoose.Schema(
     reviews: { type: [mongoose.Schema.Types.Mixed], default: [] },
     tests: { type: [mongoose.Schema.Types.Mixed], default: [] }
   },
-  { timestamps: true }
+  { timestamps: true, suppressReservedKeysWarning: true }
 );
 
 // Encrypt password before saving

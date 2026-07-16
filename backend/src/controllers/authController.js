@@ -263,7 +263,7 @@ export const registerUser = async (req, res) => {
       const uploadedFiles = req.files || {};
       userData.avatar = (uploadedFiles.avatar && uploadedFiles.avatar.length > 0)
         ? uploadedFiles.avatar[0].path
-        : (extraFields.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80');
+        : (extraFields.avatar || (role === 'student' ? '' : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'));
 
       // Build documents array from Cloudinary-uploaded files
       const processedDocs = [];
@@ -624,7 +624,7 @@ export const googleLogin = async (req, res) => {
       phone: extraFields?.phone || '0000000000',
       role,
       isEmailVerified: true, // Google email is verified
-      avatar: payload.picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+      avatar: payload.picture || (role === 'student' ? '' : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'),
       ...extraFields,
     };
 
@@ -943,6 +943,16 @@ export const resetPasswordOTP = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ message: 'Account not found.' });
+    }
+
+    // Verify OTP code
+    if (!user.reset_otp_code || user.reset_otp_code !== otp) {
+      return res.status(400).json({ message: 'Invalid verification code.' });
+    }
+
+    // Verify OTP expiry
+    if (user.reset_otp_expires_at && new Date() > new Date(user.reset_otp_expires_at)) {
+      return res.status(400).json({ message: 'Verification code has expired.' });
     }
 
     // Set new password (pre-save hook will automatically hash it)

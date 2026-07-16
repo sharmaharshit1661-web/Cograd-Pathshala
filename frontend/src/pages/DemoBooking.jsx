@@ -19,8 +19,8 @@ const CONFETTI = Array.from({ length: 30 }).map((_, i) => ({
   duration: Math.random() * 1.5 + 1.5,
 }));
 
-const DemoBooking = ({ isEmbedded = false, onClose, prefillData }) => {
-  const [step, setStep] = useState(1);
+const DemoBooking = ({ isEmbedded = false, onClose, prefillData, theme }) => {
+  const [step, setStep] = useState(prefillData ? 2 : 1);
   const [dir, setDir] = useState('next');
   const [shake, setShake] = useState(false);
   const [form, setForm] = useState({
@@ -110,11 +110,18 @@ const DemoBooking = ({ isEmbedded = false, onClose, prefillData }) => {
     if (validateStep(step)) { setDir('next'); setStep((p) => p + 1); }
     else triggerShake();
   };
-  const goPrev = () => { setDir('prev'); setStep((p) => p - 1); };
+  const goPrev = () => {
+    if (prefillData && step === 2) return;
+    setDir('prev');
+    setStep((p) => p - 1);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateStep(3)) { triggerShake(); return; }
+    if (!validateStep(1) || !validateStep(2) || !validateStep(3)) {
+      triggerShake();
+      return;
+    }
     try {
       const response = await api.post('/demo-bookings', {
         studentName: form.studentName,
@@ -138,7 +145,17 @@ const DemoBooking = ({ isEmbedded = false, onClose, prefillData }) => {
 
   const closeModal = () => {
     setShowSuccess(false);
-    setStep(1); setForm({ studentName: '', parentPhone: '', studentClass: '', preferredDate: '', preferredTime: '', district: '', villageArea: '', landmark: '' });
+    setStep(prefillData ? 2 : 1);
+    setForm({
+      studentName: prefillData?.name || '',
+      parentPhone: prefillData?.parentPhone || prefillData?.phone || '',
+      studentClass: prefillData?.standard || '',
+      preferredDate: '',
+      preferredTime: '',
+      district: prefillData?.district || prefillData?.city || '',
+      villageArea: prefillData?.locality || '',
+      landmark: prefillData?.address || ''
+    });
     setSelectedSubjects([]); setSelectedDays([]);
     setSelectedSlot(null);
     setCitySearch('');
@@ -188,7 +205,7 @@ const DemoBooking = ({ isEmbedded = false, onClose, prefillData }) => {
             <div className={`bg-white rounded-2xl border border-neutral-100 shadow-sm transition-all ${shake ? 'animate-shake' : ''} relative`}>
 
               {/* Progress header */}
-              <div className="bg-gradient-to-r from-primary-600 to-secondary-600 p-5 text-white rounded-t-2xl relative">
+              <div className={`bg-gradient-to-r ${theme === 'green' ? 'from-emerald-600 to-emerald-700' : 'from-primary-600 to-secondary-600'} p-5 text-white rounded-t-2xl relative`}>
                 {isEmbedded && onClose && (
                   <button
                     type="button"
@@ -199,31 +216,33 @@ const DemoBooking = ({ isEmbedded = false, onClose, prefillData }) => {
                     <X className="w-5 h-5" />
                   </button>
                 )}
-                <div className="flex items-center gap-2 mb-4">
-                  {STEPS.map((s, i) => (
-                    <div key={s.n} className="flex items-center gap-2 flex-1 last:flex-none">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 shrink-0 ${
-                        step > s.n
-                          ? 'bg-white text-primary-700 border-white'
-                          : step === s.n
-                          ? 'bg-white/20 text-white border-white shadow-md'
-                          : 'bg-white/10 text-white/50 border-white/20'
-                      }`}>
-                        {step > s.n ? (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24" aria-hidden="true">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : s.n}
+                {!prefillData && (
+                  <div className="flex items-center gap-2 mb-4">
+                    {STEPS.map((s, i) => (
+                      <div key={s.n} className="flex items-center gap-2 flex-1 last:flex-none">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 shrink-0 ${
+                          step > s.n
+                            ? (theme === 'green' ? 'bg-white text-emerald-700 border-white' : 'bg-white text-primary-700 border-white')
+                            : step === s.n
+                            ? 'bg-white/20 text-white border-white shadow-md'
+                            : 'bg-white/10 text-white/50 border-white/20'
+                        }`}>
+                          {step > s.n ? (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24" aria-hidden="true">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : s.n}
+                        </div>
+                        <span className={`text-xs font-semibold hidden sm:block ${step >= s.n ? 'text-white' : 'text-white/50'}`}>{s.label}</span>
+                        {i < STEPS.length - 1 && (
+                          <div className="flex-1 h-px mx-1 transition-all duration-500" style={{ background: step > s.n ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.2)' }} />
+                        )}
                       </div>
-                      <span className={`text-xs font-semibold hidden sm:block ${step >= s.n ? 'text-white' : 'text-white/50'}`}>{s.label}</span>
-                      {i < STEPS.length - 1 && (
-                        <div className="flex-1 h-px mx-1 transition-all duration-500" style={{ background: step > s.n ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.2)' }} />
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <h2 className="text-base font-bold">Book Free Demo Class</h2>
-                <p className="text-white/70 text-xs mt-0.5">Fill in details to experience learning at home</p>
+                    ))}
+                  </div>
+                )}
+                <h2 className="text-base font-bold">{prefillData ? 'Schedule Trial Demo Class' : 'Book Free Demo Class'}</h2>
+                <p className="text-white/70 text-xs mt-0.5">{prefillData ? 'Select your subjects and preferred timings below' : 'Fill in details to experience learning at home'}</p>
               </div>
 
               <div className="p-7">
@@ -305,7 +324,7 @@ const DemoBooking = ({ isEmbedded = false, onClose, prefillData }) => {
                             )}
                           </div>
                           {form.district && (
-                            <p className="text-[11px] text-primary-600 font-semibold mt-1.5 flex items-center gap-1">
+                            <p className={`text-[11px] ${theme === 'green' ? 'text-emerald-600' : 'text-primary-600'} font-semibold mt-1.5 flex items-center gap-1`}>
                               <span aria-hidden="true">📍</span> Selected: <strong>{form.district}</strong>
                             </p>
                           )}
@@ -322,7 +341,7 @@ const DemoBooking = ({ isEmbedded = false, onClose, prefillData }) => {
                             {SUBJECTS.map((s) => {
                               const sel = selectedSubjects.includes(s);
                               return (
-                                <button key={s} type="button" onClick={() => setSelectedSubjects((p) => sel ? p.filter((x) => x !== s) : [...p, s])} className={`py-2.5 px-2 rounded-xl border text-xs font-medium cursor-pointer transition-all text-center ${sel ? 'bg-primary-600 text-white border-primary-600 shadow-sm' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'}`}>
+                                <button key={s} type="button" onClick={() => setSelectedSubjects((p) => sel ? p.filter((x) => x !== s) : [...p, s])} className={`py-2.5 px-2 rounded-xl border text-xs font-medium cursor-pointer transition-all text-center ${sel ? (theme === 'green' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-primary-600 text-white border-primary-600 shadow-sm') : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'}`}>
                                   {s}
                                 </button>
                               );
@@ -354,7 +373,7 @@ const DemoBooking = ({ isEmbedded = false, onClose, prefillData }) => {
                                       }}
                                       className={`p-3 text-left rounded-xl border cursor-pointer transition-all ${
                                         isSel
-                                          ? 'bg-primary-50 border-primary-500 text-primary-900 shadow-sm ring-1 ring-primary-500'
+                                          ? (theme === 'green' ? 'bg-emerald-50 border-emerald-500 text-emerald-900 shadow-sm ring-1 ring-emerald-500' : 'bg-primary-50 border-primary-500 text-primary-900 shadow-sm ring-1 ring-primary-500')
                                           : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'
                                       }`}
                                     >
@@ -388,7 +407,7 @@ const DemoBooking = ({ isEmbedded = false, onClose, prefillData }) => {
                                   <label className="form-label mb-2"><Clock className="w-3.5 h-3.5 text-neutral-400 mr-1.5" />Preferred Time</label>
                                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                                     {TIME_SLOTS.map((t) => (
-                                      <button key={t} type="button" onClick={() => setForm((p) => ({ ...p, preferredTime: t }))} className={`py-2 text-[10.5px] font-medium rounded-lg border cursor-pointer transition-all text-center ${form.preferredTime === t ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'}`}>
+                                      <button key={t} type="button" onClick={() => setForm((p) => ({ ...p, preferredTime: t }))} className={`py-2 text-[10.5px] font-medium rounded-lg border cursor-pointer transition-all text-center ${form.preferredTime === t ? (theme === 'green' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-primary-600 text-white border-primary-600') : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'}`}>
                                         {t}
                                       </button>
                                     ))}
@@ -400,7 +419,7 @@ const DemoBooking = ({ isEmbedded = false, onClose, prefillData }) => {
                                     {DAYS.map((d) => {
                                       const sel = selectedDays.includes(d);
                                       return (
-                                        <button key={d} type="button" onClick={() => setSelectedDays((p) => sel ? p.filter((x) => x !== d) : [...p, d])} className={`px-3.5 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-all ${sel ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'}`}>
+                                        <button key={d} type="button" onClick={() => setSelectedDays((p) => sel ? p.filter((x) => x !== d) : [...p, d])} className={`px-3.5 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-all ${sel ? (theme === 'green' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-primary-600 text-white border-primary-600') : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'}`}>
                                           {d.slice(0, 3)}
                                         </button>
                                       );
@@ -451,17 +470,32 @@ const DemoBooking = ({ isEmbedded = false, onClose, prefillData }) => {
 
                   {/* Navigation */}
                   <div className="flex gap-3 mt-7 relative z-0">
-                    {step > 1 && (
+                    {step > 1 && !prefillData && (
                       <button type="button" onClick={goPrev} className="flex-1 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-medium rounded-xl cursor-pointer transition-all">
                         Back
                       </button>
                     )}
-                    {step < 3 ? (
-                      <button type="button" onClick={goNext} className="flex-1 btn-primary py-3 gap-2">
+                    {step < 3 && !prefillData ? (
+                      <button 
+                        type="button" 
+                        onClick={goNext} 
+                        className={`flex-grow py-3 px-6 rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                          theme === 'green' 
+                            ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white shadow-md shadow-emerald-500/25 active:scale-[0.98]' 
+                            : 'btn-primary'
+                        }`}
+                      >
                         Continue <ArrowRight className="w-4 h-4" />
                       </button>
                     ) : (
-                      <button type="submit" className="flex-1 btn-primary py-3 gap-2">
+                      <button 
+                        type="submit" 
+                        className={`flex-grow py-3 px-6 rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                          theme === 'green' 
+                            ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white shadow-md shadow-emerald-500/25 active:scale-[0.98]' 
+                            : 'btn-primary'
+                        }`}
+                      >
                         Book Free Demo <CheckCircle className="w-4 h-4" />
                       </button>
                     )}

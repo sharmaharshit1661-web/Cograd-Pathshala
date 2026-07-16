@@ -2691,6 +2691,104 @@ const AdminDashboard = () => {
                     />
                   </div>
 
+                  {/* Initial Registration Documents */}
+                  <div className="p-5 bg-white rounded-2xl border border-slate-150 shadow-xs space-y-4">
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                      <span className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                        <FileText className="w-4.5 h-4.5 text-indigo-600" />
+                        <span>Registration Credentials Documents</span>
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {(() => {
+                        const TYPE_MAP = {
+                          degree:     (d) => d.type === 'Academic'   || d.name?.toLowerCase().includes('degree'),
+                          aadhar:     (d) => d.type === 'Identity'   || d.name?.toLowerCase().includes('aadhaar') || d.name?.toLowerCase().includes('aadhar') || d.name?.toLowerCase().includes('id_proof') || d.name?.toLowerCase().includes('id proof'),
+                          resume:     (d) => d.type === 'Resume'     || d.name?.toLowerCase().includes('resume') || d.name?.toLowerCase().includes('cv'),
+                        };
+                        const uploadedDocs = selectedTeacherDocs.documents || [];
+
+                        return [
+                          { key: 'degree',     label: 'Academic Degree Certificate', icon: '🎓' },
+                          { key: 'aadhar',     label: 'Government ID Proof',         icon: '🪪' },
+                          { key: 'resume',     label: 'Professional Resume / CV',     icon: '📄' },
+                        ].map((doc) => {
+                          const status      = (teacherDocStatus[selectedTeacherDocs.id] || {})[doc.key] || 'Under Review';
+                          const isApproved  = status === 'Approved';
+                          const uploadedDoc = uploadedDocs.find(TYPE_MAP[doc.key]);
+                          const fileUrl     = uploadedDoc?.fileUrl || null;
+                          const isPdf       = uploadedDoc?.mimetype === 'application/pdf' || fileUrl?.endsWith('.pdf');
+
+                          return (
+                            <div key={doc.key} className={`p-4 rounded-2xl border flex flex-col gap-3 transition-all duration-150 ${
+                              isApproved ? 'bg-emerald-50/30 border-emerald-100/80' : 'bg-amber-50/30 border-amber-100/80'
+                            }`}>
+                              {/* Top Info: Icon & Labels */}
+                              <div className="flex items-start gap-3 min-w-0">
+                                <span className="text-2xl p-2 bg-white rounded-xl border border-slate-100 shadow-xs shrink-0">{doc.icon}</span>
+                                <div className="min-w-0 flex-1">
+                                  <h6 className="text-xs font-black text-slate-800 leading-snug">{doc.label}</h6>
+                                  {uploadedDoc ? (
+                                    <p className="text-[10px] text-slate-505 font-semibold mt-1 truncate" title={uploadedDoc.name}>
+                                      File: <span className="text-slate-705 underline">{uploadedDoc.name}</span>
+                                    </p>
+                                  ) : (
+                                    <p className="text-[10px] text-rose-500 font-semibold mt-1">
+                                      ⚠ Not uploaded
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Bottom Actions: Separated via border-t */}
+                              {fileUrl && (
+                                <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100/80 shrink-0">
+                                  {/* Left: Preview & Download */}
+                                  <div className="flex flex-row items-center gap-1.5 bg-white p-1 rounded-lg border border-slate-100 shadow-xs">
+                                    <button
+                                      type="button"
+                                      onClick={() => setPreviewDoc({ url: fileUrl, name: uploadedDoc.name, isPdf: isPdf })}
+                                      className="flex items-center justify-center h-7 px-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-md text-[9px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                                    >
+                                      Preview
+                                    </button>
+                                    <a
+                                      href={fileUrl}
+                                      download={uploadedDoc.name}
+                                      className="flex items-center justify-center h-7 px-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-md text-[9px] font-black uppercase tracking-wider transition-colors text-center"
+                                    >
+                                      Download
+                                    </a>
+                                  </div>
+
+                                  {/* Right: Status Display & Action Button */}
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 border rounded-lg ${
+                                      isApproved ? 'bg-emerald-100/60 text-emerald-800 border-emerald-200' : 'bg-amber-100/60 text-amber-850 border-amber-200'
+                                    }`}>
+                                      {status}
+                                    </span>
+                                    <button
+                                      onClick={() => toggleDocStatus(selectedTeacherDocs.id, doc.key)}
+                                      className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider border cursor-pointer transition-all hover:scale-[1.03] active:scale-[0.97] ${
+                                        isApproved
+                                          ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+                                          : 'bg-emerald-600 hover:bg-emerald-700 text-white border-0 shadow-sm'
+                                      }`}
+                                    >
+                                      {isApproved ? 'Reset' : 'Approve'}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+
                   {/* Step 1: Identity & KYC */}
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-150 space-y-3">
                     <div className="flex justify-between items-center pb-2 border-b border-slate-100">

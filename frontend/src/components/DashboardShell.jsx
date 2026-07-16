@@ -131,8 +131,11 @@ export default function DashboardShell({
   roleName = 'Dashboard',
   roleColor = 'blue',
   userName = 'User',
+  userAvatar,
   notifications = [],
   onClearNotifs,
+  onDeleteNotif,
+  onClearAllNotifs,
   onLogout,
   headerRight,
   children,
@@ -406,23 +409,6 @@ export default function DashboardShell({
                 {dateStr}
               </span>
 
-              {/* Dark Mode Toggle */}
-              <button
-                type="button"
-                onClick={toggleDarkMode}
-                aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-                className={`relative w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 border ${
-                  darkMode
-                    ? 'bg-[#2a2d35] border-[#3a3d45] text-amber-400 hover:bg-[#333640] hover:text-amber-300'
-                    : 'bg-slate-50 border-slate-100 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50'
-                }`}
-              >
-                <div className="relative w-4.5 h-4.5">
-                  <Sun className={`w-4.5 h-4.5 absolute inset-0 transition-all duration-300 ${darkMode ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'}`} />
-                  <Moon className={`w-4.5 h-4.5 absolute inset-0 transition-all duration-300 ${darkMode ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'}`} />
-                </div>
-              </button>
-
               {/* Notification bell */}
               <div className="relative" ref={notifRef}>
                 <button
@@ -447,10 +433,18 @@ export default function DashboardShell({
                       <div className="flex items-center gap-2">
                         {unreadCount > 0 && onClearNotifs && (
                           <button
-                            onClick={() => { onClearNotifs(); setNotifOpen(false); }}
+                            onClick={() => { onClearNotifs(); }}
                             className="text-[11px] font-semibold text-primary-600 hover:text-primary-800 cursor-pointer"
                           >
                             Mark all read
+                          </button>
+                        )}
+                        {notifications.length > 0 && onClearAllNotifs && (
+                          <button
+                            onClick={() => { onClearAllNotifs(); }}
+                            className="text-[11px] font-semibold text-rose-650 hover:text-rose-800 cursor-pointer"
+                          >
+                            Clear all
                           </button>
                         )}
                         <button
@@ -474,18 +468,31 @@ export default function DashboardShell({
                         </div>
                       ) : (
                         notifications.map((n) => {
-                          const displayTime = n.createdAt
-                            ? formatNotifTime(n.createdAt)
+                          const timeAgo = n.createdAt ? formatNotifTime(n.createdAt) : '';
+                          const displayTime = timeAgo
+                            ? (n.time && n.time !== 'Just now' && n.time !== timeAgo ? `${n.time} • ${timeAgo}` : timeAgo)
                             : n.time;
                           return (
-                            <div key={n.id} className={`notif-item ${n.isNew ? 'unread' : ''}`}>
+                            <div key={n.id} className={`notif-item relative group ${n.isNew ? 'unread' : ''}`}>
                               <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.isNew ? theme.notifDot : 'bg-slate-200'}`} aria-hidden="true" />
-                              <div className="min-w-0">
+                              <div className="min-w-0 flex-grow flex-1 pr-5">
                                 <p className="text-[12px] font-medium text-slate-700 leading-snug">{n.text}</p>
                                 {displayTime && (
                                   <span className="text-[10px] text-slate-400 font-medium mt-0.5 block">{displayTime}</span>
                                 )}
                               </div>
+                              {onDeleteNotif && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteNotif(n.id);
+                                  }}
+                                  className="absolute right-3 top-3 p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all cursor-pointer bg-transparent border-0"
+                                  title="Delete notification"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
                             </div>
                           );
                         })
@@ -497,11 +504,15 @@ export default function DashboardShell({
 
               {/* Avatar */}
               <div
-                className={`w-9 h-9 rounded-full ${theme.avatarBg} text-white text-[10px] font-black flex items-center justify-center border-2 border-white shadow-sm cursor-default`}
+                className={`w-9 h-9 rounded-full ${theme.avatarBg} text-white text-[10px] font-black flex items-center justify-center border-2 border-white shadow-sm cursor-default overflow-hidden`}
                 title={`Signed in as ${userName}`}
                 aria-label={`User: ${userName}`}
               >
-                {initials}
+                {userAvatar ? (
+                  <img src={userAvatar} alt={userName} className="w-full h-full object-cover" />
+                ) : (
+                  initials
+                )}
               </div>
             </div>
           </header>

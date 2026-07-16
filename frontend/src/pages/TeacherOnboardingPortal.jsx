@@ -4,7 +4,8 @@ import { api } from '../utils/api';
 import {
   User, ShieldCheck, CheckCircle2, AlertTriangle, ArrowRight,
   Upload, FileText, Trash2, HelpCircle, Clock, Video, CheckCircle,
-  FileCheck, BookOpen, GraduationCap, Phone, Mail, Award, X
+  FileCheck, BookOpen, GraduationCap, Phone, Mail, Award, X,
+  Camera, MapPin, Loader2
 } from 'lucide-react';
 
 const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -77,8 +78,16 @@ export default function TeacherOnboardingPortal() {
   const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [panNumber, setPanNumber] = useState('');
   const [selfie, setSelfie] = useState(null);
+  const [selfiePreview, setSelfiePreview] = useState(null);
   const [aadhaarFile, setAadhaarFile] = useState(null);
   const [panFile, setPanFile] = useState(null);
+
+  // Camera & Geotag States for Live Selfie
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [geotagData, setGeotagData] = useState(null);
+  const [cameraError, setCameraError] = useState('');
+  const videoRef = useRef(null);
 
   // Form Fields Step 2
   const [degreeName, setDegreeName] = useState('');
@@ -92,9 +101,9 @@ export default function TeacherOnboardingPortal() {
   const filteredDegrees = degreeName.trim() === ""
     ? []
     : QUALIFICATION_SUGGESTIONS.filter(q =>
-        q.toLowerCase().startsWith(degreeName.toLowerCase()) ||
-        q.toLowerCase().includes(degreeName.toLowerCase())
-      );
+      q.toLowerCase().startsWith(degreeName.toLowerCase()) ||
+      q.toLowerCase().includes(degreeName.toLowerCase())
+    );
 
   // Test Console Step 3
   const [testSubject, setTestSubject] = useState('');
@@ -125,6 +134,141 @@ export default function TeacherOnboardingPortal() {
     setter(file);
   };
 
+  const startCamera = async () => {
+    setCameraError('');
+    setGeotagData(null);
+    setIsCameraActive(true);
+    setLocationLoading(true);
+
+    if (!navigator.geolocation) {
+      setCameraError('Geolocation is not supported by your browser.');
+      setLocationLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        const geoInfo = {
+          lat: latitude.toFixed(6),
+          lon: longitude.toFixed(6),
+          timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+          place: 'Locating place...'
+        };
+        setGeotagData(geoInfo);
+        setLocationLoading(false);
+
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`);
+          if (res.ok) {
+            const data = await res.json();
+            const address = data.address;
+            const city = address.city || address.town || address.village || address.suburb || address.county || '';
+            const state = address.state || '';
+            const suburb = address.suburb || address.neighbourhood || address.road || '';
+            const placeString = [suburb, city, state].filter(Boolean).join(', ');
+            setGeotagData(prev => prev ? { ...prev, place: placeString || 'Unknown Place' } : null);
+          } else {
+            setGeotagData(prev => prev ? { ...prev, place: `${latitude.toFixed(4)}°, ${longitude.toFixed(4)}°` } : null);
+          }
+        } catch (err) {
+          console.error('Reverse geocoding error:', err);
+          setGeotagData(prev => prev ? { ...prev, place: `${latitude.toFixed(4)}°, ${longitude.toFixed(4)}°` } : null);
+        }
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        setCameraError('Location permission is required for selfie verification. Please enable location.');
+        setLocationLoading(false);
+        setIsCameraActive(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+      });
+      setIsCameraActive(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(err => console.error('Video play error:', err));
+        }
+      }, 100);
+    } catch (err) {
+      console.error('Camera access error:', err);
+      setCameraError('Camera access denied or unavailable. Please grant permission.');
+      setIsCameraActive(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const tracks = videoRef.current.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setIsCameraActive(false);
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !geotagData) return;
+
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const bannerHeight = 70;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+    ctx.fillRect(0, canvas.height - bannerHeight, canvas.width, bannerHeight);
+
+    ctx.fillStyle = '#10b981';
+    ctx.beginPath();
+    ctx.arc(20, canvas.height - bannerHeight + 20, 6, 0, 2 * Math.PI);
+    ctx.fill();
+
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('VERIFIED COGRAD LIVE ONBOARDING CAPTURE', 35, canvas.height - bannerHeight + 23);
+
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillText(`Timestamp : ${geotagData.timestamp}`, 20, canvas.height - bannerHeight + 43);
+    ctx.fillText(`Coordinates: Lat ${geotagData.lat}° N, Lon ${geotagData.lon}° E`, 20, canvas.height - bannerHeight + 58);
+
+    if (geotagData.place) {
+      ctx.textAlign = 'right';
+      ctx.fillText(geotagData.place.substring(0, 45), canvas.width - 20, canvas.height - bannerHeight + 43);
+      ctx.textAlign = 'left';
+    }
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const file = new File([blob], 'live_selfie.jpg', { type: 'image/jpeg' });
+        const previewUrl = URL.createObjectURL(blob);
+        setSelfie(file);
+        setSelfiePreview(previewUrl);
+        stopCamera();
+      }
+    }, 'image/jpeg', 0.85);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const tracks = videoRef.current.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+      }
+    };
+  }, []);
+
   useEffect(() => {
     fetchStatus();
   }, []);
@@ -149,10 +293,10 @@ export default function TeacherOnboardingPortal() {
     try {
       const me = await api.get('/auth/me');
       setProfile(me);
-      
+
       const res = await api.get('/teachers/onboarding/status');
       setOnboarding(res.onboarding_progress);
-      
+
       // Pre-fill existing data if submitted/failed
       if (res.onboarding_progress) {
         const s1 = res.onboarding_progress.step_1_identity;
@@ -165,7 +309,7 @@ export default function TeacherOnboardingPortal() {
         setUniversityName(s2.universityName || '');
         setGraduationYear(s2.graduationYear || '');
         setProfessionalCertName(s2.professionalCertName || '');
-        
+
         const s3 = res.onboarding_progress.step_3_competency;
         if (s3.status === 'Passed') {
           setTestPassed(true);
@@ -261,6 +405,13 @@ export default function TeacherOnboardingPortal() {
     e.preventDefault();
     if (!degreeName || !universityName || !graduationYear) {
       alert('Please fill out all required academic details.');
+      return;
+    }
+
+    const currentYear = new Date().getFullYear();
+    const gradYearNum = parseInt(graduationYear, 10);
+    if (isNaN(gradYearNum) || gradYearNum < 1970 || gradYearNum > currentYear) {
+      alert(`Please enter a valid graduation year between 1970 and ${currentYear}.`);
       return;
     }
 
@@ -489,7 +640,7 @@ export default function TeacherOnboardingPortal() {
             </div>
             <h3 className="text-xl font-black text-slate-900 mb-2">Phase 1 Vetting Under Administrative Review</h3>
             <p className="text-xs text-slate-500 leading-relaxed mb-6">
-              Thank you for submitting your identity details and academic qualifications! Our administrative team is currently verifying your Aadhaar, PAN, and degree certificates. 
+              Thank you for submitting your identity details and academic qualifications! Our administrative team is currently verifying your Aadhaar, PAN, and degree certificates.
             </p>
             <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-left text-xs mb-1">
               <p className="font-extrabold text-slate-400 uppercase tracking-widest mb-3.5 text-[9px]">Vetting Progress Summary</p>
@@ -522,7 +673,7 @@ export default function TeacherOnboardingPortal() {
         ) : (
           /* Multi-Step Wizard */
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-            
+
             {/* Left Steps sidebar */}
             <div className="md:col-span-4 space-y-3.5" role="list">
               {[
@@ -534,7 +685,7 @@ export default function TeacherOnboardingPortal() {
                 const isActive = currentStep === s.num;
                 const isCompleted = currentStep > s.num || s.status === 'Verified' || s.status === 'Passed' || s.status === 'Approved';
                 const isRejected = s.status === 'Rejected' || s.status === 'Failed';
-                
+
                 return (
                   <div
                     key={s.num}
@@ -585,7 +736,7 @@ export default function TeacherOnboardingPortal() {
 
             {/* Right form editor view */}
             <div className="md:col-span-8 bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm text-left">
-              
+
               {/* STEP 1: IDENTITY */}
               {currentStep === 1 && (
                 <form onSubmit={handleStep1Submit} className="space-y-6">
@@ -637,20 +788,118 @@ export default function TeacherOnboardingPortal() {
                   {/* File Uploads */}
                   <div className="space-y-4 pt-2">
                     {/* Selfie Upload */}
-                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-slate-100 bg-slate-50/50 rounded-2xl">
-                      <div className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
-                        <User className="w-5 h-5 text-slate-400" />
+                    <div className="flex flex-col gap-4 p-5 border border-slate-100 bg-slate-50/50 rounded-2xl">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
+                          <Camera className="w-5 h-5 text-slate-500" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-xs font-black text-slate-800">Live Selfie Geotag Verification</h4>
+                          <p className="text-[10px] text-slate-500 mt-0.5">A live webcam picture will be captured with embedded timestamp and geolocation data.</p>
+                        </div>
                       </div>
-                      <div className="flex-1 text-center sm:text-left">
-                        <h4 className="text-xs font-black text-slate-800">Live Selfie Verification</h4>
-                        <p className="text-[10px] text-slate-500 mt-0.5">Upload a clear headshot image (JPG, PNG) · Max 150 KB</p>
-                      </div>
-                      <div className="shrink-0">
-                        <label className="px-4 py-2 border border-slate-200 hover:border-slate-350 bg-white hover:bg-slate-50 cursor-pointer rounded-xl text-[10px] font-bold text-slate-650 transition-all inline-block shadow-sm">
-                          <Upload className="w-3.5 h-3.5 text-slate-450 inline mr-1.5" />
-                          {selfie ? selfie.name : 'Select Selfie'}
-                          <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(setSelfie, e.target.files[0], 'image')} />
-                        </label>
+
+                      {/* Camera view or Captured photo preview */}
+                      {isCameraActive ? (
+                        <div className="relative w-full max-w-md mx-auto aspect-video bg-black rounded-2xl overflow-hidden shadow-inner border border-slate-200">
+                          <video 
+                            ref={videoRef} 
+                            autoPlay 
+                            playsInline 
+                            muted
+                            className="w-full h-full object-cover -scale-x-100"
+                          />
+                          
+                          {/* Live overlay banner */}
+                          <div className="absolute bottom-0 left-0 right-0 bg-slate-900/80 backdrop-blur-xs p-3 text-white text-[9px] font-semibold space-y-1">
+                            {locationLoading ? (
+                              <div className="flex items-center gap-1.5 text-amber-400">
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <span>Acquiring Geolocation Tag...</span>
+                              </div>
+                            ) : geotagData ? (
+                              <div className="flex flex-col gap-0.5">
+                                <div className="flex items-center gap-1 text-emerald-400 text-[10px] font-bold">
+                                  <MapPin className="w-3 h-3 shrink-0" />
+                                  <span>GEOTAG ACTIVE</span>
+                                </div>
+                                <div className="text-slate-300 font-medium">
+                                  Coordinates: {geotagData.lat}° N, {geotagData.lon}° E
+                                </div>
+                                <div className="text-slate-400 truncate">
+                                  Place: {geotagData.place}
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : selfiePreview ? (
+                        <div className="relative w-full max-w-md mx-auto aspect-video bg-slate-100 rounded-2xl overflow-hidden shadow-sm border border-slate-200 flex items-center justify-center">
+                          <img 
+                            src={selfiePreview} 
+                            alt="Captured Selfie" 
+                            className="w-full h-full object-cover" 
+                          />
+                          <div className="absolute top-2 right-2 px-2 py-0.5 bg-emerald-500 text-white text-[9px] font-bold rounded-full shadow flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Geotag Embedded</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-full max-w-md mx-auto aspect-video bg-slate-100 border border-dashed border-slate-250 rounded-2xl flex flex-col items-center justify-center text-slate-400 gap-2">
+                          <User className="w-8 h-8 opacity-40" />
+                          <span className="text-[10px] font-bold">No selfie captured yet</span>
+                        </div>
+                      )}
+
+                      {/* Camera error messages */}
+                      {cameraError && (
+                        <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-700 text-[10px] font-semibold flex items-center gap-1.5 max-w-md mx-auto w-full">
+                          <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                          <span>{cameraError}</span>
+                        </div>
+                      )}
+
+                      {/* Control buttons */}
+                      <div className="flex justify-center gap-3 w-full max-w-md mx-auto">
+                        {isCameraActive ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={stopCamera}
+                              className="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-700 text-[10px] font-bold rounded-xl transition-all cursor-pointer bg-white"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={capturePhoto}
+                              disabled={locationLoading}
+                              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white text-[10px] font-bold rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 border-0"
+                            >
+                              {locationLoading ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Acquiring Geotag…</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Camera className="w-3.5 h-3.5" />
+                                  <span>Capture Selfie</span>
+                                </>
+                              )}
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={startCamera}
+                            className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-[10px] font-bold rounded-xl shadow transition-all cursor-pointer flex items-center justify-center gap-1.5 border-0"
+                          >
+                            <Camera className="w-4 h-4" />
+                            <span>{selfiePreview ? 'Retake Live Selfie' : 'Start Camera & Geotag'}</span>
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -769,6 +1018,7 @@ export default function TeacherOnboardingPortal() {
                       <input
                         type="text"
                         required
+                        maxLength={4}
                         placeholder="e.g. 2021"
                         value={graduationYear}
                         onChange={(e) => setGraduationYear(e.target.value.replace(/[^0-9]/g, ''))}
