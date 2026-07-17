@@ -1,6 +1,6 @@
 import { useEffect, lazy, Suspense } from 'react';
 import { useSmoothScroll } from './hooks/useSmoothScroll';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { ThemeProvider } from './hooks/useTheme';
 import Navbar from './components/Navbar';
