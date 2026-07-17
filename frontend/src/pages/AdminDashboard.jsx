@@ -968,6 +968,7 @@ const AdminDashboard = () => {
                   <th className="py-4 px-6">Name</th>
                   <th className="py-4 px-6">Batch</th>
                   <th className="py-4 px-6">Parent Name</th>
+                  <th className="py-4 px-6">Assigned Teacher</th>
                   <th className="py-4 px-6">Enrolment Date</th>
                   <th className="py-4 px-6 text-center">Status</th>
                   <th className="py-4 px-6 text-right">Actions</th>
@@ -976,7 +977,7 @@ const AdminDashboard = () => {
               <tbody className="divide-y divide-slate-50 text-xs font-semibold text-slate-700">
                 {filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="py-12 text-center">
+                    <td colSpan="7" className="py-12 text-center">
                       <div className="empty-state">
                         <div className="empty-state-icon mx-auto"><Users className="w-5 h-5" /></div>
                         <p className="empty-state-title">No students found</p>
@@ -999,6 +1000,19 @@ const AdminDashboard = () => {
                         </span>
                       </td>
                       <td className="py-4 px-6 text-slate-500 font-bold">{student.parentName}</td>
+                      <td className="py-4 px-6">
+                        {(() => {
+                          const teacher = teachers.find(t => t.id === student.assigned_teacher_id);
+                          return teacher ? (
+                            <div className="flex items-center space-x-2">
+                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                              <span className="font-extrabold text-slate-850">{teacher.name}</span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 font-bold italic">Not Assigned</span>
+                          );
+                        })()}
+                      </td>
                       <td className="py-4 px-6 text-slate-500 font-bold">{student.date}</td>
                       <td className="py-4 px-6 text-center">
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
