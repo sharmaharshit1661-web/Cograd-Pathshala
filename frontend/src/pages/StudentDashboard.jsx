@@ -146,6 +146,7 @@ const StudentDashboard = () => {
   // Load real user data from backend
   const [, setLoadingData] = useState(true);
   const [matchedTeacherData, setMatchedTeacherData] = useState(null);
+  const [matchedTeachersList, setMatchedTeachersList] = useState([]);
 
   useEffect(() => {
     const role = localStorage.getItem('cograd_role');
@@ -233,33 +234,61 @@ const StudentDashboard = () => {
           api.put(`/students/${user.id}`, { syllabus_chapters: generated }).catch(e => console.error(e));
         }
 
-        // Compute pending homework and tests dynamically
-        let liveAssignmentsPending = 0;
-        let liveTestsThisWeek = 0;
-        if (user.assigned_teacher_id) {
+        // Fetch all assigned teachers
+        const tempTeachersList = [];
+        if (user.assigned_teachers && user.assigned_teachers.length > 0) {
+          for (const at of user.assigned_teachers) {
+            try {
+              const matchedTeacher = await api.get(`/teachers/${at.teacher_id}`);
+              if (matchedTeacher) {
+                tempTeachersList.push({
+                  ...matchedTeacher,
+                  subject: at.subject,
+                  status: at.status
+                });
+              }
+            } catch (err) {
+              console.error(`Failed to fetch details for teacher ${at.teacher_id}:`, err);
+            }
+          }
+        } else if (user.assigned_teacher_id) {
           try {
             const matchedTeacher = await api.get(`/teachers/${user.assigned_teacher_id}`);
             if (matchedTeacher) {
-              setMatchedTeacherData(matchedTeacher);
-
-              // Calculate pending assignments
-              const teacherAsgs = matchedTeacher.assignments || [];
-              const studentSubs = user.homework_submissions || [];
-              teacherAsgs.forEach(asg => {
-                const matchedSub = studentSubs.find(sub => sub.assignmentName === asg.name);
-                if (!matchedSub) {
-                  liveAssignmentsPending += 1;
-                }
+              tempTeachersList.push({
+                ...matchedTeacher,
+                subject: user.subjects?.[0] || 'Mathematics',
+                status: 'active'
               });
-
-              // Calculate tests this week
-              const teacherTests = matchedTeacher.tests || [];
-              liveTestsThisWeek = teacherTests.length;
             }
           } catch (err) {
             console.error('Failed to fetch matched teacher details:', err);
           }
         }
+
+        setMatchedTeachersList(tempTeachersList);
+        if (tempTeachersList.length > 0) {
+          setMatchedTeacherData(tempTeachersList[0]);
+        }
+
+        // Compute pending homework and tests dynamically
+        let liveAssignmentsPending = 0;
+        let liveTestsThisWeek = 0;
+        tempTeachersList.forEach(teacher => {
+          // Calculate pending assignments
+          const teacherAsgs = teacher.assignments || [];
+          const studentSubs = user.homework_submissions || [];
+          teacherAsgs.forEach(asg => {
+            const matchedSub = studentSubs.find(sub => sub.assignmentName === asg.name);
+            if (!matchedSub) {
+              liveAssignmentsPending += 1;
+            }
+          });
+
+          // Calculate tests this week
+          const teacherTests = teacher.tests || [];
+          liveTestsThisWeek += teacherTests.length;
+        });
 
         setProfileData(prev => ({
           ...prev,
@@ -844,28 +873,34 @@ const StudentDashboard = () => {
 
   // Tab - My Classes Schedules
   let liveScheduledClasses = [];
-  if (profileData.assigned_teacher_id && matchedTeacherData) {
+  if (matchedTeachersList && matchedTeachersList.length > 0) {
     try {
-      const teacherTimetable = matchedTeacherData.timetable?.[0] || {};
-      const teacherName = matchedTeacherData.name || 'Class Tutor';
-      const teacherSubject = matchedTeacherData.primarySubject || matchedTeacherData.subjects_taught?.[0] || 'Mathematics';
       const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const currentDay = daysOfWeek[new Date().getDay()];
+      let idx = 1;
 
-      liveScheduledClasses = Object.keys(teacherTimetable).map((key, idx) => {
-        const parts = key.split('-');
-        const day = parts[0];
-        const slot = parts.slice(1).join('-');
-        const session = teacherTimetable[key];
-        return {
-          id: idx + 1,
-          subject: teacherSubject,
-          topic: session.title,
-          teacher: teacherName,
-          time: `${day}, ${slot.split(' - ')[0]}`,
-          duration: '90 mins',
-          isLive: day.toLowerCase() === currentDay.toLowerCase()
-        };
+      matchedTeachersList.forEach((teacher) => {
+        const teacherTimetable = teacher.timetable?.[0] || {};
+        const teacherName = teacher.name || 'Class Tutor';
+        const teacherSubject = teacher.subject || teacher.primarySubject || teacher.subjects_taught?.[0] || 'Mathematics';
+
+        Object.keys(teacherTimetable).forEach((key) => {
+          const session = teacherTimetable[key];
+          if (session && session.student_id === profileData.id) {
+            const parts = key.split('-');
+            const day = parts[0];
+            const slot = parts.slice(1).join('-');
+            liveScheduledClasses.push({
+              id: idx++,
+              subject: teacherSubject,
+              topic: session.title,
+              teacher: teacherName,
+              time: `${day}, ${slot.split(' - ')[0]}`,
+              duration: '90 mins',
+              isLive: day.toLowerCase() === currentDay.toLowerCase()
+            });
+          }
+        });
       });
     } catch (e) {
       console.error('Failed to parse teacher timetable:', e);
@@ -1027,6 +1062,17 @@ const StudentDashboard = () => {
     }));
   };
 
+  const allTests = [];
+  if (matchedTeachersList && matchedTeachersList.length > 0) {
+    matchedTeachersList.forEach(t => {
+      if (t.tests && t.tests.length > 0) {
+        t.tests.forEach(test => {
+          allTests.push({ ...test, teacherName: t.name, subject: t.subject });
+        });
+      }
+    });
+  }
+
   // Mock Active Test details
   const mockTestQuestions = [
     { id: 'q1', text: 'Which of the following undergoes Cannizzaro reaction?', options: ['Acetaldehyde', 'Formaldehyde', 'Acetone', 'Benzophenone'] },
@@ -1094,25 +1140,27 @@ const StudentDashboard = () => {
 
   let liveAssignmentsSubmitted = 0;
   let liveAssignmentsPending = 0;
-  if (profileData.assigned_teacher_id && matchedTeacherData) {
-    const teacherAsgs = matchedTeacherData.assignments || [];
-    const studentSubs = profileData.homework_submissions || [];
+  if (matchedTeachersList && matchedTeachersList.length > 0) {
+    matchedTeachersList.forEach(teacher => {
+      const teacherAsgs = teacher.assignments || [];
+      const studentSubs = profileData.homework_submissions || [];
 
-    teacherAsgs.forEach(asg => {
-      const matchedSub = studentSubs.find(sub => sub.assignmentName === asg.name);
-      if (matchedSub) {
-        liveAssignmentsSubmitted += 1;
-      } else {
-        liveAssignmentsPending += 1;
-      }
+      teacherAsgs.forEach(asg => {
+        const matchedSub = studentSubs.find(sub => sub.assignmentName === asg.name);
+        if (matchedSub) {
+          liveAssignmentsSubmitted += 1;
+        } else {
+          liveAssignmentsPending += 1;
+        }
+      });
     });
   }
 
   const progressStats = {
     syllabusCoverage: totalCoverage,
     averageTestScore: getAverageTestScore(),
-    assignmentsSubmitted: profileData.assigned_teacher_id ? liveAssignmentsSubmitted : 0,
-    assignmentsPending: profileData.assigned_teacher_id ? liveAssignmentsPending : 0,
+    assignmentsSubmitted: liveAssignmentsSubmitted,
+    assignmentsPending: liveAssignmentsPending,
     doubtSolvedCount: doubtsSolved,
     studyHours: studyHours
   };
@@ -1675,24 +1723,35 @@ const StudentDashboard = () => {
                     <div className="lg:col-span-4 space-y-5">
                       <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
                         <h5 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-3">Assigned Tutors</h5>
-                        {!profileData.assigned_teacher_id || !matchedTeacherData ? (
+                        {!matchedTeachersList || matchedTeachersList.length === 0 ? (
                           <div className="bg-slate-50 border border-slate-100 rounded-xl py-5 text-center text-xs text-slate-500 font-semibold">
                             Tutor matching in progress.
                           </div>
                         ) : (
-                          <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-center space-x-3">
-                            <div className="relative w-10 h-10 shrink-0 rounded-full border-2 border-white shadow-sm overflow-hidden bg-white">
-                              <img src={matchedTeacherData.avatar || "/assets/avatar-teacher.png"} alt="Teacher avatar" className="w-full h-full object-cover" />
-                            </div>
-                            <div className="min-w-0 flex-grow">
-                              <span className="text-[8px] bg-blue-50 text-blue-700 border border-blue-100 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                Home Tutor
-                              </span>
-                              <h5 className="text-[11px] font-black text-slate-800 mt-1 truncate">{matchedTeacherData.name}</h5>
-                              <span className="text-[9px] text-slate-400 font-semibold block truncate">
-                                {matchedTeacherData.primarySubject || 'Mathematics'} • {matchedTeacherData.qualification || 'Verified'}
-                              </span>
-                            </div>
+                          <div className="space-y-3">
+                            {matchedTeachersList.map((teacher, tIdx) => (
+                              <div key={tIdx} className="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-center space-x-3">
+                                <div className="relative w-10 h-10 shrink-0 rounded-full border-2 border-white shadow-sm overflow-hidden bg-white">
+                                  <img src={teacher.avatar || "/assets/avatar-teacher.png"} alt="Teacher avatar" className="w-full h-full object-cover" />
+                                </div>
+                                <div className="min-w-0 flex-grow">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[8px] bg-blue-50 text-blue-700 border border-blue-100 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                      {teacher.subject} Tutor
+                                    </span>
+                                    {teacher.status === 'proposed' && (
+                                      <span className="text-[8px] bg-amber-50 text-amber-700 border border-amber-100 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                        Proposed
+                                      </span>
+                                    )}
+                                  </div>
+                                  <h5 className="text-[11px] font-black text-slate-800 mt-1 truncate">{teacher.name}</h5>
+                                  <span className="text-[9px] text-slate-400 font-semibold block truncate">
+                                    {teacher.qualification || 'Verified'}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
@@ -2254,23 +2313,25 @@ const StudentDashboard = () => {
                       <div className="lg:col-span-2 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
                         <h3 className="text-lg font-black text-slate-805 tracking-tight mb-4">Active Assessment Papers</h3>
 
-                        {!profileData.assigned_teacher_id || !matchedTeacherData ? (
+                        {!matchedTeachersList || matchedTeachersList.length === 0 ? (
                           <div className="empty-state bg-slate-50 border border-slate-100 rounded-2xl py-10">
                             <FileText className="w-8 h-8 text-slate-300 mx-auto" />
                             <p className="text-xs font-bold text-slate-500 mt-2">No tutor matched yet.</p>
                           </div>
-                        ) : !matchedTeacherData.tests || matchedTeacherData.tests.length === 0 ? (
+                        ) : allTests.length === 0 ? (
                           <div className="empty-state bg-slate-50 border border-slate-100 rounded-2xl py-10">
                             <FileText className="w-8 h-8 text-slate-300 mx-auto" />
-                            <p className="text-xs font-bold text-slate-500 mt-2">No active tests assigned by your tutor yet.</p>
+                            <p className="text-xs font-bold text-slate-500 mt-2">No active tests assigned by your tutors yet.</p>
                           </div>
                         ) : (
                           <div className="space-y-4">
-                            {matchedTeacherData.tests.map((test) => (
+                            {allTests.map((test) => (
                               <div key={test.id} className="p-5 border border-blue-100 bg-blue-50/10 rounded-2xl flex justify-between items-center">
                                 <div>
                                   <div className="flex flex-wrap items-center gap-2 mb-2">
-                                    <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">{test.batch || 'Tutor Assignment'}</span>
+                                    <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
+                                      {test.subject} ({test.teacherName})
+                                    </span>
                                     <span className="text-[10px] text-slate-400 font-bold">Duration: {test.duration || '60 mins'}</span>
                                   </div>
                                   <h4 className="text-sm font-black text-slate-800">{test.name}</h4>
@@ -3408,29 +3469,26 @@ const StudentDashboard = () => {
                 /* Teacher mode just scrolls everything */
                 <div className="flex-grow overflow-y-auto p-4 space-y-4">
                   <div className="space-y-3.5">
-                    {/* Teacher selector */}
                     <div className="space-y-1">
                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Select Teacher</span>
                       <div className="grid grid-cols-3 gap-2">
-                        {!profileData.assigned_teacher_id || !matchedTeacherData ? (
+                        {!matchedTeachersList || matchedTeachersList.length === 0 ? (
                           <div className="col-span-3 text-[10px] text-slate-500 font-semibold text-center py-2 bg-slate-50 rounded-xl border border-slate-100">
                             No matched tutor yet.
                           </div>
                         ) : (
-                          [
-                            {
-                              name: matchedTeacherData.name,
-                              subject: matchedTeacherData.primarySubject || 'Tutor',
-                              status: 'Online'
-                            }
-                          ].map((t) => {
-
+                          matchedTeachersList.map((t) => {
+                            const isSelected = selectedTeacherForDoubt === t.name;
                             return (
                               <button
                                 key={t.name}
                                 type="button"
                                 onClick={() => setSelectedTeacherForDoubt(t.name)}
-                                className={`col-span-3 p-2 rounded-xl border text-center transition-all cursor-pointer truncate border-indigo-500 bg-indigo-50/20 ring-2 ring-indigo-500/10 shadow-sm text-indigo-800 font-black`}
+                                className={`col-span-1 p-2 rounded-xl border text-center transition-all cursor-pointer truncate ${
+                                  isSelected
+                                    ? 'border-indigo-500 bg-indigo-50/20 ring-2 ring-indigo-500/10 shadow-sm text-indigo-800 font-black'
+                                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-650'
+                                }`}
                               >
                                 <div className="text-[9px] truncate leading-none">{t.name}</div>
                                 <div className="text-[7px] text-slate-400 font-bold mt-1">{t.subject}</div>

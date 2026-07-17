@@ -982,7 +982,7 @@ router.get('/assignments', protect, async (req, res) => {
 // @route   POST /api/assignments/allot
 // @access  Private
 router.post('/assignments/allot', protect, async (req, res) => {
-  const { studentId, teacherId } = req.body;
+  const { studentId, teacherId, subject } = req.body;
 
   try {
     const student = await User.findOne({ id: studentId, role: 'student' });
@@ -992,15 +992,27 @@ router.post('/assignments/allot', protect, async (req, res) => {
       return res.status(404).json({ message: 'Student or Teacher not found' });
     }
 
-    // End other active or proposed assignments for this student
+    const allotSubject = subject || (student.subjects && student.subjects.length > 0 ? student.subjects[0] : 'Mathematics');
+
+    // End other active or proposed assignments for this student for the same subject
     await Assignment.updateMany(
-      { student_id: studentId, teacher_id: { $ne: teacherId }, status: { $in: ['proposed', 'active'] } },
+      { student_id: studentId, subject: allotSubject, status: { $in: ['proposed', 'active'] } },
       { status: 'ended' }
     );
 
     // Update Student
+    if (!student.assigned_teachers) {
+      student.assigned_teachers = [];
+    }
+    student.assigned_teachers = student.assigned_teachers.filter(at => at.subject !== allotSubject);
+    student.assigned_teachers.push({
+      teacher_id: teacherId,
+      subject: allotSubject,
+      status: 'proposed'
+    });
     student.assigned_teacher_id = teacherId;
     student.status = 'matched'; // Assigned but pending teacher confirmation
+    student.markModified('assigned_teachers');
     await student.save();
 
     // Create Assignment
@@ -1008,6 +1020,7 @@ router.post('/assignments/allot', protect, async (req, res) => {
       id: `asg_${studentId}_${Date.now()}`,
       student_id: studentId,
       teacher_id: teacherId,
+      subject: allotSubject,
       assigned_by: req.user.id,
       status: 'proposed',
     });
@@ -1040,11 +1053,33 @@ router.put('/assignments/status', protect, async (req, res) => {
     if (accept) {
       assignment.status = 'active';
       student.status = 'active';
+      if (student.assigned_teachers) {
+        student.assigned_teachers = student.assigned_teachers.map(at => {
+          if (at.teacher_id === teacherId && at.subject === assignment.subject) {
+            return { ...at, status: 'active' };
+          }
+          return at;
+        });
+      }
+      student.markModified('assigned_teachers');
       teacher.current_student_count = (teacher.current_student_count || 0) + 1;
     } else {
       assignment.status = 'ended';
-      student.status = 'pending_match';
-      student.assigned_teacher_id = null;
+      if (student.assigned_teachers) {
+        student.assigned_teachers = student.assigned_teachers.filter(at => 
+          !(at.teacher_id === teacherId && at.subject === assignment.subject)
+        );
+      }
+      student.markModified('assigned_teachers');
+      
+      const activeTeachers = student.assigned_teachers ? student.assigned_teachers.filter(at => at.status === 'active' || at.status === 'proposed') : [];
+      if (activeTeachers.length > 0) {
+        student.status = 'active';
+        student.assigned_teacher_id = activeTeachers[0].teacher_id;
+      } else {
+        student.status = 'pending_match';
+        student.assigned_teacher_id = null;
+      }
     }
 
     await assignment.save();
@@ -1104,10 +1139,16 @@ router.get('/teachers/suggested/:studentId', protect, async (req, res) => {
       if ((t.current_student_count || 0) >= (t.max_student_capacity || 5)) return false;
 
       // 4. Subject Match
-      const hasSubjectMatch = student.subjects.some((sub) =>
-        t.subjects_taught.some((ts) => ts.toLowerCase() === sub.toLowerCase())
-      );
-      if (!hasSubjectMatch) return false;
+      const searchSubject = req.query.subject;
+      if (searchSubject) {
+        const hasSpecificMatch = t.subjects_taught.some((ts) => ts.toLowerCase() === searchSubject.toLowerCase());
+        if (!hasSpecificMatch) return false;
+      } else {
+        const hasSubjectMatch = student.subjects.some((sub) =>
+          t.subjects_taught.some((ts) => ts.toLowerCase() === sub.toLowerCase())
+        );
+        if (!hasSubjectMatch) return false;
+      }
 
       // 5. Grade level Qualification Match
       const isGradeQualified = t.grade_levels_qualified.some(
@@ -1195,6 +1236,157 @@ router.get('/teachers/suggested/:studentId', protect, async (req, res) => {
     res.json(rankedTeachers);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// ==========================================
+// CLASS / PTM BOOKING ROUTES
+// ==========================================
+
+// @desc    Book a class session (Parent Action)
+// @route   POST /api/bookings/class
+// @access  Private
+router.post('/bookings/class', protect, async (req, res) => {
+  const { studentId, teacherId, day, slot, title, subject } = req.body;
+
+  try {
+    const student = await User.findOne({ id: studentId, role: 'student' });
+    const teacher = await User.findOne({ id: teacherId, role: 'teacher' });
+
+    if (!student || !teacher) {
+      return res.status(404).json({ message: 'Student or Teacher not found' });
+    }
+
+    // Initialize teacher timetable if not present
+    if (!teacher.timetable || teacher.timetable.length === 0) {
+      teacher.timetable = [{}];
+    }
+
+    const slotKey = `${day}-${slot}`;
+    const currentTimetable = teacher.timetable[0] || {};
+
+    if (currentTimetable[slotKey]) {
+      return res.status(400).json({ message: `Teacher is already scheduled for ${day} at ${slot}` });
+    }
+
+    // Update teacher weekly timetable
+    currentTimetable[slotKey] = {
+      title: title || `${subject} Class`,
+      batch: `${student.name} (${student.standard || 'Class 10'})`,
+      type: 'Class'
+    };
+
+    teacher.timetable = [currentTimetable];
+    teacher.markModified('timetable');
+
+    // Add teacher notification
+    if (!teacher.notifications) {
+      teacher.notifications = [];
+    }
+    teacher.notifications.unshift({
+      id: 'notif_' + Date.now(),
+      text: `Regular class booked by parent of ${student.name} on ${day}s at ${slot} for ${subject}`,
+      isNew: true,
+      time: 'Just now'
+    });
+    teacher.markModified('notifications');
+
+    await teacher.save();
+
+    // Update student schedule and activities
+    const classScheduleItem = {
+      id: 'class_' + Date.now(),
+      type: 'Class',
+      title: `${title || `${subject} Class`} with ${teacher.name}`,
+      date: day,
+      time: slot,
+      details: `${subject} regular weekly class scheduled`,
+      icon: 'calendar'
+    };
+
+    const classActivityItem = {
+      id: 'class_act_' + Date.now(),
+      text: `Booked ${subject} Class with ${teacher.name} for ${day} at ${slot}`,
+      time: 'Just now',
+      tag: 'Calendar',
+      type: 'success'
+    };
+
+    student.schedule = [classScheduleItem, ...(student.schedule || [])];
+    student.activities = [classActivityItem, ...(student.activities || [])];
+    student.markModified('schedule');
+    student.markModified('activities');
+
+    await student.save();
+
+    res.json({ message: 'Class session booked successfully', student, teacher });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @desc    Book a PTM session (Parent Action)
+// @route   POST /api/bookings/ptm
+// @access  Private
+router.post('/bookings/ptm', protect, async (req, res) => {
+  const { studentId, teacherId, date, time, mode, subject } = req.body;
+
+  try {
+    const student = await User.findOne({ id: studentId, role: 'student' });
+    const teacher = await User.findOne({ id: teacherId, role: 'teacher' });
+
+    if (!student || !teacher) {
+      return res.status(404).json({ message: 'Student or Teacher not found' });
+    }
+
+    const formattedDate = new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    const [hours, minutes] = time.split(':');
+    const ampm = parseInt(hours) >= 12 ? 'PM' : 'AM';
+    const formattedTime = `${parseInt(hours) % 12 || 12}:${minutes} ${ampm}`;
+
+    // Add teacher notification
+    if (!teacher.notifications) {
+      teacher.notifications = [];
+    }
+    teacher.notifications.unshift({
+      id: 'notif_' + Date.now(),
+      text: `PTM scheduled by parent of ${student.name} for ${formattedDate} at ${formattedTime} (${mode})`,
+      isNew: true,
+      time: 'Just now'
+    });
+    teacher.markModified('notifications');
+
+    await teacher.save();
+
+    // Update student schedule and activities
+    const ptmScheduleItem = {
+      id: 'ptm_' + Date.now(),
+      type: 'PTM',
+      title: `PTM with ${teacher.name}`,
+      date: formattedDate,
+      time: formattedTime,
+      details: `${mode === 'Call' ? 'Telephonic Call' : 'In-Home Visit'} scheduled`,
+      icon: mode === 'Call' ? 'phone' : 'home'
+    };
+
+    const ptmActivityItem = {
+      id: 'ptm_act_' + Date.now(),
+      text: `Booked Parent-Teacher Meeting with ${teacher.name} for ${formattedDate} at ${formattedTime}`,
+      time: 'Just now',
+      tag: 'Calendar',
+      type: 'primary'
+    };
+
+    student.schedule = [ptmScheduleItem, ...(student.schedule || [])];
+    student.activities = [ptmActivityItem, ...(student.activities || [])];
+    student.markModified('schedule');
+    student.markModified('activities');
+
+    await student.save();
+
+    res.json({ message: 'PTM session booked successfully', student, teacher });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 });
 
@@ -1320,6 +1512,7 @@ router.post('/students/reset', protect, async (req, res) => {
 
     // Reset student fields
     student.assigned_teacher_id = null;
+    student.assigned_teachers = [];
     student.status = statusToSet;
 
     if (statusToSet === 'pending_test') {

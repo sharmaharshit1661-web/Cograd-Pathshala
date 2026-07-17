@@ -44,6 +44,14 @@ const StudentSchema = new mongoose.Schema(
     test_score: { type: mongoose.Schema.Types.Mixed, default: null },
     test_completed_at: Date,
     assigned_teacher_id: { type: String, default: null },
+    assigned_teachers: {
+      type: [{
+        teacher_id: String,
+        subject: String,
+        status: { type: String, enum: ['proposed', 'active', 'ended'], default: 'proposed' }
+      }],
+      default: []
+    },
     status: { type: String, default: 'pending_test' },
     state: String,
     city: String,

@@ -364,17 +364,21 @@ const TeacherDashboard = () => {
       }));
 
       setStudents(matchedStudents);
+      if (matchedStudents.length > 0) {
+        setScheduleBatch(matchedStudents[0].name);
+      }
     } catch (err) {
       console.error('Failed to load teacher data:', err);
     }
   };
 
-  const handleUpdateAssignmentStatus = async (studentId, accept) => {
+  const handleUpdateAssignmentStatus = async (studentId, accept, subject) => {
     try {
       await api.put('/assignments/status', {
         studentId,
         teacherId,
-        accept
+        accept,
+        subject
       });
       if (accept) {
         triggerToast('Availability confirmed and assigned to your roster!');
@@ -692,7 +696,7 @@ const TeacherDashboard = () => {
 
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduleSlotKey, setScheduleSlotKey] = useState('');
-  const [scheduleBatch, setScheduleBatch] = useState('alpha-24');
+  const [scheduleBatch, setScheduleBatch] = useState('General Class');
   const [scheduleType, setScheduleType] = useState('Lecture');
   const [scheduleTitle, setScheduleTitle] = useState('');
 
@@ -1244,9 +1248,14 @@ const TeacherDashboard = () => {
                   {pendingAssignments.map(({ assignment, student }) => {
                     const scores = student.test_score || { Mathematics: 0, Science: 0 };
                     return (
-                      <div key={assignment.id} className="p-3.5 bg-white/10 rounded-2xl border border-white/5 space-y-3">
+                       <div key={assignment.id} className="p-3.5 bg-white/10 rounded-2xl border border-white/5 space-y-3">
                         <div>
-                          <h4 className="text-xs font-black">{student.name}</h4>
+                          <div className="flex justify-between items-start">
+                            <h4 className="text-xs font-black">{student.name}</h4>
+                            <span className="text-[8px] bg-indigo-500/35 text-white font-black px-2 py-0.5 rounded uppercase tracking-wider">
+                              {assignment.subject}
+                            </span>
+                          </div>
                           <p className="text-[9px] text-white/80 mt-0.5">{student.standard} | Needs: {student.subjects.join(', ')}</p>
                           <div className="flex gap-3 mt-2">
                             <span className="text-[8px] font-extrabold bg-white/20 px-2 py-0.5 rounded-md">Math: {scores.mathMarksText || `${scores.Mathematics}%`}</span>
@@ -1255,13 +1264,13 @@ const TeacherDashboard = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => handleUpdateAssignmentStatus(student.id, false)}
+                            onClick={() => handleUpdateAssignmentStatus(student.id, false, assignment.subject)}
                             className="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-[10px] rounded-xl shadow-sm transition-all cursor-pointer border-0"
                           >
                             Flag Conflict
                           </button>
                           <button
-                            onClick={() => handleUpdateAssignmentStatus(student.id, true)}
+                            onClick={() => handleUpdateAssignmentStatus(student.id, true, assignment.subject)}
                             className="flex-1 py-2 bg-white hover:bg-slate-50 text-indigo-900 font-extrabold text-[10px] rounded-xl shadow-md transition-all cursor-pointer border-0"
                           >
                             Confirm Availability
@@ -1839,113 +1848,50 @@ const TeacherDashboard = () => {
           </div>
         </div>
 
-        {/* Batches tab */}
+        {/* My Students tab (Direct Students list) */}
         {!isLive && !isDemo && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {batches.map(batch => (
-                <div 
-                  key={batch.id}
-                  onClick={() => setSelectedBatchId(batch.id)}
-                  className={`rounded-2xl p-5 border transition-all cursor-pointer flex flex-col justify-between h-40 ${
-                    selectedBatchId === batch.id 
-                      ? 'border-blue-500 bg-white ring-4 ring-blue-50 shadow-md scale-[1.02]' 
-                      : 'border-slate-100 bg-white hover:border-slate-300 shadow-sm'
-                  }`}
-                >
-                  <div>
-                    <div className="flex justify-between items-start mb-2.5">
-                      <h3 className="text-sm font-extrabold text-slate-800 pr-2 leading-snug truncate">{batch.title}</h3>
-                      <span className={`${batch.badgeColor} text-white font-black text-[9px] px-2 py-0.5 rounded shrink-0`}>{batch.badge}</span>
-                    </div>
-                    <div className="text-xs text-slate-500 font-semibold">Capacity: <span className="text-slate-800 font-bold">{batch.cap} Students</span></div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
-                      <span>Syllabus Completion</span>
-                      <span>{batch.progress}%</span>
-                    </div>
-                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full" style={{ width: `${batch.progress}%` }} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-              
-              {/* Add Batch Form */}
-              <div className="md:col-span-4 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
-                <h3 className="text-base font-black text-slate-800 flex items-center gap-1.5"><Plus className="w-5 h-5 text-blue-500" /> Create New Batch</h3>
-                <form onSubmit={handleCreateBatch} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Batch Name</label>
-                    <input 
-                      type="text" required value={newBatchTitle}
-                      onChange={(e) => setNewBatchTitle(e.target.value)}
-                      placeholder="e.g. Geometry Advanced"
-                      className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Category</label>
-                      <select 
-                        value={newBatchCategory}
-                        onChange={(e) => setNewBatchCategory(e.target.value)}
-                        className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-bold text-slate-700 cursor-pointer"
-                      >
-                        <option>Primary</option>
-                        <option>Middle</option>
-                        <option>Secondary</option>
-                        <option>Senior</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Max Limit</label>
-                      <input 
-                        type="number" required value={newBatchCap}
-                        onChange={(e) => setNewBatchCap(e.target.value)}
-                        className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm font-semibold text-center"
-                      />
-                    </div>
-                  </div>
-                  <button type="submit" className="w-full bg-blue-500 text-white font-bold text-xs py-2.5 rounded-xl hover:bg-blue-600 transition-all cursor-pointer">Create Batch</button>
-                </form>
-              </div>
-
-              {/* Students Enrolled */}
-              <div className="md:col-span-8 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
-                <h3 className="text-base font-black text-slate-800">Students in {batches.find(b => b.id === selectedBatchId)?.title}</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
-                        <th className="py-2.5 px-3">Student Name</th>
-                        <th className="py-2.5 px-3">Attendance</th>
-                        <th className="py-2.5 px-3">Avg Grade</th>
-                        <th className="py-2.5 px-3">Status</th>
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4 text-left">
+            <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-500" />
+              <span>Assigned Students</span>
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
+                    <th className="py-3 px-4">Student Name</th>
+                    <th className="py-3 px-4">Email</th>
+                    <th className="py-3 px-4">Phone</th>
+                    <th className="py-3 px-4">Attendance</th>
+                    <th className="py-3 px-4">Avg Grade</th>
+                    <th className="py-3 px-4 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50 text-xs font-semibold text-slate-700">
+                  {students.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="py-12 text-center text-slate-400 font-bold italic">
+                        No assigned students found on your roster.
+                      </td>
+                    </tr>
+                  ) : (
+                    students.map(s => (
+                      <tr key={s.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-4 px-4 font-extrabold text-slate-850">{s.name}</td>
+                        <td className="py-4 px-4 text-slate-500 font-bold">{s.email}</td>
+                        <td className="py-4 px-4 text-slate-500 font-bold">{s.phone ? `+91 ${s.phone}` : 'N/A'}</td>
+                        <td className="py-4 px-4">{s.attendanceRate}%</td>
+                        <td className="py-4 px-4 font-extrabold text-slate-850">{s.avgGrade}%</td>
+                        <td className="py-4 px-4 text-center">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                            s.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+                          }`}>{s.status}</span>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50 text-xs font-semibold text-slate-700">
-                      {students.filter(s => s.batchId === selectedBatchId).map(s => (
-                        <tr key={s.id} className="hover:bg-slate-50/50">
-                          <td className="py-3 px-3 font-extrabold text-slate-800">{s.name}</td>
-                          <td className="py-3 px-3">{s.attendanceRate}%</td>
-                          <td className="py-3 px-3">{s.avgGrade}%</td>
-                          <td className="py-3 px-3">
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                              s.status === 'Active' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-                            }`}>{s.status}</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -2980,7 +2926,7 @@ const TeacherDashboard = () => {
       setShowScheduleModal(true);
     };
 
-    const enrolledStudents = students.filter(s => s.batchId === selectedBatchId);
+    const enrolledStudents = students;
     const totalCount = enrolledStudents.length;
     const presentCount = enrolledStudents.filter(student => {
       const rec = attendanceRecords.find(r => r.id === student.id);
@@ -3097,28 +3043,14 @@ const TeacherDashboard = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Class Batch</label>
-                <select 
-                  value={selectedBatchId}
-                  onChange={(e) => setSelectedBatchId(e.target.value)}
-                  className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none font-bold text-slate-700 cursor-pointer"
-                >
-                  {batches.map(b => (
-                    <option key={b.id} value={b.id}>{b.title} ({b.badge})</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Session Date</label>
-                <input 
-                  type="date"
-                  value={attendanceDate}
-                  onChange={(e) => setAttendanceDate(e.target.value)}
-                  className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none font-bold text-slate-700 cursor-pointer"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Session Date</label>
+              <input 
+                type="date"
+                value={attendanceDate}
+                onChange={(e) => setAttendanceDate(e.target.value)}
+                className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none font-bold text-slate-700 cursor-pointer"
+              />
             </div>
 
             <div className="space-y-3">
@@ -3171,13 +3103,17 @@ const TeacherDashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Class Batch</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Select Student</label>
                   <select 
                     value={scheduleBatch}
                     onChange={(e) => setScheduleBatch(e.target.value)}
                     className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-bold text-slate-700 cursor-pointer"
                   >
-                    {batches.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
+                    {students.length === 0 ? (
+                      <option value="General Class">General Class (No Students)</option>
+                    ) : (
+                      students.map(s => <option key={s.id} value={s.name}>{s.name}</option>)
+                    )}
                   </select>
                 </div>
                 <div>

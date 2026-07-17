@@ -87,7 +87,7 @@ const Teacher = () => {
                 <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url("${s.image}")` }}>
                   <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/85 via-neutral-900/50 to-transparent flex items-center">
                     <div className="text-white px-8 sm:px-14 md:px-16 max-w-lg">
-                      <h3 className={`text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-3 tracking-tight transition-all duration-500 ${i === slide ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                      <h3 className={`text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-3 tracking-tight transition-all duration-500 ${i === slide ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} ${s.title === 'Modern Teaching' ? '!text-yellow-300' : '!text-white'}`}>
                         {s.title}
                       </h3>
                       <p className={`text-white/80 text-sm sm:text-base leading-relaxed transition-all duration-500 delay-100 ${i === slide ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
@@ -108,7 +108,7 @@ const Teacher = () => {
 
             <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-20">
               {SLIDES.map((_, i) => (
-                <button key={i} onClick={() => setSlide(i)} className={`rounded-full transition-all cursor-pointer ${i === slide ? 'w-6 h-2 bg-white' : 'w-2 h-2 bg-white/50'}`} />
+                <span key={i} onClick={() => setSlide(i)} className={`rounded-full transition-all cursor-pointer ${i === slide ? 'w-6 h-2 bg-white' : 'w-2 h-2 bg-white/50'}`} />
               ))}
             </div>
           </div>

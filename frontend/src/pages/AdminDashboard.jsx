@@ -85,10 +85,13 @@ const AdminDashboard = () => {
   const [selectedMatchStudent, setSelectedMatchStudent] = useState(null);
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [overrideTeacherSearch, setOverrideTeacherSearch] = useState('');
+  const [overrideSubject, setOverrideSubject] = useState('');
   const [selectedTeacherForAssign, setSelectedTeacherForAssign] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [studentSearchForAssign, setStudentSearchForAssign] = useState('');
   const [selectedStudentIdToAssign, setSelectedStudentIdToAssign] = useState('');
+  const [manualAssignSubject, setManualAssignSubject] = useState('');
+  const [matchSubjects, setMatchSubjects] = useState({});
 
   
   // Notification center
@@ -403,6 +406,12 @@ const AdminDashboard = () => {
   const [newEarningForm, setNewEarningForm] = useState({ studentName: '', amount: '', status: 'Paid', method: 'Razorpay' });
   const [isSavingEarning, setIsSavingEarning] = useState(false);
   const [adminFeedback, setAdminFeedback] = useState('');
+  
+  // Payout states
+  const [selectedPayoutTeacher, setSelectedPayoutTeacher] = useState(null);
+  const [payoutForm, setPayoutForm] = useState({ amount: '', method: 'Razorpay', referenceId: '', notes: '' });
+  const [payoutTeacherSearch, setPayoutTeacherSearch] = useState('');
+  const [isSavingPayout, setIsSavingPayout] = useState(false);
 
   // Student Form Inputs
   const [newStudent, setNewStudent] = useState({ name: '', email: '', parentName: '', batch: 'Class 9', status: 'Active' });
@@ -737,7 +746,8 @@ const AdminDashboard = () => {
           ) : (
             <div className="space-y-4">
               {pendingStudents.map(student => {
-                const suggestions = findSuggestedTeachers(student);
+                const currentSub = matchSubjects[student.id] || student.subjects?.[0] || 'Mathematics';
+                const suggestions = findSuggestedTeachers(student, currentSub);
                 const scores = student.test_score || { Mathematics: 0, Science: 0 };
                 
                 return (
@@ -769,13 +779,46 @@ const AdminDashboard = () => {
                           </div>
                         </div>
                         <span className="text-[9px] text-slate-400 font-semibold block mt-2">Subjects needed: {student.subjects.join(', ')}</span>
+                        
+                        <div className="mt-3 space-y-1.5 border-t border-slate-200/50 pt-2.5">
+                          <span className="text-[8px] text-slate-400 font-black uppercase tracking-wider block">Assigned Mentors Status</span>
+                          {student.subjects.map(subName => {
+                            const assignedTutor = student.assigned_teachers?.find(at => at.subject === subName && at.status !== 'ended');
+                            const teacherObj = assignedTutor ? teachers.find(t => t.id === assignedTutor.teacher_id) : null;
+                            return (
+                              <div key={subName} className="flex justify-between items-center text-[10px] bg-white border border-slate-100 p-2 rounded-xl">
+                                <span className="font-bold text-slate-700">{subName}</span>
+                                <span className={`px-1.5 py-0.5 rounded font-black text-[8px] uppercase ${
+                                  teacherObj 
+                                    ? assignedTutor.status === 'active' 
+                                      ? 'bg-green-50 text-green-700 border border-green-100' 
+                                      : 'bg-amber-50 text-amber-700 border border-amber-100' 
+                                    : 'bg-slate-50 text-slate-400'
+                                }`}>
+                                  {teacherObj ? `${teacherObj.name} (${assignedTutor.status})` : 'Not Assigned'}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
 
                     {/* Right Column: Suggested Matches */}
                     <div className="lg:col-span-7 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[8px] text-slate-400 font-black uppercase tracking-wider">Suggested Local Tutors</span>
+                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[8px] text-slate-400 font-black uppercase tracking-wider">Suggested Tutors for:</span>
+                          <select
+                            value={currentSub}
+                            onChange={(e) => setMatchSubjects(prev => ({ ...prev, [student.id]: e.target.value }))}
+                            className="text-xs font-black text-slate-650 bg-slate-50 border border-slate-200 rounded-xl px-2 py-0.5 focus:outline-none cursor-pointer"
+                          >
+                            {student.subjects.map(sub => (
+                              <option key={sub} value={sub}>{sub}</option>
+                            ))}
+                          </select>
+                        </div>
                         <span className="text-[9px] text-slate-400 font-semibold">Location matches city: {student.city}</span>
                       </div>
 
@@ -812,8 +855,8 @@ const AdminDashboard = () => {
                                 </div>
                                 <button
                                   onClick={async () => {
-                                    await allotTutor(student.id, teacher.id);
-                                    triggerToast(`Proposed match: Allotted ${teacher.name} to ${student.name}. Pending teacher confirmation.`);
+                                    await allotTutor(student.id, teacher.id, currentSub);
+                                    triggerToast(`Proposed match: Allotted ${teacher.name} to ${student.name} for ${currentSub}. Pending teacher confirmation.`);
                                     loadAdminData();
                                   }}
                                   className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[10px] rounded-xl shadow-sm transition-all cursor-pointer border-0"
@@ -1210,7 +1253,151 @@ const AdminDashboard = () => {
     );
   };
 
+  const renderTeacherPayments = () => {
+    let totalCollectedFees = 0;
+    let totalDisbursed = 0;
+    let totalPending = 0;
 
+    teachers.forEach(teacher => {
+      const logs = teacher.earnings_log || [];
+      const teacherEarned = logs.filter(l => l.status === 'Paid').reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+      const teacherWithdrawn = logs.filter(l => l.status === 'Payout').reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+      const teacherPending = Math.max(0, Math.round(teacherEarned * 0.4) - teacherWithdrawn);
+
+      totalCollectedFees += teacherEarned;
+      totalDisbursed += teacherWithdrawn;
+      totalPending += teacherPending;
+    });
+
+    const filteredPayoutTeachers = teachers.filter(t => 
+      t.name.toLowerCase().includes(payoutTeacherSearch.toLowerCase()) ||
+      (t.primarySubject && t.primarySubject.toLowerCase().includes(payoutTeacherSearch.toLowerCase()))
+    );
+
+    return (
+      <div className="space-y-6 text-left">
+        {/* Row 1: Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2">
+            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Parent Fees Collected</span>
+            <h3 className="text-2xl font-black text-slate-800">₹{totalCollectedFees.toLocaleString('en-IN')}</h3>
+            <p className="text-[10px] text-slate-400 font-bold mt-1">Total tuition fees paid by students</p>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Pending Tutor Payouts</span>
+            <div>
+              <h3 className="text-2xl font-black text-amber-500">₹{totalPending.toLocaleString('en-IN')}</h3>
+              <p className="text-[10px] text-slate-400 font-bold mt-1">Awaiting bank/UPI transfer</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Total Disbursed (Paid)</span>
+            <div>
+              <h3 className="text-2xl font-black text-emerald-500">₹{totalDisbursed.toLocaleString('en-IN')}</h3>
+              <p className="text-[10px] text-slate-400 font-bold mt-1">Successfully transferred to tutors</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2: Controls & Search */}
+        <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            <div>
+              <h3 className="text-base font-black text-slate-800">Tutors Payroll Ledger</h3>
+              <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage payouts and log transaction receipts for verified partners</p>
+            </div>
+            
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search teachers by name or subject..."
+                value={payoutTeacherSearch}
+                onChange={(e) => setPayoutTeacherSearch(e.target.value)}
+                className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none w-full"
+              />
+            </div>
+          </div>
+
+          {/* Payroll Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 text-[10px] text-slate-400 font-black uppercase tracking-wider">
+                  <th className="py-3 px-4">Tutor</th>
+                  <th className="py-3 px-4">Subject</th>
+                  <th className="py-3 px-4">Parent Fees Collected</th>
+                  <th className="py-3 px-4">Tutor Share (40%)</th>
+                  <th className="py-3 px-4">Disbursed (Payout)</th>
+                  <th className="py-3 px-4">Unpaid Balance</th>
+                  <th className="py-3 px-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50 text-xs">
+                {filteredPayoutTeachers.map(teacher => {
+                  const logs = teacher.earnings_log || [];
+                  const teacherEarned = logs.filter(l => l.status === 'Paid').reduce((a, c) => a + (parseFloat(c.amount) || 0), 0);
+                  const teacherDisbursed = logs.filter(l => l.status === 'Payout').reduce((a, c) => a + (parseFloat(c.amount) || 0), 0);
+                  const teacherUnpaid = Math.max(0, Math.round(teacherEarned * 0.4) - teacherDisbursed);
+
+                  return (
+                    <tr key={teacher.id} className="hover:bg-slate-50/50 transition-all">
+                      <td className="py-3.5 px-4 flex items-center space-x-3">
+                        <img src={teacher.avatar} alt={teacher.name} className="w-8 h-8 rounded-full object-cover" />
+                        <div>
+                          <div className="font-extrabold text-slate-800 leading-tight">{teacher.name}</div>
+                          <div className="text-[9px] text-slate-400 font-semibold">{teacher.email}</div>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-slate-600">
+                        {teacher.primarySubject || teacher.subjects_taught?.[0] || 'N/A'}
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-slate-700">
+                        ₹{teacherEarned.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3.5 px-4 font-black text-slate-700">
+                        ₹{Math.round(teacherEarned * 0.4).toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3.5 px-4 font-black text-emerald-600">
+                        ₹{teacherDisbursed.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3.5 px-4 font-black text-amber-600">
+                        ₹{teacherUnpaid.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          disabled={teacherUnpaid <= 0}
+                          onClick={() => {
+                            setSelectedPayoutTeacher(teacher);
+                            setPayoutForm({
+                              amount: teacherUnpaid.toString(),
+                              method: 'Razorpay',
+                              referenceId: '',
+                              notes: ''
+                            });
+                          }}
+                          className="px-3 py-1.5 bg-indigo-50 border border-indigo-150 hover:bg-indigo-100 disabled:opacity-50 text-indigo-700 font-extrabold text-[10px] rounded-xl shadow-sm cursor-pointer"
+                        >
+                          Disburse Payout
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filteredPayoutTeachers.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="py-8 text-center text-slate-400 font-semibold">No teachers found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderFeeManagement = () => {
     const totalDefaultersAmount = activeDefaulters.reduce((acc, d) => {
@@ -2256,6 +2443,7 @@ const AdminDashboard = () => {
       case 'Teachers': return renderTeachers();
       case 'Demo Bookings': return renderDemoBookings();
       case 'Fee Management': return renderFeeManagement();
+      case 'Teacher Payments': return renderTeacherPayments();
       case 'Settings': return renderSettings();
       case 'Support': return renderHelp();
       default:
@@ -2293,6 +2481,19 @@ const AdminDashboard = () => {
                 />
               </div>
 
+              {selectedMatchStudent && selectedMatchStudent.subjects && (
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Match for Subject</label>
+                  <select
+                    value={overrideSubject || selectedMatchStudent.subjects[0] || ''}
+                    onChange={(e) => setOverrideSubject(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-650 focus:outline-none"
+                  >
+                    {selectedMatchStudent.subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              )}
+
               <div className="max-h-64 overflow-y-auto space-y-2.5">
                 {getTeachers()
                   .filter(t => t.verification_status === 'Verified' && (
@@ -2323,10 +2524,12 @@ const AdminDashboard = () => {
                         <button
                           disabled={!isWithinCapacity}
                           onClick={async () => {
-                            await allotTutor(selectedMatchStudent.id, teacher.id);
-                            triggerToast(`Allotted ${teacher.name} to ${selectedMatchStudent.name}`);
+                            const finalSub = overrideSubject || (selectedMatchStudent.subjects && selectedMatchStudent.subjects[0]) || 'Mathematics';
+                            await allotTutor(selectedMatchStudent.id, teacher.id, finalSub);
+                            triggerToast(`Allotted ${teacher.name} to ${selectedMatchStudent.name} for ${finalSub}`);
                             setShowOverrideModal(false);
                             setSelectedMatchStudent(null);
+                            setOverrideSubject('');
                             loadAdminData();
                           }}
                           className="px-3.5 py-1.5 bg-blue-600 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all hover:bg-blue-700 cursor-pointer"
@@ -3357,6 +3560,144 @@ const AdminDashboard = () => {
         </div>
       )}
 
+      {/* Disburse Payout Modal */}
+      {selectedPayoutTeacher && (
+        <div className="modal-overlay text-left animate-fade-in">
+          <div className="modal-panel p-6 max-w-sm w-full relative animate-slide-up">
+            
+            <button 
+              onClick={() => setSelectedPayoutTeacher(null)}
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-650 rounded-xl hover:bg-slate-50 border-0 bg-transparent cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="mb-4">
+              <span className="text-[10px] text-indigo-650 bg-indigo-50 border border-indigo-100 font-extrabold uppercase px-2.5 py-1 rounded-full">Payroll Desk</span>
+              <h3 className="text-lg font-black text-slate-800 mt-2">Disburse Tutor Payout</h3>
+              <p className="text-xs text-slate-400 font-semibold">Log a payment transfer to <strong>{selectedPayoutTeacher.name}</strong>.</p>
+            </div>
+
+            <form 
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!payoutForm.amount) {
+                  triggerToast('Please provide a disbursement amount.');
+                  return;
+                }
+
+                setIsSavingPayout(true);
+                try {
+                  const payoutAmount = parseFloat(payoutForm.amount);
+                  
+                  // Append new Payout log transaction entry
+                  const currentLogs = selectedPayoutTeacher.earnings_log || [];
+                  const newPayoutLog = {
+                    id: 'PAY-' + Math.floor(100000 + Math.random() * 900000),
+                    studentName: 'Company Payout Disbursed',
+                    date: new Date().toISOString().split('T')[0],
+                    amount: payoutAmount,
+                    status: 'Payout',
+                    method: payoutForm.method,
+                    referenceId: payoutForm.referenceId || 'N/A',
+                    notes: payoutForm.notes || 'Payout Processed'
+                  };
+
+                  const finalLogs = [newPayoutLog, ...currentLogs];
+
+                  await api.put(`/teachers/${selectedPayoutTeacher.id}`, { earnings_log: finalLogs });
+                  
+                  setTeachers(prev => prev.map(t => t.id === selectedPayoutTeacher.id ? { ...t, earnings_log: finalLogs } : t));
+                  triggerToast(`Disbursed payout of ₹${payoutAmount.toLocaleString('en-IN')} to ${selectedPayoutTeacher.name}!`);
+                  setSelectedPayoutTeacher(null);
+                  loadAdminData();
+                } catch (err) {
+                  console.error('Failed to disburse payout:', err);
+                  triggerToast('Failed to disburse payout: ' + err.message);
+                } finally {
+                  setIsSavingPayout(false);
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Payout Amount (INR)</label>
+                <input
+                  type="number"
+                  required
+                  value={payoutForm.amount}
+                  onChange={(e) => setPayoutForm(prev => ({ ...prev, amount: e.target.value }))}
+                  placeholder="Enter amount"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-bold focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Payment Method</label>
+                <select
+                  value={payoutForm.method}
+                  onChange={(e) => setPayoutForm(prev => ({ ...prev, method: e.target.value }))}
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-bold text-slate-700 cursor-pointer"
+                >
+                  <option value="Razorpay">Razorpay Transfer</option>
+                  <option value="UPI">UPI / GPay / PhonePe</option>
+                  <option value="Net Banking">IMPS / NEFT Net Banking</option>
+                  <option value="Direct Bank Transfer">Direct Bank Deposit</option>
+                  <option value="Cash / Manual">Cash / Manual Handover</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Transaction Ref ID (Optional)</label>
+                <input
+                  type="text"
+                  value={payoutForm.referenceId}
+                  onChange={(e) => setPayoutForm(prev => ({ ...prev, referenceId: e.target.value }))}
+                  placeholder="e.g. TXN9028301823"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-semibold focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Payout Notes / Remarks</label>
+                <textarea
+                  value={payoutForm.notes}
+                  onChange={(e) => setPayoutForm(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Add optional notes..."
+                  rows="2"
+                  className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-semibold focus:outline-none resize-none"
+                />
+              </div>
+
+              <div className="mt-5 space-y-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={isSavingPayout}
+                  className="w-full btn-primary py-3 rounded-2xl text-xs font-bold text-center flex items-center justify-center space-x-2 cursor-pointer"
+                >
+                  {isSavingPayout ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Processing Payout...</span>
+                    </>
+                  ) : (
+                    <span>Confirm & Send Payout</span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPayoutTeacher(null)}
+                  className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 py-2.5 rounded-2xl text-xs font-bold text-center cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Document Preview Modal */}
       {previewDoc && (
         <div className="fixed inset-0 z-[1050] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-fade-in">
@@ -3414,6 +3755,7 @@ const AdminDashboard = () => {
           { name: 'Teachers', icon: GraduationCap },
           { name: 'Demo Bookings', icon: BookOpen },
           { name: 'Fee Management', icon: CreditCard },
+          { name: 'Teacher Payments', icon: DollarSign },
           { name: 'Settings', icon: Settings },
           { name: 'Support', icon: HelpCircle }
         ]}
@@ -3486,17 +3828,24 @@ const AdminDashboard = () => {
                 </label>
                 <select
                   value={selectedStudentIdToAssign}
-                  onChange={(e) => setSelectedStudentIdToAssign(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedStudentIdToAssign(val);
+                    const sObj = students.find(s => s.id === val);
+                    if (sObj && sObj.subjects && sObj.subjects.length > 0) {
+                      setManualAssignSubject(sObj.subjects[0]);
+                    } else {
+                      setManualAssignSubject('');
+                    }
+                  }}
                   className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-650 focus:outline-none"
                 >
                   <option value="">-- Choose a student --</option>
                   {students
                     .filter(s => {
-                      // Filter unmatched students (no assigned teacher ID)
-                      const isUnmatched = !s.assigned_teacher_id;
                       const matchesSearch = s.name.toLowerCase().includes(studentSearchForAssign.toLowerCase()) || 
                                             s.email.toLowerCase().includes(studentSearchForAssign.toLowerCase());
-                      return isUnmatched && matchesSearch;
+                      return matchesSearch;
                     })
                     .map(s => (
                       <option key={s.id} value={s.id}>
@@ -3506,6 +3855,24 @@ const AdminDashboard = () => {
                 </select>
               </div>
 
+              {/* Subject selection */}
+              {selectedStudentIdToAssign && (
+                <div className="space-y-1.5 animate-slide-up">
+                  <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">
+                    Select Subject
+                  </label>
+                  <select
+                    value={manualAssignSubject}
+                    onChange={(e) => setManualAssignSubject(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-650 focus:outline-none"
+                  >
+                    {students.find(s => s.id === selectedStudentIdToAssign)?.subjects?.map((sub) => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-50">
                 <button
@@ -3513,6 +3880,7 @@ const AdminDashboard = () => {
                     setShowAssignModal(false);
                     setSelectedTeacherForAssign(null);
                     setSelectedStudentIdToAssign('');
+                    setManualAssignSubject('');
                     setStudentSearchForAssign('');
                   }}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-650 font-extrabold text-xs rounded-xl transition-all cursor-pointer border-0"
@@ -3520,15 +3888,16 @@ const AdminDashboard = () => {
                   Cancel
                 </button>
                 <button
-                  disabled={!selectedStudentIdToAssign}
+                  disabled={!selectedStudentIdToAssign || !manualAssignSubject}
                   onClick={async () => {
                     const studentObj = students.find(s => s.id === selectedStudentIdToAssign);
                     const studentName = studentObj ? studentObj.name : 'Student';
-                    await allotTutor(selectedStudentIdToAssign, selectedTeacherForAssign.id);
-                    triggerToast(`Allotted ${selectedTeacherForAssign.name} to ${studentName}`);
+                    await allotTutor(selectedStudentIdToAssign, selectedTeacherForAssign.id, manualAssignSubject);
+                    triggerToast(`Allotted ${selectedTeacherForAssign.name} to ${studentName} for ${manualAssignSubject}`);
                     setShowAssignModal(false);
                     setSelectedTeacherForAssign(null);
                     setSelectedStudentIdToAssign('');
+                    setManualAssignSubject('');
                     setStudentSearchForAssign('');
                     loadAdminData();
                   }}

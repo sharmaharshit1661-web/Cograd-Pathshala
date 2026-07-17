@@ -202,10 +202,9 @@ export default function DashboardShell({
     }
     if (role.includes('teacher')) {
       return {
-        ctaLabel: 'Create New Batch', ctaTab: 'Batches',
         title: 'Teacher Dashboard', subtitle: 'Your Teaching Hub',
-        card1Val: '92%', card1Label: 'Batch Attend.', card1Icon: Users,
-        card2Val: '3 Active', card2Label: 'Batches', card2Icon: BookOpen,
+        card1Val: '92%', card1Label: 'Attendance', card1Icon: Clock,
+        card2Val: 'Active', card2Label: 'Students', card2Icon: Users,
         card3Val: '17 Graded', card3Label: 'Worksheets', card3Icon: ClipboardList,
         card4Val: '48 Held', card4Label: 'Lectures', card4Icon: Presentation,
       };

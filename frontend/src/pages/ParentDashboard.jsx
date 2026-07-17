@@ -173,24 +173,44 @@ const ParentDashboard = () => {
             const isActive = child.status === 'active' || child.status === 'Active' || child.status === 'matched';
             
             // Map teachers for these subjects only if matched
-            const mappedTeachers = child.assigned_teacher_id ? childSubjects.map((subName) => {
-              const matchedT = (teachersList || []).find((t) => 
-                t.role === 'teacher' && 
-                (t.subjects_taught || []).some(s => s.toLowerCase() === subName.toLowerCase())
-              );
-              return {
-                name: matchedT ? matchedT.name : 'Class Tutor',
-                subject: subName,
-                avatar: matchedT ? matchedT.avatar : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
-              };
-            }) : [];
+            const mappedTeachers = [];
+            if (child.assigned_teachers && child.assigned_teachers.length > 0) {
+              child.assigned_teachers.forEach(at => {
+                if (at.status === 'active' || at.status === 'proposed') {
+                  const teacherObj = (teachersList || []).find(t => t.id === at.teacher_id);
+                  if (teacherObj) {
+                    mappedTeachers.push({
+                      id: teacherObj.id,
+                      name: teacherObj.name,
+                      subject: at.subject,
+                      status: at.status,
+                      avatar: teacherObj.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
+                    });
+                  }
+                }
+              });
+            } else if (child.assigned_teacher_id) {
+              const teacherObj = (teachersList || []).find(t => t.id === child.assigned_teacher_id);
+              if (teacherObj) {
+                childSubjects.forEach(subName => {
+                  const teachesSubject = (teacherObj.subjects_taught || []).some(s => s.toLowerCase() === subName.toLowerCase());
+                  if (teachesSubject) {
+                    mappedTeachers.push({
+                      id: teacherObj.id,
+                      name: teacherObj.name,
+                      subject: subName,
+                      status: 'active',
+                      avatar: teacherObj.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
+                    });
+                  }
+                });
+              }
+            }
 
             const assignedTeacherObj = child.assigned_teacher_id 
               ? (teachersList || []).find(t => t.id === child.assigned_teacher_id)
               : null;
-            const primaryTeacherName = assignedTeacherObj 
-              ? assignedTeacherObj.name 
-              : (mappedTeachers[0]?.name || 'Not Assigned');
+            const primaryTeacherName = mappedTeachers[0]?.name || (assignedTeacherObj ? assignedTeacherObj.name : 'Not Assigned');
 
             const getSubjectGrade = (sub) => {
               if (child.test_score && typeof child.test_score[sub] === 'number') {
@@ -224,7 +244,8 @@ const ParentDashboard = () => {
 
               return {
                 name: subName,
-                teacher: child.assigned_teacher_id ? (matchedT ? matchedT.name : primaryTeacherName) : 'Not Assigned',
+                teacher: matchedT ? matchedT.name : 'Not Assigned',
+                teacherId: matchedT ? matchedT.id : null,
                 attendance: attendanceAvg !== 'N/A' ? attendanceAvg : 0,
                 grade: grade,
                 trend: trendPoints
@@ -397,10 +418,14 @@ const ParentDashboard = () => {
   const [payLoading, setPayLoading] = useState(false);
 
   // PTM Booking Form Inputs
-  const [selectedTeacher, setSelectedTeacher] = useState('');
+  const [selectedTeacher, setSelectedTeacher] = useState(''); // Stores tutor name or ID
+  const [bookingType, setBookingType] = useState('PTM'); // 'PTM' or 'Class'
   const [bookingDate, setBookingDate] = useState('');
   const [bookingTime, setBookingTime] = useState('');
   const [ptmMode, setPtmMode] = useState('In-Home');
+  const [bookingDay, setBookingDay] = useState('Monday');
+  const [bookingSlot, setBookingSlot] = useState('09:00 AM - 10:30 AM');
+  const [classTitle, setClassTitle] = useState('');
   const [ptmLoading, setPtmLoading] = useState(false);
 
   // Parent Support Message Input State
@@ -646,64 +671,74 @@ const ParentDashboard = () => {
     }
   };
 
-  // PTM Scheduling handler
+  // PTM and Class Scheduling handler
   const handleBookPTMSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedTeacher || !bookingDate || !bookingTime) {
-      triggerToast('Please fill out all booking fields to continue.');
+    if (!selectedTeacher) {
+      triggerToast('Please select a teacher to continue.');
+      return;
+    }
+
+    if (bookingType === 'PTM' && (!bookingDate || !bookingTime)) {
+      triggerToast('Please fill out the date and time for the meeting.');
       return;
     }
 
     setPtmLoading(true);
     try {
-      const formattedDate = new Date(bookingDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-      const [hours, minutes] = bookingTime.split(':');
-      const ampm = parseInt(hours) >= 12 ? 'PM' : 'AM';
-      const formattedTime = `${parseInt(hours) % 12 || 12}:${minutes} ${ampm}`;
-
-      const ptmScheduleItem = {
-         id: 'ptm_' + Date.now(),
-         type: 'PTM',
-         title: `PTM with ${selectedTeacher}`,
-         date: formattedDate,
-         time: formattedTime,
-         details: `${ptmMode === 'Call' ? 'Telephonic Call' : 'In-Home Visit'} scheduled`,
-         icon: ptmMode === 'Call' ? 'phone' : 'home'
-      };
-
-      const ptmActivityItem = {
-         id: 'ptm_act_' + Date.now(),
-         text: `Booked Parent-Teacher Meeting with ${selectedTeacher} for ${formattedDate} at ${formattedTime}`,
-         time: 'Just now',
-         tag: 'Calendar',
-         type: 'primary'
-      };
-
-      const updatedSchedule = [ptmScheduleItem, ...(activeStudent.schedule || [])];
-      const updatedActivities = [ptmActivityItem, ...(activeStudent.activities || [])];
-
-      await updateChildDataOnBackend(selectedStudentKey, {
-        schedule: updatedSchedule,
-        activities: updatedActivities
-      });
-
-      setStudentsData(prev => {
-        const studentCopy = { 
-          ...prev[selectedStudentKey], 
-          schedule: updatedSchedule, 
-          activities: updatedActivities 
+      if (bookingType === 'Class') {
+        const payload = {
+          studentId: selectedStudentKey,
+          teacherId: selectedTeacher,
+          day: bookingDay,
+          slot: bookingSlot,
+          title: classTitle,
+          subject: activeStudent.teachers.find(t => t.id === selectedTeacher)?.subject || 'Mathematics'
         };
-        return { ...prev, [selectedStudentKey]: studentCopy };
-      });
 
-      setSelectedTeacher('');
-      setBookingDate('');
-      setBookingTime('');
-      setShowPTMModal(false);
-      triggerToast('Parent-Teacher Meeting booked successfully!');
+        const resObj = await api.post('/bookings/class', payload);
+
+        setStudentsData(prev => {
+          const studentCopy = { 
+            ...prev[selectedStudentKey], 
+            schedule: resObj.student.schedule, 
+            activities: resObj.student.activities 
+          };
+          return { ...prev, [selectedStudentKey]: studentCopy };
+        });
+
+        setClassTitle('');
+        setShowPTMModal(false);
+        triggerToast('Class booked successfully & reflected on teacher\'s timetable!');
+      } else {
+        const payload = {
+          studentId: selectedStudentKey,
+          teacherId: selectedTeacher,
+          date: bookingDate,
+          time: bookingTime,
+          mode: ptmMode,
+          subject: activeStudent.teachers.find(t => t.id === selectedTeacher)?.subject || 'Mathematics'
+        };
+
+        const resObj = await api.post('/bookings/ptm', payload);
+
+        setStudentsData(prev => {
+          const studentCopy = { 
+            ...prev[selectedStudentKey], 
+            schedule: resObj.student.schedule, 
+            activities: resObj.student.activities 
+          };
+          return { ...prev, [selectedStudentKey]: studentCopy };
+        });
+
+        setBookingDate('');
+        setBookingTime('');
+        setShowPTMModal(false);
+        triggerToast('Parent-Teacher Meeting booked successfully!');
+      }
     } catch (err) {
-      console.error('PTM booking failed:', err);
-      triggerToast('PTM booking failed: ' + err.message);
+      console.error('Booking failed:', err);
+      triggerToast('Booking failed: ' + (err.response?.data?.message || err.message));
     } finally {
       setPtmLoading(false);
     }
@@ -1397,7 +1432,7 @@ const ParentDashboard = () => {
                     <p className="text-xs text-slate-400 font-medium mb-4">Select quick workflows to interact with mentors or review progress documents.</p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     
                     {/* Chat with Primary Teacher */}
                     <button 
@@ -1423,6 +1458,24 @@ const ParentDashboard = () => {
                       </div>
                       <span className="text-xs font-bold text-slate-800 block">Progress Report</span>
                       <span className="text-[9px] text-slate-400 font-semibold mt-1">Generate & download Card</span>
+                    </button>
+
+                    {/* Book Class / PTM */}
+                    <button 
+                      onClick={() => {
+                        // Pre-select first teacher if available
+                        if (activeStudent.teachers && activeStudent.teachers.length > 0) {
+                          setSelectedTeacher(activeStudent.teachers[0].id || activeStudent.teachers[0].name);
+                        }
+                        setShowPTMModal(true);
+                      }}
+                      className="bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:-translate-y-0.5 group active:scale-[0.98]"
+                    >
+                      <div className="p-3 bg-indigo-100 rounded-full text-indigo-700 mb-2 group-hover:scale-105 transition-transform">
+                        <Calendar className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-bold text-slate-800 block">Book Class / PTM</span>
+                      <span className="text-[9px] text-slate-400 font-semibold mt-1">Schedule lesson or parent sync</span>
                     </button>
 
                   </div>
@@ -2453,6 +2506,184 @@ const ParentDashboard = () => {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+
+      {/* 4. BOOK CLASS OR PTM MODAL */}
+      {showPTMModal && activeStudent && (
+        <div className="modal-overlay text-left">
+          <div className="modal-panel p-6 max-w-sm w-full relative animate-slide-up">
+            
+            <button 
+              onClick={() => setShowPTMModal(false)}
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-50 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="mb-4">
+              <span className="text-[10px] text-indigo-650 bg-indigo-50 border border-indigo-100 font-extrabold uppercase px-2.5 py-1 rounded-full">Scheduler Desk</span>
+              <h3 className="text-lg font-black text-slate-800 mt-2">Book Lesson / Meeting</h3>
+              <p className="text-xs text-slate-400 font-semibold">Arrange a slot with your child's mentors.</p>
+            </div>
+
+            <form onSubmit={handleBookPTMSubmit} className="space-y-4">
+              
+              {/* Teacher/Subject Selection */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Select Mentor & Subject</label>
+                <select
+                  value={selectedTeacher}
+                  onChange={(e) => setSelectedTeacher(e.target.value)}
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-bold text-slate-700 cursor-pointer"
+                >
+                  {(!activeStudent.teachers || activeStudent.teachers.length === 0) ? (
+                    <option value="">No active tutors matched yet</option>
+                  ) : (
+                    activeStudent.teachers.map((t) => (
+                      <option key={t.id || t.teacherId || t.name} value={t.id || t.teacherId || t.name}>
+                        {t.subject} (Mentor: {t.name})
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              {/* Booking Type */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Booking Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBookingType('PTM')}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      bookingType === 'PTM'
+                        ? 'border-indigo-600 bg-indigo-50/50 text-indigo-800 font-black shadow-sm'
+                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-650'
+                    }`}
+                  >
+                    Parent-Teacher Sync (PTM)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBookingType('Class')}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      bookingType === 'Class'
+                        ? 'border-indigo-600 bg-indigo-50/50 text-indigo-800 font-black shadow-sm'
+                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-650'
+                    }`}
+                  >
+                    Regular Class
+                  </button>
+                </div>
+              </div>
+
+              {bookingType === 'Class' ? (
+                <>
+                  {/* Regular Class Booking Inputs */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Lecture Title / Topic</label>
+                    <input
+                      type="text"
+                      required
+                      value={classTitle}
+                      onChange={(e) => setClassTitle(e.target.value)}
+                      placeholder="e.g. Quadratic Equations Revision"
+                      className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-semibold focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Preferred Day</label>
+                    <select
+                      value={bookingDay}
+                      onChange={(e) => setBookingDay(e.target.value)}
+                      className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-bold text-slate-700 cursor-pointer"
+                    >
+                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Preferred Time Slot</label>
+                    <select
+                      value={bookingSlot}
+                      onChange={(e) => setBookingSlot(e.target.value)}
+                      className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-bold text-slate-700 cursor-pointer"
+                    >
+                      <option value="09:00 AM - 10:30 AM">09:00 AM - 10:30 AM</option>
+                      <option value="11:00 AM - 12:30 PM">11:00 AM - 12:30 PM</option>
+                      <option value="02:00 PM - 03:30 PM">02:00 PM - 03:30 PM</option>
+                      <option value="04:00 PM - 05:30 PM">04:00 PM - 05:30 PM</option>
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* PTM Sync Booking Inputs */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">PTM Meeting Mode</label>
+                    <select
+                      value={ptmMode}
+                      onChange={(e) => setPtmMode(e.target.value)}
+                      className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-bold text-slate-700 cursor-pointer"
+                    >
+                      <option value="In-Home">In-Home Visit</option>
+                      <option value="Call">Telephonic Call</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Select Date</label>
+                      <input
+                        type="date"
+                        required
+                        value={bookingDate}
+                        onChange={(e) => setBookingDate(e.target.value)}
+                        className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Select Time</label>
+                      <input
+                        type="time"
+                        required
+                        value={bookingTime}
+                        onChange={(e) => setBookingTime(e.target.value)}
+                        className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="mt-5 space-y-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={ptmLoading || !selectedTeacher}
+                  className="w-full btn-primary py-3 rounded-2xl text-xs font-bold text-center flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+                >
+                  {ptmLoading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Booking Slot...</span>
+                    </>
+                  ) : (
+                    <span>Confirm Booking Slot</span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPTMModal(false)}
+                  className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 py-2.5 rounded-2xl text-xs font-bold text-center cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+
+            </form>
           </div>
         </div>
       )}

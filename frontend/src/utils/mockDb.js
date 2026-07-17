@@ -97,7 +97,7 @@ export const getAdminUsers = () => {
 };
 
 // Matching Algorithm
-export const findSuggestedTeachers = (student) => {
+export const findSuggestedTeachers = (student, subject = null) => {
   const teachers = getTeachers();
   const studentGrade = student.standard ? student.standard.split(' ')[0] : 'Class 10'; 
 
@@ -118,10 +118,15 @@ export const findSuggestedTeachers = (student) => {
     if (t.current_student_count >= t.max_student_capacity) return false;
 
     // 4. Subject Match
-    const hasSubjectMatch = student.subjects.some(sub => 
-      t.subjects_taught && t.subjects_taught.some(ts => ts.toLowerCase() === sub.toLowerCase())
-    );
-    if (!hasSubjectMatch) return false;
+    if (subject) {
+      const hasSpecificMatch = t.subjects_taught && t.subjects_taught.some(ts => ts.toLowerCase() === subject.toLowerCase());
+      if (!hasSpecificMatch) return false;
+    } else {
+      const hasSubjectMatch = student.subjects.some(sub => 
+        t.subjects_taught && t.subjects_taught.some(ts => ts.toLowerCase() === sub.toLowerCase())
+      );
+      if (!hasSubjectMatch) return false;
+    }
 
     // 5. Grade level Qualification Match
     const isGradeQualified = t.grade_levels_qualified && t.grade_levels_qualified.some(g => g.toLowerCase() === studentGrade.toLowerCase());
@@ -200,9 +205,9 @@ export const findSuggestedTeachers = (student) => {
 };
 
 // Allot tutor (Admin Action)
-export const allotTutor = async (studentId, teacherId) => {
+export const allotTutor = async (studentId, teacherId, subject = null) => {
   try {
-    await api.post('/assignments/allot', { studentId, teacherId });
+    await api.post('/assignments/allot', { studentId, teacherId, subject });
     await syncWithBackend();
     return true;
   } catch (error) {

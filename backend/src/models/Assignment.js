@@ -15,6 +15,10 @@ const AssignmentSchema = new mongoose.Schema(
       type: String, // Store custom teacher id
       required: true,
     },
+    subject: {
+      type: String,
+      default: 'Mathematics',
+    },
     assigned_by: {
       type: String, // Store custom admin user id
       default: 'admin_1',

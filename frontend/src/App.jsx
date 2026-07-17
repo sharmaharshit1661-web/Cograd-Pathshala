@@ -111,6 +111,56 @@ const LayoutWrapper = ({ children }) => {
   );
 };
 
+// Automatic session termination on 10 minutes of inactivity
+const InactivityTimer = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem('cograd_logged_in') === 'true';
+    if (!isLoggedIn) return;
+
+    let timeoutId;
+
+    const logoutUser = () => {
+      localStorage.removeItem('cograd_logged_in');
+      localStorage.removeItem('cograd_role');
+      localStorage.removeItem('cograd_token');
+      localStorage.removeItem('cograd_logged_in_email');
+      localStorage.removeItem('cograd_teacher_name');
+      localStorage.removeItem('cograd_student_name');
+      localStorage.removeItem('cograd_parent_name');
+      
+      navigate('/login');
+      alert("Your session has expired due to inactivity. Please log in again.");
+    };
+
+    const resetTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      // 10 minutes = 10 * 60 * 1000 = 600,000 ms
+      timeoutId = setTimeout(logoutUser, 600000);
+    };
+
+    const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
+    const handleActivity = () => resetTimer();
+
+    events.forEach(event => {
+      window.addEventListener(event, handleActivity);
+    });
+
+    resetTimer();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      events.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+    };
+  }, [navigate, location.pathname]);
+
+  return null;
+};
+
 function App() {
   useEffect(() => {
     window.sessionStorage.removeItem('chunk_load_reloaded');
@@ -119,6 +169,7 @@ function App() {
   return (
     <ThemeProvider>
       <Router>
+        <InactivityTimer />
         <ScrollToTop />
         <LayoutWrapper>
           <Suspense fallback={<PageLoader />}>
