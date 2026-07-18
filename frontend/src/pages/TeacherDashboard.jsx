@@ -367,6 +367,8 @@ const TeacherDashboard = () => {
       setStudents(matchedStudents);
       if (matchedStudents.length > 0) {
         setScheduleBatch(matchedStudents[0].name);
+        setNewAssignBatch(matchedStudents[0].name);
+        setNewMaterialBatch(matchedStudents[0].name);
       }
     } catch (err) {
       console.error('Failed to load teacher data:', err);
@@ -1461,15 +1463,19 @@ const TeacherDashboard = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Target Batch</label>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Target Student</label>
                 <select 
                   value={newMaterialBatch}
                   onChange={(e) => setNewMaterialBatch(e.target.value)}
                   className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none font-bold text-slate-700 cursor-pointer"
                 >
-                  {batches.map(b => (
-                    <option key={b.id} value={b.title}>{b.title}</option>
-                  ))}
+                  {students.length > 0 ? (
+                    students.map(s => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
+                    ))
+                  ) : (
+                    <option value="">No assigned students</option>
+                  )}
                 </select>
               </div>
             </div>
@@ -2573,15 +2579,19 @@ const TeacherDashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Assign to Batch</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Assign to Student</label>
                   <select 
                     value={newAssignBatch}
                     onChange={(e) => setNewAssignBatch(e.target.value)}
                     className="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-sm focus:outline-none font-bold text-slate-700 cursor-pointer"
                   >
-                    {batches.map(b => (
-                      <option key={b.id} value={b.title}>{b.title}</option>
-                    ))}
+                    {students.length > 0 ? (
+                      students.map(s => (
+                        <option key={s.id} value={s.name}>{s.name}</option>
+                      ))
+                    ) : (
+                      <option value="">No assigned students</option>
+                    )}
                   </select>
                 </div>
                 <div>
@@ -3535,7 +3545,7 @@ const TeacherDashboard = () => {
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
             <h2 className="text-2xl font-black text-slate-900 tracking-tight">Public Directory Profile & Ratings</h2>
-            <p className="text-slate-500 text-xs mt-1">Refine your public tutor card bio, hourly rate details, and reply to parent review comments.</p>
+            <p className="text-slate-500 text-xs mt-1">Refine your public tutor card bio and reply to parent review comments.</p>
           </div>
           
           <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200/50 w-max shadow-inner">
@@ -3632,10 +3642,7 @@ const TeacherDashboard = () => {
                       <span className="text-slate-400">Instruction Medium:</span>
                       <h4 className="font-extrabold text-slate-700 mt-1">{teacherProfile.medium}</h4>
                     </div>
-                    <div>
-                      <span className="text-slate-400">Tuition Rate:</span>
-                      <h4 className="font-extrabold text-slate-700 mt-1">{teacherProfile.hourlyRate}</h4>
-                    </div>
+
                     <div>
                       <span className="text-slate-400">City &amp; Area / Locality:</span>
                       <h4 className="font-extrabold text-slate-700 mt-1">{teacherProfile.locality || 'N/A'}, {teacherProfile.city || 'N/A'}</h4>
@@ -3695,14 +3702,6 @@ const TeacherDashboard = () => {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1.5">Hourly Rate Fee</label>
-                      <input 
-                        type="text" required value={editProfileData.hourlyRate}
-                        onChange={(e) => setEditProfileData(p => ({ ...p, hourlyRate: e.target.value }))}
-                        className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
-                      />
-                    </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-500 mb-1.5">Instruction Medium</label>
                       <input 

@@ -835,7 +835,23 @@ const StudentDashboard = () => {
   const [downloadProgress, setDownloadProgress] = useState({}); // id -> progress percentage
   const [downloadingIds, setDownloadingIds] = useState({}); // id -> true/false
 
-  const studyMaterials = matchedTeacherData?.study_materials || [];
+  // Compile study materials from all active tutors
+  const studyMaterials = [];
+  if (matchedTeachersList && matchedTeachersList.length > 0) {
+    matchedTeachersList.forEach((teacher) => {
+      const teacherMaterials = teacher.study_materials || [];
+      teacherMaterials.forEach((material, index) => {
+        const uniqueId = material.id ? `${teacher.id}-${material.id}` : `${teacher.id}-${index}`;
+        studyMaterials.push({
+          ...material,
+          id: uniqueId,
+          originalId: material.id,
+          teacherName: teacher.name,
+          subject: teacher.subject || teacher.primarySubject || 'General'
+        });
+      });
+    });
+  }
 
   const triggerBrowserDownload = (fileName) => {
     const textContent = `Cograd Pathshala - Study Notes & Materials\n\nFile Name: ${fileName}\n\nThis is a placeholder study resource matching your syllabus chapter. Real academic study sheets, practice assignments, and formula cards will be uploaded here by your allotted teacher.`;
@@ -1972,9 +1988,12 @@ const StudentDashboard = () => {
                           className="p-4 border border-slate-100 hover:border-blue-100 hover:bg-blue-50/5 rounded-xl transition-all flex flex-col justify-between"
                         >
                           <div>
-                            <span className="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">{mat.type}</span>
+                            <div className="flex justify-between items-center">
+                              <span className="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">{mat.type || 'PDF'}</span>
+                              <span className="text-[9px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md font-bold">{mat.subject}</span>
+                            </div>
                             <h4 className="text-xs font-bold text-slate-800 mt-2 line-clamp-2 h-8 leading-tight">{mat.name}</h4>
-                            <span className="text-[10px] text-slate-400 font-semibold mt-1 block">Size: {mat.size}</span>
+                            <span className="text-[10px] text-slate-400 font-semibold mt-1 block">Size: {mat.size} • by {mat.teacherName}</span>
                           </div>
                           <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between">
                             {downloadingIds[mat.id] ? (
@@ -2051,12 +2070,13 @@ const StudentDashboard = () => {
                               <div>
                                 <div className="flex justify-between items-center">
                                   <span className={`text-[9px] px-2 py-0.5 rounded-md font-bold uppercase bg-blue-50 text-blue-800`}>
-                                    {doc.batch || 'Study Notes'}
+                                    {doc.subject || 'Study Notes'}
                                   </span>
                                   <span className="text-[10px] text-slate-400 font-semibold">{doc.size || '1.4 MB'}</span>
                                 </div>
                                 <h4 className="text-xs font-bold text-slate-805 mt-3 leading-snug">{doc.name}</h4>
-                                <span className="text-[10px] text-slate-400 mt-1 block">Uploaded: {doc.date || 'Recently'}</span>
+                                <span className="text-[10px] text-slate-400 mt-1.5 block font-medium">Uploaded by: <strong className="text-slate-600">{doc.teacherName}</strong></span>
+                                <span className="text-[10px] text-slate-400 mt-0.5 block">Date: {doc.date || 'Recently'}</span>
                               </div>
 
                               <div className="mt-5 pt-3 border-t border-slate-50 flex items-center justify-between">
