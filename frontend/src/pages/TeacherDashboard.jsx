@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, Fragment, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardShell from '../components/DashboardShell';
 import TeacherOnboardingPortal from './TeacherOnboardingPortal';
@@ -85,6 +85,7 @@ const QUALIFICATION_SUGGESTIONS = [
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   
   // Dashboard navigation states
   const [activeTab, setActiveTab] = useState('My Dashboard');
@@ -984,15 +985,29 @@ const TeacherDashboard = () => {
 
 
 
-  // Material upload simulation
-  const handleMaterialUpload = () => {
+  // Device file upload handlers
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    startFileUpload(file);
+  };
+
+  const startFileUpload = (file) => {
     if (isUploading) return;
     setIsUploading(true);
     setUploadProgress(0);
-    const mockFiles = ['Class9_Triangles_Notes.pdf', 'Class10_Algebra_Worksheet.pdf', 'Class6_Light_Diagrams.pdf'];
-    const fileName = mockFiles[Math.floor(Math.random() * mockFiles.length)];
-    setCustomFileName(fileName);
-    
+    setCustomFileName(file.name);
+
+    // Format file size
+    let sizeStr = '0 B';
+    if (file.size > 1024 * 1024) {
+      sizeStr = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+    } else if (file.size > 1024) {
+      sizeStr = (file.size / 1024).toFixed(1) + ' KB';
+    } else {
+      sizeStr = file.size + ' B';
+    }
+
     let current = 0;
     const interval = setInterval(() => {
       current += 10;
@@ -1003,15 +1018,19 @@ const TeacherDashboard = () => {
           setIsUploading(false);
           const newFile = {
             id: resources.length + 1,
-            name: fileName,
+            name: file.name,
             batch: newMaterialBatch,
-            size: '1.4 MB',
+            size: sizeStr,
             date: new Date().toISOString().split('T')[0],
             downloads: 0
           };
           setResources(prev => [newFile, ...prev]);
           setToastMessage('New study notes successfully cataloged!');
           setShowToast(true);
+          // Reset file input value
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
         }, 200);
       }
     }, 100);
@@ -1383,15 +1402,32 @@ const TeacherDashboard = () => {
             <div className="md:col-span-5 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
               <h3 className="text-base font-black text-slate-800">Upload Course Material</h3>
               <div 
-                onClick={handleMaterialUpload}
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.click();
+                  }
+                }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const file = e.dataTransfer.files[0];
+                  if (file) startFileUpload(file);
+                }}
                 className={`border-2 border-dashed p-8 text-center cursor-pointer rounded-2xl hover:bg-blue-50/5 hover:border-blue-500 transition-all ${
                   isUploading ? 'border-blue-300 bg-blue-50/10' : 'border-slate-200'
                 }`}
               >
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  className="hidden" 
+                  accept=".pdf,.zip,.docx,.doc,.txt,.ppt,.pptx,.png,.jpg,.jpeg"
+                />
                 <UploadCloud className={`w-12 h-12 text-blue-500 mx-auto mb-3 ${isUploading ? 'animate-bounce' : ''}`} />
                 <h4 className="text-sm font-bold text-slate-800">Drag & drop files here</h4>
                 <p className="text-xs text-slate-400 mt-1">
-                  {isUploading ? `Uploading ${customFileName} (${uploadProgress}%)` : 'Click to select files (PDF, ZIP, DOCX)'}
+                  {isUploading ? `Uploading ${customFileName} (${uploadProgress}%)` : 'Click to select or browse files (PDF, ZIP, DOCX)'}
                 </p>
                 {isUploading && (
                   <div className="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
